@@ -1,5 +1,8 @@
 # DearEIS
 
+A GUI program for analyzing, simulating, and visualizing impedance spectra.
+
+
 ## License
 
 Copyright 2022 DearEIS developers
