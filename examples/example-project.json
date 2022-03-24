@@ -68,7 +68,7 @@
         -95.9025788682872,
         -90.61812830738305
       ],
-      "label": "data_boukamp_ideal",
+      "label": "Ideal data",
       "mask": {
         "0": false,
         "1": false,
@@ -100,7 +100,7 @@
         "27": false,
         "28": false
       },
-      "path": "/home/user/Repositories/Github/Github-DearEIS/tests/data_boukamp_ideal.csv",
+      "path": "",
       "real": [
         109.00918219439028,
         112.05775995468218,
@@ -198,7 +198,7 @@
         -91.41879932887528,
         -85.130636400948
       ],
-      "label": "data_boukamp_noisy",
+      "label": "Noisy data",
       "mask": {
         "0": false,
         "1": false,
@@ -230,7 +230,7 @@
         "27": false,
         "28": false
       },
-      "path": "/home/user/Repositories/Github/Github-DearEIS/tests/data_boukamp_noisy.csv",
+      "path": "",
       "real": [
         108.80847063959312,
         112.84734123590228,
@@ -772,11 +772,10 @@
       }
     ]
   },
-  "label": "Project",
+  "label": "Example project",
   "latest_fit_circuit": "[R{R=1.000000000000E+03/0.000000000000E+00}(R{R=1.000000000000E+03/0.000000000000E+00}C{C=1.000000000000E-06/0.000000000000E+00/1.000000000000E+03})(R{R=1.000000000000E+03/0.000000000000E+00}W{Y=1.000000000000E+00/0.000000000000E+00})]",
   "latest_simulation_circuit": "[R{R=9.963276000000E+01/0.000000000000E+00}(R{R=2.000290000000E+02/0.000000000000E+00}C{C=7.956895000000E-07/0.000000000000E+00/1.000000000000E+03})(R{R=4.971808000000E+02/0.000000000000E+00}W{Y=3.985538000000E-04/0.000000000000E+00})]",
-  "path": "/home/user/Repositories/Github/Github-DearEIS/examples/example-project.json",
-  "recent_directory": "/home/user/Repositories/Github/Github-DearEIS/tests",
+  "notes": "This is for keeping notes about the project.",
   "simulations": [
     {
       "circuit": "[R{R=9.963276000000E+01/0.000000000000E+00}(R{R=2.000290000000E+02/0.000000000000E+00}C{C=7.956895000000E-07/0.000000000000E+00/1.000000000000E+03})(R{R=4.971808000000E+02/0.000000000000E+00}W{Y=3.985538000000E-04/0.000000000000E+00})]",
