@@ -5,8 +5,7 @@
 
 import dearpygui.dearpygui as dpg
 from typing import List, Optional
-import deareis.themes as themes
-from deareis.utility import dict_to_csv, window_pos_dims
+from deareis.utility import window_pos_dims
 
 
 # TODO: Add resize handler to check when the viewport is resized

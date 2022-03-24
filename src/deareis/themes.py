@@ -3,12 +3,12 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 import dearpygui.dearpygui as dpg
 from deareis.config import CONFIG
 
 
-Color = Tuple[int, int, int]
+Color = Union[Tuple[int, int, int, int], List[float], List[int]]
 
 PLOT_MARKERS: Dict[str, int] = {
     "Arrow down": dpg.mvPlotMarker_Down,
@@ -28,36 +28,43 @@ VIBRANT_COLORS: List[Color] = [
         0,
         119,
         187,
+        255,
     ),
     (
         0,
         153,
         136,
+        255,
     ),
     (
         238,
         119,
         51,
+        255,
     ),
     (
         238,
         51,
         119,
+        255,
     ),
     (
         204,
         51,
         17,
+        255,
     ),
     (
         187,
         187,
         187,
+        255,
     ),
     (
         51,
         187,
         238,
+        255,
     ),
 ]
 
@@ -87,6 +94,13 @@ def create_plot_theme(
     color: Color,
     marker: int,
 ):
+    assert type(tag) is int
+    assert (
+        (type(color) is tuple or type(color) is list)
+        and len(color) == 4
+        and all(map(lambda _: type(_) is int or type(_) is float, color))
+    )
+    assert type(marker) is int
     R: int
     G: int
     B: int
@@ -126,6 +140,12 @@ def create_plot_theme(
 
 
 def update_plot_theme_color(parent: int, color: List[float]):
+    assert type(parent) is int
+    assert (
+        type(color) is list
+        and len(color) == 4
+        and all(map(lambda _: type(_) is float, color))
+    )
     uuids: List[int] = []
     item: int
     for item in dpg.get_item_children(parent, slot=1):
@@ -145,6 +165,8 @@ def update_plot_theme_color(parent: int, color: List[float]):
 
 
 def update_plot_theme_marker(parent: int, marker: int):
+    assert type(parent) is int
+    assert type(marker) is int
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
@@ -191,7 +213,7 @@ def initialize():
     invalid_node = dpg.generate_uuid()
     # Themes
     # - Plots
-    definitions: List[Tuple[int, Color, int, int, int, int]] = [
+    definitions: List[Tuple[int, Color, int]] = [
         (
             real_error,
             CONFIG.colors["real_error"],

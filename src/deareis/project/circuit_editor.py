@@ -50,6 +50,17 @@ class Node:
         input_attribute: bool = True,
         output_attribute: bool = True,
     ):
+        assert type(parent) is int
+        assert type(node_id) is int
+        assert type(label) is str
+        assert (
+            type(pos) is tuple
+            and len(pos) == 2
+            and all(map(lambda _: type(_) is int, pos))
+        )
+        assert isinstance(element, Element) or element is None
+        assert type(input_attribute) is bool
+        assert type(output_attribute) is bool
         self.tag: int = dpg.generate_uuid()
         self.id: int = node_id
         self.label: str = ""
@@ -73,12 +84,14 @@ class Node:
         return self.label.strip()
 
     def set_label(self, label: str):
+        assert type(label) is str
         width: int = 5
         label = label.ljust(width, " ")
         self.label = label
         dpg.configure_item(self.tag, label=label[:width])
 
     def has_attribute(self, attribute: int) -> bool:
+        assert type(attribute) is int
         if self.input_attribute >= 0 and self.input_attribute == attribute:
             return True
         elif self.output_attribute >= 0 and self.output_attribute == attribute:
@@ -92,12 +105,15 @@ class Node:
         return len(self.output_links)
 
     def has_link_to(self, link: int) -> bool:
+        assert type(link) is int
         return link in self.output_links.values()
 
     def has_link_from(self, link: int) -> bool:
+        assert type(link) is int
         return link in self.input_links.values()
 
     def add_link_to(self, node: "Node", link: int):
+        assert type(link) is int
         self.output_links[node.id] = link
 
     def delete_link_to(self, node: "Node") -> int:
@@ -106,6 +122,7 @@ class Node:
         return link
 
     def add_link_from(self, node: "Node", link: int):
+        assert type(link) is int
         self.input_links[node.id] = link
 
     def delete_link_from(self, node: "Node") -> int:
@@ -123,12 +140,14 @@ class Node:
 
 class CircuitPreview:
     def __init__(self, node_editor: int):
+        assert type(node_editor) is int
         self.node_editor: int = node_editor
 
     def clear(self):
         dpg.delete_item(self.node_editor, children_only=True)
 
     def update(self, definitions: dict):
+        assert type(definitions) is dict
         self.clear()
         x_offset: int = 10
         y_offset: int = 10
@@ -175,6 +194,7 @@ class CircuitPreview:
 
 class CircuitEditor:
     def __init__(self, window: int, accept_callback: Optional[Callable] = None):
+        assert type(window) is int
         self.window: int = window
         self.accept_callback: Optional[Callable] = accept_callback
         self.latest_circuit: Optional[Circuit] = None
@@ -203,6 +223,7 @@ class CircuitEditor:
         self._initialize_key_bindings()
 
     def nodes_to_dict(self, cdc: str = "") -> dict:
+        assert type(cdc) is str
         circuit: Optional[Circuit] = self.validate_nodes()
         tmp_cdc: str = circuit.to_string(12) if circuit is not None else ""
         do_reset: bool = cdc != ""
@@ -212,6 +233,7 @@ class CircuitEditor:
         result: dict = {"nodes": []}
 
         def process_node(node: Node):
+            assert type(node) is Node
             x: int
             y: int
             x, y = dpg.get_item_pos(node.tag)
@@ -245,6 +267,8 @@ class CircuitEditor:
                     attach_tooltip(tooltips.circuit_editor_cdc_input)
 
                     def cdc_callback(sender: int, cdc: Optional[str]):
+                        assert type(sender) is int
+                        assert type(cdc) is str or cdc is None
                         if cdc is None:  # Necessary when the "Parse" button is clicked
                             cdc = dpg.get_value(self.cdc_input_field)
                         if self.parse_cdc(cdc, update_input_field=True) is not None:
@@ -394,6 +418,10 @@ class CircuitEditor:
         self.accept_circuit()
 
     def show_window(self, x: int = -1, y: int = -1, width: int = -1, height: int = -1):
+        assert type(x) is int
+        assert type(y) is int
+        assert type(width) is int
+        assert type(height) is int
         if x >= 0 and y >= 0:
             dpg.configure_item(
                 self.window,
@@ -411,6 +439,7 @@ class CircuitEditor:
         dpg.show_item(self.window)
 
     def clear_parameter_window(self, add_info: bool = False):
+        assert type(add_info) is bool
         dpg.delete_item(self.parameter_window, children_only=True)
         if add_info:
             dpg.add_text(
@@ -430,6 +459,10 @@ You can pan the node editor by holding down the middle mouse button and moving t
     def node_parameter(
         self, element: Element, key: str, initial_value: float, max_padding: int
     ):
+        assert isinstance(element, Element)
+        assert type(key) is str
+        assert type(initial_value) is float
+        assert type(max_padding) is int
         fixed: bool = element.is_fixed(key)
         enabled: bool
         lower_limit: float = element.get_lower_limit(key)
@@ -523,6 +556,7 @@ You can pan the node editor by holding down the middle mouse button and moving t
         dpg.add_spacer(height=8)
 
         def set_lower_limit(sender: int, new_value: float):
+            assert type(sender) is int
             if not dpg.get_value(ll_checkbox):
                 new_value = -inf
             current_value = dpg.get_value(cv_input_field)
@@ -533,6 +567,8 @@ You can pan the node editor by holding down the middle mouse button and moving t
             self.validate_nodes()
 
         def toggle_lower_limit(sender: int, state: bool):
+            assert type(sender) is int
+            assert type(state) is bool
             new_value: Optional[float]
             if state:
                 new_value = element.get_default_lower_limits().get(key)
@@ -551,6 +587,7 @@ You can pan the node editor by holding down the middle mouse button and moving t
             self.validate_nodes()
 
         def set_upper_limit(sender: int, new_value: float):
+            assert type(sender) is int
             if not dpg.get_value(ul_checkbox):
                 new_value = inf
             current_value = dpg.get_value(cv_input_field)
@@ -561,6 +598,8 @@ You can pan the node editor by holding down the middle mouse button and moving t
             self.validate_nodes()
 
         def toggle_upper_limit(sender: int, state: bool):
+            assert type(sender) is int
+            assert type(state) is bool
             new_value: Optional[float]
             if state:
                 new_value = element.get_default_upper_limits().get(key)
@@ -579,6 +618,7 @@ You can pan the node editor by holding down the middle mouse button and moving t
             self.validate_nodes()
 
         def set_value(sender: int, new_value: float):
+            assert type(sender) is int
             if dpg.get_value(ll_checkbox):
                 lower_limit = dpg.get_value(ll_input_field)
                 if lower_limit > new_value:
@@ -593,6 +633,8 @@ You can pan the node editor by holding down the middle mouse button and moving t
             self.validate_nodes()
 
         def toggle_fixed(sender: int, state: bool):
+            assert type(sender) is int
+            assert type(state) is bool
             element.set_fixed(key, state)
             if dpg.get_value(ll_checkbox):
                 dpg.set_value(ll_checkbox, False)
@@ -610,6 +652,7 @@ You can pan the node editor by holding down the middle mouse button and moving t
         dpg.set_item_callback(ul_checkbox, toggle_upper_limit)
 
     def node_clicked(self, sender, app_data):
+        assert type(sender) is int
         self.clear_parameter_window()
         parent: int = self.parameter_window
         node: Node = self.find_node(tag=app_data[1])
@@ -669,7 +712,9 @@ A dummy node that can be used as a junction when required to construct a circuit
                 default_label: str = element.get_default_label()
                 hint: str = default_label[default_label.find("_") + 1 :]
 
-                def update_label(sender, new_label: str):
+                def update_label(sender: int, new_label: str):
+                    assert type(sender) is int
+                    assert type(new_label) is str
                     new_label = new_label.strip()
                     try:
                         int(new_label)
@@ -739,6 +784,13 @@ A dummy node that can be used as a junction when required to construct a circuit
         raise Exception("Node does not exist!")
 
     def link(self, sender: int, attributes: Tuple[int, int], validate: bool = True):
+        assert type(sender) is int
+        assert (
+            type(attributes) is tuple
+            and len(attributes) == 2
+            and all(map(lambda _: type(_) is int, attributes))
+        )
+        assert type(validate) is bool
         link: int = dpg.add_node_link(*attributes, parent=sender)
         src: Node = self.find_node(attribute=attributes[0])
         dst: Node = self.find_node(attribute=attributes[1])
@@ -749,6 +801,8 @@ A dummy node that can be used as a junction when required to construct a circuit
             self.validate_nodes()
 
     def delink(self, sender: int, link: int):
+        assert type(sender) is int
+        assert type(link) is int
         src: Node = self.find_node(link_to=link)
         dst: Node = self.find_node(link_from=link)
         # print(f"Delink: {src.label=}, {dst.label=}, {link=}")
@@ -758,6 +812,8 @@ A dummy node that can be used as a junction when required to construct a circuit
         self.validate_nodes()
 
     def link_nodes(self, src: Node, dst: Node):
+        assert type(src) is Node
+        assert type(dst) is Node
         src_attr = dpg.get_item_children(src.tag, slot=1)[
             1 if src != self.wes_node else 0
         ]
@@ -790,6 +846,7 @@ A dummy node that can be used as a junction when required to construct a circuit
         return self.nodes[-1]
 
     def add_element_node(self, element: Element, **kwargs) -> Node:
+        assert isinstance(element, Element)
         kwargs["element"] = element
         if "label" not in kwargs:
             kwargs["label"] = element.get_label()
@@ -810,6 +867,7 @@ A dummy node that can be used as a junction when required to construct a circuit
         return self.add_node(**kwargs)
 
     def delete_node(self, node: Node):
+        assert type(node) is Node
         other: Node
         other_id: int
         link: int
@@ -875,12 +933,16 @@ A dummy node that can be used as a junction when required to construct a circuit
         return self.dummy_counter
 
     def set_status(self, msg: str):
+        assert type(msg) is str
         dpg.configure_item(self.status_field, default_value=msg)
 
     def set_accept_button(self, label: str):
+        assert type(label) is str
         dpg.configure_item(self.accept_button, label=label)
 
     def update_cdc_output(self, circuit: Optional[Circuit], stack: List[str] = []):
+        assert type(circuit) is Circuit or circuit is None
+        assert type(stack) is list and all(map(lambda _: type(_) is str, stack))
         simple_cdc: str = ""
         detailed_cdc: str = ""
         theme: int = themes.valid_cdc
@@ -905,6 +967,10 @@ A dummy node that can be used as a junction when required to construct a circuit
         visited_nodes: Set[int],
         pending_nodes: Set[int],
     ):
+        assert type(node) is Node
+        assert type(stack) is list and all(map(lambda _: type(_) is str, stack))
+        assert type(visited_nodes) is set
+        assert type(pending_nodes) is set
         if node.id in visited_nodes:
             return
         num_links_out: int = len(node.output_links)
@@ -1127,6 +1193,8 @@ A dummy node that can be used as a junction when required to construct a circuit
 
         def process_series_element(this: Element, x: int, y: int) -> Tuple[int, int]:
             assert isinstance(this, Element), type(element)
+            assert type(x) is int
+            assert type(y) is int
             nonlocal symbol_stack
             node = self.add_element_node(
                 this,
@@ -1171,6 +1239,8 @@ A dummy node that can be used as a junction when required to construct a circuit
             )
 
         def process_series_dummy(x: int, y: int) -> Tuple[int, int]:
+            assert type(x) is int
+            assert type(y) is int
             if (
                 element_stack
                 and type(element_stack[-1]) is Parallel
@@ -1197,6 +1267,9 @@ A dummy node that can be used as a junction when required to construct a circuit
             )
 
         def process_series(this: Series, x: int, y: int) -> Tuple[int, int]:
+            assert type(this) is Series
+            assert type(x) is int
+            assert type(y) is int
             nonlocal symbol_stack
             width = 0
             height = 0
@@ -1233,6 +1306,8 @@ A dummy node that can be used as a junction when required to construct a circuit
 
         def process_parallel_element(this: Element, x: int, y: int) -> Tuple[int, int]:
             assert isinstance(this, Element), type(element)
+            assert type(x) is int
+            assert type(y) is int
             nonlocal symbol_stack
             node = self.add_element_node(
                 this,
@@ -1252,6 +1327,8 @@ A dummy node that can be used as a junction when required to construct a circuit
             )
 
         def process_parallel_dummy(x: int, y: int) -> Tuple[int, int]:
+            assert type(x) is int
+            assert type(y) is int
             if type(node_stack[-1]) is list:
                 if len(element_stack) > 2 and type(element_stack[-2]) is Series:
                     node = self.add_dummy_node(
@@ -1299,6 +1376,9 @@ A dummy node that can be used as a junction when required to construct a circuit
             )
 
         def process_parallel(this: Parallel, x: int, y: int) -> Tuple[int, int]:
+            assert type(this) is Parallel
+            assert type(x) is int
+            assert type(y) is int
             nonlocal symbol_stack
             width = 0
             height = 0
@@ -1365,6 +1445,8 @@ A dummy node that can be used as a junction when required to construct a circuit
     def parse_cdc(
         self, cdc: str = "", update_input_field: bool = False
     ) -> Optional[Circuit]:
+        assert type(cdc) is str
+        assert type(update_input_field) is bool
         if not (cdc.startswith("[") and cdc.endswith("]")) and not (
             ("[" + cdc).startswith("[[") or (cdc + "]").endswith("]]")
         ):
@@ -1491,6 +1573,7 @@ def _main_testing_window() -> int:
         )
         if not CDCs:
             print("Every CDC was successfully processed!")
+            assert circuit_editor is not None
             circuit_editor.parse_cdc("", update_input_field=True)
             return
         cdc = CDCs[0]

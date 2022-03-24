@@ -3,8 +3,8 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from deareis.plot.shared import Plot
-from deareis.plot.bode import BodePlot, BodeSettings
-from deareis.plot.mu_xps import MuXpsPlot, MuXpsSettings
-from deareis.plot.nyquist import NyquistPlot, NyquistSettings
-from deareis.plot.residuals import ResidualsPlot, ResidualsSettings
+from .shared import Plot
+from .bode import BodePlot, BodeSettings
+from .mu_xps import MuXpsPlot, MuXpsSettings
+from .nyquist import NyquistPlot, NyquistSettings
+from .residuals import ResidualsPlot, ResidualsSettings

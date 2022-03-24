@@ -15,8 +15,9 @@ from deareis.data.simulation import SimulationResult
 
 class Project:
     def __init__(self, dictionary: dict):
+        assert type(dictionary) is dict
         self.label: str = dictionary["label"]
-        self.path: str = dictionary["path"]
+        self.path: str = ""
         self.datasets: List[DataSet] = list(
             map(DataSet.from_dict, dictionary["datasets"])
         )
@@ -35,7 +36,9 @@ class Project:
     def from_file(Class, path: str) -> "Project":
         assert type(path) is str and exists(path)
         with open(path, "r") as fp:
-            return Class.from_json(fp.read())
+            project: Project = Class.from_json(fp.read())
+            project.path = path
+            return project
 
     @classmethod
     def from_json(Class, json: str) -> "Project":

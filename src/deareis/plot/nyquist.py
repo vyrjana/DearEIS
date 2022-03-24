@@ -212,13 +212,17 @@ class NyquistPlot(Plot):
         x_axis, y_axis = self._setup_plot(plot)
         before: int = -1
         if self.smooth_real is not None:
+            assert self.smooth_imag is not None
             before = self.plot_smooth(
                 self.smooth_real, self.smooth_imag, self.is_simulation, x_axis, y_axis
             )
         if self.sim_real is not None:
+            assert self.sim_imag is not None
             before = self.plot_sim(
                 self.sim_real, self.sim_imag, self.is_simulation, before, x_axis, y_axis
             )
+        assert self.data_real is not None
+        assert self.data_imag is not None
         self.plot_data(
             self.data_real,
             self.data_imag,

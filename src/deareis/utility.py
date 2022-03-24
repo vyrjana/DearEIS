@@ -12,6 +12,7 @@ from typing import List, Tuple, Union, Optional
 
 
 def format_timestamp(timestamp: float) -> str:
+    assert type(timestamp) is float
     return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -22,6 +23,9 @@ def number_formatter(
     exponent: bool = True,
     significants: int = 0,
 ) -> str:
+    assert type(decimals) is int
+    assert type(width) is int
+    assert type(exponent) is bool
     assert type(significants) is int and significants >= 0
     fmt: str = "{:." + str(decimals) + "f}"
     if significants > 0:
@@ -56,6 +60,7 @@ def number_formatter(
 
 
 def align_numbers(values: List[str]) -> List[str]:
+    assert type(values) is list and all(map(lambda _: type(_) is str, values))
     has_negative_values: bool = any(map(lambda _: _.strip().startswith("-"), values))
     values = list(
         map(
@@ -93,16 +98,16 @@ def window_pos_dims(
         x = floor(width * (1.0 - w) / 2)
         width = floor(width * w)
     else:
-        x = (width - w) / 2
-        width = w
+        x = floor((width - w) / 2)
+        width = w  # type: ignore
     height: int = dpg.get_viewport_height()
     y: int
     if type(h) is float:
-        y: int = floor(height * (1.0 - h) / 2)
+        y = floor(height * (1.0 - h) / 2)
         height = floor(height * h)
     else:
-        y = (height - h) / 2
-        height = h
+        y = floor((height - h) / 2)
+        height = h  # type: ignore
     return (
         int(x),
         int(y),
@@ -112,6 +117,9 @@ def window_pos_dims(
 
 
 def update_tooltip(tag: int, msg: str, wrap: bool = True):
+    assert type(tag) is int
+    assert type(msg) is str
+    assert type(wrap) is bool
     wrap_limit: int = -1
     if wrap:
         max_line_length: int
@@ -139,6 +147,7 @@ def attach_tooltip(msg: str, parent: int = -1, tag: int = -1, wrap: bool = True)
 
 
 def dict_to_csv(dictionary: dict) -> str:
+    assert type(dictionary) is dict
     return DataFrame.from_dict(dictionary).to_csv(index=False, float_format="%.6E")
 
 
@@ -167,6 +176,8 @@ def is_alt_down() -> bool:
 
 
 def get_item_pos(item: int, relative: int = -1) -> Tuple[int, int]:
+    assert type(item) is int
+    assert type(relative) is int
     x: int
     y: int
     x, y = dpg.get_item_pos(item)

@@ -3,12 +3,13 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from pyimpspec import DataSet, Circuit, string_to_circuit, FittedParameter
 from pyimpspec.analysis.fitting import _interpolate
 from pandas import DataFrame
 from numpy import angle, array, log10 as log, ndarray
-from typing import Callable, Dict, Tuple, Optional
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from deareis.data.shared import (
     Weight,
     label_to_weight,
@@ -36,7 +37,7 @@ class FitSettings:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
-        # TODO: Check if the enums need to be processed
+        assert type(dictionary) is dict
         return {
             "cdc": dictionary["cdc"],
             "method": dictionary["method"],
@@ -46,6 +47,7 @@ class FitSettings:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitSettings":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -89,6 +91,7 @@ class FitResult:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
+        assert type(dictionary) is dict
         return {
             "uuid": dictionary["uuid"],
             "timestamp": dictionary["timestamp"],
@@ -129,6 +132,7 @@ class FitResult:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitResult":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -173,7 +177,7 @@ class FitResult:
         element_labels: List[str] = []
         parameter_labels: List[str] = []
         fitted_values: List[float] = []
-        stderr_values: List[Optional[float]] = []
+        stderr_values: List[Union[float, str]] = []
         fixed: List[str] = []
         element_label: str
         parameters: Union[
@@ -211,6 +215,7 @@ class FitResult:
         return f"{cdc} ({format_timestamp(self.timestamp)})"
 
     def get_info(self, data: Optional[DataSet]) -> str:
+        assert type(data) is DataSet or data is None
         if data is not None:
             i: int
             state: bool
@@ -219,9 +224,22 @@ class FitResult:
                     return "DATA SET MASK HAS CHANGED AFTER THE FIT!"
         return ""
 
-    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = _interpolate(self.frequency, num_per_decade)
+            return _interpolate(self.frequency, num_per_decade)
+        return self.frequency
+
+    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
+        if num_per_decade > 0:
+            return self.circuit.impedances(self.get_frequency(num_per_decade))
+        return self.impedance
+
+    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+        assert type(num_per_decade) is int
+        if num_per_decade > 0:
+            freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.circuit.impedances(freq)
             return (
                 Z.real,
@@ -232,11 +250,10 @@ class FitResult:
             -self.impedance.imag,
         )
 
-    def get_bode_data(
-        self, num_per_decade: int = -1
-    ) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
+        assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = _interpolate(self.frequency, num_per_decade)
+            freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.circuit.impedances(freq)
             return (
                 log(freq),

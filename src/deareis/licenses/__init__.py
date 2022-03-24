@@ -11,6 +11,7 @@ from typing import Dict, IO, List
 
 
 def _read_file(path: str) -> str:
+    assert type(path) is str
     assert exists(path), path
     fp: IO
     with open(path, "r") as fp:
@@ -18,6 +19,7 @@ def _read_file(path: str) -> str:
 
 
 def _get_licenses(root: str) -> Dict[str, str]:
+    assert type(root) is str
     assert exists(root), root
     files: List[str] = []
     for _, _, files in walk(root):

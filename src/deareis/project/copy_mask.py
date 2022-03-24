@@ -30,7 +30,7 @@ class CopyMask:
         self.callback: Callable = callback
         self.window: int = dpg.generate_uuid()
         self.combo: int = dpg.generate_uuid()
-        self.nyquist_plot: NyquistPlot = None
+        self.nyquist_plot: NyquistPlot = None  # type: ignore
         self.key_handler: int = dpg.generate_uuid()
         self._assemble()
         self._setup_keybindings()
@@ -85,6 +85,7 @@ class CopyMask:
             dpg.add_button(label="Accept", callback=self.accept)
 
     def select_source(self, label: str):
+        assert type(label) is str
         self.preview_data.set_mask(self.data.get_mask())
         self.preview_data.set_mask(self.datasets[self.labels.index(label)].get_mask())
         self.update_preview()

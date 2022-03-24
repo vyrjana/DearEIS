@@ -101,6 +101,8 @@ def show_appearance_settings_window(self):
                 bode_plot.adjust_limits()
 
             def update_bode_color(sender: int, _, theme: int):
+                assert type(sender) is int
+                assert type(theme) is int
                 color: List[float] = dpg.get_value(sender)
                 themes.update_plot_theme_color(theme, color)
                 CONFIG.colors[
@@ -113,6 +115,9 @@ def show_appearance_settings_window(self):
                 ] = color
 
             def update_bode_marker(sender: int, label: str, theme: int):
+                assert type(sender) is int
+                assert type(label) is str
+                assert type(theme) is int
                 marker: int = PLOT_MARKERS[label]
                 themes.update_plot_theme_marker(theme, marker)
                 CONFIG.markers[
@@ -330,6 +335,8 @@ def show_appearance_settings_window(self):
                 nyquist_plot.adjust_limits()
 
             def update_nyquist_color(sender: int, _, theme: int):
+                assert type(sender) is int
+                assert type(theme) is int
                 color: List[float] = dpg.get_value(sender)
                 themes.update_plot_theme_color(theme, color)
                 CONFIG.colors[
@@ -340,6 +347,9 @@ def show_appearance_settings_window(self):
                 ] = color
 
             def update_nyquist_marker(sender: int, label: str, theme: int):
+                assert type(sender) is int
+                assert type(label) is str
+                assert type(theme) is int
                 marker: int = PLOT_MARKERS[label]
                 themes.update_plot_theme_marker(theme, marker)
                 CONFIG.markers[
@@ -472,6 +482,8 @@ def show_appearance_settings_window(self):
                 residuals_plot.adjust_limits()
 
             def update_residuals_color(sender: int, _, theme: int):
+                assert type(sender) is int
+                assert type(theme) is int
                 color: List[float] = dpg.get_value(sender)
                 themes.update_plot_theme_color(theme, color)
                 CONFIG.colors[
@@ -482,6 +494,9 @@ def show_appearance_settings_window(self):
                 ] = color
 
             def update_residuals_marker(sender: int, label: str, theme: int):
+                assert type(sender) is int
+                assert type(label) is str
+                assert type(theme) is int
                 marker: int = PLOT_MARKERS[label]
                 themes.update_plot_theme_marker(theme, marker)
                 CONFIG.markers[
@@ -622,6 +637,8 @@ def show_appearance_settings_window(self):
                 )
 
             def update_muxps_color(sender: int, _, theme: int):
+                assert type(sender) is int
+                assert type(theme) is int
                 color: List[float] = dpg.get_value(sender)
                 themes.update_plot_theme_color(theme, color)
                 CONFIG.colors[
@@ -635,6 +652,9 @@ def show_appearance_settings_window(self):
                 ] = color
 
             def update_muxps_marker(sender: int, label: str, theme: int):
+                assert type(sender) is int
+                assert type(label) is str
+                assert type(theme) is int
                 marker: int = PLOT_MARKERS[label]
                 themes.update_plot_theme_marker(theme, marker)
                 CONFIG.markers[

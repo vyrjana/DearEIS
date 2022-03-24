@@ -190,6 +190,7 @@ class Config:
         parsers[version](dictionary)
 
     def _parse_v1(self, dictionary: dict):
+        assert type(dictionary) is dict
         if "default_test_settings" in dictionary:
             self.default_test_settings = TestSettings.from_dict(
                 dictionary["default_test_settings"]

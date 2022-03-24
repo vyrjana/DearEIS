@@ -70,7 +70,7 @@ class TestSettings:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
-        # TODO: Check if the enums need to be processed
+        assert type(dictionary) is dict
         return {
             "test": dictionary["test"],
             "mode": dictionary["mode"],
@@ -84,6 +84,7 @@ class TestSettings:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "TestSettings":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -107,7 +108,6 @@ class TestSettings:
         }
 
 
-# TODO: Implement methods/functions for serializing and deserializing
 @dataclass(frozen=True)
 class TestResult:
     uuid: str
@@ -125,6 +125,7 @@ class TestResult:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
+        assert type(dictionary) is dict
         return {
             "uuid": dictionary["uuid"],
             "timestamp": dictionary["timestamp"],
@@ -152,6 +153,7 @@ class TestResult:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "TestResult":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -183,6 +185,7 @@ class TestResult:
         return format_timestamp(self.timestamp)
 
     def get_info(self, data: Optional[DataSet]) -> str:
+        assert type(data) is DataSet or data is None
         if data is not None:
             i: int
             state: bool
@@ -191,9 +194,22 @@ class TestResult:
                     return "DATA SET MASK HAS CHANGED AFTER THE TEST!"
         return ""
 
-    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = _interpolate(self.frequency, num_per_decade)
+            return _interpolate(self.frequency, num_per_decade)
+        return self.frequency
+
+    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
+        if num_per_decade > 0:
+            return self.circuit.impedances(self.get_frequency(num_per_decade))
+        return self.impedance
+
+    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+        assert type(num_per_decade) is int
+        if num_per_decade > 0:
+            freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.circuit.impedances(freq)
             return (
                 Z.real,
@@ -204,11 +220,10 @@ class TestResult:
             -self.impedance.imag,
         )
 
-    def get_bode_data(
-        self, num_per_decade: int = -1
-    ) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
+        assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = _interpolate(self.frequency, num_per_decade)
+            freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.circuit.impedances(freq)
             return (
                 log(freq),

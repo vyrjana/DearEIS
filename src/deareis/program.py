@@ -37,6 +37,7 @@ class ErrorMessage:
         self.height: int = 540
 
     def show(self, msg: str) -> int:
+        assert type(msg) is str
         if msg.strip() == "":
             return -1
         dpg.split_frame(delay=100)
@@ -97,6 +98,8 @@ class WorkingIndicator:
             )
 
     def resize(self, width: int, height: int):
+        assert type(width) is int
+        assert type(height) is int
         self.x = round((width - self.width) / 2)
         self.y = round((height - self.height) / 2)
         dpg.configure_item(
@@ -229,6 +232,8 @@ class Program:
                 )
 
     def keybinding_handler(self, sender: int, key: int):
+        assert type(sender) is int
+        assert type(key) is int
         if self.modal_window >= 0:
             modal_window_exists: bool = dpg.does_item_exist(self.modal_window)
             if modal_window_exists and dpg.is_item_shown(self.modal_window):
@@ -281,12 +286,19 @@ class Program:
             pass
 
     def viewport_resized(self, sender: int, dims: Tuple[int, int, int, int]):
+        assert type(sender) is int
+        assert (
+            type(dims) is tuple
+            and len(dims) == 4
+            and all(map(lambda _: type(_) is int, dims))
+        )
         width: int
         height: int
         width, height, _, _ = dims
         self.working_indicator.resize(width, height)
 
     def update_recent_projects_table(self, paths: List[str] = []):
+        assert type(paths) is list and all(map(lambda _: type(_) is str, paths))
         recent_paths: List[str] = STATE.get_recent_projects()
         old: str = "\n".join(recent_paths)
         path: str
@@ -321,6 +333,7 @@ class Program:
         return project
 
     def close_project(self, project: Optional[Project] = None):
+        assert type(project) is Project or project is None
         if project is not None:
             if project not in self.projects:
                 return
@@ -381,6 +394,7 @@ class Program:
             project.modal_window = self.modal_window
 
     def save_project(self, save_as: bool = False):
+        assert type(save_as) is bool
         if len(self.projects) == 0:
             return
         tab: int = dpg.get_value(self.tab_bar)

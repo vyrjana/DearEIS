@@ -45,6 +45,8 @@ def new_project(program: "Program"):
 def go_to_top_tab(
     program: "Program", index: Optional[int] = None, step: Optional[int] = None
 ):
+    assert type(index) is int or index is None
+    assert type(step) is int or step is None
     project: "Project"
     if index is not None:
         try:
@@ -73,6 +75,8 @@ def go_to_home_tab(program: "Program"):
 def go_to_project_tab(
     project: "Project", index: Optional[int] = None, step: Optional[int] = None
 ):
+    assert type(index) is int or index is None
+    assert type(step) is int or step is None
     tabs = [
         project.overview_tab,
         project.datasets_tab,
@@ -97,6 +101,8 @@ def go_to_project_tab(
 def go_to_dataset(
     project: "Project", index: Optional[int] = None, step: Optional[int] = None
 ):
+    assert type(index) is int or index is None
+    assert type(step) is int or step is None
     if project.overview_tab.is_visible():
         return
     labels: List[str] = list(map(lambda _: _.get_label(), project.datasets))
@@ -140,10 +146,10 @@ def go_to_dataset(
 def go_to_result(
     project: "Project", index: Optional[int] = None, step: Optional[int] = None
 ):
+    assert type(index) is int or index is None
+    assert type(step) is int or step is None
     if project.overview_tab.is_visible() or project.datasets_tab.is_visible():
         return
-    labels: List[str] = list(map(lambda _: _.get_label(), project.datasets))
-    label: str = ""
     data: Optional[DataSet]
     in_simulation: bool = project.simulation_tab.is_visible()
     if in_simulation:
@@ -176,6 +182,7 @@ def go_to_result(
                 return
             elif test not in tests:
                 return
+            assert step is not None
             index = (tests.index(test) + step) % len(tests)
             project.select_test_result(result=tests[index])
             return
@@ -188,6 +195,7 @@ def go_to_result(
                 return
             elif fit not in fits:
                 return
+            assert step is not None
             index = (fits.index(fit) + step) % len(fits)
             project.select_fit_result(result=fits[index])
             return
@@ -196,6 +204,7 @@ def go_to_result(
 
 
 def _is_input_active(parent: int) -> bool:
+    assert type(parent) is int
     for slot, children in dpg.get_item_children(parent).items():
         for item in children:
             if dpg.is_item_container(item):
@@ -232,6 +241,7 @@ def redo(project: "Project"):
 
 
 def save(project: "Project", save_as: bool = False):
+    assert type(save_as) is bool
     project.save(save_as)
 
 
@@ -273,11 +283,7 @@ def apply_settings(project: "Project", Class):
 
 
 def copy_output(tab):
-    if type(tab) is FittingTab:
-        pass
-    elif type(tab) is SimulationTab:
-        pass
-    else:
+    if not (type(tab) is FittingTab or type(tab) is SimulationTab):
         raise Exception(f"Unsupported class: {type(tab)}")
     dpg.get_item_callback(tab.copy_output_button)(
         tab.copy_output_button,
@@ -344,6 +350,8 @@ def perform_action(tab):
 
 
 def cdc_hints(item: int, pos: Tuple[int, int]):
+    assert type(item) is int
+    assert type(pos) is tuple and len(pos) == 2 and all(map(lambda _: type(_) is int, pos))
     cdc: str = dpg.get_value(item)
     suggestions: List[str] = []
     suggestions.extend(
@@ -377,6 +385,6 @@ def cdc_hints(item: int, pos: Tuple[int, int]):
         suggestions.insert(1, "")
     except Exception:
         print(format_exc())
-    with dpg.window(popup=True, pos=pos, no_move=True) as popup:
+    with dpg.window(popup=True, pos=pos, no_move=True):
         for string in suggestions:
             dpg.add_text(string, wrap=500)

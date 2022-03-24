@@ -119,7 +119,8 @@ class BodePlot(Plot):
             tags.append(scatter(freq, phase, label_2, y_axis_2, theme_2, before_2))
         else:
             raise Exception("Invalid plot settings!")
-        return tuple(tags)
+        assert len(tags) == 2
+        return tuple(tags)  # type: ignore
 
     def adjust_limits(self, x_axis: int = -1, y_axis_1: int = -1, y_axis_2: int = -1):
         assert type(x_axis) is int
@@ -131,14 +132,20 @@ class BodePlot(Plot):
         mags: List[ndarray] = []
         phases: List[ndarray] = []
         if self.data_freq is not None and self.data_freq.any():
+            assert self.data_mag is not None
+            assert self.data_phase is not None
             freqs.append(self.data_freq)
             mags.append(self.data_mag)
             phases.append(self.data_phase)
         if self.sim_freq is not None and self.sim_freq.any():
+            assert self.sim_mag is not None
+            assert self.sim_phase is not None
             freqs.append(self.sim_freq)
             mags.append(self.sim_mag)
             phases.append(self.sim_phase)
         if self.smooth_freq is not None and self.smooth_freq.any():
+            assert self.smooth_mag is not None
+            assert self.smooth_phase is not None
             freqs.append(self.smooth_freq)
             mags.append(self.smooth_mag)
             phases.append(self.smooth_phase)
@@ -324,6 +331,8 @@ class BodePlot(Plot):
             -1,
         )
         if self.smooth_freq is not None:
+            assert self.smooth_mag is not None
+            assert self.smooth_phase is not None
             before = self.plot_smooth(
                 self.smooth_freq,
                 self.smooth_mag,
@@ -334,6 +343,8 @@ class BodePlot(Plot):
                 y_axis_2,
             )
         if self.sim_freq is not None:
+            assert self.sim_mag is not None
+            assert self.sim_phase is not None
             before = self.plot_sim(
                 self.sim_freq,
                 self.sim_mag,
@@ -344,6 +355,9 @@ class BodePlot(Plot):
                 y_axis_1,
                 y_axis_2,
             )
+        assert self.data_freq is not None
+        assert self.data_mag is not None
+        assert self.data_phase is not None
         self.plot_data(
             self.data_freq,
             self.data_mag,

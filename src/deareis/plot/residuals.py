@@ -135,6 +135,8 @@ class ResidualsPlot(Plot):
         y_axis_1: int
         y_axis_2: int
         x_axis, y_axis_1, y_axis_2 = self._setup_plot(plot)
+        assert self.real is not None
+        assert self.imag is not None
         self.plot_data(self.freq, self.real, self.imag, x_axis, y_axis_1, y_axis_2)
         self._setup_keybindings(plot)
         return parent

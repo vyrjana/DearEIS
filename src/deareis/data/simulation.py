@@ -3,9 +3,9 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from pyimpspec import Circuit, string_to_circuit
+from pyimpspec import Circuit, Element, string_to_circuit
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, List, Tuple
 from numpy import angle, log10 as log, ndarray
 from pandas import DataFrame
 from deareis.utility import format_timestamp
@@ -24,6 +24,7 @@ class SimulationSettings:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
+        assert type(dictionary) is dict
         return {
             "cdc": dictionary["cdc"],
             "min_frequency": dictionary["min_frequency"],
@@ -33,6 +34,7 @@ class SimulationSettings:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "SimulationSettings":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -61,6 +63,7 @@ class SimulationResult:
 
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
+        assert type(dictionary) is dict
         return {
             "uuid": dictionary["uuid"],
             "timestamp": dictionary["timestamp"],
@@ -70,6 +73,7 @@ class SimulationResult:
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "SimulationResult":
+        assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -119,15 +123,18 @@ class SimulationResult:
         return f"{cdc} ({format_timestamp(self.timestamp)})"
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
         return _interpolate(
             [self.settings.min_frequency, self.settings.max_frequency],
             self.settings.num_freq_per_dec if num_per_decade < 1 else num_per_decade,
         )
 
     def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+        assert type(num_per_decade) is int
         return self.circuit.impedances(self.get_frequency(num_per_decade))
 
     def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+        assert type(num_per_decade) is int
         Z: ndarray = self.circuit.impedances(self.get_frequency(num_per_decade))
         return (
             Z.real,
@@ -137,6 +144,7 @@ class SimulationResult:
     def get_bode_data(
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
+        assert type(num_per_decade) is int
         f: ndarray = self.get_frequency(num_per_decade)
         Z: ndarray = self.circuit.impedances(f)
         return (

@@ -27,7 +27,7 @@ class AverageData:
         self.window: int = dpg.generate_uuid()
         self.label_input: int = dpg.generate_uuid()
         self.dataset_table: int = dpg.generate_uuid()
-        self.nyquist_plot: NyquistPlot = None
+        self.nyquist_plot: NyquistPlot = None  # type: ignore
         self.key_handler: int = dpg.generate_uuid()
         self._assemble()
         self._setup_keybindings()
@@ -79,7 +79,7 @@ class AverageData:
                                 default_value="Average",
                                 width=-1,
                                 tag=self.label_input,
-                                callback=self.update_preview,
+                                callback=lambda: self.update_preview([]),
                             )
                         with dpg.table(
                             borders_outerV=True,
@@ -97,7 +97,7 @@ class AverageData:
                             data: DataSet
                             for data in self.datasets:
                                 with dpg.table_row():
-                                    dpg.add_checkbox(callback=self.update_preview)
+                                    dpg.add_checkbox(callback=lambda: self.update_preview([]))
                                     label: str = data.get_label()
                                     dpg.add_text(label)
                                     attach_tooltip(label)
@@ -139,13 +139,13 @@ class AverageData:
         return datasets
 
     def get_plot_theme(self, index: int, colormap: int) -> int:
+        assert type(index) is int
+        assert type(colormap) is int
         R: int
         G: int
         B: int
-        R, G, B = VIBRANT_COLORS[index % len(VIBRANT_COLORS)]
-        edge_alpha: int = 190
-        line_alpha: int = edge_alpha
-        face_alpha: int = 0
+        A: int
+        R, G, B, A = VIBRANT_COLORS[index % len(VIBRANT_COLORS)]
         marker: int = list(PLOT_MARKERS.values())[index % len(PLOT_MARKERS)]
         with dpg.theme() as theme:
             with dpg.theme_component(dpg.mvScatterSeries):
@@ -155,7 +155,7 @@ class AverageData:
                         R,
                         G,
                         B,
-                        line_alpha,
+                        190,
                     ),
                     category=dpg.mvThemeCat_Plots,
                 )
@@ -165,7 +165,7 @@ class AverageData:
                         R,
                         G,
                         B,
-                        face_alpha,
+                        0,
                     ),
                     category=dpg.mvThemeCat_Plots,
                 )
@@ -175,7 +175,7 @@ class AverageData:
                         R,
                         G,
                         B,
-                        edge_alpha,
+                        190,
                     ),
                     category=dpg.mvThemeCat_Plots,
                 )
@@ -185,6 +185,7 @@ class AverageData:
         return theme
 
     def update_preview(self, datasets: List[DataSet]):
+        assert type(datasets) is list and all(map(lambda _: type(_) is DataSet, datasets)), datasets
         self.nyquist_plot.clear_plot()
         dpg.add_plot_legend(parent=self.nyquist_plot.plot)
         selection: List[DataSet] = self.get_selection()

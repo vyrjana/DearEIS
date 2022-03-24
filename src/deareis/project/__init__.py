@@ -32,8 +32,6 @@ from pyimpspec import (
     Circuit,
     string_to_circuit,
     DataSet,
-    Element,
-    FittedParameter,
     FittingError,
     FittingResult,
     KramersKronigResult,
@@ -83,7 +81,6 @@ from deareis.data.fitting import (
     FitResult,
     FitSettings,
     Weight,
-    label_to_weight,
     value_to_method,
     value_to_weight,
     weight_to_label,
@@ -100,6 +97,7 @@ VERSION: int = 1
 
 
 def serialize_state(project: "Project", to_disk: bool = False) -> str:
+    assert type(to_disk) is bool
     data: Optional[DataSet] = project.datasets_tab.get_dataset()
     test: Optional[TestResult] = project.kramers_kronig_tab.get_result()
     fit: Optional[FitResult] = project.fitting_tab.get_result()
@@ -148,12 +146,14 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
 
 
 def _parse_state_v1(old: dict) -> dict:
+    assert type(old) is dict
     # TODO: Update when a new format is created.
     new: dict = old
     return new
 
 
 def _parse_old_state(old: dict) -> dict:
+    assert type(old) is dict
     version: int = old["version"]
     del old["version"]
     parsers: Dict[int, Callable] = {
@@ -164,6 +164,7 @@ def _parse_old_state(old: dict) -> dict:
 
 
 def find_object_by_uuid(values: Any, uuid: str) -> Optional[Any]:
+    assert type(uuid) is str
     for value in values:
         if value.uuid == uuid:
             return value
@@ -171,6 +172,7 @@ def find_object_by_uuid(values: Any, uuid: str) -> Optional[Any]:
 
 
 def restore_state(json: str, project: "Project"):
+    assert type(json) is str
     state: dict = load_json(json)
     from_disk: bool = False
     if "version" in state:
@@ -256,6 +258,7 @@ def restore_state(json: str, project: "Project"):
 
 
 def get_sympy_expr(circuit: Circuit) -> Expr:
+    assert type(circuit) is Circuit
     expr: Expr = circuit.to_sympy()
     # Try to simplify the expression, but don't wait for an indefinite period of time
     queue: Queue = Queue()
@@ -276,17 +279,18 @@ def get_sympy_expr(circuit: Circuit) -> Expr:
 
 class Project:
     def __init__(self, parent: int = -1):
+        assert type(parent) is int
         self.tab: int = dpg.generate_uuid()
         self.key_handler: int = dpg.generate_uuid()
         self.is_initialized: bool = False
         # Project-level tabs
         self.tab_bar: int = dpg.generate_uuid()
-        self.overview_tab: OverviewTab = None
-        self.datasets_tab: DataSetsTab = None
-        self.kramers_kronig_tab: KramersKronigTab = None
-        self.fitting_tab: FittingTab = None
-        self.simulation_tab: SimulationTab = None
-        self.plotting_tab: PlottingTab = None
+        self.overview_tab: OverviewTab = None  # type: ignore
+        self.datasets_tab: DataSetsTab = None  # type: ignore
+        self.kramers_kronig_tab: KramersKronigTab = None  # type: ignore
+        self.fitting_tab: FittingTab = None  # type: ignore
+        self.simulation_tab: SimulationTab = None  # type: ignore
+        self.plotting_tab: PlottingTab = None  # type: ignore
         # State
         self.error_message: Optional["ErrorMessage"] = None
         self.working_indicator: Optional["WorkingIndicator"] = None
@@ -319,6 +323,7 @@ class Project:
         self.update_state_history()
 
     def _assemble(self, parent: int):
+        assert type(parent) is int
         with dpg.tab(label=self.label, tag=self.tab, parent=parent):
             with dpg.tab_bar(tag=self.tab_bar):
                 self._attach_overview()
@@ -341,7 +346,9 @@ class Project:
         tab.dataset_mask_modified_callback = self.dataset_mask_modified
         dpg.set_item_callback(tab.dataset_combo, lambda s, a, u: self.select_dataset(a))
         dpg.set_item_callback(tab.label_input, lambda s, a, u: self.rename_dataset(a))
-        dpg.set_item_callback(tab.path_input, lambda s, a, u: self.modify_dataset_path(a))
+        dpg.set_item_callback(
+            tab.path_input, lambda s, a, u: self.modify_dataset_path(a)
+        )
         dpg.set_item_callback(tab.load_button, self.select_dataset_files)
         dpg.set_item_callback(tab.remove_button, lambda s, a, u: self.remove_dataset())
         dpg.set_item_callback(tab.subtract_impedance_button, self.subtract_impedance)
@@ -491,6 +498,8 @@ class Project:
                 )
 
     def keybinding_handler(self, sender: int, key: int):
+        assert type(sender) is int
+        assert type(key) is int
         if not self.is_visible():
             return
         elif self.modal_window >= 0:
@@ -719,16 +728,19 @@ class Project:
                 return
 
     def show_error(self, msg: str):
+        assert type(msg) is str
         if self.error_message is not None:
             dpg.split_frame(delay=250)
             self.error_message.show(msg)
         print(msg)
 
     def show_plot_modal_window(self, sender: int, app_data: None, plot: Plot):
+        assert type(sender) is int
+        assert app_data is None
         if type(plot) is ResidualsPlot:
             self.modal_window = plot.show_modal_window()
         else:
-            self.modal_window = plot.show_modal_window(
+            self.modal_window = plot.show_modal_window(  # type: ignore
                 not (
                     plot == self.datasets_tab.nyquist_plot
                     or plot == self.datasets_tab.bode_plot
@@ -736,6 +748,7 @@ class Project:
             )
 
     def set_dirty(self, state: bool):
+        assert type(state) is bool
         self.is_dirty = state
         if state is False:
             self.state_saved_index = self.state_history_index
@@ -752,7 +765,6 @@ class Project:
         self.state_history_index = len(self.state_history) - 1
         self.set_dirty(True)
 
-    # TODO: Something is off about the undo/redo system at the most recently saved state
     def undo(self):
         if len(self.state_history) < 1 or self.state_history_index < 1:
             # There is no previous state to restore (at all or we're already at the initial state).
@@ -770,15 +782,12 @@ class Project:
         ):
             # There is no next state to restore.
             return
-        # if self.state_history_index >= len(self.state_history) - 1:
-        #    self.state_history.pop()
-        #    self.state_history_index -= len(state_history) - 1
-        # else:
         self.state_history_index += 1
         restore_state(self.state_history[self.state_history_index], self)
         self.set_dirty(self.state_history_index != self.state_saved_index)
 
     def save_as(self, app_data: dict):
+        assert type(app_data) is dict
         try:
             path: str = app_data["file_path_name"]
             filename: str
@@ -793,6 +802,7 @@ class Project:
         self.save()
 
     def save(self, save_as: bool = False):
+        assert type(save_as) is bool
         if self.path == "" or not isdir(dirname(self.path)) or save_as:
             self.modal_window = file_dialog(
                 self.recent_directory,
@@ -894,6 +904,7 @@ class Project:
         self.update_state_history()
 
     def find_dataset(self, label: str) -> Optional[DataSet]:
+        assert type(label) is str
         data: DataSet
         for data in self.datasets:
             if label == data.get_label():
@@ -901,6 +912,7 @@ class Project:
         return None
 
     def find_simulation(self, label: str) -> Optional[SimulationResult]:
+        assert type(label) is str
         result: SimulationResult
         for result in self.simulations:
             if label == result.get_label():
@@ -908,6 +920,8 @@ class Project:
         return None
 
     def update_dataset_combos(self, data: Optional[DataSet], update_table_plots: bool):
+        assert type(data) is DataSet or data is None
+        assert type(update_table_plots) is bool
         self.datasets.sort(key=lambda _: _.get_label())
         labels: List[str] = list(map(lambda _: _.get_label(), self.datasets))
         label: str = data.get_label() if data is not None else ""
@@ -974,6 +988,7 @@ class Project:
         return self.datasets_tab.get_dataset()
 
     def remove_dataset(self, force: bool = False):
+        assert type(force) is bool
         data: Optional[DataSet] = self.get_dataset()
         if data is None:
             return
@@ -1080,6 +1095,11 @@ class Project:
         self.modal_window = TogglePoints(data, self.accept_new_mask).window
 
     def accept_new_mask(self, mask: Dict[int, bool]):
+        assert (
+            type(mask) is dict
+            and all(map(lambda _: type(_) is int, mask.keys()))
+            and all(map(lambda _: type(_) is bool, mask.values()))
+        )
         self.datasets_tab.update_mask(mask)
         self.dataset_mask_modified()
         self.update_state_history()
@@ -1196,11 +1216,13 @@ class Project:
             return
         assert settings is not None
         tab: KramersKronigTab = self.kramers_kronig_tab
-        label: str = test_to_label.get(settings.test)
+        label: Optional[str] = test_to_label.get(settings.test)
+        assert label is not None
         dpg.set_value(tab.test_combo, label)
         self.test_setting_modified(tab.test_combo, label)
         label = mode_to_label.get(settings.mode)
         dpg.set_value(tab.mode_combo, label)
+        assert label is not None
         self.test_setting_modified(tab.mode_combo, label)
         dpg.set_value(tab.num_RC_slider, settings.num_RC)
         dpg.set_value(tab.add_cap_checkbox, settings.add_capacitance)
@@ -1211,7 +1233,9 @@ class Project:
         dpg.set_value(tab.max_nfev_input, settings.max_nfev)
         self.update_state_history()
 
-    def test_setting_modified(self, sender: int, value: Any):
+    def test_setting_modified(self, sender: int, value: str):
+        assert type(sender) is int
+        assert type(value) is str
         tab: KramersKronigTab = self.kramers_kronig_tab
         if sender == tab.test_combo:
             test: Optional[Test] = label_to_test.get(value)
@@ -1334,6 +1358,9 @@ class Project:
     def accept_exploratory_result(
         self, data: DataSet, result: KramersKronigResult, settings: TestSettings
     ):
+        assert type(data) is DataSet
+        assert type(result) is KramersKronigResult
+        assert type(settings) is TestSettings
         self.tests[data.uuid].insert(
             0,
             TestResult(
@@ -1366,6 +1393,7 @@ class Project:
             map(lambda _: type(_) is KramersKronigResult, results)
         )
         assert type(settings) is TestSettings
+        assert type(num_RCs) is ndarray
         exploratory_results: ExploratoryResults = ExploratoryResults(
             data, results, settings, num_RCs, self.accept_exploratory_result
         )
@@ -1379,6 +1407,7 @@ class Project:
     ):
         assert type(label) is str
         assert type(result) is TestResult or result is None
+        assert type(data) is DataSet or data is None
         if data is None:
             data = self.get_dataset()
         if data is None:
@@ -1414,6 +1443,7 @@ class Project:
             editor.parse_cdc(self.latest_fit_circuit.to_string(4), True)
 
     def accept_fit_circuit(self, circuit: Optional[Circuit]):
+        assert type(circuit) is Circuit or circuit is None
         if circuit is None:
             return
         self.fitting_tab.update_cdc_input(circuit.to_string(), themes.valid_cdc)
@@ -1426,6 +1456,8 @@ class Project:
             dpg.set_clipboard_text("")
             return
         data: Optional[DataSet] = self.datasets_tab.get_dataset()
+        if data is None:
+            return
         output: Output = self.fitting_tab.get_output_type()
         dataframe: DataFrame
         expr: Expr
@@ -1515,6 +1547,8 @@ class Project:
             self.working_indicator.hide()
 
     def validate_fit_circuit(self, sender: int, cdc: str):
+        assert type(sender) is int
+        assert type(cdc) is str
         cdc = cdc.strip()
         if cdc == "" or cdc == "[]":
             return
@@ -1618,6 +1652,7 @@ class Project:
     ):
         assert type(label) is str
         assert type(result) is FitResult or result is None
+        assert type(data) is DataSet or data is None
         if data is None:
             data = self.get_dataset()
         if data is None:
@@ -1743,6 +1778,8 @@ class Project:
         self.update_state_history()
 
     def validate_simulation_circuit(self, sender: int, cdc: str):
+        assert type(sender) is int
+        assert type(cdc) is str
         cdc = cdc.strip()
         if cdc == "" or cdc == "[]":
             return
@@ -1784,6 +1821,7 @@ class Project:
             editor.parse_cdc(self.latest_simulation_circuit.to_string(4), True)
 
     def accept_simulation_circuit(self, circuit: Optional[Circuit]):
+        assert type(circuit) is Circuit or circuit is None
         if circuit is None:
             return
         self.simulation_tab.update_cdc_input(circuit.to_string(), themes.valid_cdc)

@@ -21,7 +21,7 @@ class State:
         )
 
     def get_data_directory(self) -> str:
-        return xdg_data_home()
+        return str(xdg_data_home())
 
     def get_recent_projects(self) -> List[str]:
         if not exists(self.recent_projects_path):
@@ -33,6 +33,7 @@ class State:
             )
 
     def update_recent_projects(self, paths: List[str]):
+        assert type(paths) is list and all(map(lambda _: type(_) is str, paths))
         if not exists(self.recent_projects_path):
             if not isdir(self.state_directory_path):
                 makedirs(self.state_directory_path)
