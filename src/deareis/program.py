@@ -18,7 +18,7 @@ from deareis.utility import (
 )
 from traceback import format_exc
 from typing import Dict, IO, List, Tuple, Optional
-from os.path import basename, exists, splitext
+from os.path import basename, dirname, exists, splitext
 from deareis.config import CONFIG
 from deareis.state import STATE
 from deareis.licenses import show_license_window
@@ -39,6 +39,7 @@ class ErrorMessage:
     def show(self, msg: str) -> int:
         if msg.strip() == "":
             return -1
+        dpg.split_frame(delay=100)
         x: int
         y: int
         w: int
@@ -107,6 +108,7 @@ class WorkingIndicator:
         )
 
     def show(self):
+        dpg.split_frame(delay=100)
         dpg.show_item(self.window)
         if self.x < 0:
             self.resize(dpg.get_viewport_width(), dpg.get_viewport_height())
@@ -339,6 +341,7 @@ class Program:
         for project in self.projects:
             if project.is_dirty:
                 # TODO: Show window: Save, Discard changes, Cancel
+                # - High priority
                 pass
         dpg.stop_dearpygui()
 
@@ -353,12 +356,14 @@ class Program:
             with open(path, "r") as fp:
                 try:
                     restore_state(fp.read(), project)
-                except Exception as e:
+                except Exception:
                     if self.error_message is not None:
                         self.modal_window = self.error_message.show(format_exc())
-                    print(e)
+                    print(format_exc())
                     project.close()
                     continue
+                project.path = path
+                project.recent_directory = dirname(path)
         self.update_recent_projects_table(paths)
 
     def select_project_files(self):
@@ -407,7 +412,6 @@ class Program:
             no_move=True,
             no_resize=True,
         ):
-            # TODO: Implement
             header_height: int = 18
             row_height: int = 23
             definitions: Dict[str, Dict[str, str]] = {

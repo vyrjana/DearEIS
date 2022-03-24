@@ -125,8 +125,7 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
         ),
         "simulations": list(map(lambda _: _.to_dict(), project.simulations)),
         "label": project.label,
-        "path": project.path,
-        "recent_directory": project.recent_directory,
+        "notes": project.overview_tab.get_notes(),
         # Extra stuff
         "active_data_uuid": data.uuid if data is not None else "",
         "active_test_uuid": test.uuid if test is not None else "",
@@ -201,9 +200,8 @@ def restore_state(json: str, project: "Project"):
         else None
     )
     project.simulations = list(map(SimulationResult.from_dict, state["simulations"]))
-    project.label = state["label"]
-    project.path = state["path"]
-    project.recent_directory = state["recent_directory"]
+    project.set_label(state["label"])
+    project.set_notes(state["notes"])
     # Use the restored Project state to restore the GUI
     data: Optional[DataSet] = find_object_by_uuid(
         project.datasets, state["active_data_uuid"]
@@ -239,23 +237,22 @@ def restore_state(json: str, project: "Project"):
         ),
     )
     project.select_simulation_result(result=simulation)
-    # Restore the GUI state that was not included in the Project state
-    try:
-        project.overview_tab.restore_state(state["overview_tab"])
-        project.datasets_tab.restore_state(state["datasets_tab"])
-        project.kramers_kronig_tab.restore_state(state["kramers_kronig_tab"])
-        project.fitting_tab.restore_state(state["fitting_tab"])
-        project.simulation_tab.restore_state(state["simulation_tab"])
-        project.plotting_tab.restore_state(state["plotting_tab"])
-    except KeyError as e:
-        print(e)
-        print("Failed to restore GUI state...")
     if from_disk:
-        # TODO: Initial state should not be an empty project when loaded from disk
-        # - Undo can go too far back at the moment
+        # The initial state should not be an empty project when loaded from disk
         project.state_history_index = -1
         project.update_state_history()
         project.set_dirty(False)
+    else:
+        # Restore the GUI state as well when not loading from disk.
+        try:
+            project.overview_tab.restore_state(state["overview_tab"])
+            project.datasets_tab.restore_state(state["datasets_tab"])
+            project.kramers_kronig_tab.restore_state(state["kramers_kronig_tab"])
+            project.fitting_tab.restore_state(state["fitting_tab"])
+            project.simulation_tab.restore_state(state["simulation_tab"])
+            project.plotting_tab.restore_state(state["plotting_tab"])
+        except KeyError:
+            pass
 
 
 def get_sympy_expr(circuit: Circuit) -> Expr:
@@ -296,6 +293,7 @@ class Project:
         self.close_callback: Optional[Callable] = None
         self.is_dirty: bool = True
         self.label: str = "Project"
+        self.notes: str = ""
         self.recent_directory: str = getcwd()
         self.path: str = ""
         self.modal_window: int = -1
@@ -334,6 +332,7 @@ class Project:
         tab: OverviewTab = OverviewTab()
         self.overview_tab = tab
         dpg.set_item_callback(tab.label_input, lambda s, a, u: self.rename_project(a))
+        dpg.set_item_callback(tab.notes_input, lambda s, a, u: self.notes_modified(a))
         dpg.set_value(tab.label_input, self.label)
 
     def _attach_datasets(self):
@@ -342,6 +341,7 @@ class Project:
         tab.dataset_mask_modified_callback = self.dataset_mask_modified
         dpg.set_item_callback(tab.dataset_combo, lambda s, a, u: self.select_dataset(a))
         dpg.set_item_callback(tab.label_input, lambda s, a, u: self.rename_dataset(a))
+        dpg.set_item_callback(tab.path_input, lambda s, a, u: self.modify_dataset_path(a))
         dpg.set_item_callback(tab.load_button, self.select_dataset_files)
         dpg.set_item_callback(tab.remove_button, lambda s, a, u: self.remove_dataset())
         dpg.set_item_callback(tab.subtract_impedance_button, self.subtract_impedance)
@@ -819,6 +819,7 @@ class Project:
             assert exists(path)
             remove(tmp_path)
         self.state_history[-1] = serialize_state(self)
+        self.notes = self.overview_tab.get_notes()
         self.set_dirty(False)
 
     def close(self):
@@ -829,14 +830,28 @@ class Project:
         dpg.delete_item(self.tab)
         self.close_callback(self)
 
+    def set_label(self, label: str):
+        assert type(label) is str
+        self.label = label
+        dpg.set_item_label(self.tab, self.label)
+        self.overview_tab.set_label(label)
+
     def rename_project(self, label: str):
         assert type(label) is str
         label = label.strip()
         if label == "":
             return
-        self.label = label
-        dpg.set_item_label(self.tab, self.label)
+        self.set_label(label)
         self.update_state_history()
+
+    def set_notes(self, notes: str):
+        assert type(notes) is str
+        self.notes = notes
+        self.overview_tab.set_notes(notes)
+
+    def notes_modified(self, notes: str):
+        assert type(notes) is str
+        self.set_dirty(notes != self.notes)
 
     def select_dataset_files(self):
         self.modal_window = file_dialog(
@@ -853,7 +868,11 @@ class Project:
         existing_labels: List[str] = list(map(lambda _: _.get_label(), self.datasets))
         path: str
         for path in paths:
-            spectra: List[DataSet] = pyimpspec.parse_data(path)
+            try:
+                spectra: List[DataSet] = pyimpspec.parse_data(path)
+            except Exception:
+                self.show_error(format_exc())
+                print(path)
             spectrum: DataSet
             for spectrum in spectra:
                 label: str = spectrum.get_label().strip()
@@ -1001,6 +1020,18 @@ class Project:
                 dpg.add_button(label="Confirm", callback=confirm)
                 dpg.add_button(label="Cancel", callback=close)
         self.modal_window = window
+
+    def modify_dataset_path(self, path: str):
+        assert type(path) is str
+        path = path.strip()
+        data: Optional[DataSet] = self.get_dataset()
+        if data is None:
+            return
+        elif path == data.get_path():
+            return
+        data.set_path(path)
+        self.select_dataset(data.get_label())
+        self.update_state_history()
 
     def rename_dataset(self, label: str):
         assert type(label) is str
@@ -1245,7 +1276,7 @@ class Project:
                     max_nfev=max_nfev,
                     num_procs=num_procs,
                 )
-            except FittingError as e:
+            except FittingError:
                 if self.working_indicator is not None:
                     self.working_indicator.hide()
                 self.show_error(format_exc())
@@ -1289,7 +1320,7 @@ class Project:
                     max_nfev=max_nfev,
                     num_procs=num_procs,
                 )
-            except FittingError as e:
+            except FittingError:
                 if self.working_indicator is not None:
                     self.working_indicator.hide()
                 self.show_error(format_exc())
@@ -1531,7 +1562,7 @@ class Project:
                 max_nfev=max_nfev,
                 num_procs=num_procs,
             )
-        except FittingError as e:
+        except FittingError:
             if self.working_indicator is not None:
                 self.working_indicator.hide()
             self.show_error(format_exc())

@@ -29,8 +29,7 @@ class DataSetsTab:
         self.load_button: int = dpg.generate_uuid()
         self.remove_button: int = dpg.generate_uuid()
         self.label_input: int = dpg.generate_uuid()
-        self.path_text: int = dpg.generate_uuid()
-        self.path_tooltip_text: int = dpg.generate_uuid()
+        self.path_input: int = dpg.generate_uuid()
         self.subtract_impedance_button: int = dpg.generate_uuid()
         # - Data points table
         self.dataset_table: int = dpg.generate_uuid()
@@ -87,11 +86,10 @@ class DataSetsTab:
                             )
                         with dpg.group(horizontal=True):
                             dpg.add_text("Path".rjust(label_pad))
-                            dpg.add_text("", tag=self.path_text)
-                            attach_tooltip(
-                                "",
-                                tag=self.path_tooltip_text,
-                                wrap=False,
+                            dpg.add_input_text(
+                                width=-1,
+                                on_enter=True,
+                                tag=self.path_input,
                             )
                     with dpg.child_window(border=False, width=-1):
                         dpg.add_button(
@@ -354,10 +352,7 @@ class DataSetsTab:
         dpg.set_value(self.dataset_combo, label)
         dpg.set_value(self.label_input, label)
         path: str = data.get_path() if data is not None else ""
-        dpg.set_value(self.path_tooltip_text, path)
-        if len(path) > 50:
-            path = "..." + path[-50:]
-        dpg.set_value(self.path_text, path)
+        dpg.set_value(self.path_input, path)
         if update_table:
             self.populate_table(data)
         elif data is None:
