@@ -13,6 +13,7 @@ import deareis.themes as themes
 from deareis.utility import window_pos_dims, number_formatter
 from deareis.project.circuit_editor import CircuitEditor
 
+# TODO: Argument type assertions
 
 # TODO: Add resize handler to check when the viewport is resized
 

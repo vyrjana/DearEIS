@@ -18,6 +18,7 @@ from deareis.plot import (
     ResidualsPlot,
 )
 
+# TODO: Argument type assertions
 
 # TODO: Add resize handler to check when the viewport is resized
 

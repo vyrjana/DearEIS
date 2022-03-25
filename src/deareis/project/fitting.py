@@ -38,6 +38,7 @@ from deareis.data.shared import (
     output_to_label,
 )
 
+# TODO: Argument type assertions
 
 class FittingTab:
     def __init__(self):

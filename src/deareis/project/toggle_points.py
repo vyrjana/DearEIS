@@ -10,6 +10,7 @@ from deareis.plot import NyquistPlot
 import deareis.themes as themes
 from deareis.utility import window_pos_dims, number_formatter
 
+# TODO: Argument type assertions
 
 # TODO: Add resize handler to check when the viewport is resized
 

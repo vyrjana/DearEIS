@@ -25,6 +25,7 @@ from deareis.data.shared import (
     output_to_label,
 )
 
+# TODO: Argument type assertions
 
 class SimulationTab:
     def __init__(self):

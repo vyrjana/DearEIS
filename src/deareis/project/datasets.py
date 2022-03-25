@@ -17,6 +17,7 @@ from deareis.plot import NyquistPlot, BodePlot
 import deareis.tooltips as tooltips
 import deareis.themes as themes
 
+# TODO: Argument type assertions
 
 class DataSetsTab:
     def __init__(self):

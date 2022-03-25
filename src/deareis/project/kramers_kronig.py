@@ -27,6 +27,7 @@ from deareis.data.kramers_kronig import (
     test_to_label,
 )
 
+# TODO: Argument type assertions
 
 class KramersKronigTab:
     def __init__(self):
