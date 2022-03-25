@@ -22,19 +22,7 @@ from numpy import inf
 
 
 # TODO:
-# - Themes
-#   - Electrode, dummy, and element node themes?
-#     - Default
-#     - Issue: used when an issue is detected with that node (e.g. too few connections)
-#       - Unbinding an item theme does not seem to be possible at the moment
-#       - Selecting a node programmatically does not seem to be possible at the moment
 # - Add tooltip to nodes (not possible at the moment) so that long labels can be supported
-# - Ability to auto-complete CDCs (using dpg.popup if there are multiple options)?
-#   - Use arrow keys for navigation in the popup (if possible)
-#   - Use incomplete parsing to figure out where to add stuff
-#       - Keeping track of how the last two inputs differ would cover some cases as well
-
-
 # TODO FIXME: Bugs
 # - Nodes may sometimes spawn with inactive attributes and thus cannot be linked to anything.
 
