@@ -681,6 +681,17 @@ def show_appearance_settings_window(self):
                         themes.exploratory_xps: "exploratory_xps",
                     }[theme]
                 ] = marker
+                theme = {
+                    themes.exploratory_mu: themes.exploratory_mu_highlight,
+                    themes.exploratory_xps: themes.exploratory_xps_highlight,
+                }[theme]
+                themes.update_plot_theme_marker(theme, marker)
+                CONFIG.markers[
+                    {
+                        themes.exploratory_mu_highlight: "exploratory_mu_highlight",
+                        themes.exploratory_xps_highlight: "exploratory_xps_highlight",
+                    }[theme]
+                ] = marker
 
             def reset_muxps_plot():
                 dpg.set_value(
