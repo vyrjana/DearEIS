@@ -370,12 +370,16 @@ class SimulationTab:
         self.select_result(data, result)
 
     def get_dataset(self) -> Optional[DataSet]:
+        if not dpg.does_item_exist(self.dataset_combo):
+            return None
         return dpg.get_item_user_data(self.dataset_combo)
 
     def get_dataset_label(self) -> str:
         return dpg.get_value(self.dataset_combo)
 
     def get_result(self) -> Optional[SimulationResult]:
+        if not dpg.does_item_exist(self.result_combo):
+            return None
         return dpg.get_item_user_data(self.result_combo)
 
     def select_result(

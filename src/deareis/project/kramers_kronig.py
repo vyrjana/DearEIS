@@ -629,6 +629,8 @@ class KramersKronigTab:
         self.plot(data, result)
 
     def get_result(self) -> Optional[TestResult]:
+        if not dpg.does_item_exist(self.result_combo):
+            return None
         return dpg.get_item_user_data(self.result_combo)
 
     def get_method(self) -> Method:

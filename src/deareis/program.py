@@ -143,6 +143,7 @@ class Program:
         #
         self._assemble()
         self._assign_handlers()
+        dpg.set_exit_callback(self.exit_callback)
 
     def _assemble(self):
         with dpg.window(tag=self.window):
@@ -349,13 +350,24 @@ class Program:
                     project.close()
                     break
 
+    def exit_callback(self):
+        # Called on the last frame (i.e. no going back from here).
+        queue: List[Project] = []
+        while self.projects:
+            project: Project = self.projects.pop()
+            if project.is_dirty:
+                queue.append(project)
+        STATE.serialize_projects(queue)
+
     def exit_program(self):
+        # Gracefully exiting the program
         project: Project
         for project in self.projects:
-            if project.is_dirty:
-                # TODO: Show window: Save, Discard changes, Cancel
-                # - High priority
-                pass
+            if not project.is_dirty:
+                continue
+            dpg.set_value(self.tab_bar, project.tab)
+            project.close()
+            return
         dpg.stop_dearpygui()
 
     def load_projects(self, paths: List[str]):
@@ -628,6 +640,17 @@ def main(args: Namespace):
             program.import_data_files(list(filter(exists, args.data_files)))
         if args.project_files:
             program.load_projects(list(filter(exists, args.project_files)))
+        path: str
+        state: str
+        for (path, state) in STATE.get_serialized_projects():
+            project: Project = program.new_project()
+            try:
+                restore_state(state, project, True)
+                project.path = path
+                project.recent_directory = dirname(path)
+            except Exception:
+                print(format_exc())
+                project.close()
         dpg.set_primary_window(program.window, True)
         dpg.start_dearpygui()
     except Exception:

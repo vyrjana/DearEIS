@@ -26,14 +26,14 @@ class OverviewTab:
         dpg.set_value(self.notes_input, state["notes"])
 
     def get_label(self) -> str:
-        return dpg.get_value(self.label_input)
+        return dpg.get_value(self.label_input) or "Project"
 
     def set_label(self, label: str):
         assert type(label) is str
         dpg.set_value(self.label_input, label)
 
     def get_notes(self) -> str:
-        return dpg.get_value(self.notes_input)
+        return dpg.get_value(self.notes_input) or ""
 
     def set_notes(self, notes: str):
         assert type(notes) is str

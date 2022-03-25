@@ -104,6 +104,7 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
     simulation: Optional[SimulationResult] = project.simulation_tab.get_result()
     simulation_data: Optional[DataSet] = project.simulation_tab.get_dataset()
     state: dict = {
+        "uuid": project.uuid,
         "datasets": list(map(lambda _: _.to_dict(), project.datasets)),
         "tests": {
             k: list(map(lambda _: _.to_dict(), v)) for k, v in project.tests.items()
@@ -171,7 +172,7 @@ def find_object_by_uuid(values: Any, uuid: str) -> Optional[Any]:
     return None
 
 
-def restore_state(json: str, project: "Project"):
+def restore_state(json: str, project: "Project", is_dirty: bool = False):
     assert type(json) is str
     state: dict = load_json(json)
     from_disk: bool = False
@@ -184,6 +185,7 @@ def restore_state(json: str, project: "Project"):
         else:
             del state["version"]
     # Restore the state of the Project instance
+    project.uuid = state["uuid"]
     project.datasets = list(map(DataSet.from_dict, state["datasets"]))
     project.tests = {
         k: list(map(TestResult.from_dict, v)) for k, v in state["tests"].items()
@@ -243,7 +245,11 @@ def restore_state(json: str, project: "Project"):
         # The initial state should not be an empty project when loaded from disk
         project.state_history_index = -1
         project.update_state_history()
-        project.set_dirty(False)
+        # This condition is here to prevent the restored state from being flagged as not dirty.
+        # This is relevant for dirty projects that were not saved before the program was abruptly
+        # terminated by the user without the chance to save those projects.
+        if not is_dirty:
+            project.set_dirty(False)
     else:
         # Restore the GUI state as well when not loading from disk.
         try:
@@ -280,6 +286,7 @@ def get_sympy_expr(circuit: Circuit) -> Expr:
 class Project:
     def __init__(self, parent: int = -1):
         assert type(parent) is int
+        self.uuid: str = uuid4().hex
         self.tab: int = dpg.generate_uuid()
         self.key_handler: int = dpg.generate_uuid()
         self.is_initialized: bool = False
@@ -832,10 +839,44 @@ class Project:
         self.notes = self.overview_tab.get_notes()
         self.set_dirty(False)
 
-    def close(self):
-        if self.is_dirty:
-            # TODO: Show message notifying about unsaved changes
-            pass
+    def close(self, force: bool = False):
+        if self.is_dirty and not force:
+            x: int
+            y: int
+            w: int
+            h: int
+            x, y, w, h = window_pos_dims(231, 50)
+            window: int = dpg.generate_uuid()
+
+            def confirm_save():
+                dpg.delete_item(window)
+                if exists(self.path):
+                    self.save()
+                    self.close()
+                else:
+                    self.save()
+
+            def confirm_discard():
+                dpg.delete_item(window)
+                self.set_dirty(False)
+                self.close()
+
+            with dpg.window(
+                label="Unsaved changes detected!",
+                pos=(x, y,),
+                width=w,
+                height=h,
+                modal=True,
+                no_resize=True,
+                no_close=True,
+                tag=window,
+            ):
+                with dpg.group(horizontal=True):
+                    dpg.add_button(label="Save", callback=confirm_save)
+                    dpg.add_button(label="Discard changes", callback=confirm_discard)
+                    dpg.add_button(label="Cancel", callback=lambda: dpg.delete_item(window))
+            self.modal_window = window
+            return
         dpg.delete_item(self.key_handler)
         dpg.delete_item(self.tab)
         self.close_callback(self)

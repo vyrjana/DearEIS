@@ -339,6 +339,8 @@ class DataSetsTab:
         self.bode_plot.adjust_limits()
 
     def get_dataset(self) -> Optional[DataSet]:
+        if not dpg.does_item_exist(self.dataset_combo):
+            return None
         return dpg.get_item_user_data(self.dataset_combo)
 
     def select_dataset(
