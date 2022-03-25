@@ -414,6 +414,21 @@ class Program:
         w: int
         h: int
         x, y, w, h = window_pos_dims(600)
+        window: int = dpg.generate_uuid()
+        key_handler: int = dpg.generate_uuid()
+
+        def close_window():
+            if dpg.does_item_exist(window):
+                dpg.delete_item(window)
+            if dpg.does_item_exist(key_handler):
+                dpg.delete_item(key_handler)
+
+        with dpg.handler_registry(tag=key_handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=close_window,
+            )
+
         with dpg.window(
             label="Keybindings",
             modal=True,
@@ -425,6 +440,8 @@ class Program:
             height=h,
             no_move=True,
             no_resize=True,
+            on_close=close_window,
+            tag=window,
         ):
             header_height: int = 18
             row_height: int = 23
@@ -564,6 +581,21 @@ class Program:
         w: int
         h: int
         x, y, w, h = window_pos_dims(210, 110)
+        window: int = dpg.generate_uuid()
+        key_handler: int = dpg.generate_uuid()
+
+        def close_window():
+            if dpg.does_item_exist(window):
+                dpg.delete_item(window)
+            if dpg.does_item_exist(key_handler):
+                dpg.delete_item(key_handler)
+
+        with dpg.handler_registry(tag=key_handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=close_window,
+            )
+
         with dpg.window(
             label="About",
             modal=True,
@@ -575,8 +607,11 @@ class Program:
             height=h,
             no_move=True,
             no_resize=True,
+            on_close=close_window,
+            tag=window,
         ):
             dpg.add_text("DearEIS\n\nVersion: 0.1.0\n\ngithub.com/vyrjana/DearEIS")
+
 
 
 def main(args: Namespace):

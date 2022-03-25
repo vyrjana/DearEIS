@@ -45,6 +45,21 @@ def show_license_window():
     w: int
     h: int
     x, y, w, h = window_pos_dims(640)
+    window: int = dpg.generate_uuid()
+    key_handler: int = dpg.generate_uuid()
+
+    def close_window():
+        if dpg.does_item_exist(window):
+            dpg.delete_item(window)
+        if dpg.does_item_exist(key_handler):
+            dpg.delete_item(key_handler)
+
+    with dpg.handler_registry(tag=key_handler):
+        dpg.add_key_release_handler(
+            key=dpg.mvKey_Escape,
+            callback=close_window,
+        )
+
     with dpg.window(
         label="Licenses",
         modal=True,
@@ -56,6 +71,8 @@ def show_license_window():
         height=h,
         no_move=True,
         no_resize=True,
+        on_close=close_window,
+        tag=window,
     ):
         with dpg.tab_bar():
             with dpg.tab(label="DearEIS"):
