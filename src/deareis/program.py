@@ -461,7 +461,7 @@ class Program:
                 "Program": {
                     "Alt+Arrow down": "Go to the next project tab.",
                     "Alt+Arrow up": "Go to the previous project tab.",
-                    "Alt+[1-8]": "Go to the nth project tab.",
+                    "Alt+1-8": "Go to the nth project tab.",
                     "Alt+9": "Go to the last project tab.",
                     "Alt+0": "Go to the home tab.",
                     "Ctrl+N": "Create a new project tab.",
@@ -471,7 +471,7 @@ class Program:
                     "Page up": "Go to the previous data set.",
                     "Alt+Shift+Arrow down": "Go to the next tab.",
                     "Alt+Shift+Arrow up": "Go to the previous tab",
-                    "Alt+Shift+[1-8]": "Go to the nth tab.",
+                    "Alt+Shift+1-8": "Go to the nth tab.",
                     "Alt+Shift+9": "Go to the last tab.",
                     "Alt+Shift+0": "Go to the first tab.",
                     "Ctrl+Shift+S": "Save project to a new path.",
