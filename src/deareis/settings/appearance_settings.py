@@ -6,7 +6,7 @@
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.themes import PLOT_MARKERS
-from typing import Dict, List
+from typing import Dict, List, Optional
 from deareis.utility import window_pos_dims
 from deareis.config import CONFIG
 from deareis.plot import (
@@ -15,10 +15,17 @@ from deareis.plot import (
     ResidualsPlot,
     MuXpsPlot,
 )
-from numpy import array, logspace
+from numpy import array, logspace, log10 as log, ndarray
 from numpy.random import normal
 from pyimpspec import DataSet, Circuit
 import pyimpspec
+
+
+data: Optional[DataSet] = None
+sim_data: Optional[DataSet] = None
+smooth_data: Optional[DataSet] = None
+real_residual: Optional[ndarray] = None
+imag_residual: Optional[ndarray] = None
 
 
 def show_appearance_settings_window(self):
@@ -57,30 +64,43 @@ def show_appearance_settings_window(self):
         on_close=close_window,
         tag=window,
     ):
-        circuit: Circuit = pyimpspec.string_to_circuit(
-            "R{R=100}(C{C=1e-6}[R{R=500}W{Y=4e-4}])"
-        )
-        data: DataSet = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=20))
-        Z: complex
-        sd: float = 0.01
-        data.subtract_impedance(
-            -array(
-                list(
-                    map(
-                        lambda Z: complex(
-                            abs(Z) * normal(0, sd, 1),
-                            abs(Z) * normal(0, sd, 1),
-                        ),
-                        data.get_impedance(),
+        global data
+        global sim_data
+        global smooth_data
+        global real_residual
+        global imag_residual
+        if data is None:
+            circuit: Circuit = pyimpspec.string_to_circuit(
+                "R{R=100}(C{C=1e-6}[R{R=500}W{Y=4e-4}])"
+            )
+            data = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=20))
+            Z: complex
+            sd: float = 0.01
+            data.subtract_impedance(
+                -array(
+                    list(
+                        map(
+                            lambda Z: complex(
+                                abs(Z) * normal(0, sd, 1),
+                                abs(Z) * normal(0, sd, 1),
+                            ),
+                            data.get_impedance(),
+                        )
                     )
                 )
             )
-        )
-        sim_data: DataSet = pyimpspec.simulate_spectrum(circuit, data.get_frequency())
-        smooth_data: DataSet = pyimpspec.simulate_spectrum(
-            circuit, logspace(0, 5, num=501)
-        )
-        test = pyimpspec.perform_test(data, add_capacitance=True)
+            sim_data = pyimpspec.simulate_spectrum(circuit, data.get_frequency())
+            smooth_data = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=501))
+            real_residual = (
+                (data.get_impedance().real - sim_data.get_impedance().real)
+                / abs(data.get_impedance())
+                * 100
+            )
+            imag_residual = (
+                (data.get_impedance().imag - sim_data.get_impedance().imag)
+                / abs(data.get_impedance())
+                * 100
+            )
         marker_items: List[str] = list(PLOT_MARKERS.keys())
         marker_label_lookup: Dict[int, str] = {v: k for k, v in PLOT_MARKERS.items()}
         bode_plot: BodePlot = None
@@ -496,7 +516,9 @@ def show_appearance_settings_window(self):
 
             def update_residuals_plot():
                 residuals_plot.clear_plot()
-                residuals_plot.plot_data(*test.get_residual_data())
+                residuals_plot.plot_data(
+                    log(data.get_frequency()), real_residual, imag_residual
+                )
                 residuals_plot.adjust_limits()
 
             def update_residuals_color(sender: int, _, theme: int):
