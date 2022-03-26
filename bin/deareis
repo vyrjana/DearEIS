@@ -6,6 +6,9 @@
 
 from deareis.program import main
 from deareis.arguments import parse
+from multiprocessing import set_start_method
 
 
-main(parse())
+if __name__ == "__main__":
+    set_start_method("spawn")
+    main(parse())
