@@ -146,14 +146,14 @@ class ExploratoryResults:
                 self.muxps_plot = MuXpsPlot(
                     dpg.add_plot(
                         width=-1,
-                        height=300,
+                        height=250,
                         anti_aliased=True,
                     )
                 )
                 self.residuals_plot = ResidualsPlot(
                     dpg.add_plot(
                         width=-1,
-                        height=400,
+                        height=250,
                         anti_aliased=True,
                     )
                 )

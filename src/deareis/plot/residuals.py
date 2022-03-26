@@ -28,6 +28,7 @@ class ResidualsPlot(Plot):
     def __init__(self, plot: int):
         assert type(plot) is int
         self.plot: int = plot
+        dpg.bind_item_theme(self.plot, themes.plot_theme)
         self.x_axis: int
         self.y_axis_1: int
         self.y_axis_2: int
@@ -131,6 +132,7 @@ class ResidualsPlot(Plot):
             return -1
         parent: int = modal_window("Residuals")
         plot: int = dpg.add_plot(width=-1, height=-1, anti_aliased=True, parent=parent)
+        dpg.bind_item_theme(plot, themes.plot_theme)
         x_axis: int
         y_axis_1: int
         y_axis_2: int

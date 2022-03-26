@@ -322,6 +322,7 @@ class BodePlot(Plot):
             return -1
         parent: int = modal_window("Bode")
         plot: int = dpg.add_plot(width=-1, height=-1, anti_aliased=True, parent=parent)
+        dpg.bind_item_theme(plot, themes.plot_theme)
         x_axis: int
         y_axis_1: int
         y_axis_2: int

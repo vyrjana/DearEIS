@@ -265,7 +265,7 @@ class FittingTab:
                             )
                             with dpg.group(horizontal=True):
                                 dpg.add_button(
-                                    label="Enlarge",
+                                    label="Enlarge Nyquist",
                                     user_data=self.nyquist_plot,
                                     tag=self.enlarge_nyquist_button,
                                 )
@@ -283,7 +283,7 @@ class FittingTab:
                             )
                             with dpg.group(horizontal=True):
                                 dpg.add_button(
-                                    label="Enlarge",
+                                    label="Enlarge Bode",
                                     user_data=self.bode_plot_horizontal,
                                     tag=self.enlarge_bode_horizontal_button,
                                 )
@@ -301,7 +301,7 @@ class FittingTab:
                         )
                         with dpg.group(horizontal=True):
                             dpg.add_button(
-                                label="Enlarge",
+                                label="Enlarge Nyquist",
                                 user_data=self.bode_plot_vertical,
                                 tag=self.enlarge_bode_vertical_button,
                             )
@@ -318,7 +318,7 @@ class FittingTab:
                     )
                     with dpg.group(horizontal=True):
                         dpg.add_button(
-                            label="Enlarge",
+                            label="Enlarge residuals",
                             user_data=self.residuals_plot,
                             tag=self.enlarge_residuals_button,
                         )

@@ -70,6 +70,7 @@ VIBRANT_COLORS: List[Color] = [
 
 # Themes
 # - Plots
+plot_theme: int = -1
 real_error: int = -1
 imag_error: int = -1
 nyquist_data: int = -1
@@ -83,6 +84,7 @@ exploratory_mu: int = -1
 exploratory_mu_highlight: int = -1
 exploratory_xps: int = -1
 exploratory_xps_highlight: int = -1
+#
 valid_cdc: int = -1
 invalid_cdc: int = -1
 valid_node: int = -1
@@ -177,6 +179,7 @@ def update_plot_theme_marker(parent: int, marker: int):
 
 
 def initialize():
+    global plot_theme
     global real_error
     global imag_error
     global nyquist_data
@@ -194,6 +197,7 @@ def initialize():
     global invalid_cdc
     global valid_node
     global invalid_node
+    plot_theme = dpg.generate_uuid()
     real_error = dpg.generate_uuid()
     imag_error = dpg.generate_uuid()
     nyquist_data = dpg.generate_uuid()
@@ -213,6 +217,18 @@ def initialize():
     invalid_node = dpg.generate_uuid()
     # Themes
     # - Plots
+    with dpg.theme(tag=plot_theme):
+        with dpg.theme_component(dpg.mvAll):
+            dpg.add_theme_color(
+                dpg.mvPlotCol_FrameBg,
+                (
+                    255,
+                    255,
+                    255,
+                    0,
+                ),
+                category=dpg.mvThemeCat_Plots,
+            )
     definitions: List[Tuple[int, Color, int]] = [
         (
             real_error,

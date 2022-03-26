@@ -143,11 +143,11 @@ class DataSetsTab:
                     )
                     attach_tooltip(tooltips.datasets_subtract)
                     dpg.add_button(
-                        label="Enlarge Nyquist plot",
+                        label="Enlarge Nyquist",
                         tag=self.enlarge_nyquist_button,
                     )
                     dpg.add_button(
-                        label="Enlarge Bode plot",
+                        label="Enlarge Bode",
                         tag=self.enlarge_bode_button,
                     )
 
@@ -227,17 +227,17 @@ class DataSetsTab:
             dpg.configure_item(self.left_window, width=self.table_width)
             if not dpg.is_item_shown(self.right_window):
                 dpg.configure_item(
-                    self.enlarge_nyquist_button, label="Enlarge Nyquist plot"
+                    self.enlarge_nyquist_button, label="Enlarge Nyquist"
                 )
-                dpg.configure_item(self.enlarge_bode_button, label="Enlarge Bode plot")
+                dpg.configure_item(self.enlarge_bode_button, label="Enlarge Bode")
                 dpg.show_item(self.right_window)
         elif total_width < self.table_width + self.plot_width:
             dpg.configure_item(self.left_window, width=-2)
             if dpg.is_item_shown(self.right_window):
                 dpg.configure_item(
-                    self.enlarge_nyquist_button, label="Show Nyquist plot"
+                    self.enlarge_nyquist_button, label="Show Nyquist"
                 )
-                dpg.configure_item(self.enlarge_bode_button, label="Show Bode plot")
+                dpg.configure_item(self.enlarge_bode_button, label="Show Bode")
                 dpg.hide_item(self.right_window)
         self.nyquist_plot.adjust_limits()
         self.bode_plot.adjust_limits()
@@ -255,10 +255,10 @@ class DataSetsTab:
         dpg.add_table_column(parent=self.dataset_table, label="Mask", width_fixed=True)
         dpg.add_table_column(parent=self.dataset_table, label="Index", width_fixed=True)
         dpg.add_table_column(parent=self.dataset_table, label="f (Hz)")
-        dpg.add_table_column(parent=self.dataset_table, label="Z' (Ohm)")
-        dpg.add_table_column(parent=self.dataset_table, label='-Z" (Ohm)')
-        dpg.add_table_column(parent=self.dataset_table, label="|Z| (Ohm)")
-        dpg.add_table_column(parent=self.dataset_table, label="-phase (deg.)")
+        dpg.add_table_column(parent=self.dataset_table, label="Z' (ohm)")
+        dpg.add_table_column(parent=self.dataset_table, label='-Z" (ohm)')
+        dpg.add_table_column(parent=self.dataset_table, label="|Z| (ohm)")
+        dpg.add_table_column(parent=self.dataset_table, label="-phi (deg.)")
         if data is None:
             return
         mask: Dict[int, bool] = data.get_mask()

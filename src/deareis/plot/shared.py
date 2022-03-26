@@ -6,6 +6,7 @@
 import dearpygui.dearpygui as dpg
 from typing import List, Optional
 from deareis.utility import window_pos_dims
+import deareis.themes as themes
 
 
 # TODO: Add resize handler to check when the viewport is resized
@@ -101,6 +102,7 @@ class Plot:
     def __init__(self, plot: int):
         assert type(plot) is int and plot > 0
         self.plot: int = plot
+        dpg.bind_item_theme(self.plot, themes.plot_theme)
 
     def resize(self, width: int, height: int):
         assert type(width) is int, width

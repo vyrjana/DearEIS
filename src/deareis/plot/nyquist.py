@@ -207,6 +207,7 @@ class NyquistPlot(Plot):
             equal_aspects=True,
             parent=parent,
         )
+        dpg.bind_item_theme(plot, themes.plot_theme)
         x_axis: int
         y_axis: int
         x_axis, y_axis = self._setup_plot(plot)
