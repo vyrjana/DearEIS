@@ -1323,7 +1323,7 @@ class Project:
             method,
             max_nfev,
         )
-        num_procs: int = max(1, cpu_count() - 1)
+        num_procs: int = max(2, cpu_count() - 1) if test == Test.CNLS else 1
         if mode == Mode.AUTO or mode == Mode.MANUAL:
             if mode == Mode.AUTO:
                 num_RC *= -1
@@ -1625,7 +1625,7 @@ class Project:
             weight,
             max_nfev,
         )
-        num_procs: int = max(1, cpu_count() - 1)
+        num_procs: int = max(2, cpu_count() - 1)
         if self.working_indicator is not None:
             self.working_indicator.show()
         try:
