@@ -163,6 +163,8 @@ class SubtractImpedance:
         dpg.delete_item(self.key_handler)
 
     def accept(self):
+        if dpg.is_item_shown(self.circuit_editor_window):
+            return
         dictionary: dict = self.preview_data.to_dict()
         assert "uuid" in dictionary
         del dictionary["uuid"]
