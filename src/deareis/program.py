@@ -26,6 +26,7 @@ from deareis.licenses import show_license_window
 from deareis.settings.defaults_settings import show_defaults_settings_window
 from deareis.settings.appearance_settings import show_appearance_settings_window
 import deareis.keyboard_shortcuts as keyboard_shortcuts
+from deareis.version import PACKAGE_VERSION
 
 
 seed(42)
@@ -623,8 +624,7 @@ class Program:
             on_close=close_window,
             tag=window,
         ):
-            dpg.add_text("DearEIS\n\nVersion: 0.1.0\n\ngithub.com/vyrjana/DearEIS")
-
+            dpg.add_text(f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\ngithub.com/vyrjana/DearEIS")
 
 
 def main():

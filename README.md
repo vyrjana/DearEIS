@@ -2,11 +2,10 @@
 
 A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
-![Demo](images/animated-demo.gif)
-
 
 ## Table of contents
 
+- [Installing](#installing)
 - [Features](#features)
 	- [Projects and data sets](#projects-and-data-sets)
 	- [Validation, analysis, and simulation](#validation-analysis-and-simulation)
@@ -14,6 +13,15 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 - [Settings and keybindings](#settings-and-keybindings)
 - [Contributors](#contributors)
 - [License](#license)
+
+
+## Installing
+
+_DearEIS_ can be installed with _pip_.
+
+```
+pip install deareis
+```
 
 
 ## Features
@@ -43,7 +51,7 @@ For example, the mathematical expression for the impedance of a circuit can be c
 
 _DearEIS_ projects can also be used in Python scripts for batch processing of the results.
 This could be used to export the data to another format, to create complex plots that combine multiple results, or to programmatically generate LaTeX tables.
-See [the Jupyter notebook](examples/examples.ipynb) for some examples.
+See [the Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for some examples.
 
 
 ## Settings and keybindings
@@ -57,7 +65,7 @@ The help section in the program's menu bar contains information about the keybin
 
 ## Contributors
 
-See [CONTRIBUTORS](./CONTRIBUTORS) for a list of people who have contributed to the _DearEIS_ project.
+See [CONTRIBUTORS](https://github.com/vyrjana/DearEIS/blob/main/CONTRIBUTORS) for a list of people who have contributed to the _DearEIS_ project.
 
 
 ## License
@@ -66,4 +74,4 @@ Copyright 2022 DearEIS developers
 
 _DearEIS_ is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
 
-The licenses of *DearEIS*' dependencies and/or sources of portions of code are included in the LICENSES folder.
+The licenses of _DearEIS_' dependencies and/or sources of portions of code are included in the LICENSES folder.

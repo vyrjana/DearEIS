@@ -16,15 +16,19 @@ if os.name == "nt":
         }
     )
 
+version = "0.1.0"
+with open("./src/deareis/version.py", "w") as fp:
+    fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
+
 setup(
-    name="DearEIS",
-    version="0.1.0",
+    name="deareis",
+    version=version,
     author="DearEIS developers",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     url="https://github.com/vyrjana/DearEIS",
     project_urls={
-        "Bug Tracker": "https://github.com/vyrjana/DearEISpyimpspec/issues",
+        "Bug Tracker": "https://github.com/vyrjana/DearEIS/issues",
     },
     license="GPLv3",
     description="A GUI program for analyzing, simulating, and visualizing impedance spectra.",
@@ -33,7 +37,7 @@ setup(
     entry_points=entry_points,
     install_requires=[
         "dearpygui>=1.4.0",  # Used to implement the GUI.
-        "pyimpspec",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "pyimpspec>=0.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
         "tabulate>=0.8.9",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],
