@@ -805,6 +805,52 @@ class Project:
         except (KeyError, AssertionError):
             self.show_error(format_exc())
             return
+        if exists(path) and path != self.path:
+            dpg.split_frame(delay=100)
+            window: int = dpg.generate_uuid()
+
+            def confirm_overwrite():
+                dpg.delete_item(window)
+                self.path = path
+                self.save()
+
+            def try_again():
+                dpg.delete_item(window)
+                dpg.split_frame(delay=100)
+                self.save(save_as=True)
+
+            x: int
+            y: int
+            w: int
+            h: int
+            x, y, w, h = window_pos_dims(300, 50)
+            with dpg.window(
+                label="Confirm overwrite",
+                modal=True,
+                pos=(
+                    x,
+                    y,
+                ),
+                width=w,
+                height=h,
+                no_resize=True,
+                no_move=True,
+                no_close=True,
+                tag=window,
+            ):
+                dpg.add_text(f"Path already exists:\n{path}", wrap=280)
+                dpg.add_spacer(height=8)
+                with dpg.group(horizontal=True):
+                    dpg.add_button(
+                        label="Overwrite",
+                        callback=confirm_overwrite,
+                    )
+                    dpg.add_button(
+                        label="Cancel",
+                        callback=try_again,
+                    )
+            self.modal_window = window
+            return
         self.path = path
         self.save()
 
@@ -863,7 +909,10 @@ class Project:
 
             with dpg.window(
                 label="Unsaved changes detected!",
-                pos=(x, y,),
+                pos=(
+                    x,
+                    y,
+                ),
                 width=w,
                 height=h,
                 modal=True,
@@ -874,12 +923,14 @@ class Project:
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Save", callback=confirm_save)
                     dpg.add_button(label="Discard changes", callback=confirm_discard)
-                    dpg.add_button(label="Cancel", callback=lambda: dpg.delete_item(window))
+                    dpg.add_button(
+                        label="Cancel", callback=lambda: dpg.delete_item(window)
+                    )
             self.modal_window = window
             return
         dpg.delete_item(self.key_handler)
         dpg.delete_item(self.tab)
-        self.close_callback(self)
+        self.close_callback(self)  # type: ignore
 
     def set_label(self, label: str):
         assert type(label) is str
@@ -911,6 +962,16 @@ class Project:
             lambda s, a, u: self.parse_dataset_files(
                 list(a.get("selections", {}).values())
             ),
+            [
+                ".*",
+                ".csv",
+                ".dta",
+                ".idf",
+                ".ids",
+                ".ods",
+                ".xlsx",
+                ".xls",
+            ],
         )
 
     def parse_dataset_files(self, paths: List[str], a=None, u=None):
@@ -1626,6 +1687,11 @@ class Project:
             max_nfev,
         )
         num_procs: int = max(2, cpu_count() - 1)
+        try:
+            pyimpspec.analysis.fitting.validate_circuit(self.latest_fit_circuit)
+        except AssertionError:
+            self.show_error(format_exc())
+            return
         if self.working_indicator is not None:
             self.working_indicator.show()
         try:

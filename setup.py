@@ -10,7 +10,7 @@ entry_points = {
     ],
 }
 
-version = "0.1.3"
+version = "0.2.0"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
 
@@ -32,7 +32,7 @@ setup(
     entry_points=entry_points,
     install_requires=[
         "dearpygui>=1.4.0",  # Used to implement the GUI.
-        "pyimpspec>=0.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "pyimpspec>=0.1.1",  # Used for parsing, fitting, and analyzing impedance spectra.
         "tabulate>=0.8.9",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],

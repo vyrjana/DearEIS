@@ -64,7 +64,7 @@ class State:
         for path in map(lambda _: join(self.projects_directory_path, _), files):
             fp: IO
             with open(path, "r") as fp:
-                lines: List[str] = fp.readlines()
+                lines: List[str] = list(map(str.strip, fp.readlines()))
                 project_path: str = lines.pop(0)
                 projects.append((project_path, "".join(lines),))
             remove(path)

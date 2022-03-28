@@ -47,21 +47,44 @@ class ErrorMessage:
         y: int
         w: int
         h: int
-        x, y, w, h = window_pos_dims(720, 540)
-        with dpg.window(
-            label="ERROR",
-            tag=self.window,
-            no_move=True,
-            no_resize=True,
-            modal=True,
-            pos=(
-                x,
-                y,
-            ),
-            width=w,
-            height=h,
-        ):
-            dpg.add_text(msg, parent=self.window)
+        x, y, w, h = window_pos_dims(self.width, self.height)
+        if dpg.does_item_exist(self.window):
+            dpg.delete_item(self.window, children_only=True)
+            dpg.show_item(self.window)
+            dpg.configure_item(
+                self.window,
+                pos=(
+                    x,
+                    y,
+                ),
+                width=w,
+                height=h,
+            )
+        else:
+            dpg.add_window(
+                label="ERROR",
+                tag=self.window,
+                no_move=True,
+                no_resize=True,
+                modal=True,
+                pos=(
+                    x,
+                    y,
+                ),
+                width=w,
+                height=h,
+            )
+        with dpg.group(parent=self.window):
+            dpg.add_text(
+                "The very end of the traceback (see below) may offer a hint on how to solve the cause for the error that just occurred. If it doesn't, then please copy the traceback to your clipboard and include it in a bug report. Bug reports can be submitted at github.com/vyrjana/DearEIS/issues.",
+                wrap=700,
+            )
+            with dpg.child_window(width=-1, height=-24):
+                dpg.add_text(msg, wrap=700)
+            dpg.add_button(
+                label="Copy to clipboard",
+                callback=lambda: dpg.set_clipboard_text(msg),
+            )
         return self.window
 
 
@@ -354,12 +377,16 @@ class Program:
 
     def exit_callback(self):
         # Called on the last frame (i.e. no going back from here).
-        queue: List[Project] = []
+        serialization_queue: List[Project] = []
+        recent_projects_queue: List[str] = []
         while self.projects:
             project: Project = self.projects.pop()
             if project.is_dirty:
-                queue.append(project)
-        STATE.serialize_projects(queue)
+                serialization_queue.append(project)
+            if project.path != "" and exists(project.path):
+                recent_projects_queue.append(project.path)
+        STATE.serialize_projects(serialization_queue)
+        self.update_recent_projects_table(recent_projects_queue)
 
     def exit_program(self):
         # Gracefully exiting the program
@@ -624,7 +651,9 @@ class Program:
             on_close=close_window,
             tag=window,
         ):
-            dpg.add_text(f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\ngithub.com/vyrjana/DearEIS")
+            dpg.add_text(
+                f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\ngithub.com/vyrjana/DearEIS"
+            )
 
 
 def main():
