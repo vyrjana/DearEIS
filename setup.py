@@ -16,7 +16,7 @@ if os.name == "nt":
         }
     )
 
-version = "0.1.0"
+version = "0.1.1"
 with open("./src/deareis/version.py", "w") as fp:
     fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
 
@@ -26,6 +26,7 @@ setup(
     author="DearEIS developers",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
+    include_package_data=True,
     url="https://github.com/vyrjana/DearEIS",
     project_urls={
         "Bug Tracker": "https://github.com/vyrjana/DearEIS/issues",
