@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 import os
+from os.path import dirname, join
 
 entry_points = {
     "gui_scripts": [
@@ -11,13 +12,13 @@ if os.name == "nt":
     entry_points.update(
         {
             "console_scripts": [
-                "deareis = deareis.program:main",
+                "deareis-debug = deareis.program:main",
             ]
         }
     )
 
-version = "0.1.1"
-with open("./src/deareis/version.py", "w") as fp:
+version = "0.1.2"
+with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
 
 setup(
