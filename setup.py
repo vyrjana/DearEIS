@@ -1,23 +1,16 @@
 from setuptools import setup, find_packages
-import os
 from os.path import dirname, join
 
 entry_points = {
     "gui_scripts": [
         "deareis = deareis.program:main",
     ],
+    "console_scripts": [
+        "deareis-debug = deareis.program:main",  # For the convenience of users on Windows
+    ],
 }
 
-if os.name == "nt":
-    entry_points.update(
-        {
-            "console_scripts": [
-                "deareis-debug = deareis.program:main",
-            ]
-        }
-    )
-
-version = "0.1.2"
+version = "0.1.3"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
 
