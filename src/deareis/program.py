@@ -4,7 +4,8 @@
 # the LICENSES folder.
 
 from numpy.random import seed
-from deareis.arguments import Namespace
+from deareis.arguments import Namespace, parse
+from multiprocessing import set_start_method
 from deareis.project import Project, restore_state
 import deareis.themes as themes
 import dearpygui.dearpygui as dpg
@@ -626,7 +627,9 @@ class Program:
 
 
 
-def main(args: Namespace):
+def main():
+    set_start_method("spawn")
+    args: Namespace = parse()
     dpg.create_context()
     dpg.create_viewport(title="DearEIS")
     dpg.set_viewport_min_width(800)
@@ -658,3 +661,7 @@ def main(args: Namespace):
     finally:
         dpg.destroy_context()
         CONFIG.save()
+
+
+if __name__ == "__main__":
+    main()

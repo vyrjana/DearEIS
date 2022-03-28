@@ -8,7 +8,10 @@ from os.path import abspath
 
 
 def parse() -> Namespace:
-    parser: ArgumentParser = ArgumentParser(allow_abbrev=False)
+    parser: ArgumentParser = ArgumentParser(
+        allow_abbrev=False,
+        description="A GUI program for analyzing, simulating, and visualizing impedance spectra.",
+    )
     parser.add_argument(
         "-d",
         "--data-files",
@@ -16,10 +19,14 @@ def parse() -> Namespace:
         dest="data_files",
         nargs="*",
         default=[],
-        help="",
+        help="Create a new project and load the specified data files as data sets in that project.",
     )
     parser.add_argument(
-        "project_files", nargs="*", metavar="project", default=[], help=""
+        "project_files",
+        nargs="*",
+        metavar="project",
+        default=[],
+        help="Load the specified project files.",
     )
     args: Namespace = parser.parse_args()
     if len(args.data_files) > 0:

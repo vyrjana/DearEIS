@@ -1,0 +1,4 @@
+include COPYRIGHT
+include CONTRIBUTORS
+include LICENSE
+include README.md
