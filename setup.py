@@ -10,7 +10,7 @@ entry_points = {
     ],
 }
 
-version = "0.2.0"
+version = "0.2.1"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
 

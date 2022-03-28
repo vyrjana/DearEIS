@@ -37,6 +37,7 @@ from pyimpspec import (
     KramersKronigResult,
     ParsingError,
 )
+from pyimpspec.data.formats import UnsupportedFileFormat
 import pyimpspec
 from deareis.config import CONFIG
 from deareis.file_dialog import file_dialog
@@ -953,7 +954,7 @@ class Project:
 
     def notes_modified(self, notes: str):
         assert type(notes) is str
-        self.set_dirty(notes != self.notes)
+        self.set_dirty(True)
 
     def select_dataset_files(self):
         self.modal_window = file_dialog(
@@ -978,13 +979,16 @@ class Project:
         assert type(paths) is list and all(map(lambda _: type(_) is str, paths))
         self.recent_directory = dirname(paths[-1])
         existing_labels: List[str] = list(map(lambda _: _.get_label(), self.datasets))
+        loaded_data: bool = False
         path: str
         for path in paths:
             try:
                 spectra: List[DataSet] = pyimpspec.parse_data(path)
+            except UnsupportedFileFormat:
+                continue
             except Exception:
                 self.show_error(format_exc())
-                print(path)
+                return
             spectrum: DataSet
             for spectrum in spectra:
                 label: str = spectrum.get_label().strip()
@@ -999,7 +1003,8 @@ class Project:
                 self.tests[spectrum.uuid] = []
                 self.fits[spectrum.uuid] = []
             self.datasets.extend(spectra)
-        if len(self.datasets) == 0:
+            loaded_data = True
+        if not loaded_data:
             return
         assert all(map(lambda _: type(_) is DataSet, self.datasets))
         self.update_dataset_combos(spectrum, True)

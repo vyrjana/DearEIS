@@ -334,6 +334,8 @@ class Program:
             recent_paths.insert(0, path)
         if "\n".join(recent_paths) != old:
             STATE.update_recent_projects(recent_paths)
+        if not dpg.does_item_exist(self.recent_projects_table):
+            return
         dpg.delete_item(self.recent_projects_table, children_only=True)
         dpg.add_table_column(
             label="", width_fixed=True, parent=self.recent_projects_table
@@ -385,8 +387,10 @@ class Program:
                 serialization_queue.append(project)
             if project.path != "" and exists(project.path):
                 recent_projects_queue.append(project.path)
-        STATE.serialize_projects(serialization_queue)
-        self.update_recent_projects_table(recent_projects_queue)
+        if len(serialization_queue) > 0:
+            STATE.serialize_projects(serialization_queue)
+        if len(recent_projects_queue) > 0:
+            self.update_recent_projects_table(recent_projects_queue)
 
     def exit_program(self):
         # Gracefully exiting the program

@@ -18,7 +18,7 @@ class State:
     def __init__(self):
         self.state_directory_path: str = join(xdg_state_home(), "DearEIS")
         self.recent_projects_path: str = join(
-            self.state_directory_path, "recent_projects.json"
+            self.state_directory_path, "recent_projects"
         )
         self.projects_directory_path: str = join(self.state_directory_path, "projects")
 
