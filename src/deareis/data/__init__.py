@@ -6,3 +6,9 @@
 from .kramers_kronig import TestResult, TestSettings
 from .fitting import FitResult, FitSettings
 from .simulation import SimulationResult, SimulationSettings
+from .plotting import (
+    PlotSettings,
+    # PlotSeries,
+    PlotType,
+    plot_type_to_label,
+)

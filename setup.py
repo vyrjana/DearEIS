@@ -10,9 +10,12 @@ entry_points = {
     ],
 }
 
-version = "0.2.1"
+copyright_notice = ""
+with open(join(dirname(__file__), "COPYRIGHT")) as fp:
+    copyright_notice = fp.read().strip()
+version = "0.3.0"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
-    fp.write(f"PACKAGE_VERSION: str = \"{version}\"")
+    fp.write(f"{copyright_notice}\n\nPACKAGE_VERSION: str = \"{version}\"")
 
 setup(
     name="deareis",
@@ -31,8 +34,8 @@ setup(
     long_description_content_type="text/markdown",
     entry_points=entry_points,
     install_requires=[
-        "dearpygui>=1.4.0",  # Used to implement the GUI.
-        "pyimpspec>=0.1.1",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "dearpygui>=1.5.1",  # Used to implement the GUI.
+        "pyimpspec>=0.1.3",  # Used for parsing, fitting, and analyzing impedance spectra.
         "tabulate>=0.8.9",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],

@@ -77,7 +77,13 @@ def auto_limits(axes: List[int]):
 
 def modal_window(label: str = "") -> int:
     assert type(label) is str
-    window: int = dpg.add_window(label=label, modal=True)
+    window: int = dpg.generate_uuid()
+    dpg.add_window(
+        label=label,
+        modal=True,
+        on_close=lambda: dpg.delete_item(window),
+        tag=window,
+    )
     x: int
     y: int
     w: int
@@ -115,8 +121,10 @@ class Plot:
         window: int = dpg.get_item_parent(plot)
 
         def close_window_callback():
-            dpg.hide_item(window)
-            dpg.delete_item(handler)
+            if dpg.does_item_exist(window):
+                dpg.hide_item(window)
+            if dpg.does_item_exist(handler):
+                dpg.delete_item(handler)
 
         with dpg.handler_registry(tag=handler):
             dpg.add_key_release_handler(

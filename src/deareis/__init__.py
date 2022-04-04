@@ -12,4 +12,7 @@ from deareis.data import (
     FitSettings,
     SimulationResult,
     SimulationSettings,
+    # PlotSettings,
+    # PlotSeries,
+    # PlotType,
 )

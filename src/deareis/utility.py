@@ -4,7 +4,7 @@
 # the LICENSES folder.
 
 import dearpygui.dearpygui as dpg
-from numpy import floor, log10 as log, logspace
+from numpy import floor, inf, log10 as log, logspace, nan
 from pandas import DataFrame
 from pyimpspec import DataSet, simulate_spectrum, string_to_circuit
 from datetime import datetime
@@ -23,6 +23,7 @@ def number_formatter(
     exponent: bool = True,
     significants: int = 0,
 ) -> str:
+    float(value)
     assert type(decimals) is int
     assert type(width) is int
     assert type(exponent) is bool
@@ -31,7 +32,13 @@ def number_formatter(
     if significants > 0:
         fmt = "{:." + str(significants) + "g}"
     string: str
-    if exponent:
+    if value is nan:
+        string = "-"
+    elif value == inf:
+        string = "INF"
+    elif value == -inf:
+        string = "-INF"
+    elif exponent:
         if value == 0.0:
             string = "0"
         else:

@@ -25,46 +25,46 @@ PLOT_MARKERS: Dict[str, int] = {
 # The vibrant color scheme is from https://personal.sron.nl/~pault/
 VIBRANT_COLORS: List[Color] = [
     (
-        0,
-        119,
-        187,
-        255,
+        0.0,
+        119.0,
+        187.0,
+        255.0,
     ),
     (
-        0,
-        153,
-        136,
-        255,
+        0.0,
+        153.0,
+        136.0,
+        255.0,
     ),
     (
-        238,
-        119,
-        51,
-        255,
+        238.0,
+        119.0,
+        51.0,
+        255.0,
     ),
     (
-        238,
-        51,
-        119,
-        255,
+        238.0,
+        51.0,
+        119.0,
+        255.0,
     ),
     (
-        204,
-        51,
-        17,
-        255,
+        204.0,
+        51.0,
+        17.0,
+        255.0,
     ),
     (
-        187,
-        187,
-        187,
-        255,
+        187.0,
+        187.0,
+        187.0,
+        255.0,
     ),
     (
-        51,
-        187,
-        238,
-        255,
+        51.0,
+        187.0,
+        238.0,
+        255.0,
     ),
 ]
 
@@ -143,6 +143,8 @@ def create_plot_theme(
 
 def update_plot_theme_color(parent: int, color: List[float]):
     assert type(parent) is int
+    if type(color) is tuple:
+        color = list(color)
     assert (
         type(color) is list
         and len(color) == 4
@@ -176,6 +178,34 @@ def update_plot_theme_marker(parent: int, marker: int):
             if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
                 continue
             dpg.set_value(i, [marker, -1])
+
+
+def get_plot_theme_color(parent: int) -> List[float]:
+    assert type(parent) is int
+    color: List[float] = []
+    item: int
+    for item in dpg.get_item_children(parent, slot=1):
+        i: int
+        for i in dpg.get_item_children(item, slot=1):
+            if not dpg.get_item_type(i).endswith("::mvThemeColor"):
+                continue
+            color = dpg.get_value(i)
+    assert type(color) is list and len(color) == 4
+    return color
+
+
+def get_plot_theme_marker(parent: int) -> int:
+    assert type(parent) is int
+    marker: int = -1
+    item: int
+    for item in dpg.get_item_children(parent, slot=1):
+        i: int
+        for i in dpg.get_item_children(item, slot=1):
+            if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
+                continue
+            marker = int(dpg.get_value(i)[0])
+    assert type(marker) is int and marker >= 0, marker
+    return marker
 
 
 def initialize():

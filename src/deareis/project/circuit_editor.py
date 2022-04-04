@@ -15,7 +15,7 @@ from pyimpspec import (
     Connection,
     ParsingError,
 )
-from deareis.utility import attach_tooltip, is_alt_down
+from deareis.utility import attach_tooltip, is_alt_down, is_control_down
 import deareis.themes as themes
 import deareis.tooltips as tooltips
 from numpy import inf
@@ -392,6 +392,7 @@ class CircuitEditor:
         if self.latest_circuit is None and self.nodes:
             self.clear_nodes()
         dpg.hide_item(self.window)
+        dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
     def accept_circuit(self):
@@ -401,7 +402,7 @@ class CircuitEditor:
         self.hide_window()
 
     def accept_circuit_keybinding(self):
-        if not is_alt_down():
+        if not (is_alt_down() or is_control_down()):
             return
         self.accept_circuit()
 

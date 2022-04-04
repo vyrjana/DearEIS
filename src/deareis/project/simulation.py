@@ -24,8 +24,10 @@ from deareis.data.shared import (
     label_to_output,
     output_to_label,
 )
+from deareis.config import CONFIG
 
 # TODO: Argument type assertions
+
 
 class SimulationTab:
     def __init__(self):
@@ -112,6 +114,7 @@ class SimulationTab:
                                 width=-1,
                                 tag=self.editor_button,
                             )
+                            attach_tooltip(tooltips.open_circuit_editor)
                         with dpg.group(horizontal=True):
                             dpg.add_text("Maximum frequency".rjust(label_pad))
                             attach_tooltip(tooltips.simulation_max_freq)
@@ -182,6 +185,7 @@ class SimulationTab:
                                 width=-1,
                                 tag=self.delete_result_button,
                             )
+                            attach_tooltip(tooltips.simulation_remove)
                         with dpg.group(horizontal=True):
                             dpg.add_text("Output".rjust(label_pad))
                             dpg.add_combo(
@@ -195,6 +199,7 @@ class SimulationTab:
                                 width=-1,
                                 tag=self.copy_output_button,
                             )
+                            attach_tooltip(tooltips.copy_output)
                     with dpg.child_window(width=-1, height=-1):
                         with dpg.collapsing_header(label=" Parameters", leaf=True):
                             dpg.add_table(
@@ -223,6 +228,7 @@ class SimulationTab:
                                 label="Apply settings",
                                 tag=self.apply_settings_button,
                             )
+                            attach_tooltip(tooltips.apply_settings)
                 with dpg.child_window(
                     border=False,
                     width=-1,
@@ -252,6 +258,7 @@ class SimulationTab:
                                     label="Copy as CSV",
                                     callback=self.nyquist_plot.copy_data,
                                 )
+                                attach_tooltip(tooltips.copy_plot_data_as_csv)
                         with dpg.group(tag=self.horizontal_bode_group):
                             self.bode_plot_horizontal = BodePlot(
                                 dpg.add_plot(
@@ -270,6 +277,7 @@ class SimulationTab:
                                     label="Copy as CSV",
                                     callback=self.bode_plot_horizontal.copy_data,
                                 )
+                                attach_tooltip(tooltips.copy_plot_data_as_csv)
                     with dpg.group(tag=self.vertical_bode_group, show=False):
                         self.bode_plot_vertical = BodePlot(
                             dpg.add_plot(
@@ -288,6 +296,7 @@ class SimulationTab:
                                 label="Copy as CSV",
                                 callback=self.bode_plot_vertical.copy_data,
                             )
+                            attach_tooltip(tooltips.copy_plot_data_as_csv)
 
     def _assign_handlers(self):
         group_handler: int
@@ -420,15 +429,18 @@ class SimulationTab:
             label="Element",
             width_fixed=True,
         )
+        attach_tooltip(tooltips.simulation_element)
         dpg.add_table_column(
             parent=self.parameters_table,
             label="Parameter",
             width_fixed=True,
         )
+        attach_tooltip(tooltips.simulation_parameter)
         dpg.add_table_column(
             parent=self.parameters_table,
             label="Value",
         )
+        attach_tooltip(tooltips.simulation_parameter_value)
         cdc: str = result.settings.cdc if result is not None else ""
         while "{" in cdc:
             i: int = cdc.find("{")
@@ -541,7 +553,9 @@ class SimulationTab:
         before: Union[int, Tuple[int, int]] = -1
         if result is not None:
             before = self.nyquist_plot.plot_smooth(
-                *result.get_nyquist_data(num_per_decade=100),
+                *result.get_nyquist_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 True,
             )
             before = self.nyquist_plot.plot_sim(
@@ -561,7 +575,9 @@ class SimulationTab:
         )
         if result is not None:
             before = self.bode_plot_horizontal.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 True,
             )
             before = self.bode_plot_horizontal.plot_sim(
@@ -581,7 +597,9 @@ class SimulationTab:
         )
         if result is not None:
             before = self.bode_plot_vertical.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 True,
             )
             before = self.bode_plot_vertical.plot_sim(

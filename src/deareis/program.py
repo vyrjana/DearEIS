@@ -19,6 +19,7 @@ from deareis.utility import (
 )
 from traceback import format_exc
 from typing import Dict, IO, List, Tuple, Optional
+from os import remove
 from os.path import basename, dirname, exists, splitext
 from deareis.config import CONFIG
 from deareis.state import STATE
@@ -64,7 +65,6 @@ class ErrorMessage:
             dpg.add_window(
                 label="ERROR",
                 tag=self.window,
-                no_move=True,
                 no_resize=True,
                 modal=True,
                 pos=(
@@ -91,8 +91,12 @@ class ErrorMessage:
 class WorkingIndicator:
     def __init__(self):
         self.window: int = dpg.generate_uuid()
+        self.message_spacer: int = dpg.generate_uuid()
+        self.message_text: int = dpg.generate_uuid()
+        self.progress_bar: int = dpg.generate_uuid()
         self.width: int = 159
         self.height: int = 159
+        self.message_wrap: int = 140
         self.x: int = -1
         self.y: int = -1
         self._assemble()
@@ -121,6 +125,14 @@ class WorkingIndicator:
                     190,
                 ),
             )
+            with dpg.group(horizontal=True):
+                dpg.add_spacer(tag=self.message_spacer)
+                dpg.add_text(tag=self.message_text, wrap=self.message_wrap)
+            dpg.add_progress_bar(
+                width=self.width - 16,
+                height=12,
+                tag=self.progress_bar,
+            )
 
     def resize(self, width: int, height: int):
         assert type(width) is int
@@ -135,9 +147,12 @@ class WorkingIndicator:
             ),
         )
 
-    def show(self):
-        dpg.split_frame(delay=100)
-        dpg.show_item(self.window)
+    def show(self, message: str = "", progress: float = -1.0) -> int:
+        assert type(message) is str
+        assert type(progress) is float and progress <= 1.0
+        if not dpg.is_item_shown(self.window):
+            dpg.split_frame(delay=100)
+            dpg.show_item(self.window)
         if self.x < 0:
             self.resize(dpg.get_viewport_width(), dpg.get_viewport_height())
             dpg.configure_item(
@@ -147,6 +162,32 @@ class WorkingIndicator:
                     self.y,
                 ),
             )
+        if message == "":
+            dpg.hide_item(self.message_text)
+        else:
+            dpg.show_item(self.message_text)
+            dpg.set_item_width(
+                self.message_spacer,
+                max(
+                    0,
+                    (
+                        self.width
+                        - dpg.get_text_size(message, wrap_width=self.message_wrap)[0]
+                    )
+                    / 2
+                    - 16,
+                ),
+            )
+            dpg.set_value(self.message_text, message)
+        if progress < 0.0:
+            dpg.hide_item(self.progress_bar)
+        else:
+            dpg.show_item(self.progress_bar)
+            dpg.configure_item(
+                self.progress_bar,
+                default_value=progress,
+            )
+        return self.window
 
     def hide(self):
         dpg.hide_item(self.window)
@@ -190,21 +231,30 @@ class Program:
                         label="Close project", callback=lambda: self.close_project()
                     )
                     dpg.add_menu_item(label="Exit", callback=self.exit_program)
-                with dpg.menu(label="Settings"):
+                with dpg.menu(label="Edit"):
                     dpg.add_menu_item(
-                        label="Defaults",
-                        callback=show_defaults_settings_window,
+                        label="Undo",
+                        callback=self.undo,
                     )
+                    dpg.add_menu_item(
+                        label="Redo",
+                        callback=self.redo,
+                    )
+                with dpg.menu(label="Settings"):
                     dpg.add_menu_item(
                         label="Appearance",
                         callback=show_appearance_settings_window,
+                    )
+                    dpg.add_menu_item(
+                        label="Defaults",
+                        callback=show_defaults_settings_window,
                     )
                 with dpg.menu(label="Help"):
                     dpg.add_menu_item(
                         label="Keybindings", callback=self.show_keybindings_window
                     )
-                    dpg.add_menu_item(label="About", callback=self.show_about_window)
                     dpg.add_menu_item(label="Licenses", callback=show_license_window)
+                    dpg.add_menu_item(label="About", callback=self.show_about_window)
             with dpg.tab_bar(tag=self.tab_bar):
                 with dpg.tab(label="Home", tag=self.home_tab):
                     dpg.add_text("Recent projects")
@@ -246,7 +296,9 @@ class Program:
             dpg.mvKey_8,
             dpg.mvKey_9,
             dpg.mvKey_Down,
+            dpg.mvKey_F1,
             dpg.mvKey_N,
+            dpg.mvKey_O,
             dpg.mvKey_Up,
         ]
         with dpg.handler_registry():
@@ -264,7 +316,11 @@ class Program:
             modal_window_exists: bool = dpg.does_item_exist(self.modal_window)
             if modal_window_exists and dpg.is_item_shown(self.modal_window):
                 return
-            elif modal_window_exists:
+            elif (
+                modal_window_exists
+                and self.modal_window != self.error_message.window
+                and self.modal_window != self.working_indicator.window
+            ):
                 dpg.delete_item(self.modal_window)
             self.modal_window = -1
         if is_control_down() and is_shift_down():
@@ -275,7 +331,9 @@ class Program:
             pass
         elif is_control_down():
             if key == dpg.mvKey_N:  # Create a new project
-                keyboard_shortcuts.new_project(self)
+                self.new_project()
+            elif key == dpg.mvKey_O:
+                self.select_project_files()
         elif is_alt_down():
             if (  # Go to the nth project tab
                 key == dpg.mvKey_1
@@ -310,6 +368,9 @@ class Program:
                 keyboard_shortcuts.go_to_top_tab(self, step=-1)
         elif is_shift_down():
             pass
+        else:
+            if key == dpg.mvKey_F1:
+                self.show_keybindings_window()
 
     def viewport_resized(self, sender: int, dims: Tuple[int, int, int, int]):
         assert type(sender) is int
@@ -329,7 +390,7 @@ class Program:
         old: str = "\n".join(recent_paths)
         path: str
         for path in paths:
-            if path in recent_paths:
+            while path in recent_paths:
                 recent_paths.remove(path)
             recent_paths.insert(0, path)
         if "\n".join(recent_paths) != old:
@@ -356,9 +417,14 @@ class Program:
         project.error_message = self.error_message
         project.working_indicator = self.working_indicator
         project.close_callback = self.close_project
+        project.save_callback = self.project_saved
         dpg.set_value(self.tab_bar, project.tab)
         self.projects.append(project)
         return project
+
+    def project_saved(self, project: Project):
+        assert type(project) is Project
+        self.update_recent_projects_table([project.path])
 
     def close_project(self, project: Optional[Project] = None):
         assert type(project) is Project or project is None
@@ -376,6 +442,24 @@ class Program:
                 if project.tab == tab:
                     project.close()
                     break
+
+    def undo(self):
+        if len(self.projects) == 0:
+            return
+        tab: int = dpg.get_value(self.tab_bar)
+        for project in self.projects:
+            if project.tab == tab:
+                project.undo()
+                break
+
+    def redo(self):
+        if len(self.projects) == 0:
+            return
+        tab: int = dpg.get_value(self.tab_bar)
+        for project in self.projects:
+            if project.tab == tab:
+                project.redo()
+                break
 
     def exit_callback(self):
         # Called on the last frame (i.e. no going back from here).
@@ -403,26 +487,52 @@ class Program:
             return
         dpg.stop_dearpygui()
 
-    def load_projects(self, paths: List[str]):
+    def load_projects(self, paths: List[str], sender: int = -1):
         assert type(paths) is list and all(map(lambda _: type(_) is str, paths)), paths
-        path: str
-        for path in paths:
-            if not exists(path):
-                continue
-            project: Project = self.new_project()
-            fp: IO
-            with open(path, "r") as fp:
-                try:
-                    restore_state(fp.read(), project)
-                except Exception:
-                    if self.error_message is not None:
-                        self.modal_window = self.error_message.show(format_exc())
-                    print(format_exc())
-                    project.close()
+        assert type(sender) is int
+        if sender >= 0:
+            dpg.delete_item(sender)
+        loaded_projects: List[str] = []
+        num_paths: int = len(paths)
+        try:
+            n: int
+            path: str
+            for n, path in enumerate(paths):
+                self.modal_window = self.working_indicator.show(
+                    f"Loading projects: {n + 1}/{num_paths}", n / num_paths
+                )
+                if not exists(path):
                     continue
-                project.path = path
-                project.recent_directory = dirname(path)
-        self.update_recent_projects_table(paths)
+                already_open: bool = False
+                project: Project
+                for project in self.projects:
+                    if project.path == path:
+                        dpg.set_value(self.tab_bar, project.tab)
+                        already_open = True
+                        break
+                if already_open:
+                    continue
+                project = self.new_project()
+                fp: IO
+                with open(path, "r") as fp:
+                    try:
+                        restore_state(fp.read(), project)
+                    except Exception:
+                        self.modal_window = self.error_message.show(format_exc())
+                        print(format_exc())
+                        project.close()
+                        continue
+                    project.path = path
+                    project.recent_directory = dirname(path)
+                loaded_projects.append(path)
+        except Exception:
+            self.modal_window = self.error_message.show(format_exc())
+            print(format_exc())
+            self.working_indicator.hide()
+            return
+        self.working_indicator.hide()
+        if len(loaded_projects) > 0:
+            self.update_recent_projects_table(loaded_projects)
 
     def select_project_files(self):
         recent_projects: List[str] = STATE.get_recent_projects()
@@ -431,7 +541,9 @@ class Program:
             if len(recent_projects) > 0
             else STATE.get_data_directory(),
             "Select project to load",
-            lambda s, a, u: self.load_projects(list(a.get("selections", {}).values())),
+            lambda s, a, u: self.load_projects(
+                list(a.get("selections", {}).values()), s
+            ),
             [".json"],
         )
         project: Project
@@ -458,7 +570,7 @@ class Program:
         y: int
         w: int
         h: int
-        x, y, w, h = window_pos_dims(600)
+        x, y, w, h = window_pos_dims(720)
         window: int = dpg.generate_uuid()
         key_handler: int = dpg.generate_uuid()
 
@@ -492,27 +604,31 @@ class Program:
             row_height: int = 23
             definitions: Dict[str, Dict[str, str]] = {
                 "Program": {
+                    "F1": "Open up the keybindings window.",
                     "Alt+Arrow down": "Go to the next project tab.",
                     "Alt+Arrow up": "Go to the previous project tab.",
                     "Alt+1-8": "Go to the nth project tab.",
                     "Alt+9": "Go to the last project tab.",
                     "Alt+0": "Go to the home tab.",
                     "Ctrl+N": "Create a new project tab.",
+                    "Ctrl+O": "Open project.",
+                    "Escape": "Close modal window.",
+                    "Enter": "Confirm/accept changes.",
                 },
                 "Project": {
                     "Page down": "Go to the next data set.",
                     "Page up": "Go to the previous data set.",
                     "Alt+Shift+Arrow down": "Go to the next tab.",
-                    "Alt+Shift+Arrow up": "Go to the previous tab",
+                    "Alt+Shift+Arrow up": "Go to the previous tab.",
                     "Alt+Shift+1-8": "Go to the nth tab.",
                     "Alt+Shift+9": "Go to the last tab.",
                     "Alt+Shift+0": "Go to the first tab.",
                     "Ctrl+Shift+S": "Save project to a new path.",
                     "Ctrl+S": "Save project.",
-                    "Ctrl+W": "Close project",
-                    # "Ctrl+Y": "Redo",
-                    # "Ctrl+Z": "Undo",
-                    # "Ctrl+Shift+Z": "Redo",
+                    "Ctrl+W": "Close project.",
+                    "Ctrl+Y": "Redo the latest action.",
+                    "Ctrl+Shift+Z": "Redo the latest action.",
+                    "Ctrl+Z": "Undo the latest action.",
                     # "": "",
                 },
                 "Data sets tab": {
@@ -522,9 +638,12 @@ class Program:
                     "Alt+N": "Show enlarged Nyquist plot.",
                     "Alt+S": "Subtract impedance from the current data set.",
                     "Alt+T": "Toggle multiple points in the mask of the current data set.",
-                    "Alt+Delete": "Remove the current data set.",
+                    "Alt+L": "Load data files.",
+                    "Alt+Delete": "Delete the current data set.",
                     "Alt+Shift+B": "Copy data from Bode plot as CSV.",
                     "Alt+Shift+N": "Copy data from Nyquist plot as CSV.",
+                    "Page up": "Go to the next data set.",
+                    "Page down": "Go to the previous data set.",
                     # "": "",
                 },
                 "Kramers-Kronig tab": {
@@ -533,13 +652,18 @@ class Program:
                     "Alt+C": "Copy the selected output of the current result.",
                     "Alt+N": "Show enlarged Nyquist plot.",
                     "Alt+R": "Show enlarged residuals plot.",
-                    "Alt+Delete": "Remove the current result.",
+                    "Alt+Delete": "Delete the current result.",
                     "Alt+Enter": "Perform a test.",
+                    "Ctrl+Enter": "Perform a test.",
                     "Alt+Page down": "Go to the next result.",
                     "Alt+Page up": "Go to the previous result.",
                     "Alt+Shift+B": "Copy data from Bode plot as CSV.",
                     "Alt+Shift+N": "Copy data from Nyquist plot as CSV.",
                     "Alt+Shift+R": "Copy data from residuals plot as CSV.",
+                    "Page up": "Go to the next data set.",
+                    "Page up_1": "Go to the next test result (while in the exploratory results window).",
+                    "Page down": "Go to the previous data set.",
+                    "Page down_2": "Go to the previous test result (while in the exploratory results window).",
                     # "": "",
                 },
                 "Fitting tab": {
@@ -549,14 +673,19 @@ class Program:
                     "Alt+E": "Open circuit editor.",
                     "Alt+N": "Show enlarged Nyquist plot.",
                     "Alt+R": "Show enlarged residuals plot.",
-                    "Alt+Delete": "Remove the current result.",
+                    "Alt+Delete": "Delete the current result.",
                     "Alt+Enter": "Perform a fit.",
+                    "Alt+Enter_": "Accept the current circuit (while in the circuit editor window).",
+                    "Ctrl+Enter": "Perform a fit.",
+                    "Ctrl+Enter_": "Accept the current circuit (while in the circuit editor window).",
                     "Alt+Page down": "Go to the next result.",
                     "Alt+Page up": "Go to the previous result.",
                     "Alt+Shift+B": "Copy data from Bode plot as CSV.",
                     "Alt+Shift+N": "Copy data from Nyquist plot as CSV.",
                     "Alt+Shift+R": "Copy data from residuals plot as CSV.",
                     "Ctrl+Spacebar": "Show suggestions/information related to CDC input.",
+                    "Page up": "Go to the next data set.",
+                    "Page down": "Go to the previous data set.",
                     # "": "",
                 },
                 "Simulation tab": {
@@ -568,10 +697,27 @@ class Program:
                     "Alt+E": "Open circuit editor.",
                     "Alt+N": "Show enlarged Nyquist plot.",
                     "Alt+Enter": "Perform a simulation.",
-                    "Alt+Delete": "Remove the current result.",
+                    "Ctrl+Enter": "Perform a simulation.",
+                    "Alt+Delete": "Delete the current result.",
                     "Alt+Page down": "Go to the next result.",
                     "Alt+Page up": "Go to the previous result.",
                     "Ctrl+Spacebar": "Show suggestions/information related to CDC input.",
+                    "Page up": "Go to the next data set.",
+                    "Page down": "Go to the previous data set.",
+                    # "": "",
+                },
+                "Plotting tab": {
+                    "Alt+S": "Select all possible plot items.",
+                    "Alt+Shift+S": "Unselect all possible plot items.",
+                    "Alt+C": "Copy appearance settings from another plot.",
+                    "Alt+Shift+C": "Copy data from plot as CSV.",
+                    "Alt+Enter": "Create a new plot.",
+                    "Ctrl+Enter": "Create a new plot.",
+                    "Alt+Delete": "Delete the current plot.",
+                    "Alt+Page down": "Go to the next plot type.",
+                    "Alt+Page up": "Go to the previous plot type.",
+                    "Page up": "Go to the next data set.",
+                    "Page down": "Go to the previous data set.",
                     # "": "",
                 },
             }
@@ -615,10 +761,20 @@ class Program:
                         ):
                             description: str = keys_to_descriptions[key]
                             with dpg.table_row():
-                                dpg.add_text(key.rjust(key_pad))
+                                dpg.add_text(
+                                    (key if "_" not in key else "").rjust(key_pad)
+                                )
                                 dpg.add_text(description)
+                                assert description.endswith("."), (
+                                    key,
+                                    description,
+                                )
                                 attach_tooltip(description)
                     dpg.add_spacer(height=8)
+        self.modal_window = window
+        project: Project
+        for project in self.projects:
+            project.modal_window = self.modal_window
 
     def show_about_window(self):
         x: int
@@ -660,6 +816,45 @@ class Program:
             )
 
 
+def handle_args(args: Namespace, program: Program):
+    if args.data_files:
+        try:
+            program.import_data_files(list(filter(exists, args.data_files)))
+        except Exception:
+            program.modal_window = program.error_message.show(format_exc())
+            print(format_exc())
+            return
+    if args.project_files:
+        try:
+            program.load_projects(list(filter(exists, args.project_files)))
+        except Exception:
+            program.modal_window = program.error_message.show(format_exc())
+            print(format_exc())
+            return
+    snapshots: List[Tuple[str, str, str]] = STATE.get_serialized_projects()
+    num_snapshots: int = len(snapshots)
+    n: int
+    snapshot_path: str
+    project_path: str
+    state: str
+    for n, (snapshot_path, project_path, state) in enumerate(snapshots):
+        program.modal_window = program.working_indicator.show(
+            f"Recovering snapshots: {n + 1}/{num_snapshots}",
+            n / num_snapshots,
+        )
+        project: Project = program.new_project()
+        try:
+            restore_state(state, project, True)
+            project.path = project_path
+            project.recent_directory = dirname(project_path)
+            remove(snapshot_path)
+        except Exception:
+            program.modal_window = program.error_message.show(format_exc())
+            print(format_exc())
+            project.close()
+    program.working_indicator.hide()
+
+
 def main():
     set_start_method("spawn")
     args: Namespace = parse()
@@ -672,21 +867,7 @@ def main():
     try:
         themes.initialize()
         program: Program = Program()
-        if args.data_files:
-            program.import_data_files(list(filter(exists, args.data_files)))
-        if args.project_files:
-            program.load_projects(list(filter(exists, args.project_files)))
-        path: str
-        state: str
-        for (path, state) in STATE.get_serialized_projects():
-            project: Project = program.new_project()
-            try:
-                restore_state(state, project, True)
-                project.path = path
-                project.recent_directory = dirname(path)
-            except Exception:
-                print(format_exc())
-                project.close()
+        dpg.set_frame_callback(1, lambda: handle_args(args, program))
         dpg.set_primary_window(program.window, True)
         dpg.start_dearpygui()
     except Exception:

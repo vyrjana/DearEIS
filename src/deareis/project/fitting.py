@@ -37,8 +37,10 @@ from deareis.data.shared import (
     label_to_output,
     output_to_label,
 )
+from deareis.config import CONFIG
 
 # TODO: Argument type assertions
+
 
 class FittingTab:
     def __init__(self):
@@ -128,6 +130,7 @@ class FittingTab:
                                 width=-1,
                                 tag=self.editor_button,
                             )
+                            attach_tooltip(tooltips.open_circuit_editor)
                         with dpg.group(horizontal=True):
                             dpg.add_text("Method".rjust(label_pad))
                             attach_tooltip(tooltips.fitting_method)
@@ -185,6 +188,7 @@ class FittingTab:
                                 width=-1,
                                 tag=self.delete_result_button,
                             )
+                            attach_tooltip(tooltips.fitting_remove)
                         with dpg.group(horizontal=True):
                             dpg.add_text("Output".rjust(label_pad))
                             dpg.add_combo(
@@ -198,6 +202,7 @@ class FittingTab:
                                 width=-1,
                                 tag=self.copy_output_button,
                             )
+                            attach_tooltip(tooltips.copy_output)
                     with dpg.child_window(width=-1, height=-1):
                         with dpg.group(show=False):
                             dpg.add_text("", tag=self.result_info_text)
@@ -241,6 +246,7 @@ class FittingTab:
                                 label="Apply settings",
                                 tag=self.apply_settings_button,
                             )
+                            attach_tooltip(tooltips.apply_settings)
                 with dpg.child_window(
                     border=False,
                     width=-1,
@@ -273,6 +279,7 @@ class FittingTab:
                                     label="Copy as CSV",
                                     callback=self.nyquist_plot.copy_data,
                                 )
+                                attach_tooltip(tooltips.copy_plot_data_as_csv)
                         with dpg.group(tag=self.horizontal_bode_group):
                             self.bode_plot_horizontal = BodePlot(
                                 dpg.add_plot(
@@ -291,6 +298,7 @@ class FittingTab:
                                     label="Copy as CSV",
                                     callback=self.bode_plot_horizontal.copy_data,
                                 )
+                                attach_tooltip(tooltips.copy_plot_data_as_csv)
                     with dpg.group(tag=self.vertical_bode_group):
                         self.bode_plot_vertical = BodePlot(
                             dpg.add_plot(
@@ -309,6 +317,7 @@ class FittingTab:
                                 label="Copy as CSV",
                                 callback=self.bode_plot_vertical.copy_data,
                             )
+                            attach_tooltip(tooltips.copy_plot_data_as_csv)
                     self.residuals_plot = ResidualsPlot(
                         dpg.add_plot(
                             width=400,
@@ -326,6 +335,7 @@ class FittingTab:
                             label="Copy as CSV",
                             callback=self.residuals_plot.copy_data,
                         )
+                        attach_tooltip(tooltips.copy_plot_data_as_csv)
 
     def _assign_handlers(self):
         group_handler: int
@@ -475,20 +485,24 @@ class FittingTab:
             label="Element",
             width_fixed=True,
         )
+        attach_tooltip(tooltips.fitting_element)
         dpg.add_table_column(
             parent=self.parameters_table,
             label="Parameter",
             width_fixed=True,
         )
+        attach_tooltip(tooltips.fitting_parameter)
         dpg.add_table_column(
             parent=self.parameters_table,
             label="Value",
             width_fixed=True,
         )
+        attach_tooltip(tooltips.fitting_value)
         dpg.add_table_column(
             parent=self.parameters_table,
             label="Error (%)",
         )
+        attach_tooltip(tooltips.fitting_error)
         statistics: List[Tuple[str, str, str]] = [
             (
                 "log X²",
@@ -699,7 +713,9 @@ class FittingTab:
         before: Union[int, Tuple[int, int]] = -1
         if result is not None:
             before = self.nyquist_plot.plot_smooth(
-                *result.get_nyquist_data(num_per_decade=100),
+                *result.get_nyquist_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.nyquist_plot.plot_sim(
@@ -718,7 +734,9 @@ class FittingTab:
         )
         if result is not None:
             before = self.bode_plot_horizontal.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.bode_plot_horizontal.plot_sim(
@@ -737,7 +755,9 @@ class FittingTab:
         )
         if result is not None:
             before = self.bode_plot_vertical.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.bode_plot_vertical.plot_sim(

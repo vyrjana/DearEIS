@@ -6,8 +6,8 @@
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.themes import PLOT_MARKERS
-from typing import Dict, List, Optional
-from deareis.utility import window_pos_dims
+from typing import Dict, List, Optional, Tuple
+from deareis.utility import attach_tooltip, window_pos_dims
 from deareis.config import CONFIG
 from deareis.plot import (
     BodePlot,
@@ -21,6 +21,7 @@ from pyimpspec import DataSet, Circuit
 import pyimpspec
 
 
+noise: Optional[ndarray] = None
 data: Optional[DataSet] = None
 sim_data: Optional[DataSet] = None
 smooth_data: Optional[DataSet] = None
@@ -28,6 +29,7 @@ real_residual: Optional[ndarray] = None
 imag_residual: Optional[ndarray] = None
 
 
+# TODO: Split up into smaller functions
 def show_appearance_settings_window(self):
     x: int
     y: int
@@ -64,20 +66,18 @@ def show_appearance_settings_window(self):
         on_close=close_window,
         tag=window,
     ):
-        global data
-        global sim_data
-        global smooth_data
-        global real_residual
-        global imag_residual
-        if data is None:
+
+        def generate_data(
+            noise: Optional[ndarray],
+        ) -> Tuple[DataSet, DataSet, DataSet, ndarray, ndarray]:
             circuit: Circuit = pyimpspec.string_to_circuit(
                 "R{R=100}(C{C=1e-6}[R{R=500}W{Y=4e-4}])"
             )
-            data = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=20))
+            data: DataSet = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=20))
             Z: complex
             sd: float = 0.01
-            data.subtract_impedance(
-                -array(
+            if noise is None:
+                noise = array(
                     list(
                         map(
                             lambda Z: complex(
@@ -88,19 +88,48 @@ def show_appearance_settings_window(self):
                         )
                     )
                 )
+            data.subtract_impedance(-noise)
+            sim_data: DataSet = pyimpspec.simulate_spectrum(
+                circuit, data.get_frequency()
             )
-            sim_data = pyimpspec.simulate_spectrum(circuit, data.get_frequency())
-            smooth_data = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=501))
-            real_residual = (
+            smooth_data: DataSet = pyimpspec.simulate_spectrum(
+                circuit,
+                logspace(0, 5, num=5 * CONFIG.num_per_decade_in_simulated_lines + 1),
+            )
+            real_residual: ndarray = (
                 (data.get_impedance().real - sim_data.get_impedance().real)
                 / abs(data.get_impedance())
                 * 100
             )
-            imag_residual = (
+            imag_residual: ndarray = (
                 (data.get_impedance().imag - sim_data.get_impedance().imag)
                 / abs(data.get_impedance())
                 * 100
             )
+            return (
+                data,
+                noise,
+                sim_data,
+                smooth_data,
+                real_residual,
+                imag_residual,
+            )
+
+        global data
+        global noise
+        global sim_data
+        global smooth_data
+        global real_residual
+        global imag_residual
+        if data is None:
+            (
+                data,
+                noise,
+                sim_data,
+                smooth_data,
+                real_residual,
+                imag_residual,
+            ) = generate_data(None)
         marker_items: List[str] = list(PLOT_MARKERS.keys())
         marker_label_lookup: Dict[int, str] = {v: k for k, v in PLOT_MARKERS.items()}
         bode_plot: BodePlot = None
@@ -108,6 +137,48 @@ def show_appearance_settings_window(self):
         muxps_plot: MuXpsPlot = None
         residuals_plot: ResidualsPlot = None
         label_pad: int = 56
+        with dpg.collapsing_header(label="General", default_open=True):
+
+            def update_simulated_num_per_decade(sender: int, value: int):
+                CONFIG.num_per_decade_in_simulated_lines = value
+                global data
+                global noise
+                global sim_data
+                global smooth_data
+                global real_residual
+                global imag_residual
+                (
+                    data,
+                    _,
+                    sim_data,
+                    smooth_data,
+                    real_residual,
+                    imag_residual,
+                ) = generate_data(noise)
+                update_bode_plot()
+                update_nyquist_plot()
+                update_residuals_plot()
+                update_muxps_plot()
+
+            with dpg.group(horizontal=True):
+                dpg.add_text(
+                    "Number of points per decade in simulated response".rjust(label_pad)
+                )
+                attach_tooltip(
+                    "This affects how smooth the lines will look but it may also affect "
+                    "performance when rendering the graphical user interface. Changes made "
+                    "to this setting will take effect the next time a plot is redrawn."
+                )
+                dpg.add_slider_int(
+                    default_value=CONFIG.num_per_decade_in_simulated_lines,
+                    min_value=1,
+                    max_value=200,
+                    clamped=True,
+                    callback=update_simulated_num_per_decade,
+                    width=-1,
+                )
+            dpg.add_spacer(height=8)
+
         with dpg.collapsing_header(label="Bode plots", default_open=True):
             bode_plot = BodePlot(
                 dpg.add_plot(
@@ -130,13 +201,13 @@ def show_appearance_settings_window(self):
             bode_sim_mag_marker: int = dpg.generate_uuid()
             bode_sim_phase_marker: int = dpg.generate_uuid()
 
-            def update_bode_plot():
+            def update_bode_plot(adjust_limits: bool = False):
                 bode_plot.clear_plot()
                 before = bode_plot.plot_smooth(*smooth_data.get_bode_data(), False)
                 before = bode_plot.plot_sim(*sim_data.get_bode_data(), False, before)
                 bode_plot.plot_data(*data.get_bode_data(), before, True)
-                bode_plot.plot_data
-                bode_plot.adjust_limits()
+                if adjust_limits:
+                    bode_plot.adjust_limits()
 
             def update_bode_color(sender: int, _, theme: int):
                 assert type(sender) is int
@@ -339,7 +410,7 @@ def show_appearance_settings_window(self):
                     label="Restore defaults", callback=reset_bode_plot, width=-1
                 )
 
-            update_bode_plot()
+            update_bode_plot(True)
             dpg.add_spacer(height=8)
 
         with dpg.collapsing_header(label="Nyquist plots", default_open=True):
@@ -361,7 +432,7 @@ def show_appearance_settings_window(self):
             nyquist_data_marker: int = dpg.generate_uuid()
             nyquist_sim_marker: int = dpg.generate_uuid()
 
-            def update_nyquist_plot():
+            def update_nyquist_plot(adjust_limits: bool = False):
                 nyquist_plot.clear_plot()
                 before = nyquist_plot.plot_smooth(
                     *smooth_data.get_nyquist_data(), False
@@ -370,7 +441,8 @@ def show_appearance_settings_window(self):
                     *sim_data.get_nyquist_data(), False, before
                 )
                 nyquist_plot.plot_data(*data.get_nyquist_data(), before, True)
-                nyquist_plot.adjust_limits()
+                if adjust_limits:
+                    nyquist_plot.adjust_limits()
 
             def update_nyquist_color(sender: int, _, theme: int):
                 assert type(sender) is int
@@ -493,7 +565,7 @@ def show_appearance_settings_window(self):
                     label="Restore defaults", callback=reset_nyquist_plot, width=-1
                 )
 
-            update_nyquist_plot()
+            update_nyquist_plot(True)
             dpg.add_spacer(height=8)
 
         with dpg.collapsing_header(label="Residuals plots", default_open=True):
@@ -514,12 +586,13 @@ def show_appearance_settings_window(self):
             residuals_real_marker: int = dpg.generate_uuid()
             residuals_imag_marker: int = dpg.generate_uuid()
 
-            def update_residuals_plot():
+            def update_residuals_plot(adjust_limits: bool = False):
                 residuals_plot.clear_plot()
                 residuals_plot.plot_data(
                     log(data.get_frequency()), real_residual, imag_residual
                 )
-                residuals_plot.adjust_limits()
+                if adjust_limits:
+                    residuals_plot.adjust_limits()
 
             def update_residuals_color(sender: int, _, theme: int):
                 assert type(sender) is int
@@ -642,7 +715,7 @@ def show_appearance_settings_window(self):
                     label="Restore defaults", callback=reset_residuals_plot, width=-1
                 )
 
-            update_residuals_plot()
+            update_residuals_plot(True)
             dpg.add_spacer(height=8)
 
         with dpg.collapsing_header(label="µ-X² (pseudo) plots", default_open=True):

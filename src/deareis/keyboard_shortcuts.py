@@ -30,16 +30,15 @@ from deareis.data import (
     FitSettings,
     SimulationResult,
     SimulationSettings,
+    PlotSettings,
+    plot_type_to_label,
 )
 from deareis.plot import ResidualsPlot
 from deareis.project.datasets import DataSetsTab
 from deareis.project.fitting import FittingTab
 from deareis.project.kramers_kronig import KramersKronigTab
 from deareis.project.simulation import SimulationTab
-
-
-def new_project(program: "Program"):
-    program.new_project()
+from deareis.project.plotting import PlottingTab
 
 
 def go_to_top_tab(
@@ -83,6 +82,7 @@ def go_to_project_tab(
         project.kramers_kronig_tab,
         project.fitting_tab,
         project.simulation_tab,
+        project.plotting_tab,
     ]
     tags = list(map(lambda _: _.tab, tabs))
     if step is not None:
@@ -141,6 +141,25 @@ def go_to_dataset(
         project.select_simulation_dataset(label)
     else:
         project.select_dataset(label)
+
+
+def go_to_plot(project: "Project", step: int):
+    assert type(step) is int and step != 0
+    if len(project.plots) < 2:
+        return
+    index: int = project.plots.index(project.plotting_tab.get_plot())
+    project.select_plot(project.plots[(index + step) % len(project.plots)].get_label())
+
+
+def go_to_plot_type(project: "Project", step: int):
+    assert type(step) is int and step != 0
+    if len(project.plots) == 0:
+        return
+    index: int = list(plot_type_to_label.keys()).index(
+        project.plotting_tab.get_plot_type()
+    )
+    labels: List[str] = list(plot_type_to_label.values())
+    project.select_plot_type(labels[(index + step) % len(labels)])
 
 
 def go_to_result(
@@ -332,6 +351,8 @@ def remove(project: "Project", Class):
         project.remove_simulation(
             dpg.get_item_user_data(project.simulation_tab.delete_result_button)
         )
+    elif Class is PlotSettings:
+        project.remove_plot()
     else:
         raise Exception(f"Unsupported class: {Class}")
 
@@ -345,13 +366,17 @@ def perform_action(tab):
         dpg.get_item_callback(tab.perform_fit_button)()
     elif type(tab) is SimulationTab:
         dpg.get_item_callback(tab.perform_sim_button)()
+    elif type(tab) is PlottingTab:
+        dpg.get_item_callback(tab.new_button)()
     else:
         raise Exception(f"Unsupported class: {type(tab)}")
 
 
 def cdc_hints(item: int, pos: Tuple[int, int]):
     assert type(item) is int
-    assert type(pos) is tuple and len(pos) == 2 and all(map(lambda _: type(_) is int, pos))
+    assert (
+        type(pos) is tuple and len(pos) == 2 and all(map(lambda _: type(_) is int, pos))
+    )
     cdc: str = dpg.get_value(item)
     suggestions: List[str] = []
     suggestions.extend(

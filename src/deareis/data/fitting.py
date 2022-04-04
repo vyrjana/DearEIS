@@ -40,8 +40,8 @@ class FitSettings:
         assert type(dictionary) is dict
         return {
             "cdc": dictionary["cdc"],
-            "method": dictionary["method"],
-            "weight": dictionary["weight"],
+            "method": Method(dictionary["method"]),
+            "weight": Weight(dictionary["weight"]),
             "max_nfev": dictionary["max_nfev"],
         }
 
@@ -250,7 +250,9 @@ class FitResult:
             -self.impedance.imag,
         )
 
-    def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_bode_data(
+        self, num_per_decade: int = -1
+    ) -> Tuple[ndarray, ndarray, ndarray]:
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)

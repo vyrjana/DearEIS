@@ -19,6 +19,7 @@ import deareis.themes as themes
 
 # TODO: Argument type assertions
 
+
 class DataSetsTab:
     def __init__(self):
         self.tab: int = dpg.generate_uuid()
@@ -100,7 +101,7 @@ class DataSetsTab:
                         )
                         attach_tooltip(tooltips.datasets_load)
                         dpg.add_button(
-                            label="Remove",
+                            label="Delete",
                             width=-1,
                             tag=self.remove_button,
                         )
@@ -226,17 +227,13 @@ class DataSetsTab:
             dpg.configure_item(self.right_window, no_scrollbar=no_scrollbar)
             dpg.configure_item(self.left_window, width=self.table_width)
             if not dpg.is_item_shown(self.right_window):
-                dpg.configure_item(
-                    self.enlarge_nyquist_button, label="Enlarge Nyquist"
-                )
+                dpg.configure_item(self.enlarge_nyquist_button, label="Enlarge Nyquist")
                 dpg.configure_item(self.enlarge_bode_button, label="Enlarge Bode")
                 dpg.show_item(self.right_window)
         elif total_width < self.table_width + self.plot_width:
             dpg.configure_item(self.left_window, width=-2)
             if dpg.is_item_shown(self.right_window):
-                dpg.configure_item(
-                    self.enlarge_nyquist_button, label="Show Nyquist"
-                )
+                dpg.configure_item(self.enlarge_nyquist_button, label="Show Nyquist")
                 dpg.configure_item(self.enlarge_bode_button, label="Show Bode")
                 dpg.hide_item(self.right_window)
         self.nyquist_plot.adjust_limits()
@@ -253,12 +250,18 @@ class DataSetsTab:
         assert type(data) is DataSet or data is None
         dpg.delete_item(self.dataset_table, children_only=True)
         dpg.add_table_column(parent=self.dataset_table, label="Mask", width_fixed=True)
+        attach_tooltip(tooltips.datasets_mask)
         dpg.add_table_column(parent=self.dataset_table, label="Index", width_fixed=True)
         dpg.add_table_column(parent=self.dataset_table, label="f (Hz)")
+        attach_tooltip(tooltips.datasets_frequency)
         dpg.add_table_column(parent=self.dataset_table, label="Z' (ohm)")
+        attach_tooltip(tooltips.datasets_real)
         dpg.add_table_column(parent=self.dataset_table, label='-Z" (ohm)')
+        attach_tooltip(tooltips.datasets_imaginary)
         dpg.add_table_column(parent=self.dataset_table, label="|Z| (ohm)")
+        attach_tooltip(tooltips.datasets_modulus)
         dpg.add_table_column(parent=self.dataset_table, label="-phi (deg.)")
+        attach_tooltip(tooltips.datasets_phase)
         if data is None:
             return
         mask: Dict[int, bool] = data.get_mask()

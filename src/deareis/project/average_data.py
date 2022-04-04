@@ -97,7 +97,9 @@ class AverageData:
                             data: DataSet
                             for data in self.datasets:
                                 with dpg.table_row():
-                                    dpg.add_checkbox(callback=lambda: self.update_preview([]))
+                                    dpg.add_checkbox(
+                                        callback=lambda: self.update_preview([])
+                                    )
                                     label: str = data.get_label()
                                     dpg.add_text(label)
                                     attach_tooltip(label)
@@ -113,6 +115,7 @@ class AverageData:
 
     def close(self):
         dpg.hide_item(self.window)
+        dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
     def accept(self):
@@ -185,7 +188,9 @@ class AverageData:
         return theme
 
     def update_preview(self, datasets: List[DataSet]):
-        assert type(datasets) is list and all(map(lambda _: type(_) is DataSet, datasets)), datasets
+        assert type(datasets) is list and all(
+            map(lambda _: type(_) is DataSet, datasets)
+        ), datasets
         self.nyquist_plot.clear_plot()
         dpg.add_plot_legend(parent=self.nyquist_plot.plot)
         selection: List[DataSet] = self.get_selection()

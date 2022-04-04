@@ -10,7 +10,7 @@ from deareis.utility import window_pos_dims
 # TODO: Implement a custom file dialog?
 # The one included in DPG has a few bug and quirks ranging from severe (crashes)
 # to mildly annoying.
-# 
+#
 # Features that would be good to have:
 # - Ability to create folders (at least when picking where to save a project).
 # - Ability to directly edit the path.
@@ -28,6 +28,7 @@ from deareis.utility import window_pos_dims
 # - Cross-platform support
 #   - No access to a machine with macOS for testing
 # - Implement as a separate package that can be used by others?
+
 
 def file_dialog(
     cwd: str, label: str, callback: Callable, extensions: List[str] = [".*"]

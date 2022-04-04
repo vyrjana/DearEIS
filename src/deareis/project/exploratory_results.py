@@ -214,6 +214,7 @@ class ExploratoryResults:
 
     def close(self):
         dpg.hide_item(self.window)
+        dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
     def accept(self, result: KramersKronigResult):

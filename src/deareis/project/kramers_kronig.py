@@ -26,8 +26,11 @@ from deareis.data.kramers_kronig import (
     mode_to_label,
     test_to_label,
 )
+from deareis.config import CONFIG
+
 
 # TODO: Argument type assertions
+
 
 class KramersKronigTab:
     def __init__(self):
@@ -132,6 +135,7 @@ class KramersKronigTab:
                                 dpg.add_slider_int(
                                     tag=self.num_RC_slider,
                                     width=-1,
+                                    clamped=True,
                                 )
                             with dpg.group(horizontal=True):
                                 dpg.add_text("Add capacitor in series".rjust(label_pad))
@@ -207,6 +211,7 @@ class KramersKronigTab:
                                     width=-1,
                                     tag=self.delete_result_button,
                                 )
+                                attach_tooltip(tooltips.kramers_kronig_remove)
                         with dpg.child_window(width=-1, height=-1):
                             with dpg.group(show=False):
                                 dpg.add_text("", tag=self.result_info_text)
@@ -238,6 +243,7 @@ class KramersKronigTab:
                                     label="Apply settings",
                                     tag=self.apply_settings_button,
                                 )
+                                attach_tooltip(tooltips.apply_settings)
                     with dpg.child_window(border=False, tag=self.plots_window):
                         with dpg.group():
                             # Residuals
@@ -258,6 +264,7 @@ class KramersKronigTab:
                                     dpg.add_button(label="Copy as CSV"),
                                     self.residuals_plot.copy_data,
                                 )
+                                attach_tooltip(tooltips.copy_plot_data_as_csv)
                             # Nyquist and Bode
                             with dpg.group(horizontal=True):
                                 with dpg.group():
@@ -279,6 +286,7 @@ class KramersKronigTab:
                                             dpg.add_button(label="Copy as CSV"),
                                             self.nyquist_plot.copy_data,
                                         )
+                                        attach_tooltip(tooltips.copy_plot_data_as_csv)
                                 with dpg.group(tag=self.horizontal_bode_group):
                                     self.bode_plot_horizontal = BodePlot(
                                         dpg.add_plot(
@@ -297,6 +305,7 @@ class KramersKronigTab:
                                             dpg.add_button(label="Copy as CSV"),
                                             self.bode_plot_horizontal.copy_data,
                                         )
+                                        attach_tooltip(tooltips.copy_plot_data_as_csv)
                             with dpg.group(tag=self.vertical_bode_group):
                                 self.bode_plot_vertical = BodePlot(
                                     dpg.add_plot(
@@ -315,6 +324,7 @@ class KramersKronigTab:
                                         dpg.add_button(label="Copy as CSV"),
                                         self.bode_plot_vertical.copy_data,
                                     )
+                                    attach_tooltip(tooltips.copy_plot_data_as_csv)
 
     def _assign_handlers(self):
         group_handler: int
@@ -553,7 +563,9 @@ class KramersKronigTab:
         before: Union[int, Tuple[int, int]] = -1
         if result is not None:
             before = self.nyquist_plot.plot_smooth(
-                *result.get_nyquist_data(num_per_decade=100),
+                *result.get_nyquist_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.nyquist_plot.plot_sim(
@@ -572,7 +584,9 @@ class KramersKronigTab:
         )
         if result is not None:
             before = self.bode_plot_horizontal.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.bode_plot_horizontal.plot_sim(
@@ -591,7 +605,9 @@ class KramersKronigTab:
         )
         if result is not None:
             before = self.bode_plot_vertical.plot_smooth(
-                *result.get_bode_data(num_per_decade=100),
+                *result.get_bode_data(
+                    num_per_decade=CONFIG.num_per_decade_in_simulated_lines
+                ),
                 False,
             )
             before = self.bode_plot_vertical.plot_sim(

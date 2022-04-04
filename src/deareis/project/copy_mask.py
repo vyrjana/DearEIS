@@ -72,7 +72,7 @@ class CopyMask:
                     default_value=self.labels[0],
                     width=-1,
                     tag=self.combo,
-                    callback=self.select_source,
+                    callback=lambda s, a, u: self.select_source(a),
                 )
             self.nyquist_plot = NyquistPlot(
                 dpg.add_plot(
@@ -116,6 +116,7 @@ class CopyMask:
 
     def close(self):
         dpg.hide_item(self.window)
+        dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
     def accept(self):

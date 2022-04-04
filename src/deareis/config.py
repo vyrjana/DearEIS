@@ -140,6 +140,7 @@ class Config:
             "exploratory_mu": dpg.mvPlotMarker_Circle,
             "exploratory_xps": dpg.mvPlotMarker_Square,
         }
+        self.num_per_decade_in_simulated_lines: int = 100
         if not exists(self.config_path):
             self.save()
         else:
@@ -168,6 +169,7 @@ class Config:
                 "default_simulation_settings": self.default_simulation_settings.to_dict(),
                 "colors": self.colors,
                 "markers": self.markers,
+                "num_per_decade_in_simulated_lines": self.num_per_decade_in_simulated_lines,
             },
             sort_keys=True,
             indent=2,
@@ -213,6 +215,10 @@ class Config:
                 if k not in self.markers:
                     continue
                 self.markers[k] = v
+        if "num_per_decade_in_simulated_lines" in dictionary:
+            self.num_per_decade_in_simulated_lines = dictionary[
+                "num_per_decade_in_simulated_lines"
+            ]
 
 
 CONFIG: Config = Config()

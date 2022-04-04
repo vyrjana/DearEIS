@@ -72,13 +72,13 @@ class TestSettings:
     def _parse_v1(dictionary: dict) -> dict:
         assert type(dictionary) is dict
         return {
-            "test": dictionary["test"],
-            "mode": dictionary["mode"],
+            "test": Test(dictionary["test"]),
+            "mode": Mode(dictionary["mode"]),
             "num_RC": dictionary["num_RC"],
             "mu_criterion": dictionary["mu_criterion"],
             "add_capacitance": dictionary["add_capacitance"],
             "add_inductance": dictionary["add_inductance"],
-            "method": dictionary["method"],
+            "method": Method(dictionary["method"]),
             "max_nfev": dictionary["max_nfev"],
         }
 
@@ -220,7 +220,9 @@ class TestResult:
             -self.impedance.imag,
         )
 
-    def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_bode_data(
+        self, num_per_decade: int = -1
+    ) -> Tuple[ndarray, ndarray, ndarray]:
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)

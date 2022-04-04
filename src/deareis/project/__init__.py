@@ -19,12 +19,13 @@ from typing import (
     IO,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
 from deareis.plot import ResidualsPlot, Plot
 from pandas import DataFrame
-from numpy import array, ndarray
+from numpy import array, ndarray, pad
 from sympy import Expr, latex, simplify
 from collections import OrderedDict
 import dearpygui.dearpygui as dpg
@@ -57,11 +58,12 @@ from deareis.project.simulation import SimulationTab
 from deareis.project.subtract_impedance import SubtractImpedance
 from deareis.project.toggle_points import TogglePoints
 from deareis.utility import (
-    window_pos_dims,
-    is_shift_down,
+    attach_tooltip,
+    get_item_pos,
     is_alt_down,
     is_control_down,
-    get_item_pos,
+    is_shift_down,
+    window_pos_dims,
 )
 import deareis.themes as themes
 from deareis.data.kramers_kronig import (
@@ -91,10 +93,9 @@ from deareis.data.simulation import (
     SimulationResult,
     SimulationSettings,
 )
+from deareis.data.plotting import PlotSettings, PlotType, label_to_plot_type
+from deareis.data.project import _parse_old_state, VERSION
 import deareis.keyboard_shortcuts as keyboard_shortcuts
-
-
-VERSION: int = 1
 
 
 def serialize_state(project: "Project", to_disk: bool = False) -> str:
@@ -104,6 +105,7 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
     fit: Optional[FitResult] = project.fitting_tab.get_result()
     simulation: Optional[SimulationResult] = project.simulation_tab.get_result()
     simulation_data: Optional[DataSet] = project.simulation_tab.get_dataset()
+    plot: Optional[PlotSettings] = project.plotting_tab.get_plot()
     state: dict = {
         "uuid": project.uuid,
         "datasets": list(map(lambda _: _.to_dict(), project.datasets)),
@@ -124,6 +126,7 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
             else None
         ),
         "simulations": list(map(lambda _: _.to_dict(), project.simulations)),
+        "plots": list(map(lambda _: _.to_dict(), project.plots)),
         "label": project.label,
         "notes": project.overview_tab.get_notes(),
         # Extra stuff
@@ -131,11 +134,16 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
         "active_test_uuid": test.uuid if test is not None else "",
         "active_fit_uuid": fit.uuid if fit is not None else "",
         "active_simulation_uuid": simulation.uuid if simulation is not None else "",
-        "active_simulation_data_uuid": simulation_data.uuid
-        if simulation_data is not None
-        else "",
+        "active_simulation_data_uuid": (
+            simulation_data.uuid if simulation_data is not None else ""
+        ),
+        "active_plot_uuid": plot.uuid if plot is not None else "",
     }
     if to_disk:
+        plot_dict: dict
+        for plot_dict in state["plots"]:
+            for uuid in plot_dict["themes"]:
+                plot_dict["themes"][uuid] = -1
         state["version"] = VERSION
         return dump_json(state, sort_keys=True, indent=2)
     state["overview_tab"] = project.overview_tab.to_dict()
@@ -143,30 +151,11 @@ def serialize_state(project: "Project", to_disk: bool = False) -> str:
     state["kramers_kronig_tab"] = project.kramers_kronig_tab.to_dict()
     state["fitting_tab"] = project.fitting_tab.to_dict()
     state["simulation_tab"] = project.simulation_tab.to_dict()
-    state["plotting_tab"] = project.plotting_tab.to_dict()
     return dump_json(state, sort_keys=True, indent=2)
 
 
-def _parse_state_v1(old: dict) -> dict:
-    assert type(old) is dict
-    # TODO: Update when a new format is created.
-    new: dict = old
-    return new
-
-
-def _parse_old_state(old: dict) -> dict:
-    assert type(old) is dict
-    version: int = old["version"]
-    del old["version"]
-    parsers: Dict[int, Callable] = {
-        1: _parse_state_v1,
-    }
-    assert version in parsers
-    return parsers[version](old)
-
-
 def find_object_by_uuid(values: Any, uuid: str) -> Optional[Any]:
-    assert type(uuid) is str
+    assert type(uuid) is str, uuid
     for value in values:
         if value.uuid == uuid:
             return value
@@ -191,20 +180,25 @@ def restore_state(json: str, project: "Project", is_dirty: bool = False):
     project.tests = {
         k: list(map(TestResult.from_dict, v)) for k, v in state["tests"].items()
     }
-    project.latest_fit_circuit = (
-        string_to_circuit(state["latest_fit_circuit"])
-        if state["latest_fit_circuit"] is not None
-        else None
-    )
+    if not from_disk:
+        project.latest_fit_circuit = (
+            string_to_circuit(state["latest_fit_circuit"])
+            if state["latest_fit_circuit"] is not None
+            else None
+        )
     project.fits = {
         k: list(map(FitResult.from_dict, v)) for k, v in state["fits"].items()
     }
-    project.latest_simulation_circuit = (
-        string_to_circuit(state["latest_simulation_circuit"])
-        if state["latest_simulation_circuit"] is not None
-        else None
-    )
+    if not from_disk:
+        project.latest_simulation_circuit = (
+            string_to_circuit(state["latest_simulation_circuit"])
+            if state["latest_simulation_circuit"] is not None
+            else None
+        )
     project.simulations = list(map(SimulationResult.from_dict, state["simulations"]))
+    project.plots = list(map(PlotSettings.from_dict, state["plots"]))
+    if from_disk:
+        list(map(lambda _: _.recreate_themes(), project.plots))
     project.set_label(state["label"])
     project.set_notes(state["notes"])
     # Use the restored Project state to restore the GUI
@@ -242,6 +236,16 @@ def restore_state(json: str, project: "Project", is_dirty: bool = False):
         ),
     )
     project.select_simulation_result(result=simulation)
+    plot: Optional[PlotSettings] = find_object_by_uuid(
+        project.plots,
+        state["active_plot_uuid"],
+    )
+    project.update_possible_plot_series()
+    if plot is None:
+        project.create_plot()
+    else:
+        project.plotting_tab.populate_plot_combo(project.plots)
+        project.select_plot(plot.get_label(), fit_to_data=from_disk)
     if from_disk:
         # The initial state should not be an empty project when loaded from disk
         project.state_history_index = -1
@@ -259,9 +263,12 @@ def restore_state(json: str, project: "Project", is_dirty: bool = False):
             project.kramers_kronig_tab.restore_state(state["kramers_kronig_tab"])
             project.fitting_tab.restore_state(state["fitting_tab"])
             project.simulation_tab.restore_state(state["simulation_tab"])
-            project.plotting_tab.restore_state(state["plotting_tab"])
         except KeyError:
             pass
+
+
+def sympy_wrapper(expr: Expr, queue: Queue):
+    queue.put(simplify(expr))
 
 
 def get_sympy_expr(circuit: Circuit) -> Expr:
@@ -269,11 +276,13 @@ def get_sympy_expr(circuit: Circuit) -> Expr:
     expr: Expr = circuit.to_sympy()
     # Try to simplify the expression, but don't wait for an indefinite period of time
     queue: Queue = Queue()
-
-    def wrap(e):
-        queue.put(simplify(e))
-
-    proc: Process = Process(target=wrap, args=(expr,))
+    proc: Process = Process(
+        target=sympy_wrapper,
+        args=(
+            expr,
+            queue,
+        ),
+    )
     proc.start()
     try:
         expr = queue.get(True, 2)
@@ -303,6 +312,7 @@ class Project:
         self.error_message: Optional["ErrorMessage"] = None
         self.working_indicator: Optional["WorkingIndicator"] = None
         self.close_callback: Optional[Callable] = None
+        self.save_callback: Optional[Callable] = None
         self.is_dirty: bool = True
         self.label: str = "Project"
         self.notes: str = ""
@@ -323,6 +333,8 @@ class Project:
         # - Simulation
         self.latest_simulation_circuit: Optional[Circuit] = None
         self.simulations: List[SimulationResult] = []
+        # - Plotting
+        self.plots: List[PlotSettings] = []
         #
         self._assemble(parent if parent >= 0 else dpg.last_item())
         self._assign_handlers()
@@ -458,7 +470,26 @@ class Project:
         self.apply_simulation_settings(settings=CONFIG.default_simulation_settings)
 
     def _attach_plotting(self):
-        self.plotting_tab = PlottingTab()
+        tab: PlottingTab = PlottingTab()
+        self.plotting_tab = tab
+        dpg.set_item_callback(tab.plot_combo, lambda s, a, u: self.select_plot(a))
+        dpg.set_item_callback(
+            tab.label_input, lambda s, a, u: self.update_plot_label(a)
+        )
+        dpg.set_item_callback(tab.type_combo, lambda s, a, u: self.select_plot_type(a))
+        dpg.set_item_callback(tab.new_button, self.create_plot)
+        dpg.set_item_callback(tab.remove_button, self.remove_plot)
+        dpg.set_item_callback(
+            tab.select_all_button, lambda s, a, u: self.select_all_plot_series(u)
+        )
+        dpg.set_item_callback(
+            tab.unselect_all_button, lambda s, a, u: self.select_all_plot_series(u)
+        )
+        dpg.set_item_callback(
+            tab.copy_appearances_button, self.copy_plot_appearance_settings
+        )
+        dpg.set_item_callback(tab.copy_csv_button, self.copy_plot_csv)
+        self.create_plot()
 
     def _assign_handlers(self):
         keys: List[int] = [
@@ -481,6 +512,7 @@ class Project:
             dpg.mvKey_E,
             dpg.mvKey_F,
             dpg.mvKey_K,
+            dpg.mvKey_L,
             dpg.mvKey_Left,
             dpg.mvKey_N,
             dpg.mvKey_Next,
@@ -514,7 +546,11 @@ class Project:
             modal_window_exists: bool = dpg.does_item_exist(self.modal_window)
             if modal_window_exists and dpg.is_item_shown(self.modal_window):
                 return
-            elif modal_window_exists:
+            elif (
+                modal_window_exists
+                and self.modal_window != self.error_message.window  # type: ignore
+                and self.modal_window != self.working_indicator.window  # type: ignore
+            ):
                 dpg.delete_item(self.modal_window)
             self.modal_window = -1
         if is_control_down() and is_shift_down():
@@ -540,6 +576,9 @@ class Project:
                     keyboard_shortcuts.copy_plot_data(
                         self.simulation_tab.bode_plot_horizontal
                     )
+            elif key == dpg.mvKey_C:
+                if self.plotting_tab.is_visible():
+                    self.copy_plot_csv()
             elif key == dpg.mvKey_N:
                 if self.datasets_tab.is_visible():
                     keyboard_shortcuts.copy_plot_data(self.datasets_tab.nyquist_plot)
@@ -558,6 +597,9 @@ class Project:
                     )
                 elif self.fitting_tab.is_visible():
                     keyboard_shortcuts.copy_plot_data(self.fitting_tab.residuals_plot)
+            elif key == dpg.mvKey_S:
+                if self.plotting_tab.is_visible():
+                    self.select_all_plot_series(False)
             elif key == dpg.mvKey_Down:
                 keyboard_shortcuts.go_to_project_tab(self, step=1)
             elif key == dpg.mvKey_Up:
@@ -590,7 +632,18 @@ class Project:
             elif key == dpg.mvKey_0:
                 keyboard_shortcuts.go_to_project_tab(self, index=0)
         elif is_control_down():
-            if key == dpg.mvKey_S:  # Save project
+            if key == dpg.mvKey_Return:
+                if self.datasets_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.datasets_tab)
+                elif self.kramers_kronig_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.kramers_kronig_tab)
+                elif self.fitting_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.fitting_tab)
+                elif self.simulation_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.simulation_tab)
+                elif self.plotting_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.plotting_tab)
+            elif key == dpg.mvKey_S:  # Save project
                 keyboard_shortcuts.save(self)
             elif key == dpg.mvKey_Spacebar:
                 if self.fitting_tab.is_visible():
@@ -655,11 +708,16 @@ class Project:
                     keyboard_shortcuts.copy_output(self.fitting_tab)
                 elif self.simulation_tab.is_visible():
                     keyboard_shortcuts.copy_output(self.simulation_tab)
+                elif self.plotting_tab.is_visible():
+                    self.copy_plot_appearance_settings()
             elif key == dpg.mvKey_E:
                 if self.fitting_tab.is_visible():
                     keyboard_shortcuts.show_circuit_editor(self.fitting_tab)
                 elif self.simulation_tab.is_visible():
                     keyboard_shortcuts.show_circuit_editor(self.simulation_tab)
+            elif key == dpg.mvKey_L:
+                if self.datasets_tab.is_visible():
+                    self.select_dataset_files()
             elif key == dpg.mvKey_N:
                 if self.datasets_tab.is_visible():
                     keyboard_shortcuts.show_plot(self.datasets_tab.nyquist_plot, self)
@@ -681,6 +739,8 @@ class Project:
             elif key == dpg.mvKey_S:
                 if self.datasets_tab.is_visible():
                     keyboard_shortcuts.subtract_impedance(self)
+                elif self.plotting_tab.is_visible():
+                    self.select_all_plot_series(True)
             elif key == dpg.mvKey_T:
                 if self.datasets_tab.is_visible():
                     keyboard_shortcuts.toggle_points(self)
@@ -693,6 +753,8 @@ class Project:
                     keyboard_shortcuts.remove(self, FitResult)
                 elif self.simulation_tab.is_visible():
                     keyboard_shortcuts.remove(self, SimulationResult)
+                elif self.plotting_tab.is_visible():
+                    keyboard_shortcuts.remove(self, PlotSettings)
             elif key == dpg.mvKey_Return:
                 if self.datasets_tab.is_visible():
                     keyboard_shortcuts.perform_action(self.datasets_tab)
@@ -702,17 +764,41 @@ class Project:
                     keyboard_shortcuts.perform_action(self.fitting_tab)
                 elif self.simulation_tab.is_visible():
                     keyboard_shortcuts.perform_action(self.simulation_tab)
+                elif self.plotting_tab.is_visible():
+                    keyboard_shortcuts.perform_action(self.plotting_tab)
             elif key == dpg.mvKey_Next:
-                keyboard_shortcuts.go_to_result(self, step=1)
+                if self.overview_tab.is_visible():
+                    pass
+                elif self.datasets_tab.is_visible():
+                    pass
+                elif self.plotting_tab.is_visible():
+                    keyboard_shortcuts.go_to_plot_type(self, step=1)
+                else:
+                    keyboard_shortcuts.go_to_result(self, step=1)
             elif key == dpg.mvKey_Prior:
-                keyboard_shortcuts.go_to_result(self, step=-1)
+                if self.overview_tab.is_visible():
+                    pass
+                elif self.datasets_tab.is_visible():
+                    pass
+                elif self.plotting_tab.is_visible():
+                    keyboard_shortcuts.go_to_plot_type(self, step=-1)
+                else:
+                    keyboard_shortcuts.go_to_result(self, step=-1)
         elif is_shift_down():
             pass
         else:
-            if key == dpg.mvKey_Next:
-                keyboard_shortcuts.go_to_dataset(self, step=1)
-            elif key == dpg.mvKey_Prior:
-                keyboard_shortcuts.go_to_dataset(self, step=-1)
+            if self.overview_tab.is_visible():
+                pass
+            elif self.plotting_tab.is_visible():
+                if key == dpg.mvKey_Next:
+                    keyboard_shortcuts.go_to_plot(self, step=1)
+                elif key == dpg.mvKey_Prior:
+                    keyboard_shortcuts.go_to_plot(self, step=-1)
+            else:
+                if key == dpg.mvKey_Next:
+                    keyboard_shortcuts.go_to_dataset(self, step=1)
+                elif key == dpg.mvKey_Prior:
+                    keyboard_shortcuts.go_to_dataset(self, step=-1)
 
     def is_visible(self) -> bool:
         return (
@@ -741,6 +827,17 @@ class Project:
             dpg.split_frame(delay=250)
             self.error_message.show(msg)
         print(msg)
+        self.modal_window = self.error_message.show(msg)
+
+    def show_working_indicator(self, *args, **kwargs):
+        if self.working_indicator is None:
+            return
+        self.modal_window = self.working_indicator.show(*args, **kwargs)
+
+    def hide_working_indicator(self):
+        if self.working_indicator is None:
+            return
+        self.working_indicator.hide()
 
     def show_plot_modal_window(self, sender: int, app_data: None, plot: Plot):
         assert type(sender) is int
@@ -804,7 +901,12 @@ class Project:
             assert filename != ""
             assert extension == ".json"
         except (KeyError, AssertionError):
-            self.show_error(format_exc())
+            self.show_error(
+                format_exc()
+                + """
+
+Encountered error while trying to save project to a new path!"""
+            )
             return
         if exists(path) and path != self.path:
             dpg.split_frame(delay=100)
@@ -825,6 +927,10 @@ class Project:
             w: int
             h: int
             x, y, w, h = window_pos_dims(300, 50)
+            wrap_width: int = 280
+            message: str = f"Path already exists:\n{path}"
+            _, h = dpg.get_text_size(message, wrap_width=wrap_width)
+            h += 8 + 24 * 3
             with dpg.window(
                 label="Confirm overwrite",
                 modal=True,
@@ -839,7 +945,7 @@ class Project:
                 no_close=True,
                 tag=window,
             ):
-                dpg.add_text(f"Path already exists:\n{path}", wrap=280)
+                dpg.add_text(message, wrap=wrap_width)
                 dpg.add_spacer(height=8)
                 with dpg.group(horizontal=True):
                     dpg.add_button(
@@ -865,26 +971,61 @@ class Project:
                 [".json"],
             )
             return
-        path: str = str(Path(self.path).resolve())
-        tmp_path: Optional[str] = None
-        if exists(path):
-            tmp_path = path
-            i: int = 0
-            while exists(tmp_path):
-                i += 1
-                tmp_path = f"{path}.bak{i}"
-            rename(path, tmp_path)
-        state: str = serialize_state(self, True)
-        fp: IO
-        with open(path, "w") as fp:
-            fp.write(state)
-        self.path = path
-        if tmp_path is not None and exists(tmp_path):
-            assert exists(path)
-            remove(tmp_path)
-        self.state_history[-1] = serialize_state(self)
-        self.notes = self.overview_tab.get_notes()
-        self.set_dirty(False)
+        self.show_working_indicator("Saving project")
+        try:
+            path: str = str(Path(self.path).resolve())
+            tmp_path: Optional[str] = None
+            if exists(path):
+                tmp_path = path
+                i: int = 0
+                while exists(tmp_path):
+                    i += 1
+                    tmp_path = f"{path}.bak{i}"
+                rename(path, tmp_path)
+            state: str = serialize_state(self, True)
+            fp: IO
+            with open(path, "w") as fp:
+                fp.write(state)
+            self.path = path
+            if tmp_path is not None and exists(tmp_path):
+                if exists(path):
+                    remove(tmp_path)
+            self.state_history[-1] = serialize_state(self)
+            self.notes = self.overview_tab.get_notes()
+            self.set_dirty(False)
+            self.save_callback(self)
+        except Exception:
+            self.hide_working_indicator()
+            self.show_error(
+                format_exc()
+                + """
+
+Encountered error while trying to save project!"""
+            )
+            return
+        self.hide_working_indicator()
+        # Check for UUID collisions
+        all_uuids: List[str] = []
+        data: DataSet
+        for data in self.datasets:
+            all_uuids.append(data.uuid)
+            all_uuids.extend(map(lambda _: _.uuid, self.tests.get(data.uuid, [])))
+            all_uuids.extend(map(lambda _: _.uuid, self.fits.get(data.uuid, [])))
+        all_uuids.extend(map(lambda _: _.uuid, self.simulations))
+        all_uuids.extend(map(lambda _: _.uuid, self.plots))
+        try:
+            assert all(
+                map(lambda _: type(_) is str, all_uuids)
+            ), "Detected an invalid UUID!"
+        except AssertionError:
+            self.show_error(format_exc())
+            return
+        try:
+            assert len(set(all_uuids)) == len(all_uuids), "Detected a UUID collision!"
+        except AssertionError:
+            self.show_error(format_exc())
+            # TODO: Add reassignment of UUIDs if any collisions are detected?
+            return
 
     def close(self, force: bool = False):
         if self.is_dirty and not force:
@@ -961,7 +1102,8 @@ class Project:
             self.recent_directory,
             "Select data file(s)",
             lambda s, a, u: self.parse_dataset_files(
-                list(a.get("selections", {}).values())
+                list(a.get("selections", {}).values()),
+                s,
             ),
             [
                 ".*",
@@ -975,19 +1117,36 @@ class Project:
             ],
         )
 
-    def parse_dataset_files(self, paths: List[str], a=None, u=None):
+    def parse_dataset_files(self, paths: List[str], sender: int = -1):
         assert type(paths) is list and all(map(lambda _: type(_) is str, paths))
+        assert type(sender) is int
+        if sender >= 0:
+            dpg.delete_item(sender)
         self.recent_directory = dirname(paths[-1])
         existing_labels: List[str] = list(map(lambda _: _.get_label(), self.datasets))
         loaded_data: bool = False
+        num_paths: int = len(paths)
+        n: int
         path: str
-        for path in paths:
+        for n, path in enumerate(paths):
+            self.show_working_indicator(
+                f"Loading data: {n + 1}/{num_paths}", n / num_paths
+            )
             try:
                 spectra: List[DataSet] = pyimpspec.parse_data(path)
             except UnsupportedFileFormat:
                 continue
             except Exception:
-                self.show_error(format_exc())
+                self.hide_working_indicator()
+                self.show_error(
+                    format_exc()
+                    + f"""
+
+Encountered error while parsing data file:
+{path}
+
+The file might not contain any impedance data (e.g. due to an incomplete measurement), it could be in an unsupported format, or the file may even be corrupted."""
+                )
                 return
             spectrum: DataSet
             for spectrum in spectra:
@@ -1004,10 +1163,12 @@ class Project:
                 self.fits[spectrum.uuid] = []
             self.datasets.extend(spectra)
             loaded_data = True
+        self.hide_working_indicator()
         if not loaded_data:
             return
         assert all(map(lambda _: type(_) is DataSet, self.datasets))
         self.update_dataset_combos(spectrum, True)
+        self.update_possible_plot_series()
         self.update_state_history()
 
     def find_dataset(self, label: str) -> Optional[DataSet]:
@@ -1086,8 +1247,6 @@ class Project:
                 update_table_plots,
             )
             self.select_simulation_dataset("None")
-        # TODO: Update
-        # - Plotting tab
 
     def get_dataset(self) -> Optional[DataSet]:
         if len(self.datasets) == 0:
@@ -1099,12 +1258,15 @@ class Project:
         data: Optional[DataSet] = self.get_dataset()
         if data is None:
             return
-        window: int = -1
+        window: int = dpg.generate_uuid()
+        handler: int = dpg.generate_uuid()
 
         def close():
-            if window >= 0:
+            if dpg.does_item_exist(window):
                 dpg.hide_item(window)
                 dpg.delete_item(window)
+            if dpg.does_item_exist(handler):
+                dpg.delete_item(handler)
 
         def confirm():
             close()
@@ -1112,22 +1274,22 @@ class Project:
             del self.tests[data.uuid]
             del self.fits[data.uuid]
             self.update_dataset_combos(None, True)
+            self.update_plotting_tab()
             self.update_state_history()
-            # TODO: Update plotting tab
 
         if force:
             confirm()
             return
 
-        window = dpg.generate_uuid()
-
         x: int
         y: int
         w: int
         h: int
-        x, y, w, h = window_pos_dims(150, 100)
+        x, y, w, h = window_pos_dims(132, 100)
+        x, y = dpg.get_mouse_pos()
+        y += 100
         with dpg.window(
-            label="Delete data set?",
+            label="Delete data set",
             modal=True,
             pos=(
                 x,
@@ -1136,11 +1298,21 @@ class Project:
             width=w,
             height=h,
             tag=window,
+            on_close=close,
             no_resize=True,
         ):
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Confirm", callback=confirm)
                 dpg.add_button(label="Cancel", callback=close)
+        with dpg.handler_registry(tag=handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=close,
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Return,
+                callback=confirm,
+            )
         self.modal_window = window
 
     def modify_dataset_path(self, path: str):
@@ -1171,6 +1343,7 @@ class Project:
         existing_labels.sort()
         data.set_label(label)
         self.update_dataset_combos(data, False)
+        self.update_plotting_tab()
         self.update_state_history()
 
     def subtract_impedance(self):
@@ -1193,6 +1366,7 @@ class Project:
         self.select_dataset(label)
         if self.simulation_tab.get_dataset_label() == label:
             self.select_simulation_dataset(label)
+        self.update_plotting_tab()
         self.update_state_history()
 
     def toggle_points(self):
@@ -1209,7 +1383,6 @@ class Project:
         )
         self.datasets_tab.update_mask(mask)
         self.dataset_mask_modified()
-        self.update_state_history()
 
     def copy_mask(self):
         if len(self.datasets) < 2:
@@ -1232,6 +1405,7 @@ class Project:
         self.tests[data.uuid] = []
         self.fits[data.uuid] = []
         self.update_dataset_combos(data, True)
+        self.update_possible_plot_series()
         self.update_state_history()
 
     def average_datasets(self):
@@ -1278,6 +1452,7 @@ class Project:
         label: str = data.get_label()
         if self.simulation_tab.get_dataset_label() == label:
             self.select_simulation_dataset(label)
+        self.update_plotting_tab()
         self.update_state_history()
 
     def get_test(self, data: DataSet, label: str = "") -> Optional[TestResult]:
@@ -1306,7 +1481,7 @@ class Project:
             return
         results.remove(result)
         self.kramers_kronig_tab.select_dataset(data, results, True)
-        # TODO: Update plotting tab
+        self.update_plotting_tab()
         self.update_state_history()
 
     def apply_test_settings(
@@ -1393,8 +1568,7 @@ class Project:
         if mode == Mode.AUTO or mode == Mode.MANUAL:
             if mode == Mode.AUTO:
                 num_RC *= -1
-            if self.working_indicator is not None:
-                self.working_indicator.show()
+            self.show_working_indicator("Performing test(s)")
             try:
                 raw_result: KramersKronigResult = pyimpspec.perform_test(
                     data,
@@ -1408,12 +1582,15 @@ class Project:
                     num_procs=num_procs,
                 )
             except FittingError:
-                if self.working_indicator is not None:
-                    self.working_indicator.hide()
-                self.show_error(format_exc())
+                self.hide_working_indicator()
+                self.show_error(
+                    format_exc()
+                    + """
+
+Encountered error while performing a test!"""
+                )
                 return
-            if self.working_indicator is not None:
-                self.working_indicator.hide()
+            self.hide_working_indicator()
             result = TestResult(
                 uuid4().hex,
                 time(),
@@ -1430,13 +1607,13 @@ class Project:
             )
             self.tests[data.uuid].insert(0, result)
             self.kramers_kronig_tab.select_dataset(data, self.tests[data.uuid], True)
+            self.update_plotting_tab()
             self.update_state_history()
         elif mode == Mode.EXPLORATORY:
             num_RCs: List[int] = list(range(1, num_RC + 1))
             if len(num_RCs) == 0:
                 return
-            if self.working_indicator is not None:
-                self.working_indicator.show()
+            self.show_working_indicator("Performing test(s)")
             try:
                 raw_results: List[
                     KramersKronigResult
@@ -1452,12 +1629,15 @@ class Project:
                     num_procs=num_procs,
                 )
             except FittingError:
-                if self.working_indicator is not None:
-                    self.working_indicator.hide()
-                self.show_error(format_exc())
+                self.hide_working_indicator()
+                self.show_error(
+                    format_exc()
+                    + """
+
+Encountered error while performing a test!"""
+                )
                 return
-            if self.working_indicator is not None:
-                self.working_indicator.hide()
+            self.hide_working_indicator()
             self.show_exploratory_results(data, raw_results, settings, array(num_RCs))
         else:
             raise Exception("Unsupported mode!")
@@ -1486,6 +1666,7 @@ class Project:
             ),
         )
         self.kramers_kronig_tab.select_dataset(data, self.tests[data.uuid], True)
+        self.update_plotting_tab()
         self.update_state_history()
 
     def show_exploratory_results(
@@ -1568,8 +1749,7 @@ class Project:
         output: Output = self.fitting_tab.get_output_type()
         dataframe: DataFrame
         expr: Expr
-        if self.working_indicator is not None:
-            self.working_indicator.show()
+        self.show_working_indicator("Generating output")
         if output == Output.CDC_BASIC:
             dpg.set_clipboard_text(result.circuit.to_string())
         elif output == Output.CDC_EXTENDED:
@@ -1647,11 +1827,9 @@ class Project:
                     lines.append("}")
                     dpg.set_clipboard_text("\n".join(lines))
         else:
-            if self.working_indicator is not None:
-                self.working_indicator.hide()
+            self.hide_working_indicator()
             raise Exception(f"Unsupported output: {label} -> {output}")
-        if self.working_indicator is not None:
-            self.working_indicator.hide()
+        self.hide_working_indicator()
 
     def validate_fit_circuit(self, sender: int, cdc: str):
         assert type(sender) is int
@@ -1674,11 +1852,20 @@ class Project:
 
     def perform_fit(self):
         data: Optional[DataSet] = self.get_dataset()
+        current_cdc: str = self.fitting_tab.get_cdc_input()
         if data is None:
             return
-        elif self.latest_fit_circuit is None:
-            return
-        elif self.fitting_tab.get_cdc_input() in ["", "[]"]:
+        elif (
+            self.latest_fit_circuit is None
+            or current_cdc != self.latest_fit_circuit.to_string()
+        ):
+            self.validate_fit_circuit(
+                self.fitting_tab.cdc_input,
+                current_cdc,
+            )
+            if self.latest_fit_circuit is None:
+                return
+        elif current_cdc in ["", "[]"]:
             return
         tab: FittingTab = self.fitting_tab
         cdc: str = self.latest_fit_circuit.to_string(12)
@@ -1695,10 +1882,14 @@ class Project:
         try:
             pyimpspec.analysis.fitting.validate_circuit(self.latest_fit_circuit)
         except AssertionError:
-            self.show_error(format_exc())
+            self.show_error(
+                format_exc()
+                + """
+
+Encountered error while performing a fit!"""
+            )
             return
-        if self.working_indicator is not None:
-            self.working_indicator.show()
+        self.show_working_indicator("Performing fit(s)")
         try:
             raw_result: FittingResult = pyimpspec.fit_circuit_to_data(
                 self.latest_fit_circuit,
@@ -1709,12 +1900,15 @@ class Project:
                 num_procs=num_procs,
             )
         except FittingError:
-            if self.working_indicator is not None:
-                self.working_indicator.hide()
-            self.show_error(format_exc())
+            self.hide_working_indicator()
+            self.show_error(
+                format_exc()
+                + """
+
+Encountered error while performing a fit!"""
+            )
             return
-        if self.working_indicator is not None:
-            self.working_indicator.hide()
+        self.hide_working_indicator()
         result: FitResult = FitResult(
             uuid4().hex,
             time(),
@@ -1738,7 +1932,7 @@ class Project:
         )
         self.fits[data.uuid].insert(0, result)
         self.fitting_tab.select_dataset(data, self.fits[data.uuid], True)
-        # TODO: Update plotting tab
+        self.update_plotting_tab()
         self.update_state_history()
 
     def get_fit(self, data: DataSet, label: str = "") -> Optional[FitResult]:
@@ -1804,12 +1998,21 @@ class Project:
             return
         results.remove(result)
         self.fitting_tab.select_dataset(data, results, True)
-        # TODO: Update plotting tab
+        self.update_plotting_tab()
         self.update_state_history()
 
     def perform_simulation(self):
-        if self.latest_simulation_circuit is None:
-            return
+        current_cdc: str = self.simulation_tab.get_cdc_input()
+        if (
+            self.latest_simulation_circuit is None
+            or current_cdc != self.latest_simulation_circuit.to_string()
+        ):
+            self.validate_simulation_circuit(
+                self.simulation_tab.cdc_input,
+                current_cdc,
+            )
+            if self.latest_simulation_circuit is None:
+                return
         elif self.simulation_tab.get_cdc_input() in ["", "[]"]:
             return
         tab: SimulationTab = self.simulation_tab
@@ -1842,7 +2045,7 @@ class Project:
             label,
         )
         self.select_simulation_result(label)
-        # TODO: Update plotting tab
+        self.update_plotting_tab()
         self.update_state_history()
 
     def select_simulation_result(
@@ -1866,7 +2069,7 @@ class Project:
             self.simulations[0].get_label() if len(self.simulations) > 0 else ""
         )
         self.select_simulation_result(label)
-        # TODO: Update plotting tab
+        self.update_plotting_tab()
         self.update_state_history()
 
     def apply_simulation_settings(
@@ -1949,8 +2152,7 @@ class Project:
         expr: Expr
         dataframe: DataFrame
         value: Optional[float]
-        if self.working_indicator is not None:
-            self.working_indicator.show()
+        self.show_working_indicator("Generating output")
         if output == Output.CDC_BASIC:
             dpg.set_clipboard_text(result.circuit.to_string())
         elif output == Output.CDC_EXTENDED:
@@ -2025,11 +2227,695 @@ class Project:
                     lines.append("}")
                     dpg.set_clipboard_text("\n".join(lines))
         else:
-            if self.working_indicator is not None:
-                self.working_indicator.hide()
+            self.hide_working_indicator()
             raise Exception(f"Unsupported output: {label} -> {output}")
-        if self.working_indicator is not None:
-            self.working_indicator.hide()
+        self.hide_working_indicator()
+
+    def update_plotting_tab(self):
+        self.update_possible_plot_series()
+        self.update_active_plot_series()
+        self.update_plots()
+
+    def update_possible_plot_series(self):
+        plot: Optional[Plot] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        self.plotting_tab.populate_possible_series(
+            plot,
+            self.datasets,
+            self.tests,
+            self.fits,
+            self.simulations,
+            self.toggle_plot_series,
+            self.select_plot_series,
+        )
+
+    def update_active_plot_series(self):
+        plot: Optional[Plot] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        self.plotting_tab.populate_active_series(
+            plot,
+            self.datasets,
+            self.tests,
+            self.fits,
+            self.simulations,
+            self.update_plot_series_label,
+            self.edit_plot_series_theme,
+            self.change_plot_series_order,
+        )
+
+    def update_plots(self, fit_to_data: Optional[bool] = None):
+        assert type(fit_to_data) is bool or fit_to_data is None
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        self.plotting_tab.update_plots(
+            plot,
+            self.datasets,
+            self.tests,
+            self.fits,
+            self.simulations,
+            fit_to_data,
+        )
+
+    def create_plot(self):
+        existing_labels: List[str] = list(map(lambda _: _.get_label(), self.plots))
+        label: str = "Plot"
+        i: int = 1
+        while label in existing_labels:
+            i += 1
+            label = f"Plot ({i})"
+        plot: PlotSettings = PlotSettings(
+            label,
+            PlotType.NYQUIST,
+            [],  # Series order
+            {},  # Labels
+            {},  # Colors
+            {},  # Markers
+            {},  # Show lines
+            {},  # Themes
+            uuid4().hex,
+        )
+        self.plots.append(plot)
+        self.plots.sort(key=lambda _: _.get_label())
+        self.plotting_tab.populate_plot_combo(self.plots)
+        self.select_plot(plot.get_label())
+        self.update_state_history()
+
+    def select_plot(self, label: str, fit_to_data: Optional[bool] = None):
+        if len(self.plots) == 0:
+            return
+        plot: PlotSettings
+        for plot in self.plots:
+            if plot.get_label() == label:
+                break
+        self.plotting_tab.select_plot(plot)
+        self.update_active_plot_series()
+        self.update_plots(fit_to_data=fit_to_data)
+
+    def update_plot_label(self, label: str):
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        plot.set_label(label)
+        self.plots.sort(key=lambda _: _.get_label())
+        self.plotting_tab.populate_plot_combo(self.plots)
+        self.select_plot(plot.get_label())
+        self.update_state_history()
+
+    def select_plot_type(self, label: str):
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        plot_type: PlotType = label_to_plot_type[label]
+        plot.plot_type = plot_type
+        self.plotting_tab.select_plot_type(plot_type)
+        self.update_state_history()
+
+    def remove_plot(self):
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        self.plots.remove(plot)
+        if len(self.plots) == 0:
+            self.create_plot()
+        else:
+            plot = self.plots[0]
+            self.plotting_tab.populate_plot_combo(self.plots)
+            self.select_plot(plot.get_label())
+        self.update_state_history()
+
+    def copy_plot_appearance_settings(self):
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        elif len(self.plots) < 2:
+            return
+        affected_series: List[DataSet, TestResult, FitResult, SimulationResult] = []
+        uuid: str
+        for uuid in plot.themes:
+            series: Union[DataSet, TestResult, FitResult, SimulationResult]
+            series = plot.find_series(
+                uuid,
+                self.datasets,
+                self.tests,
+                self.fits,
+                self.simulations,
+            )
+            if series is None:
+                continue
+            affected_series.append(series)
+        types: list = [
+            DataSet,
+            TestResult,
+            FitResult,
+            SimulationResult,
+        ]
+        affected_series.sort(
+            key=lambda _: (
+                types.index(type(_)),
+                _.get_label(),
+            )
+        )
+        affected_checkboxes: Dict[str, bool] = {_.uuid: True for _ in affected_series}
+        window: int = dpg.generate_uuid()
+        handler: int = dpg.generate_uuid()
+        source_combo: int = dpg.generate_uuid()
+        preview_table: int = dpg.generate_uuid()
+        labels_checkbox: int = dpg.generate_uuid()
+        colors_checkbox: int = dpg.generate_uuid()
+        markers_checkbox: int = dpg.generate_uuid()
+        lines_checkbox: int = dpg.generate_uuid()
+        plot_lookup: Dict[str, PlotSettings] = {_.get_label(): _ for _ in self.plots}
+        del plot_lookup[plot.get_label()]
+        marker_lookup: Dict[int, str] = {v: k for k, v in themes.PLOT_MARKERS.items()}
+        label: str
+
+        def close():
+            dpg.hide_item(window)
+            dpg.delete_item(window)
+            dpg.delete_item(handler)
+
+        def accept_settings():
+            row: int
+            for row in dpg.get_item_children(preview_table, slot=1):
+                uuid = dpg.get_item_user_data(row)
+                i: int
+                item: int
+                for i, item in enumerate(dpg.get_item_children(row, slot=1)):
+                    item_type: str = dpg.get_item_type(item)
+                    if i == 0:
+                        assert "::mvText" in item_type, item_type
+                        plot.set_series_label(uuid, dpg.get_item_user_data(item))
+                    elif i == 1:
+                        assert "::mvTooltip" in item_type, item_type
+                    elif i == 2:
+                        assert "::mvColorEdit" in item_type, item_type
+                        plot.set_series_color(uuid, dpg.get_item_user_data(item))
+                        themes.update_plot_theme_color(
+                            plot.themes[uuid], plot.get_series_color(uuid)
+                        )
+                    elif i == 3:
+                        assert "::mvText" in item_type, item_type
+                        plot.set_series_marker(uuid, dpg.get_item_user_data(item))
+                        themes.update_plot_theme_marker(
+                            plot.themes[uuid], plot.get_series_marker(uuid)
+                        )
+                    elif i == 4:
+                        assert "::mvCheckbox" in item_type, item_type
+                        plot.set_series_line(uuid, dpg.get_item_user_data(item))
+            close()
+            self.update_plotting_tab()
+            self.update_state_history()
+
+        def change_source(label=""):
+            if label == "":
+                label = dpg.get_value(source_combo)
+            other_plot: PlotSettings = plot_lookup[label]
+            assert other_plot is not None
+            dpg.delete_item(preview_table, children_only=True)
+            dpg.add_table_column(label="Label", parent=preview_table)
+            dpg.add_table_column(label="Color", width_fixed=True, parent=preview_table)
+            dpg.add_table_column(label="Marker", width_fixed=True, parent=preview_table)
+            dpg.add_table_column(label="Line", width_fixed=True, parent=preview_table)
+            copy_labels: bool = dpg.get_value(labels_checkbox)
+            copy_colors: bool = dpg.get_value(colors_checkbox)
+            copy_markers: bool = dpg.get_value(markers_checkbox)
+            copy_lines: bool = dpg.get_value(lines_checkbox)
+            for series in affected_series:
+                uuid = series.uuid
+                source: PlotSettings = (
+                    other_plot
+                    if uuid in other_plot.themes and affected_checkboxes[uuid] is True
+                    else plot
+                )
+                with dpg.table_row(parent=preview_table, user_data=uuid):
+                    label = (
+                        source.get_series_label(uuid)
+                        if copy_labels
+                        else plot.get_series_label(uuid)
+                    )
+                    dpg.add_text(
+                        label or series.get_label(),
+                        user_data=label,
+                    )
+                    attach_tooltip(
+                        label
+                        or series.get_label()
+                        + (
+                            ""
+                            if (label or series.get_label()) == series.get_label()
+                            else f"\n{series.get_label()}"
+                        )
+                    )
+                    color: List[float] = (
+                        source.get_series_color(uuid)
+                        if copy_colors
+                        else plot.get_series_color(uuid)
+                    )
+                    dpg.add_color_edit(
+                        default_value=color,
+                        enabled=False,
+                        no_picker=True,
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        user_data=color,
+                    )
+                    marker: int = (
+                        source.get_series_marker(uuid)
+                        if copy_markers
+                        else plot.get_series_marker(uuid)
+                    )
+                    dpg.add_text(
+                        marker_lookup.get(marker, "None"),
+                        user_data=marker,
+                    )
+                    show_line: bool = (
+                        source.get_series_line(uuid)
+                        if copy_lines
+                        else plot.get_series_line(uuid)
+                    )
+                    dpg.add_checkbox(
+                        default_value=show_line,
+                        enabled=False,
+                        user_data=show_line,
+                    )
+
+        def toggle_affected_series(state: bool, uuid: str):
+            nonlocal affected_checkboxes
+            affected_checkboxes[uuid] = state
+            change_source()
+
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = window_pos_dims(720, 540)
+        with dpg.window(
+            label="Copy appearance settings",
+            modal=True,
+            no_resize=True,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+            on_close=close,
+            tag=window,
+        ):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Source")
+                dpg.add_combo(
+                    items=list(plot_lookup.keys()),
+                    default_value=list(plot_lookup.keys())[0],
+                    width=-1,
+                    callback=lambda s, a, u: change_source(a),
+                    tag=source_combo,
+                )
+            with dpg.group(horizontal=True):
+                with dpg.group():
+                    dpg.add_text("Before")
+                    with dpg.child_window(width=348, height=-24):
+                        with dpg.table(
+                            borders_outerV=True,
+                            borders_outerH=True,
+                            borders_innerV=True,
+                            borders_innerH=True,
+                            scrollY=True,
+                            freeze_rows=1,
+                            width=-1,
+                            height=18 + 23 * len(plot.series_order),
+                            # tag=self.active_series_table,
+                        ):
+                            dpg.add_table_column(label="", width_fixed=True)
+                            dpg.add_table_column(label="Label")
+                            dpg.add_table_column(label="Color", width_fixed=True)
+                            dpg.add_table_column(label="Marker", width_fixed=True)
+                            dpg.add_table_column(label="Line", width_fixed=True)
+                            for series in affected_series:
+                                uuid = series.uuid
+                                with dpg.table_row():
+                                    dpg.add_checkbox(
+                                        default_value=True,
+                                        callback=lambda s, a, u: toggle_affected_series(
+                                            a, u
+                                        ),
+                                        user_data=uuid,
+                                    )
+                                    attach_tooltip(
+                                        "Toggle this to set whether or not this series should copy settings from the chosen source."
+                                    )
+                                    label = (
+                                        plot.get_series_label(uuid)
+                                        or series.get_label()
+                                    )
+                                    dpg.add_text(label)
+                                    attach_tooltip(
+                                        label
+                                        + (
+                                            ""
+                                            if label == series.get_label()
+                                            else f"\n{series.get_label()}"
+                                        )
+                                    )
+                                    dpg.add_color_edit(
+                                        default_value=plot.get_series_color(uuid),
+                                        enabled=False,
+                                        no_picker=True,
+                                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                                        no_inputs=True,
+                                    )
+                                    dpg.add_text(
+                                        marker_lookup.get(
+                                            plot.get_series_marker(uuid), "None"
+                                        )
+                                    )
+                                    dpg.add_checkbox(
+                                        default_value=plot.get_series_line(uuid),
+                                        enabled=False,
+                                    )
+                with dpg.group():
+                    dpg.add_text("After")
+                    with dpg.child_window(width=348, height=-24):
+                        dpg.add_table(
+                            borders_outerV=True,
+                            borders_outerH=True,
+                            borders_innerV=True,
+                            borders_innerH=True,
+                            scrollY=True,
+                            freeze_rows=1,
+                            width=-1,
+                            height=18 + 23 * len(plot.series_order),
+                            tag=preview_table,
+                        )
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Accept",
+                    callback=accept_settings,
+                )
+                dpg.add_spacer(width=354)
+                dpg.add_checkbox(
+                    label="Labels",
+                    default_value=True,
+                    tag=labels_checkbox,
+                    callback=lambda s, a, u: change_source(),
+                )
+                dpg.add_checkbox(
+                    label="Colors",
+                    default_value=True,
+                    tag=colors_checkbox,
+                    callback=lambda s, a, u: change_source(),
+                )
+                dpg.add_checkbox(
+                    label="Markers",
+                    default_value=True,
+                    tag=markers_checkbox,
+                    callback=lambda s, a, u: change_source(),
+                )
+                dpg.add_checkbox(
+                    label="Lines",
+                    default_value=True,
+                    tag=lines_checkbox,
+                    callback=lambda s, a, u: change_source(),
+                )
+
+        change_source()
+        with dpg.handler_registry(tag=handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=close,
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Return,
+                callback=accept_settings,
+            )
+        self.modal_window = window
+
+    def select_all_plot_series(
+        self,
+        select: bool,
+    ):
+        assert type(select) is bool
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        series: Union[DataSet, TestResult, FitResult, SimulationResult]
+        for series in self.datasets:
+            if select:
+                plot.add_series(series)
+            else:
+                plot.remove_series(series.uuid)
+        tests: List[TestResult]
+        for tests in self.tests.values():
+            for series in tests:
+                if select:
+                    plot.add_series(series)
+                else:
+                    plot.remove_series(series.uuid)
+        fits: List[FitResult]
+        for fits in self.fits.values():
+            for series in fits:
+                if select:
+                    plot.add_series(series)
+                else:
+                    plot.remove_series(series.uuid)
+        for series in self.simulations:
+            if select:
+                plot.add_series(series)
+            else:
+                plot.remove_series(series.uuid)
+        self.update_possible_plot_series()
+        self.update_active_plot_series()
+        self.update_plots()
+        self.update_state_history()
+
+    def select_plot_series(
+        self,
+        user_data: Tuple[
+            bool, List[Union[DataSet, TestResult, FitResult, SimulationResult]]
+        ],
+    ):
+        assert (
+            type(user_data) is tuple
+            and len(user_data) == 2
+            and type(user_data[0]) is bool
+            and type(user_data[1]) is list
+        )
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        select: bool
+        affected_series: List[Union[DataSet, TestResult, FitResult, SimulationResult]]
+        select, affected_series = user_data
+        series: Union[DataSet, TestResult, FitResult, SimulationResult]
+        for series in affected_series:
+            if select:
+                plot.add_series(series)
+            else:
+                plot.remove_series(series.uuid)
+        self.update_possible_plot_series()
+        self.update_active_plot_series()
+        self.update_plots()
+        self.update_state_history()
+
+    def toggle_plot_series(
+        self,
+        sender: int,
+        state: bool,
+        series: Union[DataSet, TestResult, FitResult, SimulationResult],
+    ):
+        assert type(sender) is int
+        assert type(state) is bool
+        assert (
+            type(series) is DataSet
+            or type(series) is TestResult
+            or type(series) is FitResult
+            or type(series) is SimulationResult
+        )
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        if state:
+            plot.add_series(series)
+        else:
+            plot.remove_series(series.uuid)
+        self.update_active_plot_series()
+        self.update_plots()
+        self.update_state_history()
+
+    def edit_plot_series_theme(
+        self,
+        sender: int,
+        app_data: None,
+        series: Union[DataSet, TestResult, FitResult, SimulationResult],
+    ):
+        assert (
+            type(series) is DataSet
+            or type(series) is TestResult
+            or type(series) is FitResult
+            or type(series) is SimulationResult
+        )
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        window: int = dpg.generate_uuid()
+        handler: int = dpg.generate_uuid()
+        states: List[str] = []
+
+        def accept_plot_series_theme():
+            assert type(states) is list and len(states) == 2
+            dpg.hide_item(window)
+            dpg.delete_item(window)
+            dpg.delete_item(handler)
+            before: str
+            after: str
+            before, after = states
+            if before == after:
+                return
+            self.update_active_plot_series()
+            self.update_state_history()
+
+        uuid: str = series.uuid
+        marker_lookup: Dict[int, str] = {v: k for k, v in themes.PLOT_MARKERS.items()}
+        color: List[float] = plot.get_series_color(uuid)
+        marker: int = plot.get_series_marker(uuid)
+        show_line: bool = plot.get_series_line(uuid)
+
+        def hash_state() -> str:
+            return f"{','.join(map(str, color))};{str(marker)};{str(show_line)}"
+
+        states.extend([hash_state(), hash_state()])
+
+        def update_color(sender: int, new_color: List[float]):
+            nonlocal states
+            nonlocal color
+            new_color = list(map(lambda _: _ * 255, new_color))
+            color = new_color[:]
+            plot.set_series_color(uuid, new_color)  # type: ignore
+            states[1] = hash_state()
+
+        def update_marker(sender: int, label: str):
+            nonlocal states
+            nonlocal marker
+            marker = themes.PLOT_MARKERS.get(label, -1)
+            plot.set_series_marker(uuid, marker)  # type: ignore
+            self.update_plots()
+            states[1] = hash_state()
+
+        def update_line(sender: int, state: bool):
+            nonlocal states
+            nonlocal show_line
+            show_line = state
+            plot.set_series_line(uuid, state)  # type: ignore
+            self.update_plots()
+            states[1] = hash_state()
+
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = window_pos_dims(200, 100)
+        x, y = dpg.get_mouse_pos()
+        y += 190
+        with dpg.window(
+            label="Edit appearance",
+            modal=True,
+            no_resize=True,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+            on_close=accept_plot_series_theme,
+            tag=window,
+        ):
+            with dpg.group(horizontal=True):
+                dpg.add_text(" Color")
+                dpg.add_color_edit(
+                    default_value=color,
+                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                    no_inputs=True,
+                    alpha_bar=True,
+                    callback=update_color,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Marker")
+                dpg.add_combo(
+                    items=["None"] + list(themes.PLOT_MARKERS.keys()),
+                    default_value=marker_lookup.get(marker, "None"),
+                    width=-1,
+                    callback=update_marker,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("  Line")
+                dpg.add_checkbox(
+                    default_value=plot.get_series_line(uuid),
+                    callback=update_line,
+                )
+
+        with dpg.handler_registry(tag=handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=accept_plot_series_theme,
+            )
+        self.modal_window = window
+
+    def update_plot_series_label(self, sender: int, label: str, uuid: str):
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        plot.set_series_label(uuid, label)
+        self.update_plots()
+        self.update_state_history()
+
+    def change_plot_series_order(
+        self, sender: int, app_data: None, user_data: Tuple[str, int]
+    ):
+        uuid: str
+        step: int
+        uuid, step = user_data
+        plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
+        if plot is None:
+            return
+        elif uuid not in plot.series_order:
+            return
+        index: int = plot.series_order.index(uuid)
+        if index <= 0 and step < 0:
+            return
+        elif index >= len(plot.series_order) - 1 and step > 0:
+            return
+        plot.series_order.pop(index)
+        index += step
+        plot.series_order.insert(index, uuid)
+        self.update_active_plot_series()
+        self.update_plots()
+        self.update_state_history()
+
+    def copy_plot_csv(self):
+        data: dict = self.plotting_tab.get_data()
+        if len(data) == 0:
+            dpg.set_clipboard_text("")
+            return
+        lengths: Set[int] = set(map(len, data.values()))
+        max_len: int = max(lengths)
+        if max_len == 0:
+            dpg.set_clipboard_text("")
+            return
+        elif len(lengths) > 1:
+            label: str
+            for label in data.keys():
+                data[label] = pad(
+                    data[label],
+                    (
+                        0,
+                        max_len - len(data[label]),
+                    ),
+                    constant_values=None,
+                )
+        dpg.set_clipboard_text(DataFrame.from_dict(data).to_csv(index=False))
 
 
 if __name__ == "__main__":

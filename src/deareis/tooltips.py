@@ -6,6 +6,22 @@
 BOUKAMP1995: str = "Bernard A. Boukamp, 'A Linear Kronig-Kramers Transform Test for Immittance Data Validation', Journal of the Electrochemical Society, 1995, vol. 142, no. 6, pp. 1885-1894."
 SCHONLEBER2014: str = "M. Schönleber, D. Klotz, and E. Ivers-Tiffée, 'A Method for Improving the Robustness of linear Kramers-Kronig Validity Tests', Electrochimica Acta, 2014, vol. 131, pp. 20-27."
 
+apply_settings: str = """
+Apply the settings that were used to generate the currently selected result.
+""".strip()
+
+copy_plot_data_as_csv: str = """
+Copy the data in the plot to the clipboard as character-separated values.
+""".strip()
+
+copy_output: str = """
+Copy the chosen output to the clipboard.
+""".strip()
+
+open_circuit_editor: str = """
+Open the circuit editor.
+""".strip()
+
 datasets_load: str = "Select files to load as new data sets."
 
 datasets_remove: str = "Remove the current data set."
@@ -17,6 +33,30 @@ datasets_toggle: str = "Toggle a range of points."
 datasets_copy: str = "Copy the mask from another data set."
 
 datasets_subtract: str = "Subtract impedance from the current spectrum."
+
+datasets_mask: str = """
+If checked, then the corresponding data point will be omitted from plots, tests, and fits.
+""".strip()
+
+datasets_frequency: str = """
+The excitation frequency used when recording this data point.
+""".strip()
+
+datasets_real: str = """
+The real part of the complex impedance.
+""".strip()
+
+datasets_imaginary: str = """
+The negative imaginary part of the complex impedance.
+""".strip()
+
+datasets_modulus: str = """
+The modulus of the complex impedance.
+""".strip()
+
+datasets_phase: str = """
+The negative phase shift of the complex impedance.
+""".strip()
 
 kramers_kronig_test: str = f"""
 Fit an equivalent circuit (Voigt circuit, fig. 1) to an impedance spectrum.
@@ -101,16 +141,22 @@ See the following references for more information about the linear Kramers-Kroni
 Analysing the contribution of higher order harmonics to the response signal is another way of checking for non-linearity. However, this requires access to the response signal data itself rather than the final impedance data produced from the excitation and response signals.
 """.strip()
 
+kramers_kronig_remove: str = """
+Remove the current test result.
+""".strip()
+
 kramers_kronig_pseudo_chisqr: str = f"""
 Pseudo chi-squared value calculated according to eq. 14.
 
 {BOUKAMP1995}
 """.strip()
 
-kramers_kronig_exploratory_result: str = "The result to highlight and ultimately save."
+kramers_kronig_exploratory_result: str = """
+The result to highlight and ultimately save.
+""".strip()
 
 fitting_cdc: str = """
-The equivalent circuit to fit to data. A circuit description code (CDC) can be typed in to define the equivalent circuit. Alternatively, the circuit editor can be used to construct the equivalent circuit.
+The equivalent circuit to fit to the data. A circuit description code (CDC) can be typed in to define the equivalent circuit. Alternatively, the circuit editor can be used to construct the equivalent circuit.
 """.strip()
 
 fitting_method: str = """
@@ -171,6 +217,26 @@ fitting_ndata: str = """
 The number of data points in the fit.
 """.strip()
 
+fitting_element: str = """
+An element in the equivalent circuit.
+""".strip()
+
+fitting_parameter: str = """
+A parameter in the element.
+""".strip()
+
+fitting_value: str = """
+The fitted value of the parameter.
+""".strip()
+
+fitting_error: str = """
+The estimated standard error of the fitted value.
+""".strip()
+
+fitting_remove: str = """
+Remove the current fit result.
+""".strip()
+
 simulation_cdc: str = """
 The equivalent circuit to simulate. A circuit description code (CDC) can be typed in to define the equivalent circuit. Alternatively, the circuit editor can be used to construct the equivalent circuit.
 """.strip()
@@ -185,6 +251,22 @@ The maximum frequency to simulate.
 
 simulation_per_decade: str = """
 The number of frequencies per decade in the frequency range.
+""".strip()
+
+simulation_element: str = """
+An element in the circuit.
+""".strip()
+
+simulation_parameter: str = """
+A parameter in the element.
+""".strip()
+
+simulation_parameter_value: str = """
+The value of the parameter.
+""".strip()
+
+simulation_remove: str = """
+Remove the current simulation result.
 """.strip()
 
 circuit_editor_cdc_input: str = """
@@ -237,4 +319,64 @@ This output is unlikely to be accepted by another program that accepts a CDC as 
 
 circuit_editor_status: str = """
 Potential issues with the circuit, which is defined using nodes and connections in the window above, are presented here.
+""".strip()
+
+plotting_dataset_checkbox: str = """
+Whether or not this data set is included in the plot.
+""".strip()
+
+plotting_dataset_label: str = """
+The label assigned to this data set in the 'Data sets' tab.
+""".strip()
+
+plotting_test_checkbox: str = """
+Whether or not this test result is included in the plot.
+""".strip()
+
+plotting_fit_checkbox: str = """
+Whether or not this fit result is included in the plot.
+""".strip()
+
+plotting_simulation_checkbox: str = """
+Whether or not this simulation result is included in the plot.
+""".strip()
+
+plotting_filter: str = """
+Hide items that do not contain the string of text, which is entered into the input field to the right, in their labels. Test and fit results are considered to also contain the labels of their corresponding data sets.
+""".strip()
+
+plotting_select_all: str = """
+Add all of the items listed above to the plot.
+""".strip()
+
+plotting_unselect_all: str = """
+Remove all of the items listed above from the plot.
+""".strip()
+
+plotting_create: str = """
+Create a new plot.
+""".strip()
+
+plotting_remove: str = """
+Remove the current plot.
+""".strip()
+
+plotting_copy_appearance: str = """
+Copy color, marker, and line settings from another plot.
+""".strip()
+
+plotting_label: str = """
+The label used in the legend of the plot to identify the corresponding data.
+
+This value defaults to the label of e.g. the data set but it can be overridden by typing in a new label. Overriding the label with only blank space(s) will result in no entry in the legend but the data is still plotted.
+""".strip()
+
+plotting_appearance: str = """
+The settings that define the appearance of the data in the plot.
+""".strip()
+
+plotting_position: str = """
+The position of the data in the order in which things are added to the plot. This affects the order of items in the legend of the plot as well as the order in which markers and/or lines are plotted.
+
+The two buttons can be used to adjust the order of the items.
 """.strip()

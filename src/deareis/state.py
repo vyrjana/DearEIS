@@ -3,7 +3,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from os import makedirs, remove, walk
+from os import makedirs, walk
 from os.path import exists, isdir, join
 from typing import IO, List, Tuple
 from xdg import (
@@ -28,11 +28,15 @@ class State:
     def get_recent_projects(self) -> List[str]:
         if not exists(self.recent_projects_path):
             return []
+        recent_projects: List[str] = []
         fp: IO
         with open(self.recent_projects_path, "r") as fp:
-            return list(
-                filter(lambda _: _ != "" and exists(_), map(str.strip, fp.readlines()))
-            )
+            path: str
+            for path in map(str.strip, fp.readlines()):
+                if not exists(path) or path in recent_projects:
+                    continue
+                recent_projects.append(path)
+        return recent_projects
 
     def update_recent_projects(self, paths: List[str]):
         assert type(paths) is list and all(map(lambda _: type(_) is str, paths))
@@ -55,19 +59,24 @@ class State:
             with open(path, "w") as fp:
                 fp.write(f"{project.path}\n{serialize_state(project, True)}")
 
-    def get_serialized_projects(self) -> List[Tuple[str, str]]:
+    def get_serialized_projects(self) -> List[Tuple[str, str, str]]:
         files: List[str] = []
         for _, _, files in walk(self.projects_directory_path):
             break
-        projects: List[Tuple[str, str]] = []
+        projects: List[Tuple[str, str, str]] = []
         path: str
         for path in map(lambda _: join(self.projects_directory_path, _), files):
             fp: IO
             with open(path, "r") as fp:
                 lines: List[str] = list(map(str.strip, fp.readlines()))
                 project_path: str = lines.pop(0)
-                projects.append((project_path, "".join(lines),))
-            remove(path)
+                projects.append(
+                    (
+                        path,
+                        project_path,
+                        "".join(lines),
+                    )
+                )
         return projects
 
 
