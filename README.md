@@ -120,7 +120,7 @@ This capability could be used to:
 - plot publication-ready figures using e.g. _matplotlib_
 
 See [the Jupyter notebook](examples/examples.ipynb) for some examples.
-Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki/API-documentation).
+Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
 
 
 ## Changelog
