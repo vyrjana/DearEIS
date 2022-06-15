@@ -6,16 +6,16 @@ entry_points = {
         "deareis = deareis.program:main",
     ],
     "console_scripts": [
-        "deareis-debug = deareis.program:main",  # For the convenience of users on Windows
+        "deareis-debug = deareis.program:debug",  # For the convenience of users on Windows
     ],
 }
 
 copyright_notice = ""
 with open(join(dirname(__file__), "COPYRIGHT")) as fp:
     copyright_notice = fp.read().strip()
-version = "0.3.0"
+version = "1.0.0"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
-    fp.write(f"{copyright_notice}\n\nPACKAGE_VERSION: str = \"{version}\"")
+    fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
 
 setup(
     name="deareis",
@@ -34,20 +34,22 @@ setup(
     long_description_content_type="text/markdown",
     entry_points=entry_points,
     install_requires=[
-        "dearpygui>=1.5.1",  # Used to implement the GUI.
-        "pyimpspec>=0.1.3",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "dearpygui>=1.6.2",  # Used to implement the GUI.
+        "pyimpspec>=1.0.0",  # Used for parsing, fitting, and analyzing impedance spectra.
         "tabulate>=0.8.9",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     classifiers=[
-        "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 3",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: OS Independent",
-        "Topic :: Scientific/Engineering",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Physics",
-        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering",
     ],
 )

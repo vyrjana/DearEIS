@@ -1,63 +1,97 @@
-# Copyright 2022 DearEIS developers
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
+# Copyright 2022 DearEIS developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from pyimpspec import DataSet, Circuit, string_to_circuit, FittedParameter
-from pyimpspec.analysis.fitting import _interpolate
-from pandas import DataFrame
-from numpy import angle, array, log10 as log, ndarray
 from typing import Callable, Dict, List, Optional, Tuple, Union
-from deareis.data.shared import (
-    Weight,
-    label_to_weight,
-    weight_to_label,
-    weight_to_value,
+from numpy import angle, array, log10 as log, ndarray
+from pandas import DataFrame
+import pyimpspec
+from pyimpspec import Circuit, FittedParameter
+from pyimpspec.analysis.fitting import _interpolate
+from deareis.enums import (
     Method,
-    label_to_method,
-    method_to_label,
-    method_to_value,
-    value_to_method,
-    value_to_weight,
+    Weight,
 )
+from deareis.data import DataSet
 from deareis.utility import format_timestamp
 
 
 VERSION: int = 1
 
 
+def _parse_settings_v1(dictionary: dict) -> dict:
+    assert type(dictionary) is dict
+    return {
+        "cdc": dictionary["cdc"],
+        "method": Method(dictionary["method"]),
+        "weight": Weight(dictionary["weight"]),
+        "max_nfev": dictionary["max_nfev"],
+    }
+
+
 @dataclass(frozen=True)
 class FitSettings:
+    """
+A class to store the settings used to perform a circuit fit.
+
+Parameters
+----------
+cdc: str
+    The circuit description code (CDC) for the circuit to fit.
+
+method: Method
+    The iterative method to use when performing the fit.
+
+weight: Weight
+    The weight function to use when performing the fit.
+
+max_nfev: int
+    The maximum number of function evaluations to use when performing the fit.
+    """
     cdc: str
     method: Method
     weight: Weight
     max_nfev: int
 
-    @staticmethod
-    def _parse_v1(dictionary: dict) -> dict:
-        assert type(dictionary) is dict
-        return {
-            "cdc": dictionary["cdc"],
-            "method": Method(dictionary["method"]),
-            "weight": Weight(dictionary["weight"]),
-            "max_nfev": dictionary["max_nfev"],
-        }
+    def __repr__(self) -> str:
+        return f"FitSettings ({hex(id(self))})"
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitSettings":
+        """
+Create an instance from a dictionary.
+        """
         assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
-            1: Class._parse_v1,
+            1: _parse_settings_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         return Class(**parsers[version](dictionary))
 
     def to_dict(self) -> dict:
+        """
+Return a dictionary that can be used to recreate an instance.
+        """
         return {
             "version": VERSION,
             "cdc": self.cdc,
@@ -67,17 +101,120 @@ class FitSettings:
         }
 
 
+def _parse_result_v1(dictionary: dict) -> dict:
+    assert type(dictionary) is dict
+    return {
+        "uuid": dictionary["uuid"],
+        "timestamp": dictionary["timestamp"],
+        "circuit": pyimpspec.string_to_circuit(dictionary["circuit"]),
+        "parameters": {
+            element_label: {
+                parameter_label: FittedParameter.from_dict(param)
+                for parameter_label, param in parameters.items()
+            }
+            for element_label, parameters in dictionary["parameters"].items()
+        },
+        "frequency": array(dictionary["frequency"]),
+        "impedance": array(
+            list(
+                map(
+                    lambda _: complex(*_),
+                    zip(
+                        dictionary["real_impedance"],
+                        dictionary["imaginary_impedance"],
+                    ),
+                )
+            )
+        ),
+        "mask": {int(k): v for k, v in dictionary.get("mask", {}).items()},
+        "real_residual": array(dictionary["real_residual"]),
+        "imaginary_residual": array(dictionary["imaginary_residual"]),
+        "chisqr": dictionary["chisqr"],
+        "red_chisqr": dictionary["red_chisqr"],
+        "aic": dictionary["aic"],
+        "bic": dictionary["bic"],
+        "ndata": dictionary["ndata"],
+        "nfree": dictionary["nfree"],
+        "nfev": dictionary["nfev"],
+        "method": dictionary["method"],
+        "weight": dictionary["weight"],
+        "settings": FitSettings.from_dict(dictionary["settings"]),
+    }
+
+
 @dataclass(frozen=True)
 class FitResult:
+    """
+A class containing the result of a circuit fit.
+
+Parameters
+----------
+uuid: str
+    The universally unique identifier assigned to this result.
+
+timestamp: float
+    The Unix time (in seconds) for when the test was performed.
+
+circuit: Circuit
+    The final, fitted circuit.
+
+parameters: Dict[str, Dict[str, FittedParameter]]
+    The mapping to the mappings of the final, fitted values of the element parameters.
+
+frequency: ndarray
+    The frequencies used to perform the fit.
+
+impedance: ndarray
+    The complex impedances of the fitted circuit at each of the frequencies.
+
+real_residual: ndarray
+    The residuals of the real part of the complex impedances.
+
+imaginary_residual: ndarray
+    The residuals of the imaginary part of the complex impedances.
+
+mask: Dict[int, bool]
+    The mask that was applied to the DataSet that the circuit was fitted to.
+
+chisqr: float
+    The chi-squared value calculated for the result.
+
+red_chisqr: float
+    The reduced chi-squared value calculated for the result.
+
+aic: float
+    The calculated Akaike information criterion.
+
+bic: float
+    The calculated Bayesian information criterion.
+
+ndata: int
+    The number of data points.
+
+nfree: int
+    The degrees of freedom.
+
+nfev: int
+    The number of function evaluations.
+
+method: Method
+    The iterative method that produced the result.
+
+weight: Weight
+    The weight function that produced the result.
+
+settings: FitSettings
+    The settings that were used to perform the fit.
+    """
     uuid: str
     timestamp: float
     circuit: Circuit
     parameters: Dict[str, Dict[str, FittedParameter]]
     frequency: ndarray
     impedance: ndarray
-    mask: Dict[int, bool]
     real_residual: ndarray
     imaginary_residual: ndarray
+    mask: Dict[int, bool]
     chisqr: float
     red_chisqr: float
     aic: float
@@ -85,65 +222,49 @@ class FitResult:
     ndata: int
     nfree: int
     nfev: int
-    method: str
-    weight: str
+    method: Method
+    weight: Weight
     settings: FitSettings
 
-    @staticmethod
-    def _parse_v1(dictionary: dict) -> dict:
-        assert type(dictionary) is dict
-        return {
-            "uuid": dictionary["uuid"],
-            "timestamp": dictionary["timestamp"],
-            "circuit": string_to_circuit(dictionary["circuit"]),
-            "parameters": {
-                element_label: {
-                    parameter_label: FittedParameter.from_dict(param)
-                    for parameter_label, param in parameters.items()
-                }
-                for element_label, parameters in dictionary["parameters"].items()
-            },
-            "frequency": array(dictionary["frequency"]),
-            "impedance": array(
-                list(
-                    map(
-                        lambda _: complex(*_),
-                        zip(
-                            dictionary["real_impedance"],
-                            dictionary["imaginary_impedance"],
-                        ),
-                    )
-                )
-            ),
-            "mask": {int(k): v for k, v in dictionary.get("mask", {}).items()},
-            "real_residual": array(dictionary["real_residual"]),
-            "imaginary_residual": array(dictionary["imaginary_residual"]),
-            "chisqr": dictionary["chisqr"],
-            "red_chisqr": dictionary["red_chisqr"],
-            "aic": dictionary["aic"],
-            "bic": dictionary["bic"],
-            "ndata": dictionary["ndata"],
-            "nfree": dictionary["nfree"],
-            "nfev": dictionary["nfev"],
-            "method": dictionary["method"],
-            "weight": dictionary["weight"],
-            "settings": FitSettings.from_dict(dictionary["settings"]),
-        }
+    def __repr__(self) -> str:
+        return f"FitResult ({self.get_label()}, {hex(id(self))})"
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitResult":
+        """
+Create an instance from a dictionary.
+        """
         assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
-            1: Class._parse_v1,
+            1: _parse_result_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+        mask: Dict[str, bool] = dictionary["mask"]
+        if len(mask) < len(dictionary["frequency"]):
+            i: int
+            for i in range(0, len(dictionary["frequency"])):
+                if mask.get(str(i)) is not True:
+                    mask[str(i)] = False
+        if (
+            "real_impedance" not in dictionary
+            or "imaginary_impedance" not in dictionary
+        ):
+            Z: ndarray = pyimpspec.string_to_circuit(dictionary["circuit"]).impedances(
+                dictionary["frequency"]
+            )
+            dictionary["real_impedance"] = list(Z.real)
+            dictionary["imaginary_impedance"] = list(Z.imag)
         return Class(**parsers[version](dictionary))
 
-    def to_dict(self) -> dict:
-        return {
+    def to_dict(self, session: bool) -> dict:
+        """
+Return a dictionary that can be used to recreate an instance.
+        """
+        assert type(session) is bool, session
+        dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
             "timestamp": self.timestamp,
@@ -156,9 +277,7 @@ class FitResult:
                 for element_label, parameters in self.parameters.items()
             },
             "frequency": list(self.frequency),
-            "real_impedance": list(self.impedance.real),
-            "imaginary_impedance": list(self.impedance.imag),
-            "mask": self.mask,
+            "mask": {k: True for k, v in self.mask.items() if v is True},
             "real_residual": list(self.real_residual),
             "imaginary_residual": list(self.imaginary_residual),
             "chisqr": self.chisqr,
@@ -172,8 +291,19 @@ class FitResult:
             "weight": self.weight,
             "settings": self.settings.to_dict(),
         }
+        if session:
+            dictionary.update(
+                {
+                    "real_impedance": list(self.impedance.real),
+                    "imaginary_impedance": list(self.impedance.imag),
+                }
+            )
+        return dictionary
 
     def to_dataframe(self) -> DataFrame:
+        """
+Get a `pandas.DataFrame` instance containing a table of fitted element parameters.
+        """
         element_labels: List[str] = []
         parameter_labels: List[str] = []
         fitted_values: List[float] = []
@@ -207,6 +337,9 @@ class FitResult:
         )
 
     def get_label(self) -> str:
+        """
+Generate a label for the result.
+        """
         cdc: str = self.settings.cdc
         while "{" in cdc:
             i: int = cdc.find("{")
@@ -214,29 +347,43 @@ class FitResult:
             cdc = cdc.replace(cdc[i : j + 1], "")
         return f"{cdc} ({format_timestamp(self.timestamp)})"
 
-    def get_info(self, data: Optional[DataSet]) -> str:
-        assert type(data) is DataSet or data is None
-        if data is not None:
-            i: int
-            state: bool
-            for i, state in data.get_mask().items():
-                if state != self.mask[i]:
-                    return "DATA SET MASK HAS CHANGED AFTER THE FIT!"
-        return ""
-
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        """
+Get an array of frequencies within the range of frequencies in the data set.
+
+Parameters
+----------
+num_per_decade: int = -1
+    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies.
+        """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             return _interpolate(self.frequency, num_per_decade)
         return self.frequency
 
     def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+        """
+Get the complex impedances produced by the fitted circuit within the range of frequencies in the data set.
+
+Parameters
+----------
+num_per_decade: int = -1
+    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies and used to calculate the impedance produced by the fitted circuit.
+        """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             return self.circuit.impedances(self.get_frequency(num_per_decade))
         return self.impedance
 
     def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+        """
+Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
+
+Parameters
+----------
+num_per_decade: int = -1
+    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
+        """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
@@ -253,6 +400,14 @@ class FitResult:
     def get_bode_data(
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
+        """
+Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+
+Parameters
+----------
+num_per_decade: int = -1
+    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
+        """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
@@ -269,6 +424,9 @@ class FitResult:
         )
 
     def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
+        """
+Get the data required to plot the residuals (real and imaginary vs log f).
+        """
         return (
             log(self.frequency),
             self.real_residual * 100,
