@@ -64,6 +64,7 @@ Several keybindings, which are user-configurable, are supported for more keyboar
 ## Features
 
 Below is a brief overview of the main features of _DearEIS_.
+Check out the [wiki](https://github.com/vyrjana/DearEIS/wiki/Screenshots) for screenshots.
 See the included tooltips and instructions in the program for more information.
 
 
