@@ -74,7 +74,7 @@ if __name__ == "__main__":
             classes_to_document=[
                 deareis.PlotSettings,
                 deareis.PlotSeries,
-                deareis.PlotType,  # TODO: Update docstring
+                deareis.PlotType,
             ],
             module_name="deareis",
         ),
