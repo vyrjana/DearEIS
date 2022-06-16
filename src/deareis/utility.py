@@ -1,14 +1,89 @@
-# Copyright 2022 DearEIS developers
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
+# Copyright 2022 DearEIS developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-import dearpygui.dearpygui as dpg
-from numpy import floor, inf, log10 as log, logspace, nan
-from pandas import DataFrame
-from pyimpspec import DataSet, simulate_spectrum, string_to_circuit
 from datetime import datetime
-from typing import List, Tuple, Union, Optional
+from hashlib import sha1
+from os.path import exists
+from typing import (
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
+import dearpygui.dearpygui as dpg
+from numpy import (
+    floor,
+    inf,
+    log10 as log,
+    nan,
+    pad,
+)
+
+
+def calculate_checksum(*args, **kwargs) -> str:
+    string: str = kwargs.get("string", "")
+    path: str = kwargs.get("path", "")
+    assert type(string) is str, string
+    assert type(path) is str, path
+    assert string != "" or (path != "" and exists(path)), (
+        string,
+        path,
+    )
+    checksum: str
+    if string:
+        checksum = sha1(string.encode()).hexdigest()
+    elif path:
+        with open(path, "rb") as fp:
+            checksum = sha1(fp.read()).hexdigest()
+    return checksum
+
+
+def calculate_window_position_dimensions(
+    width: Union[int, float] = 0.9, height: Union[int, float] = 0.9
+) -> Tuple[int, int, int, int]:
+    assert (type(width) is float and width > 0.0 and width < 1.0) or (
+        type(width) is int and width > 0
+    )
+    assert (type(height) is float and height > 0.0 and height < 1.0) or (
+        type(width) is int and height > 0
+    )
+    viewport_width: int = dpg.get_viewport_width()
+    x: int
+    if type(width) is float:
+        x = floor(viewport_width * (1.0 - width) / 2)
+        width = floor(viewport_width * width)
+    else:
+        x = floor((viewport_width - width) / 2)
+    viewport_height: int = dpg.get_viewport_height()
+    y: int
+    if type(height) is float:
+        y = floor(viewport_height * (1.0 - height) / 2)
+        height = floor(viewport_height * height)
+    else:
+        y = floor((viewport_height - height) / 2)
+    return (
+        int(x),
+        int(y),
+        int(width),
+        int(height),
+    )
 
 
 def format_timestamp(timestamp: float) -> str:
@@ -16,14 +91,14 @@ def format_timestamp(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def number_formatter(
+def format_number(
     value: float,
     decimals: int = 1,
     width: int = -1,
     exponent: bool = True,
     significants: int = 0,
 ) -> str:
-    float(value)
+    float(value)  # Make sure that the value can at least be converted to a float
     assert type(decimals) is int
     assert type(width) is int
     assert type(exponent) is bool
@@ -44,7 +119,10 @@ def number_formatter(
         else:
             exp: int = int(floor(log(abs(value)) / 3) * 3)
             coeff: float = value / 10**exp
-            string = fmt.format(coeff)
+            string = fmt.format(coeff).lower()
+            if "e+03" in string:
+                string = string[: string.find("e")]
+                exp += 3
             if exp >= 0:
                 string += "E+{:02d}".format(exp)
             else:
@@ -94,109 +172,37 @@ def align_numbers(values: List[str]) -> List[str]:
     return values
 
 
-def window_pos_dims(
-    w: Union[int, float] = 0.9, h: Union[int, float] = 0.9
-) -> Tuple[int, int, int, int]:
-    assert (type(w) is float and w > 0.0 and w < 1.0) or (type(w) is int and w > 0)
-    assert (type(h) is float and h > 0.0 and h < 1.0) or (type(w) is int and h > 0)
-    width: int = dpg.get_viewport_width()
-    x: int
-    if type(w) is float:
-        x = floor(width * (1.0 - w) / 2)
-        width = floor(width * w)
-    else:
-        x = floor((width - w) / 2)
-        width = w  # type: ignore
-    height: int = dpg.get_viewport_height()
-    y: int
-    if type(h) is float:
-        y = floor(height * (1.0 - h) / 2)
-        height = floor(height * h)
-    else:
-        y = floor((height - h) / 2)
-        height = h  # type: ignore
-    return (
-        int(x),
-        int(y),
-        int(width),
-        int(height),
-    )
+def pad_dataframe_dictionary(dictionary: dict) -> Optional[dict]:
+    lengths: Set[int] = set(map(len, dictionary.values()))
+    max_len: int = max(lengths)
+    if max_len == 0:
+        return None
+    elif len(lengths) > 1:
+        padded_dictionary: dict = dictionary.copy()
+        for label in padded_dictionary.keys():
+            padded_dictionary[label] = pad(
+                padded_dictionary[label],
+                (
+                    0,
+                    max_len - len(padded_dictionary[label]),
+                ),
+                constant_values=None,
+            )
+        return padded_dictionary
+    return dictionary
 
 
-def update_tooltip(tag: int, msg: str, wrap: bool = True):
-    assert type(tag) is int
-    assert type(msg) is str
-    assert type(wrap) is bool
-    wrap_limit: int = -1
-    if wrap:
-        max_line_length: int
-        if "\n" in msg:
-            max_line_length = max(map(len, msg.split("\n")))
-        else:
-            max_line_length = len(msg)
-        wrap_limit = min([8 * max_line_length, 500])
-    dpg.configure_item(tag, default_value=msg, wrap=wrap_limit)
-
-
-def attach_tooltip(msg: str, parent: int = -1, tag: int = -1, wrap: bool = True) -> int:
-    assert type(msg) is str
-    assert type(parent) is int
-    assert type(tag) is int
-    assert type(wrap) is bool
-    if parent < 0:
-        parent = dpg.last_item()
-    if tag < 0:
-        tag = dpg.generate_uuid()
-    with dpg.tooltip(parent):
-        dpg.add_text("", tag=tag)
-    update_tooltip(tag, msg, wrap)
-    return tag
-
-
-def dict_to_csv(dictionary: dict) -> str:
-    assert type(dictionary) is dict
-    return DataFrame.from_dict(dictionary).to_csv(index=False, float_format="%.6E")
-
-
-def generate_test_data() -> DataSet:
-    return simulate_spectrum(
-        string_to_circuit("R{R=100}(R{R=200}C{C=0.8e-6})(R{R=500}W{Y=4e-4})"),
-        logspace(0, 4, num=41),
-        "Boukamp test data",
-    )
-
-
-def is_shift_down() -> bool:
-    return dpg.is_key_down(dpg.mvKey_Shift) or dpg.is_key_down(dpg.mvKey_RShift)
-
-
-def is_control_down() -> bool:
-    return (
-        dpg.is_key_down(dpg.mvKey_Control)
-        or dpg.is_key_down(dpg.mvKey_LControl)
-        or dpg.is_key_down(dpg.mvKey_RControl)
-    )
-
-
-def is_alt_down() -> bool:
-    return dpg.is_key_down(dpg.mvKey_Alt)
-
-
-def get_item_pos(item: int, relative: int = -1) -> Tuple[int, int]:
-    assert type(item) is int
-    assert type(relative) is int
-    x: int
-    y: int
-    x, y = dpg.get_item_pos(item)
-    parent: Optional[int] = dpg.get_item_parent(item)
-    while parent is not None:
-        if parent == relative:
-            break
-        pos: Tuple[int, int] = dpg.get_item_pos(parent)
-        x += pos[0]
-        y += pos[1]
-        parent = dpg.get_item_parent(parent)
-    return (
-        x,
-        y,
-    )
+def is_filtered_item_visible(item: int, filter_string: str) -> bool:
+    filter_string = filter_string.strip()
+    if filter_string == "":
+        return True
+    filter_key: Optional[str] = dpg.get_item_filter_key(item)
+    if filter_key is None:
+        return False
+    for fragment in map(str.strip, filter_string.split(",")):
+        if fragment.startswith("-"):
+            if fragment[1:] in filter_key:
+                return False
+        elif fragment not in filter_key:
+            return False
+    return True

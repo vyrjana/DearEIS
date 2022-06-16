@@ -1,14 +1,27 @@
-# Copyright 2022 DearEIS developers
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
+# Copyright 2022 DearEIS developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Dict, List, Tuple, Union
+from random import choice
+from types import SimpleNamespace
+from typing import Dict, List, Set, Tuple
 import dearpygui.dearpygui as dpg
-from deareis.config import CONFIG
 
-
-Color = Union[Tuple[int, int, int, int], List[float], List[int]]
 
 PLOT_MARKERS: Dict[str, int] = {
     "Arrow down": dpg.mvPlotMarker_Down,
@@ -22,91 +35,149 @@ PLOT_MARKERS: Dict[str, int] = {
     "Plus": dpg.mvPlotMarker_Plus,
     "Square": dpg.mvPlotMarker_Square,
 }
-# The vibrant color scheme is from https://personal.sron.nl/~pault/
-VIBRANT_COLORS: List[Color] = [
-    (
+
+
+VIBRANT_COLORS: List[List[float]] = [
+    [  # Blue
         0.0,
         119.0,
         187.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Teal
         0.0,
         153.0,
         136.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Orange
         238.0,
         119.0,
         51.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Magenta
         238.0,
         51.0,
         119.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Red
         204.0,
         51.0,
         17.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Gray
         187.0,
         187.0,
         187.0,
         255.0,
-    ),
-    (
+    ],
+    [  # Cyan
         51.0,
         187.0,
         238.0,
         255.0,
-    ),
+    ],
 ]
 
-# Themes
-# - Plots
-plot_theme: int = -1
-real_error: int = -1
-imag_error: int = -1
-nyquist_data: int = -1
-nyquist_sim: int = -1
-bode_magnitude_data: int = -1
-bode_magnitude_sim: int = -1
-bode_phase_data: int = -1
-bode_phase_sim: int = -1
-exploratory_mu_criterion: int = -1
-exploratory_mu: int = -1
-exploratory_mu_highlight: int = -1
-exploratory_xps: int = -1
-exploratory_xps_highlight: int = -1
-#
-valid_cdc: int = -1
-invalid_cdc: int = -1
-valid_node: int = -1
-invalid_node: int = -1
 
-
-def create_plot_theme(
-    tag: int,
-    color: Color,
-    marker: int,
-):
-    assert type(tag) is int
+def get_plot_series_theme_color(parent: int) -> List[float]:
+    assert type(parent) is int, parent
+    color: List[float] = []
+    item: int
+    for item in dpg.get_item_children(parent, slot=1):
+        i: int
+        for i in dpg.get_item_children(item, slot=1):
+            if not dpg.get_item_type(i).endswith("::mvThemeColor"):
+                continue
+            color = dpg.get_value(i)
     assert (
-        (type(color) is tuple or type(color) is list)
-        and len(color) == 4
-        and all(map(lambda _: type(_) is int or type(_) is float, color))
+        type(color) is list and len(color) == 4 and all(map(lambda _: _ >= 0.0, color))
+    ), color
+    return color
+
+
+def get_plot_series_theme_marker(parent: int) -> int:
+    assert type(parent) is int, parent
+    marker: int = -1
+    item: int
+    for item in dpg.get_item_children(parent, slot=1):
+        i: int
+        for i in dpg.get_item_children(item, slot=1):
+            if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
+                continue
+            marker = int(dpg.get_value(i)[0])
+    assert type(marker) is int and (
+        marker in PLOT_MARKERS.values() or marker == -1
+    ), marker
+    return marker
+
+
+def get_random_color_marker(existing_themes: Dict[str, int]) -> Tuple[List[float], int]:
+    available_colors: List[List[float]] = VIBRANT_COLORS[:]
+    available_markers: List[int] = list(PLOT_MARKERS.values())
+    existing_colors: List[List[float]] = []
+    existing_markers: List[int] = []
+    existing_combinations: List[str] = []
+    color: List[float]
+    marker: int
+    uuid: str
+    item: int
+    for uuid, item in existing_themes.items():
+        color = get_plot_series_theme_color(item)
+        marker = get_plot_series_theme_marker(item)
+        existing_colors.append(color)
+        existing_markers.append(marker)
+        existing_combinations.append(",".join(map(str, color)) + str(marker))
+    if len(available_markers) > len(existing_markers):
+        available_markers = list(set(available_markers) - set(existing_markers))
+        ac: Set[str] = set(map(lambda _: ",".join(map(str, _)), available_colors))
+        ec: Set[str] = set(map(lambda _: ",".join(map(str, _)), existing_colors))
+        ac = ac - ec
+        if len(ac) > 0:
+            available_colors = list(map(lambda _: list(map(float, _.split(","))), ac))
+            return (
+                choice(available_colors),
+                choice(available_markers),
+            )
+    possible_combinations: Dict[str, Tuple[List[float], int]] = {}
+    combination: str
+    for marker in PLOT_MARKERS.values():
+        for color in VIBRANT_COLORS:
+            combination = ",".join(map(str, color)) + str(marker)
+            if combination not in existing_combinations:
+                possible_combinations[combination] = (
+                    color,
+                    marker,
+                )
+    if len(possible_combinations) > 0:
+        return choice(list(possible_combinations.values()))
+    return (
+        [255.0, 255.0, 255.0, 255.0],
+        dpg.mvPlotMarker_Circle,
     )
-    assert type(marker) is int
-    R: int
-    G: int
-    B: int
-    A: int
+
+
+def create_plot_series_theme(
+    color: List[float],
+    marker: int,
+    tag: int = -1,
+) -> int:
+    assert (
+        type(color) is list
+        and len(color) == 4
+        and all(map(lambda _: type(_) is float, color))
+    ), color
+    assert type(marker) is int and marker in PLOT_MARKERS.values(), marker
+    assert type(tag) is int
+    if tag < 0:
+        tag = dpg.generate_uuid()
+    R: float
+    G: float
+    B: float
+    A: float
     R, G, B, A = color
     with dpg.theme(tag=tag):
         with dpg.theme_component(dpg.mvScatterSeries):
@@ -116,7 +187,7 @@ def create_plot_theme(
                     R,
                     G,
                     B,
-                    0,
+                    0.0,
                 ),
                 category=dpg.mvThemeCat_Plots,
             )
@@ -139,17 +210,18 @@ def create_plot_theme(
                 color,
                 category=dpg.mvThemeCat_Plots,
             )
+    return tag
 
 
-def update_plot_theme_color(parent: int, color: List[float]):
-    assert type(parent) is int
+def update_plot_series_theme_color(parent: int, color: List[float]):
+    assert type(parent) is int, parent
     if type(color) is tuple:
         color = list(color)
     assert (
         type(color) is list
         and len(color) == 4
         and all(map(lambda _: type(_) is float, color))
-    )
+    ), color
     uuids: List[int] = []
     item: int
     for item in dpg.get_item_children(parent, slot=1):
@@ -168,9 +240,9 @@ def update_plot_theme_color(parent: int, color: List[float]):
         dpg.set_value(uuids.pop(0), color)
 
 
-def update_plot_theme_marker(parent: int, marker: int):
-    assert type(parent) is int
-    assert type(marker) is int
+def update_plot_series_theme_marker(parent: int, marker: int):
+    assert type(parent) is int, parent
+    assert type(marker) is int, marker
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
@@ -180,314 +252,507 @@ def update_plot_theme_marker(parent: int, marker: int):
             dpg.set_value(i, [marker, -1])
 
 
-def get_plot_theme_color(parent: int) -> List[float]:
-    assert type(parent) is int
-    color: List[float] = []
-    item: int
-    for item in dpg.get_item_children(parent, slot=1):
-        i: int
-        for i in dpg.get_item_children(item, slot=1):
-            if not dpg.get_item_type(i).endswith("::mvThemeColor"):
-                continue
-            color = dpg.get_value(i)
-    assert type(color) is list and len(color) == 4
-    return color
-
-
-def get_plot_theme_marker(parent: int) -> int:
-    assert type(parent) is int
-    marker: int = -1
-    item: int
-    for item in dpg.get_item_children(parent, slot=1):
-        i: int
-        for i in dpg.get_item_children(item, slot=1):
-            if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
-                continue
-            marker = int(dpg.get_value(i)[0])
-    assert type(marker) is int and marker >= 0, marker
-    return marker
-
-
-def initialize():
-    global plot_theme
-    global real_error
-    global imag_error
-    global nyquist_data
-    global nyquist_sim
-    global bode_magnitude_data
-    global bode_magnitude_sim
-    global bode_phase_data
-    global bode_phase_sim
-    global exploratory_mu_criterion
-    global exploratory_mu
-    global exploratory_mu_highlight
-    global exploratory_xps
-    global exploratory_xps_highlight
-    global valid_cdc
-    global invalid_cdc
-    global valid_node
-    global invalid_node
-    plot_theme = dpg.generate_uuid()
-    real_error = dpg.generate_uuid()
-    imag_error = dpg.generate_uuid()
-    nyquist_data = dpg.generate_uuid()
-    nyquist_sim = dpg.generate_uuid()
-    bode_magnitude_data = dpg.generate_uuid()
-    bode_magnitude_sim = dpg.generate_uuid()
-    bode_phase_data = dpg.generate_uuid()
-    bode_phase_sim = dpg.generate_uuid()
-    exploratory_mu_criterion = dpg.generate_uuid()
-    exploratory_mu = dpg.generate_uuid()
-    exploratory_mu_highlight = dpg.generate_uuid()
-    exploratory_xps = dpg.generate_uuid()
-    exploratory_xps_highlight = dpg.generate_uuid()
-    valid_cdc = dpg.generate_uuid()
-    invalid_cdc = dpg.generate_uuid()
-    valid_node = dpg.generate_uuid()
-    invalid_node = dpg.generate_uuid()
-    # Themes
-    # - Plots
-    with dpg.theme(tag=plot_theme):
-        with dpg.theme_component(dpg.mvAll):
-            dpg.add_theme_color(
-                dpg.mvPlotCol_FrameBg,
-                (
-                    255,
-                    255,
-                    255,
-                    0,
-                ),
-                category=dpg.mvThemeCat_Plots,
-            )
-    definitions: List[Tuple[int, Color, int]] = [
-        (
-            real_error,
-            CONFIG.colors["real_error"],
-            CONFIG.markers["real_error"],
+nyquist: SimpleNamespace = SimpleNamespace(
+    **{
+        "data": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
         ),
-        (
-            imag_error,
-            CONFIG.colors["imag_error"],
-            CONFIG.markers["imag_error"],
+        "simulation": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Cross
         ),
-        (
-            nyquist_data,
-            CONFIG.colors["nyquist_data"],
-            CONFIG.markers["nyquist_data"],
-        ),
-        (
-            nyquist_sim,
-            CONFIG.colors["nyquist_sim"],
-            CONFIG.markers["nyquist_sim"],
-        ),
-        (
-            bode_magnitude_data,
-            CONFIG.colors["bode_magnitude_data"],
-            CONFIG.markers["bode_magnitude_data"],
-        ),
-        (
-            bode_magnitude_sim,
-            CONFIG.colors["bode_magnitude_sim"],
-            CONFIG.markers["bode_magnitude_sim"],
-        ),
-        (
-            bode_phase_data,
-            CONFIG.colors["bode_phase_data"],
-            CONFIG.markers["bode_phase_data"],
-        ),
-        (
-            bode_phase_sim,
-            CONFIG.colors["bode_phase_sim"],
-            CONFIG.markers["bode_phase_sim"],
-        ),
-        (
-            exploratory_mu_criterion,
-            CONFIG.colors["exploratory_mu_criterion"],
-            CONFIG.markers["exploratory_mu"],
-        ),
-        (
-            exploratory_mu,
-            CONFIG.colors["exploratory_mu"],
-            CONFIG.markers["exploratory_mu"],
-        ),
-        (
-            exploratory_mu_highlight,
-            CONFIG.colors["exploratory_mu_highlight"],
-            CONFIG.markers["exploratory_mu"],
-        ),
-        (
-            exploratory_xps,
-            CONFIG.colors["exploratory_xps"],
-            CONFIG.markers["exploratory_xps"],
-        ),
-        (
-            exploratory_xps_highlight,
-            CONFIG.colors["exploratory_xps_highlight"],
-            CONFIG.markers["exploratory_xps"],
-        ),
-    ]
-    tag: int
-    color: Color
-    marker: int
-    for (tag, color, marker) in definitions:
-        create_plot_theme(tag, color, marker)
-    # - Circuit editor
-    with dpg.theme(tag=valid_cdc):
-        with dpg.theme_component(dpg.mvInputText, enabled_state=True):
-            dpg.add_theme_color(
-                dpg.mvThemeCol_Text,
-                (
-                    255,
-                    255,
-                    255,
-                ),
-            )
-        with dpg.theme_component(dpg.mvInputText, enabled_state=False):
-            dpg.add_theme_color(
-                dpg.mvThemeCol_Text,
-                (
-                    255,
-                    255,
-                    255,
-                ),
-            )
-    with dpg.theme(tag=invalid_cdc):
-        with dpg.theme_component(dpg.mvInputText, enabled_state=True):
-            dpg.add_theme_color(
-                dpg.mvThemeCol_Text,
-                (
-                    255,
-                    0,
-                    0,
-                ),
-            )
-        with dpg.theme_component(dpg.mvInputText, enabled_state=False):
-            dpg.add_theme_color(
-                dpg.mvThemeCol_Text,
-                (
-                    255,
-                    0,
-                    0,
-                ),
-            )
-    with dpg.theme(tag=valid_node):
-        with dpg.theme_component(dpg.mvNode):
-            dpg.add_theme_color(
-                dpg.mvNodeCol_NodeBackground,
-                (
-                    255,
-                    255,
-                    255,
-                ),
-            )
-    with dpg.theme(tag=invalid_node):
-        with dpg.theme_component(dpg.mvNode):
-            dpg.add_theme_color(
-                dpg.mvNodeCol_NodeBackground,
-                (
-                    255,
-                    0,
-                    0,
-                ),
-            )
-    # - Global theme
-    greyed_out: Tuple[int, int, int] = (
-        100,
-        100,
-        100,
-    )
-    rounding: int = 2
-    global_theme: int
-    with dpg.theme() as global_theme:
-        # Enabled
-        with dpg.theme_component(dpg.mvAll):
-            dpg.add_theme_style(
-                dpg.mvStyleVar_WindowRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_ChildRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_FrameRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_PopupRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_ScrollbarRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_GrabRounding, rounding, category=dpg.mvThemeCat_Core
-            )
-            dpg.add_theme_style(
-                dpg.mvStyleVar_TabRounding, rounding, category=dpg.mvThemeCat_Core
-            )
+    }
+)
 
-            # Plots
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_PlotPadding, 8, 8, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_LabelPadding, 5, 2, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_LegendPadding, 5, 5, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_LegendInnerPadding,
-                4,
-                4,
-                category=dpg.mvThemeCat_Plots,
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_MousePosPadding, 8, 8, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_LineWeight, 1.5, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_MarkerSize, 4.5, category=dpg.mvThemeCat_Plots
-            )
-            dpg.add_theme_style(
-                dpg.mvPlotStyleVar_MarkerWeight, 2.0, category=dpg.mvThemeCat_Plots
-            )
+bode: SimpleNamespace = SimpleNamespace(
+    **{
+        "magnitude_data": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
+        ),
+        "magnitude_simulation": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Cross
+        ),
+        "phase_data": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0], dpg.mvPlotMarker_Square
+        ),
+        "phase_simulation": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Plus
+        ),
+    }
+)
 
-            # Nodes
-            dpg.add_theme_color(
-                dpg.mvNodeCol_GridLine,
-                (255, 255, 255, 15),
-                category=dpg.mvThemeCat_Nodes,
-            )
+residuals: SimpleNamespace = SimpleNamespace(
+    **{
+        "real": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Circle
+        ),
+        "imaginary": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Square
+        ),
+    }
+)
 
-        # Disabled
-        with dpg.theme_component(dpg.mvText, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
+mu_Xps: SimpleNamespace = SimpleNamespace(
+    **{
+        "mu": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Circle
+        ),
+        "mu_highlight": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
+        ),
+        "Xps": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Square
+        ),
+        "Xps_highlight": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0], dpg.mvPlotMarker_Square
+        ),
+        "mu_criterion": create_plot_series_theme(
+            [255.0, 255.0, 255.0, 128.0], dpg.mvPlotMarker_Circle
+        ),
+    }
+)
 
-        with dpg.theme_component(dpg.mvSliderFloat, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, greyed_out)
+plot: int
+with dpg.theme() as plot:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvPlotCol_FrameBg,
+            [
+                255.0,
+                255.0,
+                255.0,
+                0.0,
+            ],
+            category=dpg.mvThemeCat_Plots,
+        )
 
-        with dpg.theme_component(dpg.mvCombo, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
 
-        with dpg.theme_component(dpg.mvCheckbox, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
-            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, greyed_out)
+_clean_tab: int = dpg.generate_uuid()
+_dirty_tab: int = dpg.generate_uuid()
+with dpg.theme(tag=_clean_tab):
+    with dpg.theme_component(dpg.mvTab):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabActive,
+            [
+                0.0,
+                119.0,
+                200.0,
+                153.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabHovered,
+            [
+                29.0,
+                151.0,
+                236.0,
+                103.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Tab,
+            [
+                51.0,
+                51.0,
+                55.0,
+                255.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabUnfocused,
+            [
+                51.0,
+                51.0,
+                55.0,
+                255.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabUnfocusedActive,
+            [
+                0.0,
+                119.0,
+                200.0,
+                153.0,
+            ],
+        )
+with dpg.theme(tag=_dirty_tab):
+    with dpg.theme_component(dpg.mvTab):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabActive,
+            [
+                236.0,
+                32.0,
+                29.0,
+                103.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabHovered,
+            [
+                236.0,
+                80.0,
+                80.0,
+                153.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Tab,
+            [
+                138.0,
+                61.0,
+                61.0,
+                100.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabUnfocused,
+            [
+                138.0,
+                61.0,
+                61.0,
+                100.0,
+            ],
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_TabUnfocusedActive,
+            [
+                236.0,
+                32.0,
+                29.0,
+                103.0,
+            ],
+        )
+tab: SimpleNamespace = SimpleNamespace(
+    **{
+        "clean": _clean_tab,
+        "dirty": _dirty_tab,
+    }
+)
 
-        with dpg.theme_component(dpg.mvInputFloat, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
-            dpg.add_theme_color(dpg.mvThemeCol_Button, greyed_out)
 
-        with dpg.theme_component(dpg.mvInputInt, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
-            dpg.add_theme_color(dpg.mvThemeCol_Button, greyed_out)
+_valid_cdc: int = dpg.generate_uuid()
+_invalid_cdc: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_cdc):
+    with dpg.theme_component(dpg.mvInputText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+with dpg.theme(tag=_invalid_cdc):
+    with dpg.theme_component(dpg.mvInputText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+cdc: SimpleNamespace = SimpleNamespace(
+    **{
+        "valid": _valid_cdc,
+        "invalid": _invalid_cdc,
+    }
+)
 
-        with dpg.theme_component(dpg.mvInputText, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
-            dpg.add_theme_color(dpg.mvThemeCol_Button, greyed_out)
 
-        with dpg.theme_component(dpg.mvButton, enabled_state=False):
-            dpg.add_theme_color(dpg.mvThemeCol_Text, greyed_out)
+_valid_result: int = dpg.generate_uuid()
+_invalid_result: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_result):
+    with dpg.theme_component(dpg.mvText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+with dpg.theme(tag=_invalid_result):
+    with dpg.theme_component(dpg.mvText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+result: SimpleNamespace = SimpleNamespace(
+    **{
+        "valid": _valid_result,
+        "invalid": _invalid_result,
+    }
+)
 
-    dpg.bind_theme(global_theme)
-    # dpg.show_style_editor()
+
+_valid_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_node):
+    with dpg.theme_component(dpg.mvNode):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            (
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ),
+        )
+_invalid_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_invalid_node):
+    with dpg.theme_component(dpg.mvNode):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            (
+                255,
+                0.0,
+                0.0,
+                255.0,
+            ),
+        )
+circuit_editor: SimpleNamespace = SimpleNamespace(
+    **{
+        "valid_node": _valid_node,
+        "invalid_node": _invalid_node,
+    }
+)
+
+
+_command_palette_result_highlighted: int
+with dpg.theme() as _command_palette_result_highlighted:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [255.0, 255.0, 255.0, 255.0],
+            category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Button,
+            [0.0, 119.0, 200.0, 100.0],
+            category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ButtonTextAlign,
+            0.0,
+            0.5,
+            category=dpg.mvThemeCat_Core,
+        )
+
+_command_palette_result: int
+with dpg.theme() as _command_palette_result:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [255.0, 255.0, 255.0, 255.0],
+            category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Button,
+            [51.0, 51.0, 55.0, 255.0],
+            category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ButtonTextAlign,
+            0.0,
+            0.5,
+            category=dpg.mvThemeCat_Core,
+        )
+
+
+command_palette: SimpleNamespace = SimpleNamespace(
+    **{
+        "result": _command_palette_result,
+        "result_highlighted": _command_palette_result_highlighted,
+    }
+)
+
+
+_file_dialog_folder: int
+with dpg.theme() as _file_dialog_folder:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ButtonTextAlign,
+            0.0,
+            0.5,
+            category=dpg.mvThemeCat_Core,
+        )
+
+
+_file_dialog_file: int
+with dpg.theme() as _file_dialog_file:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ButtonTextAlign,
+            0.0,
+            0.5,
+            category=dpg.mvThemeCat_Core,
+        )
+
+
+file_dialog: SimpleNamespace = SimpleNamespace(
+    **{
+        "folder_button": _file_dialog_folder,
+        "file_button": _file_dialog_file,
+    }
+)
+
+
+transparent_modal_background: int
+with dpg.theme() as transparent_modal_background:
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_ModalWindowDimBg,
+            [0.0, 0.0, 0.0, 0.0],
+            category=dpg.mvThemeCat_Core,
+        )
+
+
+# Global theme
+_greyed_out: List[float] = [
+    100.0,
+    100.0,
+    100.0,
+    255.0,
+]
+_rounding: int = 2
+global_theme: int
+with dpg.theme() as global_theme:
+    # Enabled
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_style(
+            dpg.mvStyleVar_WindowRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ChildRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_FrameRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_PopupRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_ScrollbarRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_GrabRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+        dpg.add_theme_style(
+            dpg.mvStyleVar_TabRounding, _rounding, category=dpg.mvThemeCat_Core
+        )
+
+        # Plots
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_PlotPadding, 8, 8, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_LabelPadding, 5, 2, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_LegendPadding, 5, 5, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_LegendInnerPadding,
+            4,
+            4,
+            category=dpg.mvThemeCat_Plots,
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_MousePosPadding, 8, 8, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_LineWeight, 1.5, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_MarkerSize, 4.5, category=dpg.mvThemeCat_Plots
+        )
+        dpg.add_theme_style(
+            dpg.mvPlotStyleVar_MarkerWeight, 2.0, category=dpg.mvThemeCat_Plots
+        )
+
+        # Nodes
+        dpg.add_theme_color(
+            dpg.mvNodeCol_GridLine,
+            [255.0, 255.0, 255.0, 15.0],
+            category=dpg.mvThemeCat_Nodes,
+        )
+
+    # Disabled
+    with dpg.theme_component(dpg.mvText, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+
+    with dpg.theme_component(dpg.mvSliderFloat, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+        dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, _greyed_out)
+
+    with dpg.theme_component(dpg.mvCombo, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+
+    with dpg.theme_component(dpg.mvCheckbox, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+        dpg.add_theme_color(dpg.mvThemeCol_CheckMark, _greyed_out)
+
+    with dpg.theme_component(dpg.mvInputFloat, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+        dpg.add_theme_color(dpg.mvThemeCol_Button, _greyed_out)
+
+    with dpg.theme_component(dpg.mvInputInt, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+        dpg.add_theme_color(dpg.mvThemeCol_Button, _greyed_out)
+
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+        dpg.add_theme_color(dpg.mvThemeCol_Button, _greyed_out)
+
+    with dpg.theme_component(dpg.mvButton, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, _greyed_out)
+
+dpg.bind_theme(global_theme)

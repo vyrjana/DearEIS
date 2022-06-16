@@ -1,63 +1,78 @@
-# Copyright 2022 DearEIS developers
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
+# Copyright 2022 DearEIS developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
 from dataclasses import dataclass
-from enum import IntEnum, auto as auto_enum
-from typing import Callable, Dict, List, Set, Tuple, Union, Optional
-from random import choice
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 import dearpygui.dearpygui as dpg
 from numpy import ndarray
-from pyimpspec import DataSet
+from deareis.data import DataSet
 from deareis.data.kramers_kronig import TestResult
 from deareis.data.fitting import FitResult
 from deareis.data.simulation import SimulationResult
+from deareis.enums import PlotType
 from deareis.themes import (
-    PLOT_MARKERS,
-    VIBRANT_COLORS,
-    create_plot_theme,
-    get_plot_theme_color,
-    get_plot_theme_marker,
-    update_plot_theme_color,
-    update_plot_theme_marker,
+    create_plot_series_theme,
+    get_random_color_marker,
+    update_plot_series_theme_color,
+    update_plot_series_theme_marker,
 )
-
-
-class PlotType(IntEnum):
-    NYQUIST = auto_enum()
-    BODE_MAGNITUDE = auto_enum()
-    BODE_PHASE = auto_enum()
-
-
-label_to_plot_type: Dict[str, PlotType] = {
-    "Nyquist": PlotType.NYQUIST,
-    "Bode - magnitude": PlotType.BODE_MAGNITUDE,
-    "Bode - phase": PlotType.BODE_PHASE,
-}
-plot_type_to_label: Dict[PlotType, str] = {v: k for k, v in label_to_plot_type.items()}
 
 
 @dataclass(frozen=True)
 class PlotSeries:
+    """
+A class that represents the data used to plot an item/series.
+    """
     label: str
-    data: List[ndarray]
+    scatter_data: List[ndarray]
+    line_data: List[ndarray]
     color: List[float]
-    markers: bool
+    marker: int
     line: bool
     legend: bool
+
+    def __repr__(self) -> str:
+        return f"PlotSeries ({self.get_label()}, {hex(id(self))})"
 
     def get_label(self) -> str:
         return self.label
 
-    def get_data(self) -> List[ndarray]:
-        return self.data
+    def get_scatter_data(self) -> List[ndarray]:
+        return self.scatter_data
+
+    def get_line_data(self) -> List[ndarray]:
+        return self.line_data
 
     def get_color(self) -> List[float]:
         return self.color
 
+    def get_marker(self) -> int:
+        return self.marker
+
     def has_markers(self) -> bool:
-        return self.markers
+        return self.marker >= 0
 
     def has_line(self) -> bool:
         return self.line
@@ -69,52 +84,12 @@ class PlotSeries:
 VERSION: int = 1
 
 
-def get_color_marker(themes: Dict[str, int]) -> Tuple[List[float], int]:
-    available_colors: List[List[float]] = VIBRANT_COLORS[:]
-    available_markers: List[int] = list(PLOT_MARKERS.values())
-    existing_colors: List[List[float]] = []
-    existing_markers: List[int] = []
-    existing_combinations: List[str] = []
-    color: List[float]
-    marker: int
-    for uuid, item in themes.items():
-        color = get_plot_theme_color(item)
-        marker = get_plot_theme_marker(item)
-        existing_colors.append(color)
-        existing_markers.append(marker)
-        existing_combinations.append(",".join(map(str, color)) + str(marker))
-    if len(available_markers) > len(existing_markers):
-        available_markers = list(set(available_markers) - set(existing_markers))
-        ac: Set[str] = set(map(lambda _: ",".join(map(str, _)), available_colors))
-        ec: Set[str] = set(map(lambda _: ",".join(map(str, _)), existing_colors))
-        ac = ac - ec
-        if len(ac) > 0:
-            available_colors = list(map(lambda _: list(map(float, _.split(","))), ac))
-            return (
-                choice(available_colors),
-                choice(available_markers),
-            )
-    possible_combinations: Dict[str, Tuple[List[float], int]] = {}
-    combination: str
-    for marker in PLOT_MARKERS.values():
-        for color in VIBRANT_COLORS:
-            combination = ",".join(map(str, color)) + str(marker)
-            if combination not in existing_combinations:
-                possible_combinations[combination] = (
-                    color,
-                    marker,
-                )
-    if len(possible_combinations) > 0:
-        return choice(list(possible_combinations.values()))
-    return (
-        [255.0, 255.0, 255.0, 255.0],
-        dpg.mvPlotMarker_Circle,
-    )
-
-
-# TODO: Make it possible to (re)store the limits of plots (e.g. from session to session)
+# TODO: Make it possible to (re)store the limits of plots (e.g. from session to session)?
 @dataclass
 class PlotSettings:
+    """
+A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
+    """
     plot_label: str
     plot_type: PlotType
     series_order: List[str]  # UUID
@@ -125,9 +100,48 @@ class PlotSettings:
     themes: Dict[str, int]  # UUID: DPG UUID
     uuid: str
 
+    def __eq__(self, other) -> bool:
+        try:
+            assert isinstance(other, type(self)), other
+            assert self.uuid == other.uuid, (
+                self.uuid,
+                other.uuid,
+            )
+            assert self.get_label() == other.get_label(), (
+                self.get_label(),
+                other.get_label(),
+            )
+            assert self.get_type() == other.get_type(), (
+                self.get_type(),
+                other.get_type(),
+            )
+            assert ",".join(self.series_order) == ",".join(other.series_order), (
+                self.series_order,
+                other.series_order,
+            )
+            key: str
+            for key in self.labels:
+                assert key in other.labels
+                assert self.labels[key] == other.labels[key]
+            for key in self.colors:
+                assert key in other.colors
+                assert self.colors[key] == other.colors[key]
+            for key in self.markers:
+                assert key in other.markers
+                assert self.markers[key] == other.markers[key]
+            for key in self.show_lines:
+                assert key in other.show_lines
+                assert self.show_lines[key] == other.show_lines[key]
+        except AssertionError:
+            return False
+        return True
+
+    def __repr__(self) -> str:
+        return f"PlotSettings ({self.get_label()}, {hex(id(self))})"
+
     @staticmethod
     def _parse_v1(dictionary: dict) -> dict:
-        assert type(dictionary) is dict
+        assert type(dictionary) is dict, dictionary
         return {
             "uuid": dictionary["uuid"],
             "plot_label": dictionary["plot_label"],
@@ -142,14 +156,14 @@ class PlotSettings:
 
     def recreate_themes(self):
         uuid: str
-        for uuid in self.themes:
+        for uuid in list(self.themes.keys()):
             item: int = self.themes[uuid]
             if item < 0:
                 self.themes[uuid] = dpg.generate_uuid()
-                create_plot_theme(
-                    self.themes[uuid],
+                create_plot_series_theme(
                     self.colors[uuid],
                     self.markers[uuid] if self.markers[uuid] >= 0 else 0,
+                    self.themes[uuid],
                 )
             else:
                 if not dpg.does_item_exist(self.themes[uuid]):
@@ -159,12 +173,14 @@ class PlotSettings:
                     del self.show_lines[uuid]
                     del self.themes[uuid]
                 else:
-                    update_plot_theme_color(self.themes[uuid], self.colors[uuid])
-                    update_plot_theme_marker(self.themes[uuid], self.markers[uuid])
+                    update_plot_series_theme_color(self.themes[uuid], self.colors[uuid])
+                    update_plot_series_theme_marker(
+                        self.themes[uuid], self.markers[uuid]
+                    )
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "PlotSettings":
-        assert type(dictionary) is dict
+        assert type(dictionary) is dict, dictionary
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
@@ -172,9 +188,11 @@ class PlotSettings:
             1: Class._parse_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        return Class(**parsers[version](dictionary))
+        settings = Class(**parsers[version](dictionary))
+        settings.recreate_themes()
+        return settings
 
-    def to_dict(self) -> dict:
+    def to_dict(self, session: bool) -> dict:
         return {
             "uuid": self.uuid,
             "version": VERSION,
@@ -185,7 +203,7 @@ class PlotSettings:
             "colors": {k: v[:] for k, v in self.colors.items()},
             "markers": self.markers.copy(),
             "show_lines": self.show_lines.copy(),
-            "themes": self.themes.copy(),
+            "themes": self.themes.copy() if session else {k: -1 for k in self.themes},
         }
 
     def get_label(self) -> str:
@@ -199,54 +217,57 @@ class PlotSettings:
     def get_type(self) -> PlotType:
         return self.plot_type
 
+    def set_type(self, plot_type: PlotType):
+        self.plot_type = plot_type
+
     def get_series_label(self, uuid: str) -> str:
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         return self.labels.get(uuid, "")
 
     def set_series_label(self, uuid: str, label: str):
-        assert type(uuid) is str
-        assert type(label) is str
+        assert type(uuid) is str, uuid
+        assert type(label) is str, label
         self.labels[uuid] = label
 
     def get_series_theme(self, uuid: str) -> int:
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         return self.themes.get(uuid, -1)
 
     def get_series_color(self, uuid: str) -> List[float]:
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         color: Optional[List[float]] = self.colors.get(uuid)
         if color is None:
             return [255.0, 255.0, 255.0, 255.0]
         return color
 
     def set_series_color(self, uuid: str, color: List[float]):
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         if type(color) is tuple:
             color = list(color)
         assert type(color) is list and len(color) == 4, color
         theme: int = self.themes[uuid]
-        update_plot_theme_color(theme, color)
+        update_plot_series_theme_color(theme, color)
         self.colors[uuid] = color
 
     def get_series_marker(self, uuid: str) -> int:
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         return self.markers.get(uuid, -1)
 
     def set_series_marker(self, uuid: str, marker: int):
-        assert type(uuid) is str
-        assert type(marker) is int
+        assert type(uuid) is str, uuid
+        assert type(marker) is int, marker
         theme: int = self.themes[uuid]
         if marker >= 0:
-            update_plot_theme_marker(theme, marker)
+            update_plot_series_theme_marker(theme, marker)
         self.markers[uuid] = marker
 
     def get_series_line(self, uuid: str) -> bool:
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         return self.show_lines.get(uuid, False)
 
     def set_series_line(self, uuid: str, state: bool):
-        assert type(uuid) is str
-        assert type(state) is bool
+        assert type(uuid) is str, uuid
+        assert type(state) is bool, state
         self.show_lines[uuid] = state
 
     def add_series(
@@ -260,7 +281,7 @@ class PlotSettings:
             or type(series) is TestResult
             or type(series) is FitResult
             or type(series) is SimulationResult
-        )
+        ), series
         uuid: str = series.uuid
         if uuid in self.series_order:
             return
@@ -268,20 +289,20 @@ class PlotSettings:
             self.labels[uuid] = ""
             color: List[float]
             marker: int
-            color, marker = get_color_marker(self.themes)
+            color, marker = get_random_color_marker(self.themes)
             self.colors[uuid] = color
             self.markers[uuid] = marker
             self.themes[uuid] = dpg.generate_uuid()
-            create_plot_theme(
-                self.themes[uuid],
+            create_plot_series_theme(
                 self.colors[uuid],
                 self.markers[uuid] if self.markers[uuid] >= 0 else 0,
+                self.themes[uuid],
             )
             self.show_lines[uuid] = type(series) is not DataSet
         self.series_order.append(uuid)
 
     def remove_series(self, uuid: str):
-        assert type(uuid) is str
+        assert type(uuid) is str, uuid
         if uuid not in self.series_order:
             return
         self.series_order.remove(uuid)

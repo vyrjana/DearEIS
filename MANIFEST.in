@@ -4,4 +4,4 @@ include LICENSE
 include README.md
 include LICENSES/README.md
 include LICENSES/*.txt
-include src/deareis/licenses/*.txt
+include src/deareis/gui/licenses/*.txt
