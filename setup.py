@@ -1,5 +1,19 @@
 from setuptools import setup, find_packages
+from os import walk
 from os.path import dirname, join
+
+
+licenses = []
+for _, _, files in walk("LICENSES"):
+    licenses.extend(
+        list(
+            map(
+                lambda _: join("LICENSES", _),
+                filter(lambda _: _.startswith("LICENSE-"), files),
+            )
+        )
+    )
+
 
 entry_points = {
     "gui_scripts": [
@@ -24,6 +38,11 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
+        data_files=[
+        "COPYRIGHT",
+        "CONTRIBUTORS",
+        "LICENSES/README.md",
+    ] + licenses,
     url="https://github.com/vyrjana/DearEIS",
     project_urls={
         "Bug Tracker": "https://github.com/vyrjana/DearEIS/issues",
