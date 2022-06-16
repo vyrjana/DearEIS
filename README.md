@@ -70,7 +70,7 @@ See the included tooltips and instructions in the program for more information.
 ### Projects
 
 _DearEIS_ has a project-based workflow and multiple projects can be open at the same time.
-Each project has a user-defineable label and a section for keeping notes.
+Each project has a user-definable label and a section for keeping notes.
 Multiple projects can also be merged to form a single project.
 
 
