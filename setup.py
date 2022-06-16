@@ -14,7 +14,6 @@ for _, _, files in walk("LICENSES"):
         )
     )
 
-
 entry_points = {
     "gui_scripts": [
         "deareis = deareis.program:main",
@@ -38,11 +37,12 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
-        data_files=[
+    data_files=[
         "COPYRIGHT",
         "CONTRIBUTORS",
         "LICENSES/README.md",
-    ] + licenses,
+    ]
+    + licenses,
     url="https://github.com/vyrjana/DearEIS",
     project_urls={
         "Bug Tracker": "https://github.com/vyrjana/DearEIS/issues",
