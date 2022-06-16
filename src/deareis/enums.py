@@ -616,6 +616,7 @@ output_to_label: Dict[Output, str] = {v: k for k, v in label_to_output.items()}
 class PlotType(IntEnum):
     """
 Types of plots:
+
 - NYQUIST
 - BODE_MAGNITUDE
 - BODE_PHASE

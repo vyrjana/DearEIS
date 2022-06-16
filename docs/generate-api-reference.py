@@ -14,6 +14,30 @@ def write_file(path: str, content: str):
 
 
 if __name__ == "__main__":
+    # PDF
+    write_file(
+        join(getcwd(), "API.md"),
+        r"""---
+header-includes:
+    \usepackage{geometry}
+    \geometry{a4paper, margin=2.5cm}
+---
+""" + process(
+            title="DearEIS - API reference",
+            description="""
+_DearEIS_ is built on top of the `pyimpspec` package.
+See the API reference for `pyimpspec` for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
+            """.strip(),
+            modules_to_document=[
+                deareis,
+                deareis.plot.mpl,
+            ],
+            minimal_classes=[
+                deareis.Circuit,
+            ],
+            latex_pagebreak=True,
+        )
+    )
     # Project
     write_file(
         join(getcwd(), "API-project.md"),
@@ -83,7 +107,7 @@ if __name__ == "__main__":
     write_file(
         join(getcwd(), "API-plot.mpl.md"),
         process(
-            title="API - deareis.plot.mpl",
+            title="deareis.plot.mpl",
             modules_to_document=[
                 deareis.plot.mpl,
             ],
