@@ -199,10 +199,14 @@ def is_filtered_item_visible(item: int, filter_string: str) -> bool:
     filter_key: Optional[str] = dpg.get_item_filter_key(item)
     if filter_key is None:
         return False
+    visible: bool = False
     for fragment in map(str.strip, filter_string.split(",")):
         if fragment.startswith("-"):
+            visible = True
             if fragment[1:] in filter_key:
                 return False
-        elif fragment not in filter_key:
-            return False
-    return True
+        else:
+            visible = False
+            if fragment in filter_key:
+                return True
+    return visible

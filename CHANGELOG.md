@@ -1,3 +1,6 @@
+# PENDING
+- Fixed a bug in the `utility.is_filtered_item_visible` implementation that would cause the wrong result to be returned.
+
 # 1.0.0
 - Rewrote large parts of the program.
 - Added the ability to create a project by merging two or more existing projects.
