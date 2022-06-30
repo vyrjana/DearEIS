@@ -1,4 +1,5 @@
 # PENDING
+- Updated docstrings.
 - Fixed a bug in the `utility.is_filtered_item_visible` implementation that would cause the wrong result to be returned.
 
 # 1.0.0
@@ -6,7 +7,7 @@
 - Added the ability to create a project by merging two or more existing projects.
 - Added remappable keybindings.
 - Added a command palette that can be used to search for and to execute actions. Accessible by default via the Ctrl+P keybinding.
-- Added individiual toggles for most plots to set whether or not the plot's limits should be adjusted automatically when modifying the contents of the plot.
+- Added individual toggles for most plots to set whether or not the plot's limits should be adjusted automatically when modifying the contents of the plot.
 - Added a button for clearing the list of recent projects.
 - Added a button for randomizing an active plot item's color.
 - Various bug fixes.
