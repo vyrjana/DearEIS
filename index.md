@@ -1,14 +1,14 @@
 DearEIS is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
 The target audience is researchers who use electrochemical impedance spectroscopy (EIS) though the program may also be useful in educational settings.
-The program implements:
+The program includes features such as:
 
-- projects that can contain multiple experimental data sets
+- [projects that can contain multiple experimental data sets](assets/images/example-projects.gif)
 - reading experimental data from several different data formats
-- validation of impedance spectra by checking if the data is Kramers-Kronig transformable
-- construction of equivalent circuits either by parsing a circuit definition code or by using the included graphical editor
-- equivalent circuit fitting
+- [validation of impedance spectra by checking if the data is Kramers-Kronig transformable](assets/images/example-kramers-kronig.gif)
+- [construction of equivalent circuits either by parsing a circuit definition code or by using the included graphical editor](assets/images/example-circuit-editor.gif)
+- [equivalent circuit fitting](assets/images/example-fitting.gif)
 - simulation of impedance spectra
-- composition of complex plots
+- [composition of complex plots](assets/images/example-plotting.gif)
 
 
 ## How to install
