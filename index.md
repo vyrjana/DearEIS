@@ -24,29 +24,57 @@ The program includes features such as:
 
 ## How to install
 
-DearEIS has been tested on Linux and Windows but may also work on MacOS.
+### Requirements
 
-The easiest way to install DearEIS is to do it with [pip](https://pip.pypa.io/en/stable/), which is the package installer for [Python](https://www.python.org/) and should be included with most distributions of the official Python runtime.
+- [Python (version 3.7 or later)](https://www.python.org/)
 
-Make sure that you have installed a recent version of Python and then execute the following command in a terminal (e.g. PowerShell on Windows):
+### Supported platforms
+
+- Linux
+- Windows
+
+DearEIS **may** also work on other platforms such as e.g. MacOS.
+
+
+### Step-by-step
+
+- Make sure to first install a recent version of Python if you do not already have it installed.
+- DearEIS can then be installed with [pip](https://pip.pypa.io/en/stable/), which is the package installer for Python and should be included with most distributions of the official Python runtime.
+	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/1.0.0/DearEIS-installer.exe) is available for Windows.
+		The installer executes the rest of the steps automatically and thus the next point can be ignored.
+		Additionally, the installer also create shortcuts in the start menu.
+- Execute the following command in a terminal (e.g. PowerShell on Windows) once Python has been installed:
 
 ```
 pip install deareis
 ```
 
-Updating DearEIS is then as simple as adding the `--upgrade` (or `-U`) argument:
+
+### Updating
+
+Updating DearEIS is as simple as adding the `--upgrade` (or `-U`) argument:
 
 ```
 pip install --upgrade deareis
 ```
 
+**NOTE!** If DearEIS was installed on Windows using the installer, then there should be a shortcut in the start menu that can be run instead to run the command.
+Alternatively, the installer can be executed again.
+
 
 ## How to run
 
-DearEIS can be run by executing `deareis` in a terminal.
-Alternatively, the program can also be executed on Windows via the start menu by searching for `deareis`.
+### Linux
+
+DearEIS can be run by executing the `deareis` command in a terminal.
+The command may also be available in application launchers (e.g. in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
+
+
+### Windows
+
+If installed using the installer, then a shortcut to DearEIS should in the start menu.
+Alternatively, the program can also be executed on via the start menu by searching for the `deareis` command.
 **Note that the full name needs to be typed in for the command to be found!**
-On Linux `deareis` may similarly be available in application launchers (e.g. in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
 
 
 ## API documentation
