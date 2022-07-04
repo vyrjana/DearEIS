@@ -145,18 +145,15 @@ class DataTable:
         i: int
         row: int
         for i, row in enumerate(dpg.get_item_children(self._table, slot=1)):
-            cell: int
-            for cell in dpg.get_item_children(row, slot=1):
-                assert "mvCheckbox" in dpg.get_item_type(cell), dpg.get_item_type(cell)
-                dpg.configure_item(
-                    cell,
-                    default_value=mask.get(i, False),
-                    user_data=(
-                        i,
-                        data,
-                    ),
-                )
-                break
+            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+            dpg.configure_item(
+                checkbox,
+                default_value=mask.get(i, False),
+                user_data=(
+                    i,
+                    data,
+                ),
+            )
 
 
 class DataSetsTab:
