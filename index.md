@@ -44,9 +44,9 @@ pip install --upgrade deareis
 ## How to run
 
 DearEIS can be run by executing `deareis` in a terminal.
-Alternatively, on Windows the program can also be executed by searching for `deareis` in the start menu.
-**Note that the full name needs to be typed in for this to work!**
-On Linux `deareis` should similarly be available in application launchers (e.g. in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
+Alternatively, the program can also be executed on Windows via the start menu by searching for `deareis`.
+**Note that the full name needs to be typed in for the command to be found!**
+On Linux `deareis` may similarly be available in application launchers (e.g. in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
 
 
 ## API documentation
