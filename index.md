@@ -41,8 +41,8 @@ DearEIS **may** also work on other platforms such as e.g. MacOS.
 - Make sure to first install a recent version of Python if you do not already have it installed.
 - DearEIS can then be installed with [pip](https://pip.pypa.io/en/stable/), which is the package installer for Python and should be included with most distributions of the official Python runtime.
 	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/1.0.0/DearEIS-installer.exe) is available for Windows.
-		The installer executes the rest of the steps automatically and thus the next point can be ignored.
-		Additionally, the installer also create shortcuts in the start menu.
+		The installer takes care of installing DearEIS for you using pip so the next step can be ignored.
+		Additionally, the installer also creates a few shortcuts in the start menu.
 - Execute the following command in a terminal (e.g. PowerShell on Windows) once Python has been installed:
 
 ```
@@ -72,7 +72,7 @@ The command may also be available in application launchers (e.g. in the `run` mo
 
 ### Windows
 
-If installed using the installer, then a shortcut to DearEIS should in the start menu.
+If installed using the installer, then a shortcut to DearEIS should exist in the start menu.
 Alternatively, the program can also be executed on via the start menu by searching for the `deareis` command.
 **Note that the full name needs to be typed in for the command to be found!**
 
