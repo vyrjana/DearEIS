@@ -52,13 +52,13 @@ pip install deareis
 
 ### Updating
 
-Updating DearEIS is as simple as adding the `--upgrade` (or `-U`) argument:
+Updating DearEIS is as simple as adding the `--upgrade` (or `-U`) argument to the command shown above:
 
 ```
 pip install --upgrade deareis
 ```
 
-**NOTE!** If DearEIS was installed on Windows using the installer, then there should be a shortcut in the start menu that can be run instead to run the command.
+**NOTE!** If DearEIS was installed on Windows using the installer, then there should be a shortcut in the start menu that will run the command.
 Alternatively, the installer can be executed again.
 
 
@@ -93,7 +93,7 @@ Bug reports, feature requests, and requests for help can be posted on [GitHub](h
 
 ## Contributing
 
-If you wish to help make DearEIS better, then please see the [GitHub repository](https://github.com/vyrjana/DearEIS) for more information.
+If you wish to help make DearEIS even better, then please head on over to the [GitHub repository](https://github.com/vyrjana/DearEIS) for more information in the README.md file.
 
 
 ## License
