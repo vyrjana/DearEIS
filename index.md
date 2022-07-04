@@ -52,6 +52,8 @@ On Linux `deareis` should similarly be available in application launchers (e.g. 
 ## API documentation
 
 Documentation about the API can be found on the [GitHub wiki](https://github.com/vyrjana/DearEIS/wiki).
+Check [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the DearEIS API, which is based on [pyimpspec](https://github.com/vyrjana/pyimpspec).
+Check [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) for examples of how to use the pyimpspec API.
 
 
 ## Support
