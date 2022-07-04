@@ -11,6 +11,17 @@ The program includes features such as:
 - [composition of complex plots](assets/images/example-plotting.gif)
 
 
+## Recent news
+
+<ul>
+  {% for post in site.posts limit:5 %}
+    <li>
+      <a href="{{ post.url }}">{{ post.title }}</a>
+    </li>
+  {% endfor %}
+</ul>
+
+
 ## How to install
 
 DearEIS has been tested on Linux and Windows but may also work on MacOS.
