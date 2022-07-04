@@ -1,6 +1,9 @@
 # PENDING
+- Updated About window.
 - Updated docstrings.
 - Fixed a bug in the `utility.is_filtered_item_visible` implementation that would cause the wrong result to be returned.
+- Fixed a bug that prevented plots and the table of data points from updating when undoing/redoing toggling of the masked state of data points.
+- Refactored code.
 
 # 1.0.0
 - Rewrote large parts of the program.
