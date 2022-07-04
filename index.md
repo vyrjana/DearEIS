@@ -16,7 +16,7 @@ The program includes features such as:
 <ul>
   {% for post in site.posts limit:5 %}
     <li>
-      <a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }} ({{ post.date }})</a>
+      <a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }} ({{ post.date | date: "%Y-%m-%d" }})</a>
     </li>
   {% endfor %}
 </ul>
