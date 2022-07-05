@@ -1,4 +1,5 @@
-# PENDING
+# 1.0.1
+
 - Added an Inno Setup Script for producing an installer for Windows.
 - Updated About window.
 - Updated docstrings.
