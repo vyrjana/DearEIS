@@ -216,10 +216,13 @@ def restore_project_state(*args, **kwargs):
     data: Optional[DataSet] = project_tab.get_active_data_set(
         context=Context.DATA_SETS_TAB
     )
+    data_sets: List[DataSet] = project.get_data_sets()
     if data is None:
-        data_sets: List[DataSet] = project.get_data_sets()
         if data_sets:
             data = data_sets[0]
+    elif data_sets and data in data_sets:
+        # This is done because the DataSet instance returned by get_active_data_set is outdated.
+        data = [_ for _ in data_sets if _ == data][0]
     signals.emit(
         Signal.SELECT_DATA_SET,
         data=data,

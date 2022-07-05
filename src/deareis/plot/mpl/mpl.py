@@ -68,6 +68,29 @@ def plot(
     num_per_decade: int = 100,
     show_legend: Optional[bool] = None,
 ) -> Tuple[Figure, Axes]:
+    """
+Plot a complex plot containing one or more items from a project based on the provided settings.
+
+Parameters
+----------
+settings: PlotSettings
+    The settings for the plot.
+
+project: Project
+    The project that the plot is a part of.
+
+fig: Optional[Figure] = None
+    The matplotlib.figure.Figure instance to use when plotting the data.
+
+axis: Optional[Axes] = None
+    The matplotlib.axes.Axes instance to use when plotting the data.
+
+num_per_decade: int = 100
+    If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).
+
+show_legend: Optional[bool] = None
+    Whether or not a legend should be shown.
+    """
     assert type(settings) is PlotSettings
     assert type(fig) is Figure or fig is None
     if fig is None:

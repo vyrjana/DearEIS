@@ -5,6 +5,7 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
 ## Table of contents
 
+- [About](#about)
 - [Getting started](#getting-started)
 	- [Installing](#installing)
 	- [Running](#running)
@@ -17,8 +18,33 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 	- [Visualization](#visualization)
 	- [Scripting](#scripting)
 - [Changelog](#changelog)
-- [Contributors](#contributors)
+- [Contributing](#contributing)
 - [License](#license)
+
+
+## About
+
+_DearEIS_ is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
+The target audience is researchers who use electrochemical impedance spectroscopy (EIS) though the program may also be useful in educational settings.
+The program implements:
+
+- projects that can contain multiple experimental data sets
+- reading experimental data from several different data formats
+- validation of impedance spectra by checking if the data is Kramers-Kronig transformable
+- construction of equivalent circuits either by parsing a circuit definition code or by using the included graphical editor
+- equivalent circuit fitting
+- simulation of impedance spectra
+- composition of complex plots
+
+Check out the [wiki](https://github.com/vyrjana/DearEIS/wiki/Screenshots) for screenshots of the GUI.
+See the [Features](#features) section and [_pyimpspec_](https://github.com/vyrjana/pyimpspec) for more details about e.g. supported data formats and implementation details.
+
+The API is an extension of the API provided by [_pyimpspec_](https://github.com/vyrjana/pyimpspec) and can be used to e.g. perform batch processing.
+Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
+[This Jupyter notebook](examples/examples.ipynb) contains some examples of how to use the API though the focus is on the additions available in the _DearEIS_ API.
+See the [pyimpspec](https://github.com/vyrjana/pyimpspec) repository for examples and documentation regarding its API.
+
+If you encounter issues, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
 
 
 ## Getting started
@@ -64,7 +90,6 @@ Several keybindings, which are user-configurable, are supported for more keyboar
 ## Features
 
 Below is a brief overview of the main features of _DearEIS_.
-Check out the [wiki](https://github.com/vyrjana/DearEIS/wiki/Screenshots) for screenshots.
 See the included tooltips and instructions in the program for more information.
 
 
@@ -129,7 +154,14 @@ Documentation about the API can be found on the [wiki](https://github.com/vyrjan
 See [CHANGELOG.md](CHANGELOG.md) for details.
 
 
-## Contributors
+## Contributing
+
+If you wish to contribute to the further development of _pyimpspec_, then there are several options available to you depending on your ability and the amount of time that you can spare.
+If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
+If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
+Note that some of the core functionality of _DearEIS_ is based on [_pyimpspec_](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g. parsers for data formats) should be contributed to that project instead.
+Code contributions should, if it is applicable, also include unit tests, which should be implemented in files placed in the `tests` folder found in the root of the repository along with any assets required by the tests.
+It should be possible to run the tests by executing the `run_tests.sh` script, which uses the test discovery built into the `unittest` module that is included with Python.
 
 See [CONTRIBUTORS](CONTRIBUTORS) for a list of people who have contributed to the _DearEIS_ project.
 

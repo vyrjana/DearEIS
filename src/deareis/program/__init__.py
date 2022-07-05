@@ -489,7 +489,7 @@ def show_help_about(*args, **kwargs):
     y: int
     w: int
     h: int
-    x, y, w, h = calculate_window_position_dimensions(210, 110)
+    x, y, w, h = calculate_window_position_dimensions(250, 130)
     window: int = dpg.generate_uuid()
     key_handler: int = dpg.generate_uuid()
 
@@ -520,7 +520,7 @@ def show_help_about(*args, **kwargs):
         tag=window,
     ):
         dpg.add_text(
-            f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\ngithub.com/vyrjana/DearEIS"
+            f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\nhttps://vyrjana.github.io/DearEIS\n\ngithub.com/vyrjana/DearEIS"
         )
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
 

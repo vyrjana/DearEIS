@@ -26,7 +26,7 @@ entry_points = {
 copyright_notice = ""
 with open(join(dirname(__file__), "COPYRIGHT")) as fp:
     copyright_notice = fp.read().strip()
-version = "1.0.0"
+version = "1.0.1"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
 
