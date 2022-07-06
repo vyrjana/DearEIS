@@ -33,7 +33,7 @@ The program includes features such as:
 - Linux
 - Windows
 
-DearEIS **may** also work on other platforms such as e.g. MacOS.
+DearEIS **may** also work on other platforms such as, e.g., MacOS.
 
 
 ### Step-by-step
@@ -43,7 +43,7 @@ DearEIS **may** also work on other platforms such as e.g. MacOS.
 	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/1.0.1/DearEIS-installer.exe) is available for Windows.
 		The installer takes care of installing DearEIS for you using pip so the next step can be ignored.
 		Additionally, the installer also creates a few shortcuts in the start menu.
-- Execute the following command in a terminal (e.g. PowerShell on Windows) once Python has been installed:
+- Execute the following command in a terminal (e.g., PowerShell on Windows) once Python has been installed:
 
 ```
 pip install deareis
@@ -67,7 +67,7 @@ Alternatively, the installer can be executed again.
 ### Linux
 
 DearEIS can be run by executing the `deareis` command in a terminal.
-The command may also be available in application launchers (e.g. in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
+The command may also be available in application launchers (e.g., in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
 
 
 ### Windows
