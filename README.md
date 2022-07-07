@@ -7,6 +7,7 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
 - [About](#about)
 - [Getting started](#getting-started)
+	- [Requirements](#requirements)
 	- [Installing](#installing)
 	- [Running](#running)
 	- [Settings and keybindings](#settings-and-keybindings)
@@ -24,7 +25,7 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
 ## About
 
-_DearEIS_ is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
+DearEIS is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
 The target audience is researchers who use electrochemical impedance spectroscopy (EIS) though the program may also be useful in educational settings.
 The program implements:
 
@@ -37,11 +38,11 @@ The program implements:
 - composition of complex plots
 
 Check out the [wiki](https://github.com/vyrjana/DearEIS/wiki/Screenshots) for screenshots of the GUI.
-See the [Features](#features) section and [_pyimpspec_](https://github.com/vyrjana/pyimpspec) for more details about e.g. supported data formats and implementation details.
+See the [Features](#features) section and [pyimpspec](https://github.com/vyrjana/pyimpspec) for more details about, e.g., supported data formats and implementation details.
 
-The API is an extension of the API provided by [_pyimpspec_](https://github.com/vyrjana/pyimpspec) and can be used to e.g. perform batch processing.
+The API is an extension of the API provided by [pyimpspec](https://github.com/vyrjana/pyimpspec) and can be used to, e.g., perform batch processing.
 Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
-[This Jupyter notebook](examples/examples.ipynb) contains some examples of how to use the API though the focus is on the additions available in the _DearEIS_ API.
+[This Jupyter notebook](examples/examples.ipynb) contains some examples of how to use the API though the focus is on the additions available in the DearEIS API.
 See the [pyimpspec](https://github.com/vyrjana/pyimpspec) repository for examples and documentation regarding its API.
 
 If you encounter issues, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
@@ -49,19 +50,32 @@ If you encounter issues, then please open an issue on [GitHub](https://github.co
 
 ## Getting started
 
+### Requirements
+
+- [Python](https://www.python.org)
+- The following Python packages
+	- [Dear PyGui](https://github.com/hoffstadt/DearPyGui): cross-platform GUI toolkit
+	- [pyimpspec](https://github.com/vyrjana/pyimpspec): implements data parsing and validation, circuit elements, and circuit fitting
+	- [tabulate](https://github.com/astanin/python-tabulate): implements formatting of Markdown tables
+	- [xdg](https://github.com/srstevenson/xdg): implements functions for obtaining paths according to the XDG Base Directory Specification
+
+The Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).
+
 ### Installing
 
-The latest version of _DearEIS_ requires **Python 3.7 or newer (64-bit)** and the most straightforward way to install _DearEIS_ is by using [_pip_](https://pip.pypa.io/en/stable/).
-Make sure that _pip_ is installed first and then type the following command into a terminal of your choice (e.g. _PowerShell_ in Windows).
+Make sure that Python (**3.7 or newer, 64-bit**) and pip are installed first and then type the following command in a terminal of your choice (e.g., PowerShell in Windows):
 
 ```
 pip install deareis
 ```
 
-Newer versions of _DearEIS_ can be installed at a later date by appending the `-U` option to the command:
+Alternatively, use the Windows installer available in the [releases section](https://github.com/vyrjana/DearEIS/releases).
+The installer will take care of installing DearEIS using pip and then create shortcuts in the start menu.
+
+Newer versions of DearEIS can be installed at a later date by appending the `-U` option to the command:
 
 ```
-pip install deareis -U
+pip install --upgrade deareis
 ```
 
 Supported platforms:
@@ -70,49 +84,52 @@ Supported platforms:
 - Windows
 	- Tested on Windows 10 (x86-64).
 
-The package **may** also work on other platforms (e.g. MacOS) depending on whether or not those platforms are supported by _DearEIS_' [dependencies](setup.py).
+The package **may** also work on other platforms (e.g., MacOS) depending on whether or not those platforms are supported by DearEIS' [dependencies](setup.py).
 
 
 ### Running
 
-Once installed, _DearEIS_ can be started e.g. from a terminal or the Windows start menu by searching for the command `deareis`.
+Once installed, DearEIS can be started, e.g., from a terminal or the Windows start menu by searching for the command `deareis`.
+If the Windows installer was used, then there should be shortcuts in the start menu.
+The program may also show up in some application launchers.
 
 There is also a `deareis-debug` command that prints additional information to the terminal and can be useful when troubleshooting issues.
 
 
 ### Settings and keybindings
 
-_DearEIS_ has several user-configurable settings.
-It is possible to configure the default values of the settings on the Kramers-Kronig, fitting, and simulation tabs as well as some aspects of the plots (e.g. colors and markers).
-Several keybindings, which are user-configurable, are supported for more keyboard-based navigation although a mouse or trackpad is required in some circumstances.
+DearEIS has several user-configurable settings.
+It is possible to configure the default values of the settings on the Kramers-Kronig, fitting, and simulation tabs as well as some aspects of the plots (e.g., colors and markers).
+Several keybindings, which are also user-configurable, are supported for more keyboard-centric navigation although a mouse or trackpad is required in some circumstances.
 
 
 ## Features
 
-Below is a brief overview of the main features of _DearEIS_.
+Below is a brief overview of the main features of DearEIS.
 See the included tooltips and instructions in the program for more information.
 
 
 ### Projects
 
-_DearEIS_ has a project-based workflow and multiple projects can be open at the same time.
+DearEIS has a project-based workflow and multiple projects can be open at the same time.
 Each project has a user-definable label and a section for keeping notes.
 Multiple projects can also be merged to form a single project.
 
 
 ### Data sets
 
-The experimentally obtained impedance spectra are referred to as "data sets".
+The experimentally obtained impedance spectra are referred to as _data sets_.
 Each project can contain multiple data sets.
 Multiple noisy data sets can be averaged to produce a single data set.
 Individual data points can be masked to exclude outliers or to focus on a part of the spectrum.
 Corrections can be made by subtracting either a constant complex value, the impedance of an equivalent circuit, or another spectrum.
+See pyimpspec's documentation for information about which data formats are currently supported.
 
 
 ### Data validation
 
 Data sets can be validated by checking if they are Kramers-Kronig transformable.
-See [_pyimpspec_](https://github.com/vyrjana/pyimpspec/) for more details regarding the implementation of the tests.
+See [pyimpspec](https://github.com/vyrjana/pyimpspec/) for more details regarding the implementation of the tests.
 
 
 ### Circuit fitting and simulation
@@ -125,28 +142,29 @@ Element parameters can also be fixed at a constant value.
 The impedance spectra produced by the circuits can also be simulated in a wide frequency range.
 Various aspects of the circuits and the fitting results can be copied to the clipboard in different formats.
 For example, a table of fitted element parameters can be obtained in the form of a Markdown or LaTeX table.
-The mathematical expression for a circuit's impedance as a function of the applied frequency can also be obtained as e.g. a _SymPy_ expression.
+The mathematical expression for a circuit's impedance as a function of the applied frequency can also be obtained as, e.g., a SymPy expression.
 
 
 ### Visualization
 
-Data sets and their corresponding results (Kramers-Kronig test or equivalent circuit fit) are visualized using simple Nyquist plots, Bode plots, and residual plots.
+Data sets and their corresponding results (Kramers-Kronig tests and equivalent circuit fits) are visualized using simple Nyquist plots, Bode plots, and residual plots.
 More complex plots containing multiple data sets, Kramers-Kronig test results, equivalent circuit fitting results, and/or simulation results can also be created.
-These complex plots can be used to overlay and compare results more easily.
-However, they can also be used to create plots that can be turned into publication-ready figures with the help of a Python script (see the [Scripting](#scripting) section for more details).
+These complex plots can be used to overlay and compare results.
+However, they can also be used to compose plots that can be turned into publication-ready figures with the help of a Python script (see the [Scripting](#scripting) section for more details) or by copying the plot's data to another program.
 
 
 ### Scripting
 
-_DearEIS_ projects can also be used in Python scripts for the purposes of batch processing results.
+DearEIS projects can also be used in Python scripts for the purposes of batch processing results.
 This capability could be used to:
 - generate project files from large numbers of measurements in an automated fashion
 - export the processed data to another format
-- generate tables that can be included in a document written in e.g. LaTeX or Markdown
-- plot publication-ready figures using e.g. _matplotlib_
+- generate tables that can be included in a document written in, e.g., LaTeX or Markdown
+- plot publication-ready figures using, e.g., matplotlib
 
 See [the Jupyter notebook](examples/examples.ipynb) for some examples.
 Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
+See [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) and [pyimpspec's API](https://github.com/vyrjana/pyimpspec/wiki) for examples and documentation, respectively, regarding the API that DearEIS extends.
 
 
 ## Changelog
@@ -156,20 +174,20 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## Contributing
 
-If you wish to contribute to the further development of _pyimpspec_, then there are several options available to you depending on your ability and the amount of time that you can spare.
+If you wish to contribute to the further development of pyimpspec, then there are several options available to you depending on your ability and the amount of time that you can spare.
 If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
 If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
-Note that some of the core functionality of _DearEIS_ is based on [_pyimpspec_](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g. parsers for data formats) should be contributed to that project instead.
+Note that some of the core functionality of DearEIS is based on [pyimpspec](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g., parsers for data formats) should be contributed to that project instead.
 Code contributions should, if it is applicable, also include unit tests, which should be implemented in files placed in the `tests` folder found in the root of the repository along with any assets required by the tests.
 It should be possible to run the tests by executing the `run_tests.sh` script, which uses the test discovery built into the `unittest` module that is included with Python.
 
-See [CONTRIBUTORS](CONTRIBUTORS) for a list of people who have contributed to the _DearEIS_ project.
+See [CONTRIBUTORS](CONTRIBUTORS) for a list of people who have contributed to the DearEIS project.
 
 
 ## License
 
 Copyright 2022 DearEIS developers
 
-_DearEIS_ is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
+DearEIS is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
 
-The licenses of _DearEIS_' dependencies and/or sources of portions of code are included in the LICENSES folder.
+The licenses of DearEIS' dependencies and/or sources of portions of code are included in the LICENSES folder.
