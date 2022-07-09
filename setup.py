@@ -26,7 +26,7 @@ entry_points = {
 copyright_notice = ""
 with open(join(dirname(__file__), "COPYRIGHT")) as fp:
     copyright_notice = fp.read().strip()
-version = "1.0.1"
+version = "1.0.2"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
 
@@ -63,7 +63,8 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: OS Independent",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python :: 3",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Physics",

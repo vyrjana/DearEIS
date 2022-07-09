@@ -197,7 +197,7 @@ def delete_data_set(*args, **kwargs):
         data=lookup[labels[0]] if labels else None,
     )
     data = project_tab.get_active_data_set(context=Context.SIMULATION_TAB)
-    if data.get_label() not in labels:
+    if data is not None and data.get_label() not in labels:
         data = None
     signals.emit(
         Signal.SELECT_SIMULATION_RESULT,

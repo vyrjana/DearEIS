@@ -1,3 +1,9 @@
+# 1.0.2
+
+- Updated classifiers in `setup.py`.
+- Fixed a bug that caused an error when deleting any data set.
+
+
 # 1.0.1
 
 - Added an Inno Setup Script for producing an installer for Windows.
