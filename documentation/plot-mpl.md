@@ -1,3 +1,8 @@
+---
+layout: documentation
+title: API - plotting - matplotlib
+permalink: /api/plot-mpl/
+---
 
 These functions are for basic visualization of various objects (e.g., `DataSet`, `TestResult`, and `FitResult`) using the [matplotlib](https://matplotlib.org/) package.
             

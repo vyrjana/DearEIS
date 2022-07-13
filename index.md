@@ -79,8 +79,9 @@ Alternatively, the program can also be executed on via the start menu by searchi
 
 ## API documentation
 
-[The API documentation can be found here](https://vyrjana.github.io/DearEIS/api)
+[The API documentation can be found here](https://vyrjana.github.io/DearEIS/api).
 Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the API.
+
 The DearEIS API is based on [pyimpspec](https://github.com/vyrjana/pyimpspec) and some examples of how to use the pyimpspec API can be found in [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb).
 
 
