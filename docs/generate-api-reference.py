@@ -169,7 +169,8 @@ Check the [high-level functions of the pyimpspec API]() for information on how t
     # Plotting - matplotlib
     write_file(
         join(root_folder, "plot-mpl.md"),
-        process(
+        jekyll_header("plotting - matplotlib", "plot-mpl")
+        + process(
             title="",
             modules_to_document=[
                 deareis.plot.mpl,
