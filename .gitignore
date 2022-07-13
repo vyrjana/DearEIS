@@ -128,4 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-API-*.md
+docs/API*.md
+docs/API*.pdf
+docs/documentation
