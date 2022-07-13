@@ -5,7 +5,7 @@ The program includes features such as:
 - [projects that can contain multiple experimental data sets](assets/images/example-projects.gif)
 - reading experimental data from several different data formats
 - [validation of impedance spectra by checking if the data is Kramers-Kronig transformable](assets/images/example-kramers-kronig.gif)
-- [construction of equivalent circuits either by parsing a circuit definition code or by using the included graphical editor](assets/images/example-circuit-editor.gif)
+- [construction of equivalent circuits either by parsing a circuit description code (CDC) or by using the included graphical editor](assets/images/example-circuit-editor.gif)
 - [equivalent circuit fitting](assets/images/example-fitting.gif)
 - simulation of impedance spectra
 - [composition of complex plots](assets/images/example-plotting.gif)
