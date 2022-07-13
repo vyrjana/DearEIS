@@ -2,7 +2,21 @@
 ---
 
 @import "{{ site.theme }}";
+
 p {
 	text-align: justify;
 	text-justify: inter-word;
+}
+
+#header {
+  nav {
+    ul {
+      li {
+        &.apidoc {
+          float: left;
+          margin-left: 10px;
+        }
+      }
+    }
+  }
 }
