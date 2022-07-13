@@ -37,13 +37,13 @@ The program implements:
 - simulation of impedance spectra
 - composition of complex plots
 
-Check out the [wiki](https://github.com/vyrjana/DearEIS/wiki/Screenshots) for screenshots of the GUI.
+GIFs showcasing parts of the GUI can be found [here](https://vyrjana.github.io/DearEIS/).
 See the [Features](#features) section and [pyimpspec](https://github.com/vyrjana/pyimpspec) for more details about, e.g., supported data formats and implementation details.
 
-The API is an extension of the API provided by [pyimpspec](https://github.com/vyrjana/pyimpspec) and can be used to, e.g., perform batch processing.
-Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
+The API is built upon the API provided by [pyimpspec](https://github.com/vyrjana/pyimpspec) and can be used to, e.g., perform batch processing.
+Documentation about the API can be found [here](https://vyrjana.github.io/DearEIS/api/).
 [This Jupyter notebook](examples/examples.ipynb) contains some examples of how to use the API though the focus is on the additions available in the DearEIS API.
-See the [pyimpspec](https://github.com/vyrjana/pyimpspec) repository for examples and documentation regarding its API.
+API documentation and examples for pyimpspec can be found [here](https://vyrjana.github.io/pyimpspec/api).
 
 If you encounter issues, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
 
@@ -163,8 +163,8 @@ This capability could be used to:
 - plot publication-ready figures using, e.g., matplotlib
 
 See [the Jupyter notebook](examples/examples.ipynb) for some examples.
-Documentation about the API can be found on the [wiki](https://github.com/vyrjana/DearEIS/wiki).
-See [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) and [pyimpspec's API](https://github.com/vyrjana/pyimpspec/wiki) for examples and documentation, respectively, regarding the API that DearEIS extends.
+Documentation about the API can be found [here](https://vyrjana.github.io/DearEIS/api/)
+See [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) and [pyimpspec's API](https://vyrjana.github.io/pyimpspec/api/) for examples and documentation, respectively, regarding the API that DearEIS extends.
 
 
 ## Changelog

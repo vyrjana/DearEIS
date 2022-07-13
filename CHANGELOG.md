@@ -1,3 +1,8 @@
+# 1.1.0
+
+- Added support for `.dfr` data format.
+
+
 # 1.0.2
 
 - Updated classifiers in `setup.py`.

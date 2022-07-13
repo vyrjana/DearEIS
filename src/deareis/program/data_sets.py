@@ -25,6 +25,7 @@ from typing import (
     Optional,
 )
 from pyimpspec.data.formats import UnsupportedFileFormat
+from pyimpspec.data import get_parsers
 import pyimpspec
 from deareis.data import (
     DataSet,
@@ -130,16 +131,7 @@ Encountered error(s) while parsing data file(s). The file(s) might be malformed,
         cwd=STATE.latest_data_set_directory,
         label="Select data file(s)",
         callback=lambda *a, **k: close(k["paths"]),
-        extensions=[
-            ".*",
-            ".csv",
-            ".dta",
-            ".idf",
-            ".ids",
-            ".ods",
-            ".xls",
-            ".xlsx",
-        ],
+        extensions=[".*"] + list(get_parsers().keys()),
     )
 
 
