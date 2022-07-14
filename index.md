@@ -21,6 +21,8 @@ The program includes features such as:
   {% endfor %}
 </ul>
 
+[Archive](archive.md)
+
 
 ## How to install
 
