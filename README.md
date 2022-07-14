@@ -163,7 +163,7 @@ This capability could be used to:
 - plot publication-ready figures using, e.g., matplotlib
 
 See [the Jupyter notebook](examples/examples.ipynb) for some examples.
-Documentation about the API can be found [here](https://vyrjana.github.io/DearEIS/api/)
+Documentation about the API can be found [here](https://vyrjana.github.io/DearEIS/api/).
 See [this other Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) and [pyimpspec's API](https://vyrjana.github.io/pyimpspec/api/) for examples and documentation, respectively, regarding the API that DearEIS extends.
 
 
