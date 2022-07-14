@@ -43,8 +43,10 @@ setup(
         "LICENSES/README.md",
     ]
     + licenses,
-    url="https://github.com/vyrjana/DearEIS",
+    url="https://vyrjana.github.io/DearEIS",
     project_urls={
+        "Documentation": "https://vyrjana.github.io/DearEIS/api/",
+        "Source Code": "https://github.com/vyrjana/DearEIS",
         "Bug Tracker": "https://github.com/vyrjana/DearEIS/issues",
     },
     license="GPLv3",
@@ -55,10 +57,10 @@ setup(
     install_requires=[
         "dearpygui>=1.6.2",  # Used to implement the GUI.
         "pyimpspec>=1.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
-        "tabulate>=0.8.9",  # Required by pandas to generate Markdown tables.
+        "tabulate>=0.8.10",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
