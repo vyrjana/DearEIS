@@ -5,3 +5,6 @@
 # the LICENSES folder.
 
 python -m unittest discover .
+if [ "$?" -eq "0" ]; then
+	python -c "from deareis.program import main; from test_gui import setup_tests; setup_tests(); main()"
+fi

@@ -297,7 +297,7 @@ def close_project(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    if not STATE.is_project_dirty(project):
+    if not STATE.is_project_dirty(project) or kwargs.get("force", False):
         STATE.remove_project(project)
         dpg.delete_item(project_tab.tab)
         STATE.clear_project_backups([project])
