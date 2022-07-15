@@ -252,7 +252,12 @@ class SubtractImpedance:
             Z = Z - spectrum.get_impedance(masked=None)
         else:
             raise Exception(f"Unsupported option!")
-        self.preview_data._impedance = Z
+        dictionary: dict = self.preview_data.to_dict()
+        dictionary.update({
+            "real": list(Z.real),
+            "imaginary": list(Z.imag),
+        })
+        self.preview_data = DataSet.from_dict(dictionary)
         self.update_plot()
 
     def update_plot(self):
