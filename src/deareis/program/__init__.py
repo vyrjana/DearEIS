@@ -739,6 +739,7 @@ def main():
 
 
 def debug():
+    # This function is called by one of the entry points defined in setup.py.
     print("Enabling debugging features...")
     signals.DEBUG = True
     main()
