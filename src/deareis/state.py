@@ -312,8 +312,5 @@ class State:
     def is_busy_message_visible(self) -> bool:
         return self.program_window.busy_message.is_visible()
 
-    def is_error_message_visible(self) -> bool:
-        return self.program_window.error_message.is_visible()
-
 
 STATE: State = State()
