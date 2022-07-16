@@ -77,6 +77,8 @@ class DataTable:
 
     def populate(self, data: DataSet):
         assert type(data) is DataSet, data
+        # TODO: Refactor to create widgets and then call the update method to set their values
+        # Add tooltip ID to widgets as user_data so that the tooltips can be updated
         mask: Dict[int, bool] = data.get_mask()
         indices: List[str] = list(
             map(lambda _: str(_ + 1), range(0, data.get_num_points(masked=None)))

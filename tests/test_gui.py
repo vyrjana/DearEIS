@@ -74,6 +74,10 @@ Signal.UNDO_PROJECT_ACTION
 Signal.VIEWPORT_RESIZED
 """
 
+# TODO
+# - Test subtracting impedance to see if plots, etc. are updated
+# - Test undoing impedance subtraction after KK tests and/or fits have been performed
+
 
 START_TIME: float = 0.0
 

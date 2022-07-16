@@ -401,7 +401,8 @@ Edit the label of a data set in the project.
 Ensures that each data set has a unique label.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        # TODO FIXME: This change fixes the potential exception but tables and plots are not being updated when undoing/redoing, e.g., impedance subtraction
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         label = label.strip()
         if label == data.get_label():
             return
@@ -417,7 +418,7 @@ Ensures that each data set has a unique label.
 Edit the path of a data set in the project.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(path) is str, path
         data.set_path(path)
 
@@ -426,7 +427,7 @@ Edit the path of a data set in the project.
 Delete a data set from the project.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         self._data_sets.remove(data)
         del self._fits[data.uuid]
         del self._tests[data.uuid]
@@ -457,7 +458,7 @@ Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results
 Get the Kramers-Kronig test results of the provided data set.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         return self._tests[data.uuid]
 
     def add_test(self, data: DataSet, test: TestResult):
@@ -465,7 +466,7 @@ Get the Kramers-Kronig test results of the provided data set.
 Add the provided Kramers-Kronig test result to the provided data set's list of Kramers-Kronig test results.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(test) is TestResult, test
         assert test.uuid not in list(map(lambda _: _.uuid, self._tests[data.uuid]))
         self._tests[data.uuid].insert(0, test)
@@ -475,7 +476,7 @@ Add the provided Kramers-Kronig test result to the provided data set's list of K
 Delete the provided Kramers-Kronig test result from the provided data set's list of Kramers-Kronig test results.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(test) is TestResult, test
         assert test in self._tests[data.uuid], test
         self._tests[data.uuid].remove(test)
@@ -491,7 +492,7 @@ Get a mapping of data set UUIDs to the corresponding list of fit results of thos
 Get fit results of the provided data set.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         return self._fits[data.uuid]
 
     def add_fit(self, data: DataSet, fit: FitResult):
@@ -499,7 +500,7 @@ Get fit results of the provided data set.
 Add the provided fit result to the provided data set.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit.uuid not in list(map(lambda _: _.uuid, self._fits[data.uuid]))
         self._fits[data.uuid].insert(0, fit)
@@ -509,7 +510,7 @@ Add the provided fit result to the provided data set.
 Delete the provided fit result from the provided data set's list of fit results.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit in self._fits[data.uuid], fit
         self._fits[data.uuid].remove(fit)
