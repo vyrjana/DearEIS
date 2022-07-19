@@ -53,7 +53,7 @@ def attach_tooltip(msg: str, parent: int = -1, tag: int = -1, wrap: bool = True)
         parent = dpg.last_item()
     if tag < 0:
         tag = dpg.generate_uuid()
-    with dpg.tooltip(parent):
+    with dpg.tooltip(parent, user_data=tag):
         dpg.add_text("", tag=tag)
     update_tooltip(tag, msg, wrap)
     return tag

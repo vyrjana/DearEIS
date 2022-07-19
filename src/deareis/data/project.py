@@ -401,7 +401,6 @@ Edit the label of a data set in the project.
 Ensures that each data set has a unique label.
         """
         assert type(data) is DataSet, data
-        # TODO FIXME: This change fixes the potential exception but tables and plots are not being updated when undoing/redoing, e.g., impedance subtraction
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         label = label.strip()
         if label == data.get_label():

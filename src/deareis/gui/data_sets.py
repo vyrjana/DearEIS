@@ -24,7 +24,7 @@ from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.gui.plots import Bode, Nyquist
 from deareis.utility import align_numbers, format_number
-from deareis.tooltips import attach_tooltip
+from deareis.tooltips import attach_tooltip, update_tooltip
 import deareis.tooltips as tooltips
 import deareis.themes as themes
 from deareis.data import DataSet
@@ -77,14 +77,45 @@ class DataTable:
 
     def populate(self, data: DataSet):
         assert type(data) is DataSet, data
-        # TODO: Refactor to create widgets and then call the update method to set their values
-        # Add tooltip ID to widgets as user_data so that the tooltips can be updated
+        i: int
+        for i in range(0, data.get_num_points(masked=None)):
+            with dpg.table_row(parent=self._table):
+                dpg.add_checkbox(
+                    default_value=False,
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_DATA_POINT,
+                        state=a,
+                        index=u[0],
+                        data=u[1],
+                    ),
+                    user_data=(
+                        i,
+                        data,
+                    ),
+                )
+                dpg.add_text("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+        self.update(data)
+
+    def update(self, data: DataSet):
+        assert type(data) is DataSet, data
+        rows: List[int] = dpg.get_item_children(self._table, slot=1)
+        assert len(rows) == data.get_num_points(masked=None)
         mask: Dict[int, bool] = data.get_mask()
         indices: List[str] = list(
             map(lambda _: str(_ + 1), range(0, data.get_num_points(masked=None)))
         )
         frequencies: ndarray = data.get_frequency(masked=None)
-        freq: List[str] = list(
+        freqs: List[str] = list(
             map(
                 lambda _: format_number(_, significants=4),
                 frequencies,
@@ -104,58 +135,61 @@ class DataTable:
                 Z,
             )
         )
+        indices = align_numbers(indices)
+        freqs = align_numbers(freqs)
+        reals = align_numbers(reals)
+        imags = align_numbers(imags)
+        mags = align_numbers(mags)
+        phis = align_numbers(phis)
         fmt: str = "{:.6E}"
-        for i, (idx, f, re, im, mag, phi) in enumerate(
-            zip(
-                align_numbers(indices),
-                align_numbers(freq),
-                align_numbers(reals),
-                align_numbers(imags),
-                align_numbers(mags),
-                align_numbers(phis),
-            )
-        ):
-            with dpg.table_row(parent=self._table):
-                dpg.add_checkbox(
-                    default_value=mask.get(i, False),
-                    callback=lambda s, a, u: signals.emit(
-                        Signal.TOGGLE_DATA_POINT,
-                        state=a,
-                        index=u[0],
-                        data=u[1],
-                    ),
-                    user_data=(
-                        i,
-                        data,
-                    ),
-                )
-                dpg.add_text(idx)
-                dpg.add_text(f)
-                attach_tooltip(fmt.format(frequencies[i]))
-                dpg.add_text(re)
-                attach_tooltip(fmt.format(Z[i].real))
-                dpg.add_text(im)
-                attach_tooltip(fmt.format(-Z[i].imag))
-                dpg.add_text(mag)
-                attach_tooltip(fmt.format(abs(Z[i])))
-                dpg.add_text(phi)
-                attach_tooltip(fmt.format(-angle(Z[i], deg=True)))
-
-    def update(self, data: DataSet):
-        assert type(data) is DataSet, data
-        mask: Dict[int, bool] = data.get_mask()
         i: int
         row: int
-        for i, row in enumerate(dpg.get_item_children(self._table, slot=1)):
-            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+        for i, row in enumerate(rows):
+            cells: List[int] = dpg.get_item_children(row, slot=1)
+            # Mask
             dpg.configure_item(
-                checkbox,
+                cells[0],
                 default_value=mask.get(i, False),
                 user_data=(
                     i,
                     data,
                 ),
             )
+            # Index
+            dpg.configure_item(
+                cells[1],
+                default_value=indices[i],
+            )
+            # Frequency
+            dpg.configure_item(
+                cells[2],
+                default_value=freqs[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[3]), fmt.format(frequencies[i]))
+            # Z, real
+            dpg.configure_item(
+                cells[4],
+                default_value=reals[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[5]), fmt.format(Z[i].real))
+            # -Z, imaginary
+            dpg.configure_item(
+                cells[6],
+                default_value=imags[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[7]), fmt.format(-Z[i].imag))
+            # Z, magnitude
+            dpg.configure_item(
+                cells[8],
+                default_value=mags[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[9]), fmt.format(abs(Z[i])))
+            # Phase shift
+            dpg.configure_item(
+                cells[10],
+                default_value=phis[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[11]), fmt.format(-angle(Z[i], deg=True)))
 
 
 class DataSetsTab:
@@ -421,6 +455,7 @@ class DataSetsTab:
             self.clear()
             self.data_table.populate(data)
         else:
+            print("Updating")
             self.nyquist_plot.clear()
             self.bode_plot.clear()
             self.data_table.update(data)

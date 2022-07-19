@@ -220,9 +220,18 @@ def restore_project_state(*args, **kwargs):
     if data is None:
         if data_sets:
             data = data_sets[0]
-    elif data_sets and data in data_sets:
-        # This is done because the DataSet instance returned by get_active_data_set is outdated.
-        data = [_ for _ in data_sets if _ == data][0]
+    elif data_sets:
+        if data in data_sets:
+            # This is done because the DataSet instance returned by get_active_data_set is outdated.
+            for _ in data_sets:
+                if _ == data:
+                    data = _
+                    break
+        else:
+            for _ in data_sets:
+                if _.uuid == data.uuid:
+                    data = _
+                    break
     signals.emit(
         Signal.SELECT_DATA_SET,
         data=data,
