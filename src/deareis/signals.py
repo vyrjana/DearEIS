@@ -54,6 +54,7 @@ class Signal(IntEnum):
     DELETE_SIMULATION_RESULT = auto()
     DELETE_TEST_RESULT = auto()
     HIDE_BUSY_MESSAGE = auto()
+    LOAD_DATA_SET_FILES = auto()
     LOAD_PROJECT_FILES = auto()
     MODIFY_DATA_SET_PATH = auto()
     MODIFY_PLOT_SERIES_THEME = auto()

@@ -2,7 +2,7 @@
 
 - Fixed a bug that prevented the table of data points and plots from updating when undoing/redoing impedance subtraction.
 - Fixed a bug that caused an exception when undoing impedance subtraction.
-- Refactored code.
+- Refactored code and added tests.
 - Removed deprecated code.
 
 

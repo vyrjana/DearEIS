@@ -70,7 +70,7 @@ def new_project(*args, **kwargs):
         assert STATE.is_project_dirty(project) is True
     paths: List[str] = kwargs.get("data", [])
     if paths:
-        signals.emit(Signal.SELECT_DATA_SET_FILES, data=paths)
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=paths)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 

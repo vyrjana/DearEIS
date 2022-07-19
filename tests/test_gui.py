@@ -553,6 +553,25 @@ def test_project():
         t: Timer = Timer(1.0, validate_close)
         t.start()
 
+    def validate_load_data():
+        project: Project = STATE.get_active_project()
+        data_sets: List[DataSet] = project.get_data_sets()
+        assert len(data_sets) == 6
+        assert len(project.get_all_tests()) == 6
+        assert len(project.get_all_fits()) == 6
+        assert data_sets[4].get_label() == "Test", data_sets[4].get_label()
+        assert data_sets[5].get_label() == "data-2", data_sets[5].get_label()
+        close()
+
+    def load_data():
+        print("  - Load data")
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=[
+            join(getcwd(), "data-1.idf"),
+            join(getcwd(), "data-2.csv"),
+        ])
+        t: Timer = Timer(1.0, validate_load_data)
+        t.start()
+
     def validate_merge():
         project: Project = STATE.get_active_project()
         project_tab: ProjectTab = STATE.get_active_project_tab()
@@ -564,7 +583,7 @@ def test_project():
         assert len(project.get_data_sets()) == 4
         assert len(project.get_all_tests()) == 4
         assert len(project.get_all_fits()) == 4
-        close()
+        load_data()
 
     def merge():
         print("  - Merge")

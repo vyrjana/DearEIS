@@ -57,80 +57,81 @@ def select_data_set(*args, **kwargs):
     project_tab.populate_simulations(project)
 
 
+def load_data_set_files(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    paths: List[str] = kwargs.get("paths")
+    if not paths:
+        return
+    existing_labels: List[str] = list(
+        map(lambda _: _.get_label(), project.get_data_sets())
+    )
+    parsing_errors: Dict[str, str] = {}
+    loaded_data: bool = False
+    num_paths: int = len(paths)
+    n: int
+    path: str
+    for n, path in enumerate(paths):
+        signals.emit(
+            Signal.SHOW_BUSY_MESSAGE,
+            message=f"Loading data: {n + 1}/{num_paths}",
+            progress=n / num_paths,
+        )
+        try:
+            data_sets: List[pyimpspec.DataSet] = pyimpspec.parse_data(path)
+        except UnsupportedFileFormat:
+            parsing_errors[path] = "Unsupported file type!\n"
+            continue
+        except Exception:
+            parsing_errors[path] = format_exc()
+            continue
+        data: DataSet
+        for data in map(lambda _: DataSet.from_dict(_.to_dict()), data_sets):
+            label: str = data.get_label().strip()
+            if label == "":
+                label = "Data set"
+            i: int = 0
+            while label in existing_labels:
+                i += 1
+                label = f"{data.get_label()} ({i})"
+            existing_labels.append(label)
+            data.set_label(label)
+            project.add_data_set(data)
+        loaded_data = True
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    STATE.latest_data_set_directory = dirname(path)
+    if loaded_data:
+        project_tab.populate_data_sets(project)
+        signals.emit(
+            Signal.SELECT_PLOT_SETTINGS, settings=project_tab.get_active_plot()
+        )
+        signals.emit(Signal.SELECT_DATA_SET, data=data)
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    if parsing_errors:
+        total_traceback: str = ""
+        traceback: str
+        for path, traceback in parsing_errors.items():
+            total_traceback += f"{traceback}\nThe exception above was encountered while parsing '{path}'.\n\n"
+        signals.emit(
+            Signal.SHOW_ERROR_MESSAGE,
+            traceback=total_traceback.strip(),
+            message="""
+Encountered error(s) while parsing data file(s). The file(s) might be malformed, corrupted, or not supported by this version of DearEIS.
+            """.strip(),
+        )
+
+
 def select_data_set_files(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-
-    def close(paths: List[str]):
-        if not paths:
-            return
-        existing_labels: List[str] = list(
-            map(lambda _: _.get_label(), project.get_data_sets())
-        )
-        parsing_errors: Dict[str, str] = {}
-        loaded_data: bool = False
-        num_paths: int = len(paths)
-        n: int
-        path: str
-        for n, path in enumerate(paths):
-            signals.emit(
-                Signal.SHOW_BUSY_MESSAGE,
-                message=f"Loading data: {n + 1}/{num_paths}",
-                progress=n / num_paths,
-            )
-            try:
-                data_sets: List[pyimpspec.DataSet] = pyimpspec.parse_data(path)
-            except UnsupportedFileFormat:
-                parsing_errors[path] = "Unsupported file type!\n"
-                continue
-            except Exception:
-                parsing_errors[path] = format_exc()
-                continue
-            data: DataSet
-            for data in map(lambda _: DataSet.from_dict(_.to_dict()), data_sets):
-                label: str = data.get_label().strip()
-                if label == "":
-                    label = "Data set"
-                i: int = 0
-                while label in existing_labels:
-                    i += 1
-                    label = f"{data.get_label()} ({i})"
-                existing_labels.append(label)
-                data.set_label(label)
-                project.add_data_set(data)
-            loaded_data = True
-        signals.emit(Signal.HIDE_BUSY_MESSAGE)
-        STATE.latest_data_set_directory = dirname(path)
-        if loaded_data:
-            project_tab.populate_data_sets(project)
-            signals.emit(
-                Signal.SELECT_PLOT_SETTINGS, settings=project_tab.get_active_plot()
-            )
-            signals.emit(Signal.SELECT_DATA_SET, data=data)
-            signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
-        if parsing_errors:
-            total_traceback: str = ""
-            traceback: str
-            for path, traceback in parsing_errors.items():
-                total_traceback += f"{traceback}\nThe exception above was encountered while parsing '{path}'.\n\n"
-            signals.emit(
-                Signal.SHOW_ERROR_MESSAGE,
-                traceback=total_traceback.strip(),
-                message="""
-Encountered error(s) while parsing data file(s). The file(s) might be malformed, corrupted, or not supported by this version of DearEIS.
-                """.strip(),
-            )
-
-    paths: List[str] = kwargs.get("data", [])
-    if paths:
-        close(paths)
-        return
     FileDialog(
         cwd=STATE.latest_data_set_directory,
         label="Select data file(s)",
-        callback=lambda *a, **k: close(k["paths"]),
+        callback=lambda *a, **k: signals.emit(Signal.LOAD_DATA_SET_FILES, *a, **k),
         extensions=[".*"] + list(get_parsers().keys()),
     )
 

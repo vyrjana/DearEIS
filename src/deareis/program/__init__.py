@@ -70,6 +70,7 @@ from .overview import (
 from .data_sets import (
     apply_data_set_mask,
     delete_data_set,
+    load_data_set_files,
     modify_data_set_path,
     rename_data_set,
     select_data_points_to_toggle,
@@ -645,6 +646,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.MODIFY_PROJECT_NOTES, modify_project_notes)
     signals.register(Signal.CLEAR_RECENT_PROJECTS, STATE.clear_recent_projects)
     # Signals for the data sets tab
+    signals.register(Signal.LOAD_DATA_SET_FILES, load_data_set_files)
     signals.register(Signal.SELECT_DATA_SET, select_data_set)
     signals.register(Signal.SELECT_DATA_SET_FILES, select_data_set_files)
     signals.register(Signal.RENAME_DATA_SET, rename_data_set)
