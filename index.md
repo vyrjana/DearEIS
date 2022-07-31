@@ -7,8 +7,9 @@ The program includes features such as:
 - [validation of impedance spectra by checking if the data is Kramers-Kronig transformable](assets/images/example-kramers-kronig.gif)
 - [construction of equivalent circuits either by parsing a circuit description code (CDC) or by using the included graphical editor](assets/images/example-circuit-editor.gif)
 - [equivalent circuit fitting](assets/images/example-fitting.gif)
-- simulation of impedance spectra
+- [simulation of impedance spectra](assets/images/example-simulation.gif)
 - [composition of complex plots](assets/images/example-plotting.gif)
+- [export plots using matplotlib](assets/images/example-export-plot.gif)
 
 
 ## Recent news
