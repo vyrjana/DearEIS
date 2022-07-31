@@ -29,7 +29,7 @@ The program includes features such as:
 
 ### Requirements
 
-- [Python (version 3.7 or later)](https://www.python.org/)
+- [Python (version 3.8 or later)](https://www.python.org/)
 
 ### Supported platforms
 
