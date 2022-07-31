@@ -243,14 +243,14 @@ class KeybindingTable:
         if kb is not None:
             keybindings.remove(kb)
         if key != dpg.mvKey_Escape:
-            kb: Keybinding = Keybinding(
+            kb = Keybinding(
                 key,
                 self.has_mod_alt(action),
                 self.has_mod_ctrl(action),
                 self.has_mod_shift(action),
                 action,
             )
-            keybindings.append(kb)
+            keybindings.append(kb)  # type: ignore
         try:
             self.state.config.validate_keybindings(keybindings)
         except Exception as e:

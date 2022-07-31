@@ -67,6 +67,11 @@ class FileDialog:
         assert type(label) is str, label
         extensions: List[str] = kwargs.get("extensions", [".*"])
         assert type(extensions) is list and len(extensions) > 0, extensions
+        default_extension: str = kwargs.get("default_extension", extensions[0])
+        assert default_extension in extensions, (
+            default_extension,
+            extensions,
+        )
         self._callback: Callable = kwargs["callback"]
         self._save: bool = kwargs.get("save", False)
         self._merge: bool = kwargs.get("merge", False)
@@ -123,15 +128,16 @@ class FileDialog:
                 self._search_input: int = dpg.generate_uuid()
                 dpg.add_input_text(
                     hint="Search...",
-                    width=-100,
+                    width=-100 if not self._save else -1,
                     tag=self._search_input,
                     callback=lambda s, a, u: dpg.set_value(self._table, a.lower()),
                 )
                 self._extension_combo: int = dpg.generate_uuid()
                 dpg.add_combo(
-                    default_value=extensions[0],
+                    default_value=default_extension,
                     items=extensions,
                     callback=lambda: self.update_current_path(self.get_current_path()),
+                    show=not self._save,
                     tag=self._extension_combo,
                     width=-1,
                 )
@@ -191,12 +197,17 @@ class FileDialog:
                         hint="Name...",
                         callback=lambda: self.save_file(),
                         on_enter=True,
+                        width=-100,
                         tag=self._name_input,
                     )
                     self._name_extension_combo: int = dpg.generate_uuid()
                     dpg.add_combo(
-                        default_value=extensions[0],
+                        default_value=default_extension,
                         items=extensions,
+                        width=-1,
+                        callback=lambda: self.update_current_path(
+                            self.get_current_path()
+                        ),
                         tag=self._name_extension_combo,
                     )
         self.update_current_path(self._cwd)
@@ -235,13 +246,15 @@ class FileDialog:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_F,
-                callback=lambda: self.focus_search(),
+                callback=lambda: self.focus_search(keybinding=True),
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_C,
                 callback=lambda: self.clear_search(keybinding=True),
             )
         dpg.show_item(self._window)
+        if self._save:
+            dpg.focus_item(self._name_input)
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self._window)
 
     def close(self):
@@ -321,7 +334,9 @@ class FileDialog:
         dpg.set_value(self._table, "")
         dpg.set_value(self._search_input, "")
 
-    def focus_search(self):
+    def focus_search(self, keybinding: bool = False):
+        if keybinding and not is_control_down():
+            return
         dpg.focus_item(self._search_input)
 
     def select_files(self, state: Optional[bool] = None, keybinding: bool = False):
@@ -408,7 +423,9 @@ class FileDialog:
         dpg.show_item(self._path_combo)
 
     def update_contents_table(self, root: str):
-        extension_filter: str = dpg.get_value(self._extension_combo)
+        extension_filter: str = dpg.get_value(
+            self._extension_combo if not self._save else self._name_extension_combo
+        ).lower()
         dpg.delete_item(self._table, children_only=True, slot=1)
         for _, dirs, files in walk(root):
             break
@@ -536,8 +553,12 @@ class FileDialog:
         self.close()
 
     def save_file(self):
+        name: str = dpg.get_value(self._name_input).strip()
+        if name == "":
+            dpg.focus_item(self._name_input)
+            return
         self.hide()
-        path: str = join(self.get_current_path(), dpg.get_value(self._name_input))
+        path: str = join(self.get_current_path(), name)
         extension: str = dpg.get_value(self._name_extension_combo)
         if not path.endswith(extension):
             path += extension

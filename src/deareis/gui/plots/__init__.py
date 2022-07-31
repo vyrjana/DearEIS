@@ -22,11 +22,12 @@ import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.utility import calculate_window_position_dimensions
-from .bode import Bode, BodeMagnitude, BodePhase
-from .nyquist import Nyquist
-from .mu_xps import MuXps
-from .residuals import Residuals
 from .base import Plot
+from .bode import Bode, BodeMagnitude, BodePhase
+from .image import Image
+from .mu_xps import MuXps
+from .nyquist import Nyquist
+from .residuals import Residuals
 
 
 def show_modal_plot_window(original: Plot, adjust_limits: bool = True):

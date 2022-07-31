@@ -26,10 +26,6 @@ from typing import (
     Union,
 )
 import dearpygui.dearpygui as dpg
-
-# TODO: Refactor DearEIS so that a DearPyGui context is no longer required to use this module.
-dpg.create_context()
-
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -59,45 +55,89 @@ MPL_MARKERS: Dict[int, str] = {
     dpg.mvPlotMarker_Square: "s",
 }
 
+_UNFILLED_MARKERS: List[int] = [
+    dpg.mvPlotMarker_Cross,
+    dpg.mvPlotMarker_Plus,
+]
+
 
 def plot(
     settings: PlotSettings,
     project: Project,
+    x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
+    y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
+    show_title: bool = True,
+    show_legend: Optional[bool] = None,
+    legend_loc: Union[int, str] = 0,
+    show_grid: bool = False,
+    tight_layout: bool = False,
     fig: Optional[Figure] = None,
     axis: Optional[Axes] = None,
     num_per_decade: int = 100,
-    show_legend: Optional[bool] = None,
 ) -> Tuple[Figure, Axes]:
     """
-Plot a complex plot containing one or more items from a project based on the provided settings.
+    Plot a complex plot containing one or more items from a project based on the provided settings.
 
-Parameters
-----------
-settings: PlotSettings
-    The settings for the plot.
+    Parameters
+    ----------
+    settings: PlotSettings
+        The settings for the plot.
 
-project: Project
-    The project that the plot is a part of.
+    project: Project
+        The project that the plot is a part of.
 
-fig: Optional[Figure] = None
-    The matplotlib.figure.Figure instance to use when plotting the data.
+    x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
+        The lower and upper limits of the x-axis.
 
-axis: Optional[Axes] = None
-    The matplotlib.axes.Axes instance to use when plotting the data.
+    y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
+        The lower and upper limits of the y-axis.
 
-num_per_decade: int = 100
-    If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).
+    show_title: bool = True
+        Whether or not to include the title in the figure.
 
-show_legend: Optional[bool] = None
-    Whether or not a legend should be shown.
+    show_legend: Optional[bool] = None
+        Whether or not to include a legend in the figure.
+
+    legend_loc: Union[int, str] = 0
+        The position of the legend in the figure. See matplotlib's documentation for valid values.
+
+    show_grid: bool = False
+        Whether or not to include a grid in the figure.
+
+    tight_layout: bool = False
+        Whether or not to apply a tight layout that the sizes of the reduces margins.
+
+    fig: Optional[Figure] = None
+        The matplotlib.figure.Figure instance to use when plotting the data.
+
+    axis: Optional[Axes] = None
+        The matplotlib.axes.Axes instance to use when plotting the data.
+
+    num_per_decade: int = 100
+        If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).
     """
-    assert type(settings) is PlotSettings
+    assert type(settings) is PlotSettings, settings
+    assert type(project) is Project, project
+    assert x_limits is None or (
+        type(x_limits) is tuple
+        and len(x_limits) == 2
+        and all(map(lambda _: _ is None or type(_) is float, x_limits))
+    ), x_limits
+    assert y_limits is None or (
+        type(y_limits) is tuple
+        and len(y_limits) == 2
+        and all(map(lambda _: _ is None or type(_) is float, y_limits))
+    ), y_limits
+    assert type(show_title) is bool, show_title
+    assert type(show_legend) is bool or show_legend is None, show_legend
+    assert type(legend_loc) is int or type(legend_loc) is str, legend_loc
+    assert type(show_grid) is bool, show_grid
+    assert type(tight_layout) is bool, tight_layout
     assert type(fig) is Figure or fig is None
     if fig is None:
         fig, axis = plt.subplots()
     assert axis is not None
-    assert type(num_per_decade) is int and num_per_decade > 1, num_per_decade
-    assert type(show_legend) is bool or show_legend is None, show_legend
+    assert type(num_per_decade) is int and num_per_decade >= 1, num_per_decade
     plot_type: PlotType = settings.get_type()
     uuid: str
     for uuid in settings.series_order:
@@ -112,7 +152,7 @@ show_legend: Optional[bool] = None
         if series is None:
             continue
         label: Optional[str] = settings.get_series_label(uuid) or series.get_label()
-        if label.strip() == "" and label != "":
+        if label.strip() == "" and label != "":  # type: ignore
             label = None
         if label is not None and show_legend is None:
             show_legend = True
@@ -121,8 +161,8 @@ show_legend: Optional[bool] = None
         )
         has_line: bool = settings.get_series_line(uuid)
         marker: Optional[str] = MPL_MARKERS.get(settings.get_series_marker(uuid))
-        scatter_data: Tuple[ndarray, ndarray] = []
-        line_data: Tuple[ndarray, ndarray] = []
+        scatter_data: List[ndarray] = []
+        line_data: List[ndarray] = []
         if plot_type == PlotType.NYQUIST:
             if "num_per_decade" in signature(series.get_nyquist_data).parameters:
                 x, y = series.get_nyquist_data(num_per_decade=num_per_decade)  # type: ignore
@@ -156,9 +196,23 @@ show_legend: Optional[bool] = None
         else:
             raise Exception(f"Unsupported plot type: {plot_type}")
         assert len(line_data) > 0 or len(scatter_data) > 0
+        colors: dict = {}
+        if settings.get_series_marker(uuid) in _UNFILLED_MARKERS:
+            colors.update({
+                "color": color,
+            })
+        else:
+            colors.update({
+                "edgecolor": color,
+                "facecolor": "none",
+            })
         if marker is not None and has_line:
             axis.plot(*line_data, label=label, color=color)
-            axis.scatter(*scatter_data, marker=marker, color=color)
+            axis.scatter(
+                *scatter_data,
+                marker=marker,
+                **colors,
+            )
         elif has_line:
             axis.plot(*line_data, label=label, color=color)
         elif marker is not None:
@@ -166,9 +220,13 @@ show_legend: Optional[bool] = None
                 *scatter_data,
                 label=label,
                 marker=marker,
-                color=color,
+                **colors,
             )
-    if settings.get_label() != "":
+    if x_limits is not None:
+        axis.set_xlim(x_limits)
+    if y_limits is not None:
+        axis.set_ylim(y_limits)
+    if show_title and settings.get_label() != "":
         fig.suptitle(settings.get_label())
     if plot_type == PlotType.NYQUIST:
         axis.set_xlabel(r"$Z_{\rm re}$ ($\Omega$)")
@@ -181,7 +239,10 @@ show_legend: Optional[bool] = None
         axis.set_xlabel(r"$\log{f}$")
         axis.set_ylabel(r"$-\phi$ ($^\circ$)")
     if show_legend:
-        axis.legend()
+        axis.legend(loc=legend_loc)
+    axis.grid(visible=show_grid)
+    if tight_layout:
+        fig.tight_layout()
     return (
         fig,
         axis,

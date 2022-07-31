@@ -17,20 +17,34 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from pyimpspec import Circuit, ParsingError
-from typing import Callable, Dict, List, Optional
-from numpy import array, ndarray
+from pyimpspec import (
+    Circuit,
+    ParsingError,
+)
+from typing import (
+    Callable,
+    List,
+    Optional,
+)
+from numpy import (
+    array,
+    ndarray,
+)
 import pyimpspec
 import dearpygui.dearpygui as dpg
 from deareis.gui.plots import Nyquist
 import deareis.themes as themes
-from deareis.utility import calculate_window_position_dimensions, format_number
+from deareis.utility import calculate_window_position_dimensions
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
 from deareis.gui.circuit_editor import CircuitEditor
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.data import DataSet
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
+)
 
 
 class SubtractImpedance:
@@ -71,7 +85,8 @@ class SubtractImpedance:
             self.preview_window: int = dpg.generate_uuid()
             with dpg.child_window(border=False, tag=self.preview_window):
                 with dpg.child_window(
-                    width=-1, height=82 if len(self.data_sets) > 0 else 80
+                    width=-1,
+                    height=82,
                 ):
                     self.radio_buttons: int = dpg.generate_uuid()
                     with dpg.group(horizontal=True):
@@ -121,20 +136,45 @@ class SubtractImpedance:
                                     callback=self.edit_circuit,
                                 )
                                 attach_tooltip(tooltips.general.open_circuit_editor)
-                            if len(self.data_sets) > 0:
-                                self.spectrum_group: int = dpg.generate_uuid()
-                                with dpg.group(
-                                    horizontal=True, tag=self.spectrum_group
-                                ):
-                                    self.spectrum_combo: int = dpg.generate_uuid()
-                                    dpg.add_combo(
-                                        items=self.labels,
-                                        default_value=self.labels[0],
-                                        width=358,
-                                        tag=self.spectrum_combo,
-                                        callback=self.update_preview,
-                                    )
+                            self.spectrum_group: int = dpg.generate_uuid()
+                            with dpg.group(horizontal=True, tag=self.spectrum_group):
+                                self.spectrum_combo: int = dpg.generate_uuid()
+                                dpg.add_combo(
+                                    items=self.labels,
+                                    default_value=self.labels[0] if self.labels else "",
+                                    width=358,
+                                    tag=self.spectrum_combo,
+                                    callback=self.update_preview,
+                                )
                 self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    label="Before",
+                    theme=themes.nyquist.data,
+                    show_label=False,
+                )
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    label="Before",
+                    line=True,
+                    theme=themes.nyquist.data,
+                )
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    label="After",
+                    theme=themes.bode.phase_data,
+                    show_label=False,
+                )
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    label="After",
+                    line=True,
+                    theme=themes.bode.phase_data,
+                )
                 dpg.add_button(
                     label="Accept",
                     callback=self.accept,
@@ -150,43 +190,39 @@ class SubtractImpedance:
                     callback=self.accept_circuit,
                 )
         self.key_handler: int = dpg.generate_uuid()
-
-        def keybinding_handler(sender: int, key: int, callback: Callable):
-            if not dpg.is_item_visible(self.constant_real):
-                return
-            if (
-                dpg.is_item_focused(self.constant_real)
-                or dpg.is_item_focused(self.constant_imag)
-                or dpg.is_item_focused(self.circuit_cdc)
-            ):
-                return
-            callback()
-
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,
-                callback=keybinding_handler,
-                user_data=self.close,
+                callback=self.close,
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=keybinding_handler,
-                user_data=self.accept,
+                callback=lambda: self.accept(keybinding=True),
             )
         self.select_option(self.radio_buttons, self.options[0])
 
     def close(self):
+        if not dpg.is_item_visible(self.constant_real):
+            return
         self.circuit_editor.hide()
         dpg.hide_item(self.window)
         dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self):
-        if (
+    def accept(self, keybinding: bool = False):
+        if not dpg.is_item_visible(self.constant_real):
+            return
+        elif (
             self.circuit_editor_window > 0
             and dpg.does_item_exist(self.circuit_editor_window)
             and dpg.is_item_shown(self.circuit_editor_window)
+        ):
+            return
+        elif keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
         ):
             return
         self.close()
@@ -251,43 +287,41 @@ class SubtractImpedance:
             ]
             Z = Z - spectrum.get_impedance(masked=None)
         else:
-            raise Exception(f"Unsupported option!")
-        self.preview_data._impedance = Z
+            raise Exception("Unsupported option!")
+        dictionary: dict = self.preview_data.to_dict()
+        dictionary.update(
+            {
+                "real": list(Z.real),
+                "imaginary": list(Z.imag),
+            }
+        )
+        self.preview_data = DataSet.from_dict(dictionary)
         self.update_plot()
 
     def update_plot(self):
-        self.nyquist_plot.clear()
         real: ndarray
         imag: ndarray
         real, imag = self.data.get_nyquist_data(masked=None)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Before",
-            theme=themes.nyquist.data,
-            show_label=False,
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Before",
-            line=True,
-            theme=themes.nyquist.data,
         )
         real, imag = self.preview_data.get_nyquist_data(masked=None)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="After",
-            theme=themes.bode.phase_data,
-            show_label=False,
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=3,
             real=real,
             imaginary=imag,
-            label="After",
-            line=True,
-            theme=themes.bode.phase_data,
         )
         self.nyquist_plot.queue_limits_adjustment()
 

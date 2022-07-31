@@ -52,38 +52,39 @@ def _parse_settings_v1(dictionary: dict) -> dict:
 @dataclass(frozen=True)
 class TestSettings:
     """
-A class to store the settings used to perform a Kramers-Kronig test.
+    A class to store the settings used to perform a Kramers-Kronig test.
 
-Parameters
-----------
-test: Test
-    The type of test to perform: complex, real, imaginary, or CNLS.
-    See pyimpspec and its documentation for details about the different types of tests.
+    Parameters
+    ----------
+    test: Test
+        The type of test to perform: complex, real, imaginary, or CNLS.
+        See pyimpspec and its documentation for details about the different types of tests.
 
-mode: Mode
-    How to perform the test: automatic, exploratory, or manual.
-    The automatic mode uses the procedure described by Schönleber et al. (2014) to determine a suitable number of parallel RC circuits connected in series.
-    The exploratory mode is similar to the automatic mode except the user is allowed to choose which of the results to accept and the initial suggestion has additional weighting applied to it in an effort to reduce false negatives that would lead to the conclusion that the data is invalid.
-    The manual mode requires the user to pick the number of parallel RC circuits connected in series.
+    mode: Mode
+        How to perform the test: automatic, exploratory, or manual.
+        The automatic mode uses the procedure described by Schönleber et al. (2014) to determine a suitable number of parallel RC circuits connected in series.
+        The exploratory mode is similar to the automatic mode except the user is allowed to choose which of the results to accept and the initial suggestion has additional weighting applied to it in an effort to reduce false negatives that would lead to the conclusion that the data is invalid.
+        The manual mode requires the user to pick the number of parallel RC circuits connected in series.
 
-num_RC: int
-    The (maximum) number of parallel RC circuits connected in series.
+    num_RC: int
+        The (maximum) number of parallel RC circuits connected in series.
 
-mu_criterion: float
-    The threshold value used in the procedure described by Schönleber et al. (2014).
+    mu_criterion: float
+        The threshold value used in the procedure described by Schönleber et al. (2014).
 
-add_capacitance: bool
-    Add a capacitance in series to the Voigt circuit.
+    add_capacitance: bool
+        Add a capacitance in series to the Voigt circuit.
 
-add_inductance: bool
-    Add an inductance in series to the Voigt circuit.
+    add_inductance: bool
+        Add an inductance in series to the Voigt circuit.
 
-method: Method
-    The iterative method to use if the CNLS test is chosen.
+    method: Method
+        The iterative method to use if the CNLS test is chosen.
 
-max_nfev: int
-    The maximum number of function evaluations to use if the CNLS test is chosen.
+    max_nfev: int
+        The maximum number of function evaluations to use if the CNLS test is chosen.
     """
+
     test: Test
     mode: Mode
     num_RC: int
@@ -99,7 +100,7 @@ max_nfev: int
     @classmethod
     def from_dict(Class, dictionary: dict) -> "TestSettings":
         """
-Create an instance from a dictionary.
+        Create an instance from a dictionary.
         """
         assert type(dictionary) is dict, type(dictionary)
         assert "version" in dictionary
@@ -121,7 +122,7 @@ Create an instance from a dictionary.
 
     def to_dict(self) -> dict:
         """
-Return a dictionary that can be used to recreate an instance.
+        Return a dictionary that can be used to recreate an instance.
         """
         return {
             "version": VERSION,
@@ -164,49 +165,50 @@ def _parse_result_v1(dictionary: dict) -> dict:
     }
 
 
-@dataclass(frozen=True)
+@dataclass
 class TestResult:
     """
-A class containing the result of a Kramers-Kronig test.
+    A class containing the result of a Kramers-Kronig test.
 
-Parameters
-----------
-uuid: str
-    The universally unique identifier assigned to this result.
+    Parameters
+    ----------
+    uuid: str
+        The universally unique identifier assigned to this result.
 
-timestamp: float
-    The Unix time (in seconds) for when the test was performed.
+    timestamp: float
+        The Unix time (in seconds) for when the test was performed.
 
-circuit: Circuit
-    The final, fitted circuit.
+    circuit: Circuit
+        The final, fitted circuit.
 
-num_RC: int
-    The final number of parallel RC circuits connected in series.
+    num_RC: int
+        The final number of parallel RC circuits connected in series.
 
-mu: float
-    The mu-value that was calculated for the result.
+    mu: float
+        The mu-value that was calculated for the result.
 
-pseudo_chisqr: float
-    The pseudo chi-squared value calculated according to eq. N in Boukamp (1995).
+    pseudo_chisqr: float
+        The pseudo chi-squared value calculated according to eq. N in Boukamp (1995).
 
-frequency: ndarray
-    The frequencies used to perform the test.
+    frequency: ndarray
+        The frequencies used to perform the test.
 
-impedance: ndarray
-    The complex impedances of the fitted circuit at each of the frequencies.
+    impedance: ndarray
+        The complex impedances of the fitted circuit at each of the frequencies.
 
-real_residual: ndarray
-    The residuals of the real part of the complex impedances.
+    real_residual: ndarray
+        The residuals of the real part of the complex impedances.
 
-imaginary_residual: ndarray
-    The residuals of the imaginary part of the complex impedances.
+    imaginary_residual: ndarray
+        The residuals of the imaginary part of the complex impedances.
 
-mask: Dict[int, bool]
-    The mask that was applied to the DataSet that was tested.
+    mask: Dict[int, bool]
+        The mask that was applied to the DataSet that was tested.
 
-settings: TestSettings
-    The settings that were used to perform the test.
+    settings: TestSettings
+        The settings that were used to perform the test.
     """
+
     uuid: str
     timestamp: float
     circuit: Circuit
@@ -220,13 +222,17 @@ settings: TestSettings
     mask: Dict[int, bool]
     settings: TestSettings
 
+    def __post_init__(self):
+        self._cached_frequency: Dict[int, ndarray] = {}
+        self._cached_impedance: Dict[int, ndarray] = {}
+
     def __repr__(self) -> str:
         return f"TestResult ({self.get_label()}, {hex(id(self))})"
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "TestResult":
         """
-Create an instance from a dictionary.
+        Create an instance from a dictionary.
         """
         assert type(dictionary) is dict
         assert "version" in dictionary
@@ -255,7 +261,7 @@ Create an instance from a dictionary.
 
     def to_dict(self, session: bool) -> dict:
         """
-Return a dictionary that can be used to recreate an instance.
+        Return a dictionary that can be used to recreate an instance.
         """
         dictionary: dict = {
             "version": VERSION,
@@ -282,51 +288,60 @@ Return a dictionary that can be used to recreate an instance.
 
     def get_label(self) -> str:
         """
-Generate a label for the result.
+        Generate a label for the result.
         """
         return format_timestamp(self.timestamp)
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
         """
-Get an array of frequencies within the range of tested frequencies.
+        Get an array of frequencies within the range of tested frequencies.
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            return _interpolate(self.frequency, num_per_decade)
+            if num_per_decade not in self._cached_frequency:
+                self._cached_frequency.clear()
+                self._cached_frequency[num_per_decade] = _interpolate(
+                    self.frequency, num_per_decade
+                )
+            return self._cached_frequency[num_per_decade]
         return self.frequency
 
     def get_impedance(self, num_per_decade: int = -1) -> ndarray:
         """
-Get the complex impedances produced by the fitted circuit within the range of tested frequencies.
+        Get the complex impedances produced by the fitted circuit within the range of tested frequencies.
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            return self.circuit.impedances(self.get_frequency(num_per_decade))
+            if num_per_decade not in self._cached_impedance:
+                self._cached_impedance.clear()
+                self._cached_impedance[num_per_decade] = self.circuit.impedances(
+                    self.get_frequency(num_per_decade)
+                )
+            return self._cached_impedance[num_per_decade]
         return self.impedance
 
     def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
         """
-Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
+        Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = self.get_frequency(num_per_decade)
-            Z: ndarray = self.circuit.impedances(freq)
+            Z: ndarray = self.get_impedance(num_per_decade)
             return (
                 Z.real,
                 -Z.imag,
@@ -340,17 +355,17 @@ num_per_decade: int = -1
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+        Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
-            Z: ndarray = self.circuit.impedances(freq)
+            Z: ndarray = self.get_impedance(num_per_decade)
             return (
                 log(freq),
                 log(abs(Z)),
@@ -364,7 +379,7 @@ num_per_decade: int = -1
 
     def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
         """
-Get the data required to plot the residuals (real and imaginary vs log f).
+        Get the data required to plot the residuals (real and imaginary vs log f).
         """
         return (
             log(self.frequency),

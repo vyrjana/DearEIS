@@ -28,6 +28,10 @@ from deareis.utility import calculate_window_position_dimensions
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.data import DataSet
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
+)
 
 
 class AverageDataSets:
@@ -115,7 +119,7 @@ class AverageDataSets:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=self.accept,
+                callback=lambda: self.accept(keybinding=True),
             )
         self.update_preview([])
 
@@ -125,8 +129,14 @@ class AverageDataSets:
         dpg.delete_item(self.key_handler)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self):
+    def accept(self, keybinding: bool = False):
         if self.final_data is None:
+            return
+        if keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
+        ):
             return
         label: str = dpg.get_value(self.label_input).strip()
         if label == "":
@@ -184,6 +194,7 @@ class AverageDataSets:
                     selection,
                     label=dpg.get_value(self.label_input),
                 )
+                assert self.final_data is not None
                 real, imag = self.final_data.get_nyquist_data(masked=None)
                 self.final_data_series = self.nyquist_plot.plot(
                     real=real,

@@ -19,7 +19,7 @@
 
 from typing import Callable, List, Optional
 import dearpygui.dearpygui as dpg
-from numpy import ndarray
+from numpy import array, ndarray
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 
@@ -57,9 +57,38 @@ class Nyquist(Plot):
     def is_blank(self) -> bool:
         return len(dpg.get_item_children(self._y_axis, slot=1)) == 0
 
-    def clear(self):
-        dpg.delete_item(self._y_axis, children_only=True)
-        self._series.clear()
+    def clear(self, *args, **kwargs):
+        delete: bool = kwargs.get("delete", True)
+        if delete:
+            dpg.delete_item(self._y_axis, children_only=True)
+            self._series.clear()
+        else:
+            i: int
+            series: int
+            for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+                self._series[i]["real"] = array([])
+                self._series[i]["imaginary"] = array([])
+                dpg.set_value(series, [[], []])
+
+    def update(self, index: int, *args, **kwargs):
+        assert type(index) is int and index >= 0, index
+        assert len(self._series) > index, (
+            index,
+            len(self._series),
+        )
+        assert len(args) == 0, args
+        real: ndarray = kwargs["real"]
+        imag: ndarray = kwargs["imaginary"]
+        assert type(real) is ndarray, real
+        assert type(imag) is ndarray, imag
+        i: int
+        series: int
+        for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+            if i != index:
+                continue
+            self._series[index].update(kwargs)
+            dpg.set_value(series, [list(real), list(imag)])
+            break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args

@@ -41,7 +41,7 @@ class MuXps(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(dpg.mvXAxis, label="log f")
+            self._x_axis: int = dpg.add_plot_axis(dpg.mvXAxis, label="number of RC elements")
             self._y_axis_1: int = dpg.add_plot_axis(dpg.mvYAxis, label="µ")
             self._y_axis_2: int = dpg.add_plot_axis(
                 dpg.mvYAxis, label="log X² (pseudo)"
@@ -62,10 +62,28 @@ class MuXps(Plot):
             and len(dpg.get_item_children(self._y_axis_2, slot=1)) == 0
         )
 
-    def clear(self):
+    def clear(self, *args, **kwargs):
         dpg.delete_item(self._y_axis_1, children_only=True)
         dpg.delete_item(self._y_axis_2, children_only=True)
         self._series.clear()
+
+    def update(self, num_RC: int):
+        assert type(num_RC) is int and num_RC >= 0, num_RC
+        assert len(self._series) == 1, len(self._series)
+        num_RCs: ndarray = self._series[0]["num_RCs"]
+        mu: ndarray = self._series[0]["mu"]
+        Xps: ndarray = self._series[0]["Xps"]
+        x: list = list(num_RCs)
+        y: list = list(mu)
+        dpg.set_value(
+            dpg.get_item_children(self._y_axis_1, slot=1)[1],
+            [[num_RC], y[x.index(num_RC)]],
+        )
+        y = list(Xps)
+        dpg.set_value(
+            dpg.get_item_children(self._y_axis_2, slot=1)[1],
+            [[num_RC], y[x.index(num_RC)]],
+        )
 
     def plot(self, *args, **kwargs):
         assert len(args) == 0, args

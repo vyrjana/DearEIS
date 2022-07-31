@@ -8,7 +8,6 @@ from api_documenter import (
     process_functions,
 )  # github.com/vyrjana/python-api-documenter
 import deareis
-import deareis.plot.mpl
 
 
 def write_file(path: str, content: str):
@@ -44,10 +43,28 @@ See the API reference for `pyimpspec` for information more information about cla
             """.strip(),
             modules_to_document=[
                 deareis,
-                deareis.plot.mpl,
+                deareis.mpl,
             ],
             minimal_classes=[
-                deareis.Circuit,
+                deareis.FittingError,
+                deareis.ParsingError,
+                deareis.UnexpectedCharacter,
+                deareis.Capacitor,
+                deareis.ConstantPhaseElement,
+                deareis.Gerischer,
+                deareis.HavriliakNegami,
+                deareis.Inductor,
+                deareis.Parallel,
+                deareis.Resistor,
+                deareis.Series,
+                deareis.Warburg,
+                deareis.WarburgOpen,
+                deareis.WarburgShort,
+                deareis.DeLevieFiniteLength,
+            ],
+            objects_to_ignore=[
+                deareis.Project.parse,
+                deareis.Project.update,
             ],
             latex_pagebreak=True,
         ),
@@ -74,14 +91,13 @@ Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/e
 - [Data set]({root_url}/data-set)
 - [Kramers-Kronig testing]({root_url}/kramers-kronig)
 - [Circuit]({root_url}/circuit)
+- [Elements]({root_url}/elements)
 - [Fitting]({root_url}/fitting)
 - [Simulating]({root_url}/simulating)
 - [Plotting]({root_url}/plotting)
   - [matplotlib]({root_url}/plot-mpl)
 
-The DearEIS API is built upon the [pyimpspec](https://vyrjana.github.io/pyimpspec) package but the top-level module of the DearEIS API only exposes what is needed to, e.g., take an existing DearEIS project and plot various results (e.g., from equivalent circuit fitting).
-Check out the API documentation for [pyimpspec](https://vyrjana.github.io/pyimpspec/api/) for information about, e.g., the various circuit element classes or how to perform Kramers-Kronig tests programmatically rather than via DearEIS' graphical user interface.
-[This Jupyter notebook](https://github.com/vyrjana/pyimpspec/blob/main/examples/examples.ipynb) contains examples of how to use the pyimpspec API
+The DearEIS API is built upon the [pyimpspec](https://vyrjana.github.io/pyimpspec) package.
 
 """,
     )
@@ -98,6 +114,10 @@ Check out the API documentation for [pyimpspec](https://vyrjana.github.io/pyimps
             classes_to_document=[
                 deareis.Project,
             ],
+            objects_to_ignore=[
+                deareis.Project.parse,
+                deareis.Project.update,
+            ],
             module_name="deareis",
         ),
     )
@@ -105,65 +125,123 @@ Check out the API documentation for [pyimpspec](https://vyrjana.github.io/pyimps
     write_file(
         join(root_folder, "data-set.md"),
         jekyll_header("data set", "data-set")
-        + """
-The `DataSet` class in the DearEIS API differs slightly from the base class found in the pyimpspec API.
-Check the [high-level functions of the pyimpspec API]() for information on how to read data files.
-
-"""
-        + process_classes(
-            classes_to_document=[
-                deareis.DataSet,
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.data,
             ],
-            module_name="deareis",
+            minimal_classes=[
+                deareis.UnsupportedFileFormat,
+            ],
+            description="""
+The `DataSet` class in the DearEIS API differs slightly from the base class found in the pyimpspec API.
+The `parse_data` function is a wrapper for the corresponding function in pyimpspec's API with the only difference being that the returned `DataSet` instances are the variant used by DearEIS.
+            """,
         ),
     )
     # Kramers-Kronig results
     write_file(
         join(root_folder, "kramers-kronig.md"),
         jekyll_header("Kramers-Kronig testing", "kramers-kronig")
-        + process_classes(
-            classes_to_document=[
-                deareis.TestResult,
-                deareis.TestSettings,
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.kramers_kronig,
             ],
-            module_name="deareis",
+            objects_to_ignore=[
+                deareis.DataSet,
+            ],
+            description="",
         ),
     )
-    # Fit results
+    # Circuit
+    write_file(
+        join(root_folder, "circuit.md"),
+        jekyll_header("Circuit", "circuit")
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.circuit,
+            ],
+            minimal_classes=[
+                deareis.Parallel,
+                deareis.Series,
+                deareis.ParsingError,
+                deareis.UnexpectedCharacter,
+            ],
+            objects_to_ignore=[
+                deareis.get_elements,
+                deareis.Element,
+            ] + list(deareis.get_elements().values()),
+            description="",
+        ),
+    )
+    # Elements
+    write_file(
+        join(root_folder, "elements.md"),
+        jekyll_header("Elements", "elements")
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.circuit,
+            ],
+            minimal_classes=list(deareis.get_elements().values()),
+            objects_to_ignore=[
+                deareis.Circuit,
+                deareis.Connection,
+                deareis.Parallel,
+                deareis.Series,
+                deareis.ParsingError,
+                deareis.UnexpectedCharacter,
+                deareis.string_to_circuit,
+            ],
+            description="",
+        ),
+    )
+    # Fitting
     write_file(
         join(root_folder, "fitting.md"),
         jekyll_header("fitting", "fitting")
-        + process_classes(
-            classes_to_document=[
-                deareis.FitResult,
-                deareis.FitSettings,
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.fitting,
             ],
-            module_name="deareis",
+            objects_to_ignore=[
+                deareis.Circuit,
+                deareis.DataSet,
+            ],
+            minimal_classes=[
+                deareis.FittingError,
+            ],
+            description="",
         ),
     )
-    # Simulation results
+    # Simulating
     write_file(
         join(root_folder, "simulating.md"),
         jekyll_header("simulating", "simulating")
-        + process_classes(
-            classes_to_document=[
-                deareis.SimulationResult,
-                deareis.SimulationSettings,
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.simulation,
             ],
-            module_name="deareis",
+            description="",
         ),
     )
     # Plots
     write_file(
         join(root_folder, "plotting.md"),
         jekyll_header("plotting", "plotting")
-        + process_classes(
-            classes_to_document=[
-                deareis.PlotSettings,
-                deareis.PlotSeries,
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.plotting,
+            ],
+            minimal_classes=[
                 deareis.PlotType,
             ],
-            module_name="deareis",
+            description="",
         ),
     )
     # Plotting - matplotlib
@@ -173,7 +251,7 @@ Check the [high-level functions of the pyimpspec API]() for information on how t
         + process(
             title="",
             modules_to_document=[
-                deareis.plot.mpl,
+                deareis.mpl,
             ],
             description="""
 These functions are for basic visualization of various objects (e.g., `DataSet`, `TestResult`, and `FitResult`) using the [matplotlib](https://matplotlib.org/) package.

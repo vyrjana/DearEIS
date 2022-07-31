@@ -17,74 +17,28 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-import dearpygui.dearpygui as _dpg
-
-_dpg.create_context()
-
-from deareis.data import Project
-from deareis.api.data import (
-    DataSet,
-    # - exceptions
-    UnsupportedFileFormat,
-    # - functions
-    parse_data,
-)
-from deareis.api.circuit import (
-    Circuit,
-    # - connections
-    Connection,
-    Parallel,
-    Series,
-    # - elements
-    Element,
+from pyimpspec.circuit import (
     Capacitor,
+    Circuit,
+    Connection,
     ConstantPhaseElement,
-    DeLevieFiniteLength,
+    Element,
     Gerischer,
     HavriliakNegami,
     Inductor,
+    Parallel,
     Resistor,
+    Series,
     Warburg,
     WarburgOpen,
     WarburgShort,
-    # - exceptions
-    ParsingError,
-    UnexpectedCharacter,
-    # - functions
+    DeLevieFiniteLength,
     get_elements,
     string_to_circuit,
 )
-from deareis.api.kramers_kronig import (
-    TestResult,
-    TestSettings,
-    # - enums
-    Mode,
-    Test,
-    # - functions
-    perform_test,
+from pyimpspec.circuit.tokenizer import (
+    UnexpectedCharacter,
 )
-from deareis.api.fitting import (
-    FitResult,
-    FitSettings,
-    FittedParameter,
-    # - enums
-    Method,
-    Weight,
-    # - exceptions
-    FittingError,
-    # - functions
-    fit_circuit_to_data,
+from pyimpspec.circuit.parser import (
+    ParsingError,
 )
-from deareis.api.simulation import (
-    SimulationResult,
-    SimulationSettings,
-    # - functions
-    simulate_spectrum,
-)
-from deareis.api.plotting import (
-    PlotSeries,
-    PlotSettings,
-    # - enums
-    PlotType,
-)
-from deareis.api.plot import mpl  # matplotlib-based plotting

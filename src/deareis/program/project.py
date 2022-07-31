@@ -57,20 +57,17 @@ def new_project(*args, **kwargs):
     STATE.program_window.select_tab(project_tab)
     signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
     if not existing_tab:
-        STATE.snapshot_project_state(project, project_tab)
+        STATE.snapshot_project_state(project)
         signals.emit(
             Signal.RESTORE_PROJECT_STATE,
             project=project,
             project_tab=project_tab,
-            state_snapshot=(
-                "{}",
-                "{}",
-            ),
+            state_snapshot="{}",
         )
         assert STATE.is_project_dirty(project) is True
     paths: List[str] = kwargs.get("data", [])
     if paths:
-        signals.emit(Signal.SELECT_DATA_SET_FILES, data=paths)
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=paths)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
@@ -124,15 +121,12 @@ def load_project_files(*args, **kwargs):
             STATE.program_window.select_tab(project_tab)
             signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
             if not existing_tab:
-                STATE.snapshot_project_state(project, project_tab)
+                STATE.snapshot_project_state(project)
                 signals.emit(
                     Signal.RESTORE_PROJECT_STATE,
                     project=project,
                     project_tab=project_tab,
-                    state_snapshot=(
-                        dump_json(project.to_dict(session=True)),
-                        "{}",
-                    ),
+                    state_snapshot=dump_json(project.to_dict(session=True)),
                 )
                 project_tab.set_dirty(STATE.is_project_dirty(project))
                 assert STATE.is_project_dirty(project) is True
@@ -149,15 +143,12 @@ def load_project_files(*args, **kwargs):
             STATE.program_window.select_tab(project_tab)
             signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
             if not existing_tab:
-                STATE.snapshot_project_state(project, project_tab)
+                STATE.snapshot_project_state(project)
                 signals.emit(
                     Signal.RESTORE_PROJECT_STATE,
                     project=project,
                     project_tab=project_tab,
-                    state_snapshot=(
-                        dump_json(project.to_dict(session=True)),
-                        "{}",
-                    ),
+                    state_snapshot=dump_json(project.to_dict(session=True)),
                 )
                 STATE.update_project_state_saved_index(project)
                 project_tab.set_dirty(STATE.is_project_dirty(project))
@@ -189,12 +180,10 @@ def restore_project_state(*args, **kwargs):
     project_tab: Optional[ProjectTab] = kwargs.get(
         "project_tab", STATE.get_active_project_tab()
     )
-    state_snapshot: Optional[Tuple[str, str]] = kwargs.get("state_snapshot")
+    state_snapshot: Optional[str] = kwargs.get("state_snapshot")
     if project is None or project_tab is None or state_snapshot is None:
         return
-    assert len(state_snapshot) == 2
-    project_state: dict = parse_json(state_snapshot[0])
-    tab_state: dict = parse_json(state_snapshot[1])
+    project_state: dict = parse_json(state_snapshot)
     project.update(**project_state)
     project_tab.set_label(project_state.get("label", "Project"))
     project_tab.set_notes(project_state.get("notes", ""))
@@ -217,22 +206,40 @@ def restore_project_state(*args, **kwargs):
         context=Context.DATA_SETS_TAB
     )
     data_sets: List[DataSet] = project.get_data_sets()
-    if data is None:
-        if data_sets:
-            data = data_sets[0]
-    elif data_sets and data in data_sets:
+    if data is None and data_sets:
+        data = data_sets[0]
+    elif data_sets:
         # This is done because the DataSet instance returned by get_active_data_set is outdated.
-        data = [_ for _ in data_sets if _ == data][0]
+        found_data: bool = False
+        for _ in data_sets:
+            if _.uuid == data.uuid:
+                data = _
+                found_data = True
+                break
+        if not found_data:
+            data = data_sets[0]
+    else:
+        data = None
     signals.emit(
         Signal.SELECT_DATA_SET,
         data=data,
     )
     project_tab.populate_simulations(project)
     simulation: Optional[SimulationResult] = project_tab.get_active_simulation()
-    if simulation is None:
-        simulations: List[SimulationResult] = project.get_simulations()
-        if simulations:
+    simulations: List[SimulationResult] = project.get_simulations()
+    if simulation is None and simulations:
+        simulation = simulations[0]
+    elif simulations:
+        found_sim: bool = False
+        for _ in simulations:
+            if _.uuid == simulation.uuid:
+                simulation = _
+                found_sim = True
+                break
+        if not found_sim:
             simulation = simulations[0]
+    else:
+        simulation = None
     signals.emit(
         Signal.SELECT_SIMULATION_RESULT,
         simulation=simulation,
@@ -246,7 +253,7 @@ def create_project_snapshot(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    STATE.snapshot_project_state(project, project_tab)
+    STATE.snapshot_project_state(project)
     project_tab.set_dirty(kwargs.get("dirty", True))
 
 
@@ -297,7 +304,7 @@ def close_project(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    if not STATE.is_project_dirty(project):
+    if not STATE.is_project_dirty(project) or kwargs.get("force", False):
         STATE.remove_project(project)
         dpg.delete_item(project_tab.tab)
         STATE.clear_project_backups([project])

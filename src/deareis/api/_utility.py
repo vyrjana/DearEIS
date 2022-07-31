@@ -17,4 +17,14 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-PACKAGE_VERSION: str = "2.0.0"
+from typing import Callable
+
+
+def _copy_docstring(source: Callable) -> Callable:
+    def wrapper(destination: Callable) -> Callable:
+        destination.__doc__ = (
+            f"Wrapper for `pyimpspec.{source.__name__}`.\n\n{source.__doc__}"
+        )
+        return destination
+
+    return wrapper

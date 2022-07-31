@@ -50,20 +50,31 @@ If you encounter issues, then please open an issue on [GitHub](https://github.co
 
 ## Getting started
 
+### Supported platforms
+
+- Linux
+	- Primary development and testing platform.
+- Windows
+	- Tested on Windows 10 (x86-64).
+
+The package **may** also work on other platforms (e.g., MacOS) depending on whether or not those platforms are supported by DearEIS' [dependencies](setup.py).
+
+
 ### Requirements
 
 - [Python](https://www.python.org)
 - The following Python packages
 	- [Dear PyGui](https://github.com/hoffstadt/DearPyGui): cross-platform GUI toolkit
-	- [pyimpspec](https://github.com/vyrjana/pyimpspec): implements data parsing and validation, circuit elements, and circuit fitting
-	- [tabulate](https://github.com/astanin/python-tabulate): implements formatting of Markdown tables
-	- [xdg](https://github.com/srstevenson/xdg): implements functions for obtaining paths according to the XDG Base Directory Specification
+	- [pyimpspec](https://github.com/vyrjana/pyimpspec): data parsing, data validation, circuits, and fitting
+	- [tabulate](https://github.com/astanin/python-tabulate): formatting of Markdown tables
+	- [xdg](https://github.com/srstevenson/xdg): XDG Base Directory Specification compliant paths
 
 The Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).
 
+
 ### Installing
 
-Make sure that Python (**3.7 or newer, 64-bit**) and pip are installed first and then type the following command in a terminal of your choice (e.g., PowerShell in Windows):
+Make sure that a **recent version of Python (3.8+, 64-bit)** and pip are installed first and then type the following command in a terminal of your choice (e.g., PowerShell in Windows):
 
 ```
 pip install deareis
@@ -77,14 +88,6 @@ Newer versions of DearEIS can be installed at a later date by appending the `-U`
 ```
 pip install --upgrade deareis
 ```
-
-Supported platforms:
-- Linux
-	- Primary development and testing platform.
-- Windows
-	- Tested on Windows 10 (x86-64).
-
-The package **may** also work on other platforms (e.g., MacOS) depending on whether or not those platforms are supported by DearEIS' [dependencies](setup.py).
 
 
 ### Running

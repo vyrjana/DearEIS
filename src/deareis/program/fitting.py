@@ -28,6 +28,7 @@ from pyimpspec import (
     Circuit,
     FittingResult,
 )
+import deareis.api.fitting as api
 from deareis.enums import (
     method_to_value,
     weight_to_value,
@@ -98,36 +99,9 @@ def perform_fit(*args, **kwargs):
     assert data.get_num_points() > 0, "There are no data points to fit the circuit to!"
     # Prevent the GUI from becoming unresponsive or sluggish
     num_procs: int = max(2, cpu_count() - 1)
-    circuit: Circuit = pyimpspec.string_to_circuit(settings.cdc)
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing fit(s)")
-    result: FittingResult = pyimpspec.fit_circuit_to_data(
-        circuit=circuit,
-        data=data,
-        method=method_to_value.get(settings.method, "auto"),
-        weight=weight_to_value.get(settings.weight, "auto"),
-        max_nfev=settings.max_nfev,
-        num_procs=num_procs,
-    )
-    fit: FitResult = FitResult(
-        uuid4().hex,
-        time(),
-        result.circuit,
-        result.parameters,
-        result.frequency,
-        result.impedance,
-        result.real_residual,
-        result.imaginary_residual,
-        data.get_mask(),
-        result.minimizer_result.chisqr,
-        result.minimizer_result.redchi,
-        result.minimizer_result.aic,
-        result.minimizer_result.bic,
-        result.minimizer_result.ndata,
-        result.minimizer_result.nfree,
-        result.minimizer_result.nfev,
-        value_to_method.get(result.method),
-        value_to_weight.get(result.weight),
-        settings,
+    fit: FitResult = api.fit_circuit_to_data(
+        data=data, settings=settings, num_procs=num_procs
     )
     project.add_fit(data, fit)
     signals.emit(Signal.SELECT_DATA_SET, data=data)

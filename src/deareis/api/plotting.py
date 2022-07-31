@@ -17,4 +17,10 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-PACKAGE_VERSION: str = "2.0.0"
+from deareis.data import (
+    PlotSeries,
+    PlotSettings,
+)
+from deareis.enums import (
+    PlotType,
+)

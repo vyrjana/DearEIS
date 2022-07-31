@@ -69,3 +69,9 @@ class Plot:
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self._plot)
+
+    def clear(self, *args, **kwargs):
+        raise Exception("'clear' method has not been implemented!")
+
+    def plot(self, *args, **kwargs):
+        raise Exception("'plot' method has not been implemented!")

@@ -18,13 +18,13 @@
 # the LICENSES folder.
 
 from typing import Callable, Dict, List, Optional
-from numpy import angle, ndarray
+from numpy import angle, array, ndarray
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.gui.plots import Bode, Nyquist
 from deareis.utility import align_numbers, format_number
-from deareis.tooltips import attach_tooltip
+from deareis.tooltips import attach_tooltip, update_tooltip
 import deareis.tooltips as tooltips
 import deareis.themes as themes
 from deareis.data import DataSet
@@ -77,12 +77,53 @@ class DataTable:
 
     def populate(self, data: DataSet):
         assert type(data) is DataSet, data
+        num_rows: int = data.get_num_points(masked=None)
+        if num_rows == 0:
+            self.clear()
+            return
+        rows: List[int] = dpg.get_item_children(self._table, slot=1)
+        if len(rows) > num_rows:
+            while len(rows) > num_rows:
+                dpg.delete_item(rows.pop())
+            return
+        i: int
+        for i in range(0, num_rows - len(rows)):
+            with dpg.table_row(parent=self._table):
+                dpg.add_checkbox(
+                    default_value=False,
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_DATA_POINT,
+                        state=a,
+                        index=u[0],
+                        data=u[1],
+                    ),
+                    user_data=(
+                        i,
+                        data,
+                    ),
+                )
+                dpg.add_text("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+                dpg.add_text("")
+                attach_tooltip("")
+
+    def update(self, data: DataSet):
+        assert type(data) is DataSet, data
+        rows: List[int] = dpg.get_item_children(self._table, slot=1)
+        assert len(rows) == data.get_num_points(masked=None)
         mask: Dict[int, bool] = data.get_mask()
         indices: List[str] = list(
             map(lambda _: str(_ + 1), range(0, data.get_num_points(masked=None)))
         )
         frequencies: ndarray = data.get_frequency(masked=None)
-        freq: List[str] = list(
+        freqs: List[str] = list(
             map(
                 lambda _: format_number(_, significants=4),
                 frequencies,
@@ -97,62 +138,69 @@ class DataTable:
         phis: List[str] = list(
             map(
                 lambda _: format_number(
-                    -angle(_, deg=True), significants=4, exponent=False
+                    -angle(_, deg=True),  # type: ignore
+                    significants=4,
+                    exponent=False,
                 ),
                 Z,
             )
         )
+        indices = align_numbers(indices)
+        freqs = align_numbers(freqs)
+        reals = align_numbers(reals)
+        imags = align_numbers(imags)
+        mags = align_numbers(mags)
+        phis = align_numbers(phis)
         fmt: str = "{:.6E}"
-        for i, (idx, f, re, im, mag, phi) in enumerate(
-            zip(
-                align_numbers(indices),
-                align_numbers(freq),
-                align_numbers(reals),
-                align_numbers(imags),
-                align_numbers(mags),
-                align_numbers(phis),
-            )
-        ):
-            with dpg.table_row(parent=self._table):
-                dpg.add_checkbox(
-                    default_value=mask.get(i, False),
-                    callback=lambda s, a, u: signals.emit(
-                        Signal.TOGGLE_DATA_POINT,
-                        state=a,
-                        index=u[0],
-                        data=u[1],
-                    ),
-                    user_data=(
-                        i,
-                        data,
-                    ),
-                )
-                dpg.add_text(idx)
-                dpg.add_text(f)
-                attach_tooltip(fmt.format(frequencies[i]))
-                dpg.add_text(re)
-                attach_tooltip(fmt.format(Z[i].real))
-                dpg.add_text(im)
-                attach_tooltip(fmt.format(-Z[i].imag))
-                dpg.add_text(mag)
-                attach_tooltip(fmt.format(abs(Z[i])))
-                dpg.add_text(phi)
-                attach_tooltip(fmt.format(-angle(Z[i], deg=True)))
-
-    def update(self, data: DataSet):
-        assert type(data) is DataSet, data
-        mask: Dict[int, bool] = data.get_mask()
         i: int
         row: int
-        for i, row in enumerate(dpg.get_item_children(self._table, slot=1)):
-            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+        for i, row in enumerate(rows):
+            cells: List[int] = dpg.get_item_children(row, slot=1)
+            # Mask
             dpg.configure_item(
-                checkbox,
+                cells[0],
                 default_value=mask.get(i, False),
                 user_data=(
                     i,
                     data,
                 ),
+            )
+            # Index
+            dpg.configure_item(
+                cells[1],
+                default_value=indices[i],
+            )
+            # Frequency
+            dpg.configure_item(
+                cells[2],
+                default_value=freqs[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[3]), fmt.format(frequencies[i]))
+            # Z, real
+            dpg.configure_item(
+                cells[4],
+                default_value=reals[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[5]), fmt.format(Z[i].real))
+            # -Z, imaginary
+            dpg.configure_item(
+                cells[6],
+                default_value=imags[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[7]), fmt.format(-Z[i].imag))
+            # Z, magnitude
+            dpg.configure_item(
+                cells[8],
+                default_value=mags[i],
+            )
+            update_tooltip(dpg.get_item_user_data(cells[9]), fmt.format(abs(Z[i])))
+            # Phase shift
+            dpg.configure_item(
+                cells[10],
+                default_value=phis[i],
+            )
+            update_tooltip(
+                dpg.get_item_user_data(cells[11]), fmt.format(-angle(Z[i], deg=True))
             )
 
 
@@ -326,15 +374,51 @@ class DataSetsTab:
                         show=True,
                     ):
                         self.nyquist_plot: Nyquist = Nyquist()
+                        self.nyquist_plot.plot(
+                            real=array([]),
+                            imaginary=array([]),
+                            label="Data",
+                            line=False,
+                            theme=themes.nyquist.data,
+                        )
+                        self.nyquist_plot.plot(
+                            real=array([]),
+                            imaginary=array([]),
+                            label="Data",
+                            line=True,
+                            theme=themes.nyquist.data,
+                            show_label=False,
+                        )
                         self.bode_plot: Bode = Bode()
-
-    def to_dict(self) -> dict:
-        # TODO: Implement
-        return {}
-
-    def restore_state(self, state: dict):
-        assert type(state) is dict, state
-        # TODO: Implement
+                        self.bode_plot.plot(
+                            frequency=array([]),
+                            magnitude=array([]),
+                            phase=array([]),
+                            labels=(
+                                "|Z|",
+                                "phi",
+                            ),
+                            line=False,
+                            themes=(
+                                themes.bode.magnitude_data,
+                                themes.bode.phase_data,
+                            ),
+                        )
+                        self.bode_plot.plot(
+                            frequency=array([]),
+                            magnitude=array([]),
+                            phase=array([]),
+                            labels=(
+                                "|Z|",
+                                "phi",
+                            ),
+                            line=True,
+                            themes=(
+                                themes.bode.magnitude_data,
+                                themes.bode.phase_data,
+                            ),
+                            show_labels=False,
+                        )
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
@@ -373,8 +457,8 @@ class DataSetsTab:
         dpg.set_item_user_data(self.copy_mask_button, None)
         dpg.set_item_user_data(self.subtract_impedance_button, None)
         self.data_table.clear()
-        self.nyquist_plot.clear()
-        self.bode_plot.clear()
+        self.nyquist_plot.clear(delete=False)
+        self.bode_plot.clear(delete=False)
 
     def populate_data_sets(self, labels: List[str], lookup: Dict[str, DataSet]):
         assert type(labels) is list, labels
@@ -414,14 +498,8 @@ class DataSetsTab:
         if data is None:
             self.clear()
             return
-        current_data: Optional[DataSet] = dpg.get_item_user_data(self.delete_button)
-        if current_data is None or data != current_data:
-            self.clear()
-            self.data_table.populate(data)
-        else:
-            self.nyquist_plot.clear()
-            self.bode_plot.clear()
-            self.data_table.update(data)
+        self.data_table.populate(data)
+        self.data_table.update(data)
         dpg.set_value(self.data_sets_combo, data.get_label())
         dpg.configure_item(
             self.label_input,
@@ -440,53 +518,31 @@ class DataSetsTab:
         real: ndarray
         imag: ndarray
         real, imag = data.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Data",
-            line=False,
-            theme=themes.nyquist.data,
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Data",
-            line=True,
-            theme=themes.nyquist.data,
-            show_label=False,
         )
         freq: ndarray
         mag: ndarray
         phase: ndarray
         freq, mag, phase = data.get_bode_data()
-        self.bode_plot.plot(
+        self.bode_plot.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z|",
-                "phi",
-            ),
-            line=False,
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
-        self.bode_plot.plot(
+        self.bode_plot.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z|",
-                "phi",
-            ),
-            line=True,
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
-            show_labels=False,
         )
         if dpg.get_value(self.adjust_nyquist_limits_checkbox):
             self.nyquist_plot.queue_limits_adjustment()

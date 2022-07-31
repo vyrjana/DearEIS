@@ -18,7 +18,7 @@
 # the LICENSES folder.
 
 from typing import Callable, Dict, List, Optional, Tuple, Type
-from numpy import allclose, log10 as log, ndarray
+from numpy import allclose, array, log10 as log, ndarray
 from pyimpspec import (
     Circuit,
     Element,
@@ -115,7 +115,6 @@ class ParametersTable:
                 dpg.add_text("".ljust(column_pads[2]))
                 dpg.add_text("".ljust(column_pads[3]))
             return
-        element_classes: Dict[str, Type[Element]] = pyimpspec.get_elements()
         element_labels: List[str] = []
         element_tooltips: List[str] = []
         parameter_labels: List[str] = []
@@ -131,13 +130,14 @@ class ParametersTable:
         error_value: str
         error_tooltip: str
         parameters: Dict[str, FittedParameter]
-        for element_label, parameters in fit.parameters.items():
-            Class: Type[Element] = element_classes[
-                element_label[: element_label.find("_")]
-            ]
+        for element in fit.circuit.get_elements():
+            Class: Type[Element] = type(element)
+            element_label = element.get_label()
             element_tooltip = Class.get_extended_description()
+            parameters = fit.parameters[element_label]
             parameter: FittedParameter
-            for parameter_label, parameter in parameters.items():
+            for parameter_label in sorted(parameters):
+                parameter = parameters[parameter_label]
                 element_labels.append(element_label)
                 element_tooltips.append(element_tooltip)
                 parameter_labels.append(
@@ -770,6 +770,28 @@ class FittingTab:
                                 width=self.minimum_plot_side,
                                 height=self.minimum_plot_side,
                             )
+                            self.nyquist_plot.plot(
+                                real=array([]),
+                                imaginary=array([]),
+                                label="Data",
+                                theme=themes.nyquist.data,
+                            )
+                            self.nyquist_plot.plot(
+                                real=array([]),
+                                imaginary=array([]),
+                                label="Fit",
+                                fit=True,
+                                theme=themes.nyquist.simulation,
+                            )
+                            self.nyquist_plot.plot(
+                                real=array([]),
+                                imaginary=array([]),
+                                label="Fit",
+                                fit=True,
+                                line=True,
+                                theme=themes.nyquist.simulation,
+                                show_label=False,
+                            )
                             with dpg.group(horizontal=True):
                                 self.enlarge_nyquist_button: int = dpg.generate_uuid()
                                 self.adjust_nyquist_limits_checkbox: int = (
@@ -799,6 +821,49 @@ class FittingTab:
                             self.bode_plot_horizontal: Bode = Bode(
                                 width=self.minimum_plot_side,
                                 height=self.minimum_plot_side,
+                            )
+                            self.bode_plot_horizontal.plot(
+                                frequency=array([]),
+                                magnitude=array([]),
+                                phase=array([]),
+                                labels=(
+                                    "|Z| (d)",
+                                    "phi (d)",
+                                ),
+                                themes=(
+                                    themes.bode.magnitude_data,
+                                    themes.bode.phase_data,
+                                ),
+                            )
+                            self.bode_plot_horizontal.plot(
+                                frequency=array([]),
+                                magnitude=array([]),
+                                phase=array([]),
+                                labels=(
+                                    "|Z| (f)",
+                                    "phi (f)",
+                                ),
+                                fit=True,
+                                themes=(
+                                    themes.bode.magnitude_simulation,
+                                    themes.bode.phase_simulation,
+                                ),
+                            )
+                            self.bode_plot_horizontal.plot(
+                                frequency=array([]),
+                                magnitude=array([]),
+                                phase=array([]),
+                                labels=(
+                                    "|Z| (f)",
+                                    "phi (f)",
+                                ),
+                                fit=True,
+                                line=True,
+                                themes=(
+                                    themes.bode.magnitude_simulation,
+                                    themes.bode.phase_simulation,
+                                ),
+                                show_labels=False,
                             )
                             with dpg.group(horizontal=True):
                                 self.enlarge_bode_horizontal_button: int = (
@@ -831,6 +896,49 @@ class FittingTab:
                         self.bode_plot_vertical: Bode = Bode(
                             width=-1,
                             height=self.minimum_plot_side,
+                        )
+                        self.bode_plot_vertical.plot(
+                            frequency=array([]),
+                            magnitude=array([]),
+                            phase=array([]),
+                            labels=(
+                                "|Z| (d)",
+                                "phi (d)",
+                            ),
+                            themes=(
+                                themes.bode.magnitude_data,
+                                themes.bode.phase_data,
+                            ),
+                        )
+                        self.bode_plot_vertical.plot(
+                            frequency=array([]),
+                            magnitude=array([]),
+                            phase=array([]),
+                            labels=(
+                                "|Z| (f)",
+                                "phi (f)",
+                            ),
+                            fit=True,
+                            themes=(
+                                themes.bode.magnitude_simulation,
+                                themes.bode.phase_simulation,
+                            ),
+                        )
+                        self.bode_plot_vertical.plot(
+                            frequency=array([]),
+                            magnitude=array([]),
+                            phase=array([]),
+                            labels=(
+                                "|Z| (f)",
+                                "phi (f)",
+                            ),
+                            fit=True,
+                            line=True,
+                            themes=(
+                                themes.bode.magnitude_simulation,
+                                themes.bode.phase_simulation,
+                            ),
+                            show_labels=False,
                         )
                         with dpg.group(horizontal=True):
                             self.enlarge_bode_vertical_button: int = dpg.generate_uuid()
@@ -867,6 +975,11 @@ class FittingTab:
                         width=-1,
                         height=300,
                     )
+                    self.residuals_plot.plot(
+                        frequency=array([]),
+                        real=array([]),
+                        imaginary=array([]),
+                    )
                     with dpg.group(horizontal=True):
                         self.enlarge_residuals_button: int = dpg.generate_uuid()
                         self.adjust_residuals_limits_checkbox: int = dpg.generate_uuid()
@@ -890,14 +1003,6 @@ class FittingTab:
                         )
                         attach_tooltip(tooltips.general.copy_plot_data_as_csv)
         self.set_settings(self.state.config.default_fit_settings)
-
-    def to_dict(self) -> dict:
-        # TODO: Implement
-        return {}
-
-    def restore_state(self, state: dict):
-        # TODO: Implement
-        pass
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
@@ -949,10 +1054,10 @@ class FittingTab:
         self.statistics_table.clear(hide=hide)
         self.settings_table.clear(hide=hide)
         self.circuit_preview.clear()
-        self.nyquist_plot.clear()
-        self.bode_plot_horizontal.clear()
-        self.bode_plot_vertical.clear()
-        self.residuals_plot.clear()
+        self.nyquist_plot.clear(delete=False)
+        self.bode_plot_horizontal.clear(delete=False)
+        self.bode_plot_vertical.clear(delete=False)
+        self.residuals_plot.clear(delete=False)
 
     def populate_data_sets(self, labels: List[str], lookup: Dict[str, DataSet]):
         assert type(labels) is list, labels
@@ -1010,41 +1115,26 @@ class FittingTab:
         real: ndarray
         imag: ndarray
         real, imag = data.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Data",
-            theme=themes.nyquist.data,
         )
         freq: ndarray
         mag: ndarray
         phase: ndarray
         freq, mag, phase = data.get_bode_data()
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (d)",
-                "phi (d)",
-            ),
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (d)",
-                "phi (d)",
-            ),
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
 
     def assert_fit_up_to_date(self, fit: FitResult, data: DataSet):
@@ -1055,7 +1145,7 @@ class FittingTab:
         # Check if the masks are the same
         mask_exp: Dict[int, bool] = data.get_mask()
         mask_fit: Dict[int, bool] = {
-            k: fit.mask.get(k, mask_exp.get(k)) for k in fit.mask
+            k: fit.mask.get(k, mask_exp.get(k, False)) for k in fit.mask
         }
         num_masked_exp: int = list(data.get_mask().values()).count(True)
         num_masked_fit: int = list(fit.mask.values()).count(True)
@@ -1101,7 +1191,7 @@ class FittingTab:
             return
         self.queued_update = None
         self.select_data_set(data)
-        if fit is None:
+        if fit is None or data is None:
             if dpg.get_value(self.adjust_nyquist_limits_checkbox):
                 self.nyquist_plot.queue_limits_adjustment()
             if dpg.get_value(self.adjust_bode_limits_horizontal_checkbox):
@@ -1129,98 +1219,57 @@ class FittingTab:
         real: ndarray
         imag: ndarray
         real, imag = fit.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Fit",
-            fit=True,
-            theme=themes.nyquist.simulation,
         )
         real, imag = fit.get_nyquist_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="Fit",
-            fit=True,
-            line=True,
-            theme=themes.nyquist.simulation,
-            show_label=False,
         )
         freq: ndarray
         mag: ndarray
         phase: ndarray
         freq, mag, phase = fit.get_bode_data()
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         freq, mag, phase = fit.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            fit=True,
-            line=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
-            show_labels=False,
         )
         freq, mag, phase = fit.get_bode_data()
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         freq, mag, phase = fit.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            fit=True,
-            line=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
-            show_labels=False,
         )
         freq, real, imag = fit.get_residual_data()
-        self.residuals_plot.plot(
+        self.residuals_plot.update(
+            index=0,
             frequency=freq,
             real=real,
             imaginary=imag,

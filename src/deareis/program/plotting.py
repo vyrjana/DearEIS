@@ -17,6 +17,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from os.path import exists, dirname
 from typing import (
     Dict,
     List,
@@ -36,13 +37,15 @@ from deareis.data import (
     TestResult,
 )
 from deareis.gui import ProjectTab
-from deareis.signals import Signal
-import deareis.signals as signals
-from deareis.state import STATE
-from deareis.utility import calculate_window_position_dimensions
-from deareis.themes import get_random_color_marker
-import deareis.themes as themes
+from deareis.gui.file_dialog import FileDialog
 from deareis.gui.plotting.copy_appearance import CopyPlotAppearance
+from deareis.gui.plotting.export import EXTENSIONS
+from deareis.signals import Signal
+from deareis.state import STATE
+from deareis.themes import get_random_color_marker
+from deareis.utility import calculate_window_position_dimensions
+import deareis.signals as signals
+import deareis.themes as themes
 
 
 def new_plot_settings(*args, **kwargs):
@@ -96,10 +99,16 @@ def rename_plot_series(*args, **kwargs):
     label: Optional[str] = kwargs.get("label")
     settings: Optional[PlotSettings] = kwargs.get("settings")
     uuid: Optional[str] = kwargs.get("uuid")
-    if label is None or settings is None or uuid is None:
+    series: Optional[Union[DataSet, TestResult, FitResult, SimulationResult]]
+    series = kwargs.get("series")
+    if label is None or settings is None or uuid is None or series is None:
         return
     settings.set_series_label(uuid, label)
-    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+    if label == "":
+        label = series.get_label()
+    elif label.strip() == "":
+        label = ""
+    project_tab.set_series_label(uuid, label)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
 
@@ -186,6 +195,9 @@ def modify_plot_series_theme(*args, **kwargs):
         dpg.set_value(color_edit, color)
 
     def update_marker(label: str):
+        assert project is not None
+        assert project_tab is not None
+        assert settings is not None
         nonlocal states
         nonlocal marker
         marker = themes.PLOT_MARKERS.get(label, -1)
@@ -200,6 +212,9 @@ def modify_plot_series_theme(*args, **kwargs):
         states[1] = hash_state()
 
     def update_line(state: bool):
+        assert project is not None
+        assert project_tab is not None
+        assert settings is not None
         nonlocal states
         nonlocal show_line
         show_line = state
@@ -272,6 +287,41 @@ def modify_plot_series_theme(*args, **kwargs):
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
 
 
+def export_plot(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    settings: Optional[PlotSettings] = kwargs.get("settings")
+    if settings is None:
+        return
+    # TODO: Get current x- and y-limits
+    STATE.show_plot_exporter(settings, project)
+
+
+def save_plot(*args, **kwargs):
+    fig: Optional[Figure] = kwargs["figure"]
+    if fig is None:
+        return
+    STATE.close_plot_exporter()
+
+    def save(*args, **kwargs):
+        path: str = kwargs["path"]
+        directory: str = dirname(path)
+        if exists(directory):
+            STATE.latest_plot_directory = directory
+        fig.savefig(path)
+
+    FileDialog(
+        cwd=STATE.latest_plot_directory,
+        label="Select file path",
+        callback=lambda *a, **k: save(*a, **k),
+        default_extension=EXTENSIONS[STATE.config.export_extension],
+        extensions=EXTENSIONS,
+        save=True,
+    )
+
+
 def select_plot_appearance_settings(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -336,6 +386,7 @@ def select_plot_settings(*args, **kwargs):
         project.get_all_fits(),
         project.get_simulations(),
         adjust_limits=kwargs.get("adjust_limits", True),
+        plot_only=kwargs.get("plot_only", False),
     )
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
@@ -354,9 +405,7 @@ def select_plot_type(*args, **kwargs):
         return
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
     settings.set_type(plot_type)
-    project_tab.select_plot_type(plot_type)
-    dpg.split_frame()
-    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings, plot_only=True)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 

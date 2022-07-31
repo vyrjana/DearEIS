@@ -45,16 +45,16 @@ Real: Use a set of linear equations to fit to the real part of the complex imped
 {boukamp1995}
     """.strip(),
         "mode": f"""
-Auto: Increment the number of parallel RC circuits, calculate the µ-value (eq. 21), and use the µ-criterion to determine when to stop.
+Auto: Increment the number of RC elements, calculate the µ-value (eq. 21), and use the µ-criterion to determine when to stop.
 
-Exploratory: Test multiple numbers of parallel RC circuits similarly to the 'Auto' setting, show all the results, and let the user choose one.
+Exploratory: Test multiple numbers of RC elements similarly to the 'Auto' setting, show all the results, and let the user choose one.
 
-Manual: Choose a specific number of parallel RC circuits to use.
+Manual: Choose a specific number of RC elements to use.
 
 {schonleber2014}
     """.strip(),
         "max_num_RC": """
-The (maximum) number of parallel RC circuits connected in series in the equivalent circuit.
+The (maximum) number of RC elements connected in series in the equivalent circuit.
 
 WARNING! If the test is set to 'CNLS' and the mode is set to 'Exploratory', then it may take a long time to perform the test. It is recommended that you initially lower this setting to e.g. thirty if there are more measured frequencies than that in your data set.
     """.strip(),
@@ -67,9 +67,9 @@ Add an inductor in series to the equivalent circuit. This may be necessary in so
         "mu_criterion": f"""
 The µ-value represents how the equivalent circuit fits the data (eq. 21). µ-values range from zero to one with the extremes representing over-fitting and under-fitting, respectively. Over-fitting is undesirable since the equivalent circuit could end up reproducing any noise that may be present in the data. However, too much under-fitting means that the equivalent circuit is unable to reproduce the data.
 
-The µ-criterion defines the threshold at which no more parallel RC circuits are added to the equivalent circuit. Note that in some cases the calculated µ-value may prematurely and temporarily drop below the threshold set by the µ-criterion when performing the test using the 'Auto' mode.
+The µ-criterion defines the threshold at which no more RC elements are added to the equivalent circuit. Note that in some cases the calculated µ-value may prematurely and temporarily drop below the threshold set by the µ-criterion when performing the test using the 'Auto' mode.
 
-The 'Exploratory' mode is recommended since you can inspect the µ-value produced by various other equivalent circuits and see if the number of RC circuits by the 'Auto' mode was erroneous. Note that the number of RC circuits initially suggested by the 'Exploratory' mode also takes into account factors other than the µ-value. Thus, the two modes may suggest different values for the number of RC circuits.
+The 'Exploratory' mode is recommended since you can inspect the µ-value produced by various other equivalent circuits and see if the number of RC elements by the 'Auto' mode was erroneous. Note that the number of RC elements initially suggested by the 'Exploratory' mode also takes into account factors other than the µ-value. Thus, the two modes may suggest different values for the number of RC elements.
 
 This setting is only used when the mode setting is set to either 'Auto' or 'Exploratory'.
 
@@ -95,7 +95,7 @@ Valid spectra typically exhibit:
 - Residuals with small magnitudes (e.g. less than half of a percent). Note that the residuals of noisy impedance spectra may have a greater magnitude and still be valid.
 
 Invalid spectra typically exhibit:
-- Residuals that are not randomly distributed. Note that if the number of RC circuits used to perform the test is too small, then the residuals may form a sinusoidal pattern.
+- Residuals that are not randomly distributed. Note that if the number of RC elements used to perform the test is too small, then the residuals may form a sinusoidal pattern.
 - Residuals that are clearly biased away from the x-axis. For example, residuals may increasinly diverge from the x-axis as the frequency is decreased or they may form a convex/concave shape.
 
 See the following references for more information about the linear Kramers-Kronig tests:
@@ -123,7 +123,7 @@ The µ-value represents how the equivalent circuit fits the data (eq. 21). µ-va
 {schonleber2014}
     """.strip(),
         "num_RC": """
-The number of parallel RC circuits connected in series in the equivalent circuit.
+The number of RC elements connected in series in the equivalent circuit.
     """.strip(),
     }
 )

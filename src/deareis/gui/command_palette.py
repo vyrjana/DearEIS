@@ -85,11 +85,11 @@ class CommandPalette:
         self.current_project: Project = project
         self.current_tab: ProjectTab = tab
         self.valid_actions = []
-        action: Action
-        contexts: Set[Context]
         contexts_set: Set[Context] = set(contexts)
-        for action, contexts in self.action_contexts.items():
-            if len(contexts.intersection(contexts_set)) == 0:
+        action: Action
+        cons: Set[Context]
+        for action, cons in self.action_contexts.items():
+            if len(cons.intersection(contexts_set)) == 0:
                 continue
             description: str = action_descriptions[action].split("\n")[0]
             if description.endswith(":"):
@@ -323,6 +323,7 @@ class CommandPalette:
                 index = 0
             elif index >= len(self.valid_actions):
                 index = len(self.valid_actions) - 1
+        assert index is not None
         self.result_index = index
         self.update_results()
 

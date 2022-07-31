@@ -24,7 +24,29 @@ import pyimpspec
 
 class DataSet(pyimpspec.DataSet):
     """
-Extends `pyimpspec.DataSet` to reduce the amount of data written do disk and to recreate the data when loading from disk.
+    Extends `pyimpspec.DataSet` to implement data minimization when writing to disk and to recreate the data when loading from disk.
+    Equality checks between DataSet instances is also modified.
+
+    Parameters
+    ----------
+    frequency: ndarray
+        A 1-dimensional array of frequencies in hertz.
+
+    impedance: ndarray
+        A 1-dimensional array of complex impedances in ohms.
+
+    mask: Dict[int, bool] = {}
+        A mapping of integer indices to boolean values where a value of True means that the data point is to be omitted.
+
+    path: str = ""
+        The path to the file that has been parsed to generate this DataSet instance.
+
+    label: str = ""
+        The label assigned to this DataSet instance.
+
+    uuid: str = ""
+        The universivally unique identifier assigned to this DataSet instance.
+        If empty, then one will be automatically assigned.
     """
 
     def __eq__(self, other) -> bool:
@@ -64,6 +86,14 @@ Extends `pyimpspec.DataSet` to reduce the amount of data written do disk and to 
         return True
 
     def to_dict(self, session: bool = True) -> dict:
+        """
+        Return a dictionary that can be used to recreate this data set.
+
+        Parameters
+        ----------
+        session: bool = True
+            If true, then no data minimization is performed.
+        """
         # This is implemented to reduce the file sizes of projects.
         dictionary: dict = super().to_dict()
         if not session:
@@ -74,6 +104,14 @@ Extends `pyimpspec.DataSet` to reduce the amount of data written do disk and to 
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "DataSet":
+        """
+        Return a DataSet instance that has been created based off of a dictionary.
+
+        Parameters
+        ----------
+        dictionary: dict
+            Create an instance from a dictionary.
+        """
         # This is implemented to deal with the effects of the modified to_dict method.
         mask: Dict[str, bool] = dictionary.get("mask")
         if type(mask) is dict and len(mask) < len(dictionary["frequency"]):

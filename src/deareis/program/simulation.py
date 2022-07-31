@@ -28,6 +28,7 @@ from deareis.data import (
     SimulationResult,
     SimulationSettings,
 )
+import deareis.api.simulation as api
 from deareis.enums import Context
 from deareis.gui import ProjectTab
 from deareis.signals import Signal
@@ -87,15 +88,8 @@ def perform_simulation(*args, **kwargs):
     assert (
         settings.min_frequency != settings.max_frequency
     ), "The minimum and maximum frequencies cannot be the same!"
-    circuit: Circuit = pyimpspec.string_to_circuit(settings.cdc)
-    pyimpspec.analysis.fitting.validate_circuit(circuit)
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing simulation")
-    simulation: SimulationResult = SimulationResult(
-        uuid4().hex,
-        time(),
-        circuit,
-        settings,
-    )
+    simulation: SimulationResult = api.simulate_spectrum(settings)
     project.add_simulation(simulation)
     project_tab.populate_simulations(project)
     signals.emit(

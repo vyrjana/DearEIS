@@ -18,7 +18,7 @@
 # the LICENSES folder.
 
 from typing import Callable, List
-from numpy import ndarray
+from numpy import array, ndarray
 import dearpygui.dearpygui as dpg
 from deareis.gui.plots import Nyquist
 import deareis.themes as themes
@@ -28,6 +28,10 @@ import deareis.signals as signals
 from deareis.data import DataSet
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
+)
 
 
 class CopyMask:
@@ -73,6 +77,26 @@ class CopyMask:
                     callback=lambda s, a, u: self.select_source(a),
                 )
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Excluded",
+                theme=themes.nyquist.data,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Included",
+                theme=themes.bode.phase_data,
+                show_label=False,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Included",
+                line=True,
+                theme=themes.bode.phase_data,
+            )
             dpg.add_button(label="Accept", callback=self.accept)
         self.key_handler: int = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
@@ -82,7 +106,7 @@ class CopyMask:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=self.accept,
+                callback=lambda: self.accept(keybinding=True),
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Prior,
@@ -109,30 +133,24 @@ class CopyMask:
         self.update_preview()
 
     def update_preview(self):
-        self.nyquist_plot.clear()
         real: ndarray
         imag: ndarray
         real, imag = self.preview_data.get_nyquist_data(masked=True)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Excluded",
-            theme=themes.nyquist.data,
         )
         real, imag = self.preview_data.get_nyquist_data(masked=False)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Included",
-            theme=themes.bode.phase_data,
-            show_label=False,
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="Included",
-            line=True,
-            theme=themes.bode.phase_data,
         )
 
     def close(self):
@@ -141,7 +159,13 @@ class CopyMask:
         dpg.delete_item(self.key_handler)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self):
+    def accept(self, keybinding: bool = False):
+        if keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
+        ):
+            return
         self.callback(
             self.data_sets[self.labels.index(dpg.get_value(self.combo))].get_mask(),
         )

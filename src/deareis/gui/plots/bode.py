@@ -19,7 +19,7 @@
 
 from typing import Callable, List, Optional, Tuple
 import dearpygui.dearpygui as dpg
-from numpy import ceil, floor, ndarray
+from numpy import array, ceil, floor, ndarray
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 
@@ -60,10 +60,56 @@ class Bode(Plot):
             and len(dpg.get_item_children(self._y_axis_2, slot=1)) == 0
         )
 
-    def clear(self):
-        dpg.delete_item(self._y_axis_1, children_only=True)
-        dpg.delete_item(self._y_axis_2, children_only=True)
-        self._series.clear()
+    def clear(self, *args, **kwargs):
+        delete: bool = kwargs.get("delete", True)
+        if delete:
+            dpg.delete_item(self._y_axis_1, children_only=True)
+            dpg.delete_item(self._y_axis_2, children_only=True)
+            self._series.clear()
+        else:
+            i: int
+            series_1: int
+            series_2: int
+            for i, (series_1, series_2) in enumerate(
+                zip(
+                    dpg.get_item_children(self._y_axis_1, slot=1),
+                    dpg.get_item_children(self._y_axis_2, slot=1),
+                )
+            ):
+                self._series[i]["frequency"] = array([])
+                self._series[i]["magnitude"] = array([])
+                self._series[i]["phase"] = array([])
+                dpg.set_value(series_1, [[], []])
+                dpg.set_value(series_2, [[], []])
+
+    def update(self, index: int, *args, **kwargs):
+        assert type(index) is int and index >= 0, index
+        assert len(self._series) > index, (
+            index,
+            len(self._series),
+        )
+        assert len(args) == 0, args
+        freq: ndarray = kwargs["frequency"]
+        mag: ndarray = kwargs["magnitude"]
+        phase: ndarray = kwargs["phase"]
+        assert type(freq) is ndarray, freq
+        assert type(mag) is ndarray, mag
+        assert type(phase) is ndarray, phase
+        i: int
+        series_1: int
+        series_2: int
+        for i, (series_1, series_2) in enumerate(
+            zip(
+                dpg.get_item_children(self._y_axis_1, slot=1),
+                dpg.get_item_children(self._y_axis_2, slot=1),
+            )
+        ):
+            if i != index:
+                continue
+            self._series[index].update(kwargs)
+            dpg.set_value(series_1, [list(freq), list(mag)])
+            dpg.set_value(series_2, [list(freq), list(phase)])
+            break
 
     def plot(self, *args, **kwargs) -> Tuple[int, int]:
         assert len(args) == 0, args
@@ -222,11 +268,11 @@ class BodeMagnitude(Plot):
     def is_blank(self) -> bool:
         return len(dpg.get_item_children(self._y_axis, slot=1)) == 0
 
-    def clear(self):
+    def clear(self, *args, **kwargs):
         dpg.delete_item(self._y_axis, children_only=True)
         self._series.clear()
 
-    def plot(self, *args, **kwargs):
+    def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
         freq: ndarray = kwargs["frequency"]
         mag: ndarray = kwargs["magnitude"]
@@ -352,11 +398,11 @@ class BodePhase(Plot):
     def is_blank(self) -> bool:
         return len(dpg.get_item_children(self._y_axis, slot=1)) == 0
 
-    def clear(self):
+    def clear(self, *args, **kwargs):
         dpg.delete_item(self._y_axis, children_only=True)
         self._series.clear()
 
-    def plot(self, *args, **kwargs):
+    def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
         freq: ndarray = kwargs["frequency"]
         phase: ndarray = kwargs["phase"]

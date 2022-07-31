@@ -392,6 +392,13 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         False,
         Action.EXPAND_COLLAPSE_SIDEBAR,
     ),
+    Keybinding(
+        dpg.mvKey_P,
+        True,
+        False,
+        False,
+        Action.EXPORT_PLOT,
+    ),
 ]
 
 
@@ -518,12 +525,47 @@ DEFAULT_SIMULATION_SETTINGS: SimulationSettings = SimulationSettings(
 )
 
 
-VERSION: int = 2
+VERSION: int = 3
+
+
+def _parse_v3(dictionary: dict) -> dict:
+    # TODO: Update when VERSION is incremented to 4
+    return dictionary
 
 
 def _parse_v2(dictionary: dict) -> dict:
-    # TODO: Update when VERSION is incremented to 3
-    return dictionary
+    return _parse_v3(
+        {
+            "version": 3,
+            "auto_backup_interval": dictionary["auto_backup_interval"],
+            "num_per_decade_in_simulated_lines": dictionary[
+                "num_per_decade_in_simulated_lines"
+            ],
+            "markers": dictionary["markers"],
+            "colors": dictionary["colors"],
+            "default_test_settings": dictionary["default_test_settings"],
+            "default_fit_settings": dictionary["default_fit_settings"],
+            "default_simulation_settings": dictionary["default_simulation_settings"],
+            "export_units": dictionary.get("export_units", 1),
+            "export_width": dictionary.get("export_width", 10.0),
+            "export_height": dictionary.get("export_height", 6.0),
+            "export_dpi": dictionary.get("export_dpi", 100),
+            "export_preview": dictionary.get("export_preview", 4),
+            "export_title": dictionary.get("export_title", True),
+            "export_legend": dictionary.get("export_legend", True),
+            "export_legend_location": dictionary.get("export_legend_location", 0),
+            "export_grid": dictionary.get("export_grid", False),
+            "export_tight": dictionary.get("export_tight", False),
+            "export_num_per_decade": dictionary.get("export_num_per_decade", 100),
+            "export_extension": dictionary.get("export_extension", 4),
+            "export_experimental_clear_registry": dictionary.get(
+                "export_experimental_clear_registry", True
+            ),
+            "export_experimental_disable_previews": dictionary.get(
+                "export_experimental_disable_previews", False
+            ),
+        }
+    )
 
 
 def _parse_v1(dictionary: dict) -> dict:
@@ -579,6 +621,20 @@ class Config:
         self.markers: Dict[str, int] = None  # type: ignore
         self.colors: Dict[str, List[float]] = None  # type: ignore
         self.keybindings: List[Keybinding] = None  # type: ignore
+        self.export_units: int = 1
+        self.export_width: float = 10.0
+        self.export_height: float = 6.0
+        self.export_dpi: float = 100
+        self.export_preview: int = 4
+        self.export_title: bool = True
+        self.export_legend: bool = True
+        self.export_legend_location: int = 0
+        self.export_grid: bool = False
+        self.export_tight: bool = False
+        self.export_num_per_decade: int = 100
+        self.export_extension: int = 4
+        self.export_experimental_clear_registry: bool = True
+        self.export_experimental_disable_previews: bool = False
         self.from_dict(self.default_settings())
         if not exists(self.config_path):
             self.save()
@@ -609,11 +665,25 @@ class Config:
             "colors": DEFAULT_COLORS,
             "markers": DEFAULT_MARKERS,
             "keybindings": list(map(lambda _: _.to_dict(), DEFAULT_KEYBINDINGS)),
+            "export_units": 1,
+            "export_width": 10.0,
+            "export_height": 6.0,
+            "export_dpi": 100,
+            "export_preview": 4,
+            "export_title": True,
+            "export_legend": True,
+            "export_legend_location": 0,
+            "export_grid": False,
+            "export_tight": False,
+            "export_num_per_decade": 100,
+            "export_extension": 4,
+            "export_experimental_clear_registry": True,
+            "export_experimental_disable_previews": False,
         }
 
     def to_dict(self) -> dict:
         return parse_json(
-            dump_json(
+            dump_json(  # This is done to get new instances in memory
                 {
                     "version": VERSION,
                     "auto_backup_interval": self.auto_backup_interval,
@@ -624,6 +694,20 @@ class Config:
                     "colors": self.colors,
                     "markers": self.markers,
                     "keybindings": list(map(lambda _: _.to_dict(), self.keybindings)),
+                    "export_units": self.export_units,
+                    "export_width": self.export_width,
+                    "export_height": self.export_height,
+                    "export_dpi": self.export_dpi,
+                    "export_preview": self.export_preview,
+                    "export_title": self.export_title,
+                    "export_legend": self.export_legend,
+                    "export_legend_location": self.export_legend_location,
+                    "export_grid": self.export_grid,
+                    "export_tight": self.export_tight,
+                    "export_num_per_decade": self.export_num_per_decade,
+                    "export_extension": self.export_extension,
+                    "export_experimental_clear_registry": self.export_experimental_clear_registry,
+                    "export_experimental_disable_previews": self.export_experimental_disable_previews,
                 }
             )
         )
@@ -695,6 +779,24 @@ class Config:
         }
         for key, theme in color_themes.items():
             themes.update_plot_series_theme_color(theme, self.colors[key])
+        self.export_units = settings["export_units"]
+        self.export_width = settings["export_width"]
+        self.export_height = settings["export_height"]
+        self.export_dpi = settings["export_dpi"]
+        self.export_preview = settings["export_preview"]
+        self.export_title = settings["export_title"]
+        self.export_legend = settings["export_legend"]
+        self.export_legend_location = settings["export_legend_location"]
+        self.export_grid = settings["export_grid"]
+        self.export_tight = settings["export_tight"]
+        self.export_num_per_decade = settings["export_num_per_decade"]
+        self.export_extension = settings["export_extension"]
+        self.export_experimental_clear_registry = settings[
+            "export_experimental_clear_registry"
+        ]
+        self.export_experimental_disable_previews= settings[
+            "export_experimental_disable_previews"
+        ]
         self.keybindings = list(map(Keybinding.from_dict, settings["keybindings"]))
         self.validate_keybindings(self.keybindings)
 
@@ -733,6 +835,7 @@ class Config:
         parsers: Dict[int, Callable] = {
             1: _parse_v1,
             2: _parse_v2,
+            3: _parse_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         self.from_dict(self.merge_dicts(parsers[version](dictionary), self.to_dict()))

@@ -125,8 +125,9 @@ class KeybindingHandler:
             return
         project: Optional["Project"] = self.state.get_active_project()
         project_tab: Optional["ProjectTab"] = self.state.get_active_project_tab()
-        if project is not None:
-            context: Context = project_tab.get_active_context()
+        context: Context
+        if project is not None and project_tab is not None:
+            context = project_tab.get_active_context()
             filtered_keybindings = list(
                 filter(
                     lambda _: context in action_contexts[_.action]
@@ -144,7 +145,7 @@ class KeybindingHandler:
             )
         if not filtered_keybindings:
             return
-        context: Context = (
+        context = (
             project_tab.get_active_context()
             if project_tab is not None
             else Context.PROGRAM
@@ -204,7 +205,11 @@ class KeybindingHandler:
         elif action == Action.SHOW_COMMAND_PALETTE:
             signals.emit(Signal.SHOW_COMMAND_PALETTE)
         elif project is not None:
+            assert project is not None
+            assert project_tab is not None
             # Project-level
+            test: Optional[TestResult]
+            fit: Optional[FitResult]
             if action == Action.SAVE_PROJECT:
                 signals.emit(Signal.SAVE_PROJECT)
             elif action == Action.SAVE_PROJECT_AS:
@@ -388,13 +393,13 @@ class KeybindingHandler:
                 # - Plot type
             elif action == Action.APPLY_SETTINGS:
                 if context == Context.KRAMERS_KRONIG_TAB:
-                    test: Optional[TestResult] = project_tab.get_active_test()
+                    test = project_tab.get_active_test()
                     signals.emit(
                         Signal.APPLY_TEST_SETTINGS,
                         settings=test.settings if test is not None else None,
                     )
                 elif context == Context.FITTING_TAB:
-                    fit: Optional[FitResult] = project_tab.get_active_fit()
+                    fit = project_tab.get_active_fit()
                     signals.emit(
                         Signal.APPLY_FIT_SETTINGS,
                         settings=fit.settings if fit is not None else None,
@@ -411,7 +416,7 @@ class KeybindingHandler:
                     )
             elif action == Action.APPLY_MASK:
                 if context == Context.KRAMERS_KRONIG_TAB:
-                    test: Optional[TestResult] = project_tab.get_active_test()
+                    test = project_tab.get_active_test()
                     signals.emit(
                         Signal.APPLY_DATA_SET_MASK,
                         mask=test.mask if test is not None else None,
@@ -419,7 +424,7 @@ class KeybindingHandler:
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.FITTING_TAB:
-                    fit: Optional[FitResult] = project_tab.get_active_fit()
+                    fit = project_tab.get_active_fit()
                     signals.emit(
                         Signal.APPLY_DATA_SET_MASK,
                         mask=fit.mask if fit is not None else None,
@@ -543,7 +548,9 @@ class KeybindingHandler:
                         context=context,
                     )
                 elif action == Action.EXPAND_COLLAPSE_SIDEBAR:
-                    if project_tab.plotting_tab.is_sidebar_shown():
-                        project_tab.plotting_tab.collapse_sidebar()
-                    else:
-                        project_tab.plotting_tab.expand_sidebar()
+                    project_tab.plotting_tab.collapse_expand_sidebar()
+                elif action == Action.EXPORT_PLOT:
+                    signals.emit(
+                        Signal.EXPORT_PLOT,
+                        settings=settings,
+                    )

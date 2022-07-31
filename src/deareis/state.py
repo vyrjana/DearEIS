@@ -42,9 +42,10 @@ import dearpygui.dearpygui as dpg
 from deareis.config import Config
 from deareis.data import (
     Project,
-    TestSettings,
     FitSettings,
+    PlotSettings,
     SimulationSettings,
+    TestSettings,
 )
 from deareis.enums import (
     Context,
@@ -58,6 +59,7 @@ from deareis.gui.program import ProgramWindow
 from deareis.gui.command_palette import CommandPalette
 from deareis.keybindings import KeybindingHandler
 from deareis.utility import calculate_checksum
+from deareis.gui.plotting.export import PlotExporter
 
 
 class State:
@@ -78,6 +80,7 @@ class State:
         self.program_window: ProgramWindow = ProgramWindow()
         self.latest_project_directory: str = getcwd()
         self.latest_data_set_directory: str = getcwd()
+        self.latest_plot_directory: str = getcwd()
         self.projects: List[Project] = []
         self.project_tabs: Dict[str, ProjectTab] = {}
         self.project_lookup: Dict[str, Tuple[Project, ProjectTab]] = {}
@@ -86,10 +89,11 @@ class State:
             self.config.keybindings, self
         )
         self.active_modal_window: Optional[int] = None
-        self.project_state_snapshots: Dict[str, List[Tuple[str, str]]] = {}
+        self.project_state_snapshots: Dict[str, List[str]] = {}
         self.project_state_snapshot_indices: Dict[str, int] = {}
         self.project_state_saved_indices: Dict[str, int] = {}
         self.command_palette: CommandPalette = CommandPalette(self.keybinding_handler)
+        self.plot_exporter: PlotExporter = PlotExporter(self.config)
 
     def set_active_modal_window(self, window: int):
         assert type(window) is int
@@ -165,23 +169,20 @@ class State:
         assert type(project) is Project, project
         return self.project_state_snapshot_indices[project.uuid]
 
-    def snapshot_project_state(self, project: Project, project_tab: ProjectTab):
+    def snapshot_project_state(self, project: Project):
         assert type(project) is Project, project
         if project.uuid not in self.project_state_snapshots:
             self.project_state_snapshots[project.uuid] = []
             self.project_state_snapshot_indices[project.uuid] = 0
             self.project_state_saved_indices[project.uuid] = -1
-        snapshots: List[Tuple[str, str]] = self.project_state_snapshots[project.uuid]
+        snapshots: List[str] = self.project_state_snapshots[project.uuid]
         index: int = self.get_project_state_snapshot_index(project)
         while len(snapshots) - 1 > index:
             snapshots.pop()
         if index < self.project_state_saved_indices[project.uuid]:
             self.project_state_saved_indices[project.uuid] = -1
         snapshots.append(
-            (
-                dump_json(project.to_dict(session=True)),
-                dump_json(project_tab.to_dict()),
-            ),
+            dump_json(project.to_dict(session=True)),
         )
         self.project_state_snapshot_indices[project.uuid] = len(snapshots) - 1
         if (
@@ -191,13 +192,11 @@ class State:
         ):
             self.serialize_project_snapshots([project], auto_backup=True)
 
-    def get_previous_project_state_snapshot(
-        self, project: Project
-    ) -> Optional[Tuple[str, str]]:
+    def get_previous_project_state_snapshot(self, project: Project) -> Optional[str]:
         assert type(project) is Project, project
         if project.uuid not in self.project_state_snapshots:
             return None
-        snapshots: List[Tuple[str, str]] = self.project_state_snapshots[project.uuid]
+        snapshots: List[str] = self.project_state_snapshots[project.uuid]
         if not snapshots:
             return None
         index: int = self.get_project_state_snapshot_index(project)
@@ -206,13 +205,11 @@ class State:
         self.project_state_snapshot_indices[project.uuid] = index - 1
         return snapshots[index - 1]
 
-    def get_next_project_state_snapshot(
-        self, project: Project
-    ) -> Optional[Tuple[str, str]]:
+    def get_next_project_state_snapshot(self, project: Project) -> Optional[str]:
         assert type(project) is Project, project
         if project.uuid not in self.project_state_snapshots:
             return None
-        snapshots: List[Tuple[str, str]] = self.project_state_snapshots[project.uuid]
+        snapshots: List[str] = self.project_state_snapshots[project.uuid]
         if not snapshots:
             return None
         index: int = self.get_project_state_snapshot_index(project)
@@ -309,11 +306,14 @@ class State:
             contexts.extend([Context.PROJECT, project_tab.get_active_context()])
         self.command_palette.show(contexts, project, project_tab)
 
+    def show_plot_exporter(self, settings: PlotSettings, project: Project):
+        self.plot_exporter.show(settings, project)
+
+    def close_plot_exporter(self):
+        self.plot_exporter.close()
+
     def is_busy_message_visible(self) -> bool:
         return self.program_window.busy_message.is_visible()
-
-    def is_error_message_visible(self) -> bool:
-        return self.program_window.error_message.is_visible()
 
 
 STATE: State = State()

@@ -34,6 +34,7 @@ from pyimpspec import (
     KramersKronigResult,
     FittingError,
 )
+import deareis.api.kramers_kronig as api
 from deareis.data import (
     DataSet,
     Project,
@@ -162,15 +163,9 @@ def perform_test(*args, **kwargs):
     if settings.mode == Mode.AUTO or settings.mode == Mode.MANUAL:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test(s)")
         try:
-            result: KramersKronigResult = pyimpspec.perform_test(
+            test: TestResult = api.perform_test(
                 data=data,
-                test=test_to_value[settings.test],
-                num_RC=settings.num_RC * (-1 if settings.mode == Mode.AUTO else 1),
-                mu_criterion=settings.mu_criterion,
-                add_capacitance=settings.add_capacitance,
-                add_inductance=settings.add_inductance,
-                method=method_to_value[settings.method],
-                max_nfev=settings.max_nfev,
+                settings=settings,
                 num_procs=num_procs,
             )
         except FittingError:
@@ -179,20 +174,7 @@ def perform_test(*args, **kwargs):
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
         project.add_test(
             data=data,
-            test=TestResult(
-                uuid4().hex,
-                time(),
-                result.circuit,
-                result.num_RC,
-                result.mu,
-                result.pseudo_chisqr,
-                result.frequency,
-                result.impedance,
-                result.real_residual,
-                result.imaginary_residual,
-                data.get_mask().copy(),
-                settings,
-            ),
+            test=test,
         )
         signals.emit(Signal.SELECT_DATA_SET, data=data)
         signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

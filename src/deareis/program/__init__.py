@@ -70,6 +70,7 @@ from .overview import (
 from .data_sets import (
     apply_data_set_mask,
     delete_data_set,
+    load_data_set_files,
     modify_data_set_path,
     rename_data_set,
     select_data_points_to_toggle,
@@ -101,11 +102,13 @@ from .simulation import (
 from .plotting import (
     copy_plot_appearance_settings,
     delete_plot_settings,
+    export_plot,
     modify_plot_series_theme,
     new_plot_settings,
     rename_plot_series,
     rename_plot_settings,
     reorder_plot_series,
+    save_plot,
     select_plot_appearance_settings,
     select_plot_settings,
     select_plot_type,
@@ -336,7 +339,7 @@ def viewport_resized(width: int, height: int):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project_tab is not None:
         project_tab.resize(width, height)
-    modal_window: int = STATE.get_active_modal_window()
+    modal_window: Optional[int] = STATE.get_active_modal_window()
     if modal_window is None or not dpg.does_item_exist(modal_window):
         return
     elif modal_window in [
@@ -489,7 +492,7 @@ def show_help_about(*args, **kwargs):
     y: int
     w: int
     h: int
-    x, y, w, h = calculate_window_position_dimensions(250, 130)
+    x, y, w, h = calculate_window_position_dimensions(256, 130)
     window: int = dpg.generate_uuid()
     key_handler: int = dpg.generate_uuid()
 
@@ -520,7 +523,15 @@ def show_help_about(*args, **kwargs):
         tag=window,
     ):
         dpg.add_text(
-            f"DearEIS\n\nVersion: {PACKAGE_VERSION}\n\nhttps://vyrjana.github.io/DearEIS\n\ngithub.com/vyrjana/DearEIS"
+            f"""
+DearEIS
+
+Version: {PACKAGE_VERSION}
+
+https://vyrjana.github.io/DearEIS
+
+https://github.com/vyrjana/DearEIS
+            """.strip()
         )
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
 
@@ -540,15 +551,12 @@ def restore_unsaved_project_snapshots():
         project_tab, _ = STATE.add_project(project)
         STATE.program_window.select_tab(project_tab)
         signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
-        STATE.snapshot_project_state(project, project_tab)
+        STATE.snapshot_project_state(project)
         signals.emit(
             Signal.RESTORE_PROJECT_STATE,
             project=project,
             project_tab=project_tab,
-            state_snapshot=(
-                dump_json(project.to_dict(session=True)),
-                "{}",
-            ),
+            state_snapshot=dump_json(project.to_dict(session=True)),
         )
     for path in unsaved_project_snapshots:
         if path not in parsing_errors:
@@ -645,6 +653,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.MODIFY_PROJECT_NOTES, modify_project_notes)
     signals.register(Signal.CLEAR_RECENT_PROJECTS, STATE.clear_recent_projects)
     # Signals for the data sets tab
+    signals.register(Signal.LOAD_DATA_SET_FILES, load_data_set_files)
     signals.register(Signal.SELECT_DATA_SET, select_data_set)
     signals.register(Signal.SELECT_DATA_SET_FILES, select_data_set_files)
     signals.register(Signal.RENAME_DATA_SET, rename_data_set)
@@ -688,6 +697,8 @@ def initialize_program(args: Namespace):
     signals.register(
         Signal.COPY_PLOT_APPEARANCE_SETTINGS, copy_plot_appearance_settings
     )
+    signals.register(Signal.EXPORT_PLOT, export_plot)
+    signals.register(Signal.SAVE_PLOT, save_plot)
     # signals.register(Signal., )
     if args.data_files:
         signals.emit(Signal.NEW_PROJECT, data=args.data_files)
@@ -739,6 +750,7 @@ def main():
 
 
 def debug():
+    # This function is called by one of the entry points defined in setup.py.
     print("Enabling debugging features...")
     signals.DEBUG = True
     main()

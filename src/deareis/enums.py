@@ -117,6 +117,7 @@ class Action(IntEnum):
     COPY_PLOT_APPEARANCE = auto()
     COPY_PLOT_DATA = auto()
     EXPAND_COLLAPSE_SIDEBAR = auto()
+    EXPORT_PLOT = auto()
 
 
 action_contexts: Dict[Action, List[Context]] = {
@@ -241,6 +242,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.COPY_PLOT_APPEARANCE: [Context.PLOTTING_TAB],
     Action.COPY_PLOT_DATA: [Context.PLOTTING_TAB],
     Action.EXPAND_COLLAPSE_SIDEBAR: [Context.PLOTTING_TAB],
+    Action.EXPORT_PLOT: [Context.PLOTTING_TAB],
 }
 
 
@@ -295,6 +297,7 @@ action_to_string: Dict[Action, str] = {
     Action.COPY_PLOT_APPEARANCE: "copy-plot-appearance",
     Action.COPY_PLOT_DATA: "copy-plot-data",
     Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
+    Action.EXPORT_PLOT: "export-plot",
 }
 string_to_action: Dict[str, Action] = {v: k for k, v in action_to_string.items()}
 
@@ -483,34 +486,66 @@ Copy the data from the current plot while in the 'Plotting' tab.
     Action.EXPAND_COLLAPSE_SIDEBAR: """
 Collapse/expand the sidebar while in the 'Plotting' tab.
 """.strip(),
+    Action.EXPORT_PLOT: """
+Export the current plot using matplotlib.
+""".strip(),
 }
 
 
 class Method(IntEnum):
-    AUTO = auto()
-    LEASTSQ = auto()
-    LEAST_SQUARES = auto()
-    DIFFERENTIAL_EVOLUTION = auto()
-    BRUTE = auto()
-    BASINHOPPING = auto()
-    AMPGO = auto()
-    NELDER = auto()
-    LBFGSB = auto()
-    POWELL = auto()
-    CG = auto()
-    NEWTON = auto()
-    COBYLA = auto()
-    BFGS = auto()
-    TNC = auto()
-    TRUST_NCG = auto()
-    TRUST_EXACT = auto()
-    TRUST_KRYLOV = auto()
-    TRUST_CONSTR = auto()
-    DOGLEG = auto()
-    SLSQP = auto()
-    EMCEE = auto()
-    SHGO = auto()
-    DUAL_ANNEALING = auto()
+    """
+    Iterative methods used during complex non-linear least-squares fitting:
+
+    - AUTO: try each method
+    - AMPGO
+    - BASINHOPPING
+    - BFGS
+    - BRUTE
+    - CG
+    - COBYLA
+    - DIFFERENTIAL_EVOLUTION
+    - DOGLEG
+    - DUAL_ANNEALING
+    - EMCEE
+    - LBFGSB
+    - LEASTSQ
+    - LEAST_SQUARES
+    - NELDER
+    - NEWTON
+    - POWELL
+    - SHGO
+    - SLSQP
+    - TNC
+    - TRUST_CONSTR
+    - TRUST_EXACT
+    - TRUST_KRYLOV
+    - TRUST_NCG
+    """
+
+    AUTO = 1
+    LEASTSQ = 2
+    LEAST_SQUARES = 3
+    DIFFERENTIAL_EVOLUTION = 4
+    BRUTE = 5
+    BASINHOPPING = 6
+    AMPGO = 7
+    NELDER = 8
+    LBFGSB = 9
+    POWELL = 10
+    CG = 11
+    NEWTON = 12
+    COBYLA = 13
+    BFGS = 14
+    TNC = 15
+    TRUST_NCG = 16
+    TRUST_EXACT = 17
+    TRUST_KRYLOV = 18
+    TRUST_CONSTR = 19
+    DOGLEG = 20
+    SLSQP = 21
+    EMCEE = 22
+    SHGO = 23
+    DUAL_ANNEALING = 24
 
 
 label_to_method: Dict[str, Method] = {
@@ -570,9 +605,17 @@ value_to_method: Dict[str, Method] = {v: k for k, v in method_to_value.items()}
 
 
 class Mode(IntEnum):
-    AUTO = auto()
-    EXPLORATORY = auto()
-    MANUAL = auto()
+    """
+    Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
+
+    - AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)
+    - EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion
+    - MANUAL: manually choose the number
+    """
+
+    AUTO = 1
+    EXPLORATORY = 2
+    MANUAL = 3
 
 
 label_to_mode: Dict[str, Mode] = {
@@ -583,7 +626,7 @@ label_to_mode: Dict[str, Mode] = {
 mode_to_label: Dict[Mode, str] = {v: k for k, v in label_to_mode.items()}
 
 
-class Output:
+class Output(IntEnum):
     CDC_BASIC = auto()
     CDC_EXTENDED = auto()
     CSV_DATA_TABLE = auto()
@@ -615,15 +658,16 @@ output_to_label: Dict[Output, str] = {v: k for k, v in label_to_output.items()}
 
 class PlotType(IntEnum):
     """
-Types of plots:
+    Types of plots:
 
-- NYQUIST
-- BODE_MAGNITUDE
-- BODE_PHASE
+    - NYQUIST: -Zim vs Zre
+    - BODE_MAGNITUDE: |Z| vs log f
+    - BODE_PHASE: phi vs log f
     """
-    NYQUIST = auto()
-    BODE_MAGNITUDE = auto()
-    BODE_PHASE = auto()
+
+    NYQUIST = 1
+    BODE_MAGNITUDE = 2
+    BODE_PHASE = 3
 
 
 label_to_plot_type: Dict[str, PlotType] = {
@@ -635,10 +679,19 @@ plot_type_to_label: Dict[PlotType, str] = {v: k for k, v in label_to_plot_type.i
 
 
 class Test(IntEnum):
-    CNLS = auto()
-    COMPLEX = auto()
-    IMAGINARY = auto()
-    REAL = auto()
+    """
+    Types of tests:
+
+    - CNLS: complex non-linear least-squares fit of circuit (fig. 1, Boukamp, 1995) with a distribution of fixed time constants
+    - COMPLEX: eqs. 11 and 12, Boukamp, 1995
+    - IMAGINARY: eqs. 4, 6, and 7, Boukamp, 1995
+    - REAL: eqs. 5, 8, 9, and 10, Boukamp, 1995
+    """
+
+    CNLS = 1
+    COMPLEX = 2
+    IMAGINARY = 3
+    REAL = 4
 
 
 label_to_test: Dict[str, Test] = {
@@ -657,11 +710,21 @@ test_to_value: Dict[Test, str] = {
 
 
 class Weight(IntEnum):
-    AUTO = auto()
-    UNITY = auto()
-    PROPORTIONAL = auto()
-    MODULUS = auto()
-    BOUKAMP = auto()
+    """
+    Types of weights:
+
+    - AUTO: try each weight
+    - BOUKAMP: 1 / (Zre^2 + Zim^2) (eq. 13, Boukamp, 1995)
+    - MODULUS: 1 / |Z|
+    - PROPORTIONAL: 1 / Zre^2, 1 / Zim^2
+    - UNITY: 1
+    """
+
+    AUTO = 1
+    UNITY = 2
+    PROPORTIONAL = 3
+    MODULUS = 4
+    BOUKAMP = 5
 
 
 label_to_weight: Dict[str, Weight] = {

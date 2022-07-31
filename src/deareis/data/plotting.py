@@ -43,8 +43,9 @@ from deareis.themes import (
 @dataclass(frozen=True)
 class PlotSeries:
     """
-A class that represents the data used to plot an item/series.
+    A class that represents the data used to plot an item/series.
     """
+
     label: str
     scatter_data: List[ndarray]
     line_data: List[ndarray]
@@ -88,14 +89,19 @@ VERSION: int = 1
 @dataclass
 class PlotSettings:
     """
-A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
+    A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
     """
+
     plot_label: str
     plot_type: PlotType
     series_order: List[str]  # UUID
     labels: Dict[str, str]  # UUID: label
     colors: Dict[str, List[float]]  # UUID: RGBA
     markers: Dict[str, int]  # UUID: enum
+    # TODO: Add a toggle for filled markers
+    # filled_markers: Dict[str, bool]
+    # TODO: Replace show_lines with lines (UUID: enum)?
+    # lines: Dict[str, int]
     show_lines: Dict[str, bool]  # UUID: flag
     themes: Dict[str, int]  # UUID: DPG UUID
     uuid: str
@@ -343,14 +349,13 @@ A class representing a complex plot that can contain one or more data sets, Kram
                     return sim
             return None
 
-        series: Union[DataSet, TestResult, FitResult, SimulationResult]
-        series = find_dataset()
-        if series is not None:
-            return series
-        series = find_test()
-        if series is not None:
-            return series
-        series = find_fit()
-        if series is not None:
-            return series
+        data: Optional[DataSet] = find_dataset()
+        if data is not None:
+            return data
+        test: Optional[TestResult] = find_test()
+        if test is not None:
+            return test
+        fit: Optional[FitResult] = find_fit()
+        if fit is not None:
+            return fit
         return find_simulation()

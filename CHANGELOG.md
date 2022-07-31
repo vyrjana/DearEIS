@@ -1,3 +1,34 @@
+# 2.0.0
+
+- Added a window for exporting plots using matplotlib.
+	- Testing showed that attempting to free the memory allocated to the plot previews caused DearEIS to always crash on one of the computers used for testing.
+	  The cause is not known at the moment but it could a bug in the GPU drivers (NVIDIA 515.57 on Linux) and/or in the GUI framework (Dear PyGui 1.6.2).
+	- Two workarounds have been implemented in the form of two settings that can be found in the **Settings - defaults** window:
+		- Disabling the **Clear texture registry** setting prevents the crashes without taking away the ability to have plot previews.
+		  However, doing so introduces a memory leak since the memory allocated to each plot preview is not freed until DearEIS is closed.
+		- Alternatively, enabling the **Disable plot previews** setting prevents the crashes without introducing a memory leak by not generating plot previews at all.
+- Added settings for the default values used when exporting plots (e.g., dimensions and extension).
+- Added support for the new data formats supported by pyimpspec.
+- Added tests for the API and the GUI.
+- Updated the config file structure to support the new settings.
+- Updated minimum Python and dependency versions.
+- Updated the API and its documentation.
+- Added new keybindings and updated some old ones for greater consistency.
+- Changed how most of the plots are updated to prevent flickering of the legend.
+- Fixed a bug that allowed an empty string to be used as the file name when saving using the file dialog window.
+- Fixed a bug that caused an exception when deleting a simulation result after undoing/redoing an action.
+- Fixed a bug that caused an exception when undoing impedance subtraction.
+- Fixed a bug that caused an exception when undoing the creation of a simulation.
+- Fixed a bug that caused an exception when undoing the loading of a data set.
+- Fixed a bug that caused focus to switch to another input in the file dialog window when pressing just the F key.
+- Fixed a bug that prevented the table of data points and plots from updating when undoing/redoing impedance subtraction.
+- Fixed bugs that occurred when trying to copy a mask or subtract an impedance with fewer than two data sets present in a project.
+- Fixed issues detected by mypy.
+- Fixed the incorrect label on the x-axis of the mu/chi-squared vs num. RC plot.
+- Optimized the plotting tab to reduce loading times (by approx. 25-30 % based on testing).
+- Refactored code and removed deprecated code.
+
+
 # 1.1.0
 
 - Added support for `.dfr` data format.

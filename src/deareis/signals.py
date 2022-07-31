@@ -44,7 +44,6 @@ class Signal(IntEnum):
     BLOCK_KEYBINDINGS = auto()
     CLEAR_RECENT_PROJECTS = auto()
     CLOSE_PROJECT = auto()
-    CONFIRM_DATA_SET_DELETION = auto()
     COPY_OUTPUT = auto()
     COPY_PLOT_APPEARANCE_SETTINGS = auto()
     COPY_PLOT_DATA = auto()
@@ -54,17 +53,13 @@ class Signal(IntEnum):
     DELETE_PLOT_SETTINGS = auto()
     DELETE_SIMULATION_RESULT = auto()
     DELETE_TEST_RESULT = auto()
+    EXPORT_PLOT = auto()
     HIDE_BUSY_MESSAGE = auto()
     LOAD_DATA_SET_FILES = auto()
     LOAD_PROJECT_FILES = auto()
-    LOAD_PROJECT_SNAPSHOTS = auto()
     MODIFY_DATA_SET_PATH = auto()
-    MODIFY_FIT_SETTINGS = auto()
     MODIFY_PLOT_SERIES_THEME = auto()
-    MODIFY_PLOT_SETTINGS = auto()
     MODIFY_PROJECT_NOTES = auto()
-    MODIFY_SIMULATION_SETTINGS = auto()
-    MODIFY_TEST_SETTINGS = auto()
     NEW_PLOT_SETTINGS = auto()
     NEW_PROJECT = auto()
     PERFORM_FIT = auto()
@@ -77,6 +72,7 @@ class Signal(IntEnum):
     RENAME_PROJECT = auto()
     REORDER_PLOT_SERIES = auto()
     RESTORE_PROJECT_STATE = auto()
+    SAVE_PLOT = auto()
     SAVE_PROJECT = auto()
     SAVE_PROJECT_AS = auto()
     SELECT_DATA_POINTS_TO_TOGGLE = auto()
@@ -94,18 +90,15 @@ class Signal(IntEnum):
     SELECT_PROJECT_TAB = auto()
     SELECT_SIMULATION_RESULT = auto()
     SELECT_TEST_RESULT = auto()
-    SET_DATASET_MASK = auto()
     SHOW_BUSY_MESSAGE = auto()
     SHOW_COMMAND_PALETTE = auto()
     SHOW_ENLARGED_PLOT = auto()
     SHOW_ERROR_MESSAGE = auto()
-    SHOW_FIT_CIRCUIT_EDITOR = auto()
     SHOW_HELP_ABOUT = auto()
     SHOW_HELP_LICENSES = auto()
     SHOW_SETTINGS_APPEARANCE = auto()
     SHOW_SETTINGS_DEFAULTS = auto()
     SHOW_SETTINGS_KEYBINDINGS = auto()
-    SHOW_SIMULATION_CIRCUIT_EDITOR = auto()
     TOGGLE_DATA_POINT = auto()
     TOGGLE_PLOT_SERIES = auto()
     UNBLOCK_KEYBINDINGS = auto()
@@ -115,7 +108,7 @@ class Signal(IntEnum):
 
 _UUID_COUNTER: int = 0
 _REGISTERED_CALLBACKS: Dict[Signal, List[Tuple[Callable, int]]] = {}
-_QUEUE: Optional[Dict[Signal, List[Tuple[list, dict]]]] = {}
+_QUEUE: Optional[Dict[Signal, List[Tuple[tuple, dict]]]] = {}
 
 
 def emit(signal: Signal, *args, **kwargs):

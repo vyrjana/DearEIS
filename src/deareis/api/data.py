@@ -17,4 +17,26 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-PACKAGE_VERSION: str = "2.0.0"
+from typing import List, Optional
+import pyimpspec
+from pyimpspec.data import (
+    UnsupportedFileFormat,
+)
+from deareis.api._utility import _copy_docstring
+from deareis.data import (
+    DataSet,
+)
+
+
+@_copy_docstring(pyimpspec.parse_data)
+def parse_data(
+    path: str,
+    file_format: Optional[str] = None,
+    **kwargs,
+) -> List[DataSet]:
+    return list(
+        map(
+            lambda _: DataSet.from_dict(_.to_dict()),
+            pyimpspec.parse_data(path, file_format, **kwargs),
+        )
+    )

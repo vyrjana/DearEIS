@@ -18,21 +18,22 @@
 # the LICENSES folder.
 
 from typing import Callable, Dict, List, Optional
-from numpy import allclose, log10 as log, ndarray
+from numpy import allclose, array, log10 as log, ndarray
 from pyimpspec.analysis.kramers_kronig import _calculate_residuals
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.enums import (
     Context,
+    Method,
     Mode,
     Test,
     label_to_method,
     label_to_mode,
     label_to_test,
-    test_to_label,
-    mode_to_label,
     method_to_label,
+    mode_to_label,
+    test_to_label,
 )
 from deareis.data import TestResult, TestSettings, DataSet
 from deareis.gui.plots import Bode, Nyquist, Residuals
@@ -72,7 +73,7 @@ class StatisticsTable:
                 for (label, tooltip) in [
                     ("log X² (pseudo)", tooltips.kramers_kronig.pseudo_chisqr),
                     ("µ", tooltips.kramers_kronig.mu),
-                    ("Number of (RC) circuits", tooltips.kramers_kronig.num_RC),
+                    ("Number of RC elements", tooltips.kramers_kronig.num_RC),
                 ]:
                     with dpg.table_row(parent=self._table):
                         dpg.add_text(label.rjust(LABEL_PAD))
@@ -145,7 +146,7 @@ class SettingsTable:
                 for label in [
                     "Test",
                     "Mode",
-                    "Number of (RC) circuits",
+                    "Number of RC elements",
                     "Add capacitor in series",
                     "Add inductor in series",
                     "µ-criterion",
@@ -391,7 +392,7 @@ class ResultsCombo:
         assert type(label) is str, label
         assert label in self.labels, (
             label,
-            list(self.labels.keys()),
+            self.labels,
         )
         dpg.set_value(self.tag, label)
 
@@ -464,8 +465,8 @@ class KramersKronigTab:
                             with dpg.group(horizontal=True):
                                 self.num_RC_label: int = dpg.generate_uuid()
                                 num_RC_labels: List[str] = [
-                                    "Max. num. (RC) circuits".rjust(label_pad),
-                                    "Number of (RC) circuits".rjust(label_pad),
+                                    "Max. num. RC elements".rjust(label_pad),
+                                    "Number of RC elements".rjust(label_pad),
                                 ]
                                 dpg.add_text(
                                     num_RC_labels[0],
@@ -594,6 +595,11 @@ class KramersKronigTab:
                                 width=-1,
                                 height=300,
                             )
+                            self.residuals_plot.plot(
+                                frequency=array([]),
+                                real=array([]),
+                                imaginary=array([]),
+                            )
                             with dpg.group(horizontal=True):
                                 self.enlarge_residuals_button: int = dpg.generate_uuid()
                                 self.adjust_residuals_limits_checkbox: int = (
@@ -625,6 +631,30 @@ class KramersKronigTab:
                                     self.nyquist_plot: Nyquist = Nyquist(
                                         width=self.minimum_plot_side,
                                         height=self.minimum_plot_side,
+                                    )
+                                    self.nyquist_plot.plot(
+                                        real=array([]),
+                                        imaginary=array([]),
+                                        label="Data",
+                                        line=False,
+                                        theme=themes.nyquist.data,
+                                    )
+                                    self.nyquist_plot.plot(
+                                        real=array([]),
+                                        imaginary=array([]),
+                                        label="Fit",
+                                        line=False,
+                                        fit=True,
+                                        theme=themes.nyquist.simulation,
+                                    )
+                                    self.nyquist_plot.plot(
+                                        real=array([]),
+                                        imaginary=array([]),
+                                        label="Fit",
+                                        line=True,
+                                        fit=True,
+                                        theme=themes.nyquist.simulation,
+                                        show_label=False,
                                     )
                                     with dpg.group(horizontal=True):
                                         self.enlarge_nyquist_button: int = (
@@ -662,6 +692,51 @@ class KramersKronigTab:
                                         width=self.minimum_plot_side,
                                         height=self.minimum_plot_side,
                                     )
+                                    self.bode_plot_horizontal.plot(
+                                        frequency=array([]),
+                                        magnitude=array([]),
+                                        phase=array([]),
+                                        labels=(
+                                            "|Z| (d)",
+                                            "phi (d)",
+                                        ),
+                                        line=False,
+                                        themes=(
+                                            themes.bode.magnitude_data,
+                                            themes.bode.phase_data,
+                                        ),
+                                    )
+                                    self.bode_plot_horizontal.plot(
+                                        frequency=array([]),
+                                        magnitude=array([]),
+                                        phase=array([]),
+                                        labels=(
+                                            "|Z| (f)",
+                                            "phi (f)",
+                                        ),
+                                        line=False,
+                                        fit=True,
+                                        themes=(
+                                            themes.bode.magnitude_simulation,
+                                            themes.bode.phase_simulation,
+                                        ),
+                                    )
+                                    self.bode_plot_horizontal.plot(
+                                        frequency=array([]),
+                                        magnitude=array([]),
+                                        phase=array([]),
+                                        labels=(
+                                            "|Z| (f)",
+                                            "phi (f)",
+                                        ),
+                                        line=True,
+                                        fit=True,
+                                        themes=(
+                                            themes.bode.magnitude_simulation,
+                                            themes.bode.phase_simulation,
+                                        ),
+                                        show_labels=False,
+                                    )
                                     with dpg.group(horizontal=True):
                                         self.enlarge_bode_horizontal_button: int = (
                                             dpg.generate_uuid()
@@ -697,6 +772,51 @@ class KramersKronigTab:
                                 self.bode_plot_vertical: Bode = Bode(
                                     width=-1,
                                     height=self.minimum_plot_side,
+                                )
+                                self.bode_plot_vertical.plot(
+                                    frequency=array([]),
+                                    magnitude=array([]),
+                                    phase=array([]),
+                                    labels=(
+                                        "|Z| (d)",
+                                        "phi (d)",
+                                    ),
+                                    line=False,
+                                    themes=(
+                                        themes.bode.magnitude_data,
+                                        themes.bode.phase_data,
+                                    ),
+                                )
+                                self.bode_plot_vertical.plot(
+                                    frequency=array([]),
+                                    magnitude=array([]),
+                                    phase=array([]),
+                                    labels=(
+                                        "|Z| (f)",
+                                        "phi (f)",
+                                    ),
+                                    line=False,
+                                    fit=True,
+                                    themes=(
+                                        themes.bode.magnitude_simulation,
+                                        themes.bode.phase_simulation,
+                                    ),
+                                )
+                                self.bode_plot_vertical.plot(
+                                    frequency=array([]),
+                                    magnitude=array([]),
+                                    phase=array([]),
+                                    labels=(
+                                        "|Z| (f)",
+                                        "phi (f)",
+                                    ),
+                                    line=True,
+                                    fit=True,
+                                    themes=(
+                                        themes.bode.magnitude_simulation,
+                                        themes.bode.phase_simulation,
+                                    ),
+                                    show_labels=False,
                                 )
                                 with dpg.group(horizontal=True):
                                     self.enlarge_bode_vertical_button: int = (
@@ -735,14 +855,6 @@ class KramersKronigTab:
                                     )
         self.set_settings(self.state.config.default_test_settings)
 
-    def to_dict(self) -> dict:
-        # TODO: Implement
-        return {}
-
-    def restore_state(self, state: dict):
-        # TODO: Implement
-        pass
-
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
 
@@ -773,20 +885,20 @@ class KramersKronigTab:
         self.statistics_table.clear(hide=hide)
         self.settings_table.clear(hide=hide)
         dpg.set_item_user_data(self.perform_test_button, None)
-        self.residuals_plot.clear()
-        self.nyquist_plot.clear()
-        self.bode_plot_horizontal.clear()
-        self.bode_plot_vertical.clear()
+        self.residuals_plot.clear(delete=False)
+        self.nyquist_plot.clear(delete=False)
+        self.bode_plot_horizontal.clear(delete=False)
+        self.bode_plot_vertical.clear(delete=False)
 
     def get_settings(self) -> TestSettings:
         return TestSettings(
-            label_to_test.get(dpg.get_value(self.test_combo)),
-            label_to_mode.get(dpg.get_value(self.mode_combo)),
+            label_to_test.get(dpg.get_value(self.test_combo), Test.COMPLEX),
+            label_to_mode.get(dpg.get_value(self.mode_combo), Mode.EXPLORATORY),
             dpg.get_value(self.num_RC_slider),
             dpg.get_value(self.mu_crit_slider),
             dpg.get_value(self.add_cap_checkbox),
             dpg.get_value(self.add_ind_checkbox),
-            label_to_method.get(dpg.get_value(self.method_combo)),
+            label_to_method.get(dpg.get_value(self.method_combo), Method.LEASTSQ),
             dpg.get_value(self.max_nfev_input),
         )
 
@@ -837,7 +949,7 @@ class KramersKronigTab:
         assert type(lookup) is dict, lookup
         self.data_sets_combo.populate(labels, lookup)
 
-    def populate_tests(self, lookup: Dict[str, TestResult], data: DataSet):
+    def populate_tests(self, lookup: Dict[str, TestResult], data: Optional[DataSet]):
         assert type(lookup) is dict, lookup
         assert type(data) is DataSet or data is None, data
         self.results_combo.populate(lookup, data)
@@ -886,44 +998,26 @@ class KramersKronigTab:
         real: ndarray
         imag: ndarray
         real, imag = data.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Data",
-            line=False,
-            theme=themes.nyquist.data,
         )
         freq: ndarray
         mag: ndarray
         phase: ndarray
         freq, mag, phase = data.get_bode_data()
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (d)",
-                "phi (d)",
-            ),
-            line=False,
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (d)",
-                "phi (d)",
-            ),
-            line=False,
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
 
     def assert_test_up_to_date(self, test: TestResult, data: DataSet):
@@ -934,7 +1028,7 @@ class KramersKronigTab:
         # Check if the masks are the same
         mask_exp: Dict[int, bool] = data.get_mask()
         mask_test: Dict[int, bool] = {
-            k: test.mask.get(k, mask_exp.get(k)) for k in test.mask
+            k: test.mask.get(k, mask_exp.get(k, False)) for k in test.mask
         }
         num_masked_exp: int = list(data.get_mask().values()).count(True)
         num_masked_test: int = list(test.mask.values()).count(True)
@@ -973,7 +1067,7 @@ class KramersKronigTab:
             return
         self.queued_update = None
         self.select_data_set(data)
-        if test is None:
+        if test is None or data is None:
             if dpg.get_value(self.adjust_residuals_limits_checkbox):
                 self.residuals_plot.queue_limits_adjustment()
             if dpg.get_value(self.adjust_nyquist_limits_checkbox):
@@ -1001,103 +1095,59 @@ class KramersKronigTab:
         real: ndarray
         imag: ndarray
         freq, real, imag = test.get_residual_data()
-        self.residuals_plot.plot(
+        self.residuals_plot.update(
+            index=0,
             frequency=freq,
             real=real,
             imaginary=imag,
         )
         real, imag = test.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Fit",
-            line=False,
-            fit=True,
-            theme=themes.nyquist.simulation,
         )
         real, imag = test.get_nyquist_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="Fit",
-            line=True,
-            fit=True,
-            theme=themes.nyquist.simulation,
-            show_label=False,
         )
         mag: ndarray
         phase: ndarray
         freq, mag, phase = test.get_bode_data()
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            line=False,
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         freq, mag, phase = test.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_horizontal.plot(
+        self.bode_plot_horizontal.update(
+            index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            line=True,
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
-            show_labels=False,
         )
         freq, mag, phase = test.get_bode_data()
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            line=False,
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         freq, mag, phase = test.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_vertical.plot(
+        self.bode_plot_vertical.update(
+            index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (f)",
-                "phi (f)",
-            ),
-            line=True,
-            fit=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
-            show_labels=False,
         )
         if dpg.get_value(self.adjust_residuals_limits_checkbox):
             self.residuals_plot.queue_limits_adjustment()

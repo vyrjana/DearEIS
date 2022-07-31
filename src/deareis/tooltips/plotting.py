@@ -71,11 +71,8 @@ Change the order in which items are added to the plot. This affects both the ord
 
 The two buttons can be used to adjust the position of the corresponding item.
     """.strip(),
-        "collapse_sidebar": """
-Collapse the sidebar.
-    """.strip(),
-        "expand_sidebar": """
-Expand the sidebar.
+        "collapse_expand_sidebar": """
+Collapse/expand the sidebar.
     """.strip(),
         "copy_appearance_toggle": """
 Toggle this to set whether or not this series should copy settings from the chosen source.
@@ -91,6 +88,71 @@ Toggle whether or not markers should be copied.
     """.strip(),
         "copy_appearance_lines": """
 Toggle whether or not lines should be copied.
+    """.strip(),
+        "export_plot": """
+Export the current plot using matplotlib.
+    """.strip(),
+        "export_units": """
+The units used for the width and height.
+    """.strip(),
+        "export_width": """
+The width of the figure.
+    """.strip(),
+        "export_height": """
+The height of the figure.
+    """.strip(),
+        "export_dpi": """
+The number of dots (or points) per inch.
+    """.strip(),
+        "export_result": """
+The final dimensions.
+    """.strip(),
+        "export_preview": """
+The maximum limit for either dimension in the preview. For example, if the limit is set to 1024 and the figure is 1920 px by 1080 px, then the preview will be 1024 px by 576 px.
+
+Note that using a limit may cause the preview to look slightly or even very different compared to the final saved figure but helps to maintain acceptable performance.
+However, choosing to not use a limit may cause the program to become unresponsive and use a lot of memory if the figure dimensions are very large.
+    """.strip(),
+        "export_min_x": """
+The minimum limit for the x-axis.
+    """.strip(),
+        "export_max_x": """
+The maximum limit for the x-axis.
+    """.strip(),
+        "export_min_y": """
+The minimum limit for the y-axis.
+    """.strip(),
+        "export_max_y": """
+The maximum limit for the y-axis.
+    """.strip(),
+        "export_title": """
+Show the figure title.
+    """.strip(),
+        "export_legend": """
+Show the figure legend.
+    """.strip(),
+        "export_grid": """
+Show the grid.
+    """.strip(),
+        "export_tight": """
+Use a tight layout that reduces the size of the margins.
+    """.strip(),
+        "export_file": """
+Save the figure as a file.
+    """.strip(),
+        "export_num_per_decade": """
+The number of points per decade in lines.
+    """.strip(),
+        "export_extension": """
+The default extension to use when exporting a plot.
+    """.strip(),
+        "export_experimental_clear_registry": """
+NOTE! Clearing the texture registry can cause DearEIS to crash on some systems. The cause is not known for certain at the moment but it may be a bug in the GUI framework and/or a certain GPU driver.
+
+If enabled, then the texture registry is cleared to free memory. Disabling will cause memory to not be freed until DearEIS is closed, which may be an issue if a lot of plot previews are generated during a single session.
+    """.strip(),
+        "export_experimental_disable_previews": """
+NOTE! If the texture registry is not allowed to be cleared, then DearEIS will not be able to free the memory used by the generated plot previews. The plot previews can be disabled completely with this setting to avoid such a memory leak.
     """.strip(),
     }
 )

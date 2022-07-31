@@ -100,8 +100,9 @@ def _parse_v1(state: dict) -> dict:
 
 class Project:
     """
-A class representing a collection of notes, data sets, test results, fit results, simulation results, and complex plots.
+    A class representing a collection of notes, data sets, test results, fit results, simulation results, and complex plots.
     """
+
     def __init__(self, *args, **kwargs):
         self._path: str = ""
         self.update(*args, **kwargs)
@@ -110,6 +111,9 @@ A class representing a collection of notes, data sets, test results, fit results
         return f"Project ({self.get_label()}, {hex(id(self))})"
 
     def update(self, *args, **kwargs):
+        """
+        Used when restoring project states.
+        """
         if not hasattr(self, "uuid"):
             self.uuid: str = kwargs.get("uuid", uuid4().hex)
         self._data_sets: List[DataSet] = list(
@@ -137,6 +141,9 @@ A class representing a collection of notes, data sets, test results, fit results
 
     @staticmethod
     def parse(state: dict) -> dict:
+        """
+        Used when deserializing project files.
+        """
         assert type(state) is dict, type(state)
         if "version" in state:
             version: int = state["version"]
@@ -170,14 +177,24 @@ A class representing a collection of notes, data sets, test results, fit results
     @classmethod
     def from_dict(Class, state: dict) -> "Project":
         """
-Create an instance from a dictionary.
+        Create an instance from a dictionary.
+
+        Parameters
+        ----------
+        state: dict
+            A dictionary-based representation of a project state.
         """
         return Class(**Class.parse(state))
 
     @classmethod
     def from_file(Class, path: str) -> "Project":
         """
-Create an instance by parsing a file containing a Project that has been serialized using JSON.
+        Create an instance by parsing a file containing a Project that has been serialized using JSON.
+
+        Parameters
+        ----------
+        path: str
+            The path to a file containing a serialized project state.
         """
         assert type(path) is str and exists(path)
         fp: IO
@@ -189,7 +206,12 @@ Create an instance by parsing a file containing a Project that has been serializ
     @classmethod
     def from_json(Class, json: str) -> "Project":
         """
-Create an instance by parsing a JSON string.
+        Create an instance by parsing a JSON string.
+
+        Parameters
+        ----------
+        json: str
+            A JSON representation of a project state.
         """
         assert type(json) is str
         return Class.from_dict(parse_json(json))
@@ -197,9 +219,9 @@ Create an instance by parsing a JSON string.
     @classmethod
     def merge(Class, projects: List["Project"]) -> "Project":
         """
-Create an instance by merging multiple Project instances.
-All UUIDs are replaced to avoid collisions.
-The labels of certain objects are also replaced to avoid collisions.
+        Create an instance by merging multiple Project instances.
+        All UUIDs are replaced to avoid collisions.
+        The labels of some objects are also replaced to avoid collisions.
         """
         assert type(projects) is list and all(
             map(lambda _: type(_) is Class, projects)
@@ -260,10 +282,12 @@ The labels of certain objects are also replaced to avoid collisions.
             # Make sure that labels are unique.
             # - Data sets
             labels: List[str] = []
+            i: int
+            label: str
             data: dict
             for data in state["data_sets"]:
-                label: str = data["label"]
-                i: int = 1
+                label = data["label"]
+                i = 1
                 while label in labels:
                     i += 1
                     label = f"{data['label']} ({i})"
@@ -272,8 +296,8 @@ The labels of certain objects are also replaced to avoid collisions.
             # - Plot settings
             labels = []
             for plot in state["plots"]:
-                label: str = plot["plot_label"]
-                i: int = 1
+                label = plot["plot_label"]
+                i = 1
                 while label in labels:
                     i += 1
                     label = f"{plot['plot_label']} ({i})"
@@ -285,7 +309,13 @@ The labels of certain objects are also replaced to avoid collisions.
 
     def to_dict(self, session: bool) -> dict:
         """
-Return a dictionary that can be used to recreate an instance.
+        Return a dictionary containing the project state.
+        The dictionary can be used to recreate a project or to restore a project state.
+
+        Parameters
+        ----------
+        session: bool
+            If true, then data minimization is not performed.
         """
         return {
             "data_sets": list(
@@ -309,47 +339,69 @@ Return a dictionary that can be used to recreate an instance.
 
     def get_label(self) -> str:
         """
-Get the project's label.
+        Get the project's label.
         """
         return self._label
 
     def set_label(self, label: str):
         """
-Set the project's label.
+        Set the project's label.
+
+        Parameters
+        ----------
+        label: str
+            The new label.
         """
         assert type(label) is str
+        assert label.strip() != ""
         self._label = label
 
     def set_path(self, path: str):
         """
-Set the path to use when calling the `save` method without arguments.
+        Set the path to use when calling the `save` method without arguments.
+
+        Parameters
+        ----------
+        path: str
+            The path where the project's state should be saved.
         """
         assert type(path) is str, path
         self._path = path
 
     def get_path(self) -> str:
         """
-Get the project's currrent path.
-An empty string signifies that no path has been set previously.
+        Get the project's currrent path.
+        An empty string signifies that no path has been set previously.
         """
         return self._path
 
     def get_notes(self) -> str:
         """
-Get the project's notes.
+        Get the project's notes.
         """
         return self._notes
 
     def set_notes(self, notes: str):
         """
-Set the project's notes.
+        Set the project's notes.
+
+        Parameters
+        ----------
+        notes: str
+            The project notes.
         """
         assert type(notes) is str, notes
         self._notes = notes
 
     def save(self, path: Optional[str] = None):
         """
-Serialize the project as a file containing a JSON string.
+        Serialize the project as a file containing a JSON string.
+
+        Parameters
+        ----------
+        path: Optional[str] = None
+            The path to write the project state to.
+            If this is None, then the most recently defined path is used.
         """
         assert type(path) is str or path is None, path
         if path is None:
@@ -372,13 +424,18 @@ Serialize the project as a file containing a JSON string.
 
     def get_data_sets(self) -> List[DataSet]:
         """
-Get the project's data sets.
+        Get the project's data sets.
         """
         return self._data_sets
 
     def add_data_set(self, data: DataSet):
         """
-Add a data set to the project.
+        Add a data set to the project.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set to add.
         """
         assert type(data) is DataSet, data
         assert data.uuid not in list(map(lambda _: _.uuid, self._data_sets))
@@ -397,11 +454,19 @@ Add a data set to the project.
 
     def edit_data_set_label(self, data: DataSet, label: str):
         """
-Edit the label of a data set in the project.
-Ensures that each data set has a unique label.
+        Edit the label of a data set in the project.
+        Ensures that each data set has a unique label.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set to rename.
+
+        label: str
+            The new label.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         label = label.strip()
         if label == data.get_label():
             return
@@ -414,26 +479,47 @@ Ensures that each data set has a unique label.
 
     def edit_data_set_path(self, data: DataSet, path: str):
         """
-Edit the path of a data set in the project.
+        Edit the path of a data set in the project.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set to edit.
+
+        path: str
+            The new path.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(path) is str, path
         data.set_path(path)
 
     def delete_data_set(self, data: DataSet):
         """
-Delete a data set from the project.
+        Delete a data set (and its associated test and fit results) from the project.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set to remove.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         self._data_sets.remove(data)
         del self._fits[data.uuid]
         del self._tests[data.uuid]
 
     def replace_data_set(self, old: DataSet, new: DataSet):
         """
-Replace a data set in the project with another one.
+        Replace a data set in the project with another one.
+
+        Parameters
+        ----------
+        old: DataSet
+            The data set to be replaced.
+
+        new: DataSet
+            The replacement data set.
         """
         assert type(old) is DataSet, old
         assert type(new) is DataSet, new
@@ -448,81 +534,128 @@ Replace a data set in the project with another one.
 
     def get_all_tests(self) -> Dict[str, List[TestResult]]:
         """
-Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results of those data sets.
+        Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results of those data sets.
         """
         return self._tests
 
     def get_tests(self, data: DataSet) -> List[TestResult]:
         """
-Get the Kramers-Kronig test results of the provided data set.
+        Get the Kramers-Kronig test results associated with a specific data set.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set whose tests to get.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         return self._tests[data.uuid]
 
     def add_test(self, data: DataSet, test: TestResult):
         """
-Add the provided Kramers-Kronig test result to the provided data set's list of Kramers-Kronig test results.
+        Add the provided Kramers-Kronig test result to the provided data set's list of Kramers-Kronig test results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set that was tested.
+
+        test: TestResult
+            The result of the test.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(test) is TestResult, test
         assert test.uuid not in list(map(lambda _: _.uuid, self._tests[data.uuid]))
         self._tests[data.uuid].insert(0, test)
 
     def delete_test(self, data: DataSet, test: TestResult):
         """
-Delete the provided Kramers-Kronig test result from the provided data set's list of Kramers-Kronig test results.
+        Delete the provided Kramers-Kronig test result from the provided data set's list of Kramers-Kronig test results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set associated with the test result.
+
+        test: TestResult
+            The test result to delete.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(test) is TestResult, test
         assert test in self._tests[data.uuid], test
         self._tests[data.uuid].remove(test)
 
     def get_all_fits(self) -> Dict[str, List[FitResult]]:
         """
-Get a mapping of data set UUIDs to the corresponding list of fit results of those data sets.
+        Get a mapping of data set UUIDs to the corresponding list of fit results of those data sets.
         """
         return self._fits
 
     def get_fits(self, data: DataSet) -> List[FitResult]:
         """
-Get fit results of the provided data set.
+        Get fit results associated with a specific data set.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set whose fits to get.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         return self._fits[data.uuid]
 
     def add_fit(self, data: DataSet, fit: FitResult):
         """
-Add the provided fit result to the provided data set.
+        Add the provided fit result to the provided data set.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set that a circuit was fit to.
+
+        fit: FitResult
+            The result of the circuit fit.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit.uuid not in list(map(lambda _: _.uuid, self._fits[data.uuid]))
         self._fits[data.uuid].insert(0, fit)
 
     def delete_fit(self, data: DataSet, fit: FitResult):
         """
-Delete the provided fit result from the provided data set's list of fit results.
+        Delete the provided fit result from the provided data set's list of fit results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set associated with the fit result.
+
+        fit: FitResult
+            The fit result to delete.
         """
         assert type(data) is DataSet, data
-        assert data in self._data_sets, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit in self._fits[data.uuid], fit
         self._fits[data.uuid].remove(fit)
 
     def get_simulations(self) -> List[SimulationResult]:
         """
-Get all of the simulation results.
+        Get all of the simulation results.
         """
         return self._simulations
 
     def add_simulation(self, simulation: SimulationResult):
         """
-Add the provided simulation result to the list of simulation results.
+        Add the provided simulation result to the list of simulation results.
+
+        Parameters
+        ----------
+        simulation: SimulationResult
+            The result of the simulation.
         """
         assert type(simulation) is SimulationResult, simulation
         assert simulation.uuid not in list(map(lambda _: _.uuid, self._simulations))
@@ -530,7 +663,12 @@ Add the provided simulation result to the list of simulation results.
 
     def delete_simulation(self, simulation: SimulationResult):
         """
-Remove the provided simulation result from the list of simulation results.
+        Remove the provided simulation result from the list of simulation results.
+
+        Parameters
+        ----------
+        simulation: SimulationResult
+            The simulation result to delete.
         """
         assert type(simulation) is SimulationResult, simulation
         assert simulation in self._simulations
@@ -538,13 +676,18 @@ Remove the provided simulation result from the list of simulation results.
 
     def get_plots(self) -> List[PlotSettings]:
         """
-Get all of the plots.
+        Get all of the plots.
         """
         return self._plots
 
     def add_plot(self, plot: PlotSettings):
         """
-Add the provided plot to the list of plots.
+        Add the provided plot to the list of plots.
+
+        Parameters
+        ----------
+        plot: PlotSettings
+            The settings for the plot.
         """
         assert type(plot) is PlotSettings, plot
         assert plot.uuid not in list(map(lambda _: _.uuid, self._plots))
@@ -553,8 +696,16 @@ Add the provided plot to the list of plots.
 
     def edit_plot_label(self, plot: PlotSettings, label: str):
         """
-Edit the label of a plot in the project.
-Ensures that each plot has a unique label.
+        Edit the label of a plot in the project.
+        Ensures that each plot has a unique label.
+
+        Parameters
+        ----------
+        plot: PlotSettings
+            The plot settings to edit.
+
+        label: str
+            The new label.
         """
         assert type(plot) is PlotSettings, plot
         assert plot in self._plots, plot
@@ -570,7 +721,12 @@ Ensures that each plot has a unique label.
 
     def delete_plot(self, plot: PlotSettings):
         """
-Delete the provided plot from the list of plots.
+        Delete the provided plot from the list of plots.
+
+        Parameters
+        ----------
+        plot: PlotSettings
+            The plot settings to delete.
         """
         assert type(plot) is PlotSettings, plot
         assert plot in self._plots, plot
@@ -580,13 +736,22 @@ Delete the provided plot from the list of plots.
         self, plot: PlotSettings, num_per_decade: int = 100
     ) -> List[PlotSeries]:
         """
-Get PlotSeries instances of each of the plotted items/series in the provided plot.
+        Get PlotSeries instances of each of the plotted items/series in a specific plot.
+
+        Parameters
+        ----------
+        plot: PlotSettings
+            The plot whose items/series to get.
+
+        num_per_decade: int = 100
+            The number of data points in fitted/simulated spectra.
+            Can be used to adjust how smooth an item/series looks.
         """
         assert type(plot) is PlotSettings, plot
         assert type(num_per_decade) is int and num_per_decade > 0, num_per_decade
         data_sets: List[DataSet] = self.get_data_sets()
         tests: Dict[str, List[TestResult]] = self.get_all_tests()
-        fits: Dict[str, List[FitResult]] = self.get_all_tests()
+        fits: Dict[str, List[FitResult]] = self.get_all_fits()
         simulations: List[SimulationResult] = self.get_simulations()
         results: List[PlotSeries] = []
         uuid: str
@@ -633,8 +798,8 @@ Get PlotSeries instances of each of the plotted items/series in the provided plo
             results.append(
                 PlotSeries(
                     label,
-                    tuple(scatter_data),
-                    tuple(line_data),
+                    list(scatter_data),
+                    list(line_data),
                     list(
                         map(
                             lambda _: _ / 255.0,

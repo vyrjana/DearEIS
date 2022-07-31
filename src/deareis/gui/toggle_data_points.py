@@ -18,7 +18,7 @@
 # the LICENSES folder.
 
 from typing import Callable, Dict, List
-from numpy import ndarray
+from numpy import array, ndarray
 import dearpygui.dearpygui as dpg
 from deareis.gui.plots import Nyquist
 import deareis.themes as themes
@@ -31,6 +31,10 @@ from deareis.utility import (
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.tooltips import attach_tooltip
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
+)
 
 
 class ToggleDataPoints:
@@ -137,6 +141,27 @@ class ToggleDataPoints:
                     callback=self.include,
                 )
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Excluded",
+                theme=themes.nyquist.data,
+            )
+            real, imag = self.preview_data.get_nyquist_data(masked=False)
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Included",
+                theme=themes.bode.phase_data,
+                show_label=False,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Included",
+                line=True,
+                theme=themes.bode.phase_data,
+            )
             dpg.configure_item(self.nyquist_plot._plot, query=True)
             dpg.add_button(
                 label="Accept",
@@ -150,37 +175,31 @@ class ToggleDataPoints:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=self.accept,
+                callback=lambda: self.accept(keybinding=True),
             )
         self.update_items(self.from_combo, self.labels[0])
         self.update_items(self.to_combo, self.labels[-1])
         self.update_preview()
 
     def update_preview(self):
-        self.nyquist_plot.clear()
         real: ndarray
         imag: ndarray
         real, imag = self.preview_data.get_nyquist_data(masked=True)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Excluded",
-            theme=themes.nyquist.data,
         )
         real, imag = self.preview_data.get_nyquist_data(masked=False)
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Included",
-            theme=themes.bode.phase_data,
-            show_label=False,
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="Included",
-            line=True,
-            theme=themes.bode.phase_data,
         )
         self.nyquist_plot.queue_limits_adjustment()
 
@@ -190,7 +209,13 @@ class ToggleDataPoints:
         dpg.delete_item(self.key_handler)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self):
+    def accept(self, keybinding: bool = False):
+        if keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
+        ):
+            return
         if dpg.is_plot_queried(self.nyquist_plot._plot):
             sx, ex, sy, ey = dpg.get_plot_query_area(self.nyquist_plot._plot)
             for i, Z in enumerate(self.data.get_impedance(masked=None)):

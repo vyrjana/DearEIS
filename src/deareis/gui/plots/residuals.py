@@ -19,7 +19,7 @@
 
 from typing import List
 import dearpygui.dearpygui as dpg
-from numpy import ceil, ndarray
+from numpy import array, ceil, ndarray
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 
@@ -60,10 +60,57 @@ class Residuals(Plot):
             and len(dpg.get_item_children(self._y_axis_2, slot=1)) == 0
         )
 
-    def clear(self):
-        dpg.delete_item(self._y_axis_1, children_only=True)
-        dpg.delete_item(self._y_axis_2, children_only=True)
-        self._series.clear()
+    def clear(self, *args, **kwargs):
+        delete: bool = kwargs.get("delete", True)
+        if delete:
+            dpg.delete_item(self._y_axis_1, children_only=True)
+            dpg.delete_item(self._y_axis_2, children_only=True)
+            self._series.clear()
+        else:
+            i: int
+            series_1: int
+            series_2: int
+            for i, (series_1, series_2) in enumerate(
+                zip(
+                    dpg.get_item_children(self._y_axis_1, slot=1),
+                    dpg.get_item_children(self._y_axis_2, slot=1),
+                )
+            ):
+                if i < len(self._series):
+                    self._series[i]["frequency"] = array([])
+                    self._series[i]["real"] = array([])
+                    self._series[i]["imaginary"] = array([])
+                dpg.set_value(series_1, [[], []])
+                dpg.set_value(series_2, [[], []])
+
+    def update(self, index: int, *args, **kwargs):
+        assert type(index) is int and index >= 0, index
+        assert len(self._series) > index, (
+            index,
+            len(self._series),
+        )
+        assert len(args) == 0, args
+        freq: ndarray = kwargs["frequency"]
+        real: ndarray = kwargs["real"]
+        imag: ndarray = kwargs["imaginary"]
+        assert type(freq) is ndarray, freq
+        assert type(real) is ndarray, real
+        assert type(imag) is ndarray, imag
+        i: int
+        series_1: int
+        series_2: int
+        for i, (series_1, series_2) in enumerate(
+            zip(
+                dpg.get_item_children(self._y_axis_1, slot=1),
+                dpg.get_item_children(self._y_axis_2, slot=1),
+            )
+        ):
+            if not (i == index or i == index + 1):
+                continue
+            if i == index:
+                self._series[index].update(kwargs)
+            dpg.set_value(series_1, [list(freq), list(real)])
+            dpg.set_value(series_2, [list(freq), list(imag)])
 
     def plot(self, *args, **kwargs):
         assert len(args) == 0, args
@@ -134,6 +181,8 @@ class Residuals(Plot):
         freq: Optional[ndarray] = None
         for kwargs in self._series:
             freq = kwargs["frequency"]
+            if not freq.any():
+                continue
             real: ndarray = kwargs["real"]
             imag: ndarray = kwargs["imaginary"]
             if max(real) > error_lim:
@@ -160,8 +209,8 @@ class Residuals(Plot):
         dpg.split_frame()
         dpg.set_axis_limits(
             self._x_axis,
-            ymin=min(freq) - 0.1 if freq is not None else 0,
-            ymax=max(freq) + 0.1 if freq is not None else 1,
+            ymin=min(freq) - 0.1 if (freq is not None and freq.any()) else 0,
+            ymax=max(freq) + 0.1 if (freq is not None and freq.any()) else 1,
         )
         dpg.set_axis_limits(self._y_axis_1, ymin=-error_lim, ymax=error_lim)
         dpg.set_axis_limits(self._y_axis_2, ymin=-error_lim, ymax=error_lim)

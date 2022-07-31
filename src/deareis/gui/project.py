@@ -62,6 +62,7 @@ class ProjectTab:
 
             def select_tab(tab_id: int):
                 tab = tab_lookup.get(tab_id)
+                assert tab is not None
                 tab.resize(
                     width=dpg.get_viewport_width(),
                     height=dpg.get_viewport_height(),
@@ -119,27 +120,6 @@ class ProjectTab:
                         user_data=tab,
                     )
                 dpg.bind_item_handler_registry(tab.visibility_item, item_handler)
-
-    def to_dict(self) -> dict:
-        return {
-            "label": dpg.get_item_label(self.tab),
-            "overview": self.overview_tab.to_dict(),
-            "data_sets": self.data_sets_tab.to_dict(),
-            "kramers_kronig": self.kramers_kronig_tab.to_dict(),
-            "fitting": self.fitting_tab.to_dict(),
-            "simulation": self.simulation_tab.to_dict(),
-            "plotting": self.plotting_tab.to_dict(),
-        }
-
-    def restore_state(self, state: dict):
-        assert type(state) is dict, state
-        self.update_label(state["label"])
-        self.overview_tab.restore_state(state["overview"])
-        self.data_sets_tab.restore_state(state["data_sets"])
-        self.kramers_kronig_tab.restore_state(state["kramers_kronig"])
-        self.fitting_tab.restore_state(state["fitting"])
-        self.simulation_tab.restore_state(state["simulation"])
-        self.plotting_tab.restore_state(state["plotting"])
 
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0, width
@@ -254,9 +234,9 @@ class ProjectTab:
         self.kramers_kronig_tab.populate_data_sets(labels, lookup)
         self.fitting_tab.populate_data_sets(labels, lookup)
         self.simulation_tab.populate_data_sets(labels, lookup)
-        self.plotting_tab.populate_data_sets(
-            data_sets, self.plotting_tab.get_active_plot()
-        )
+        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
+        if settings is not None:
+            self.plotting_tab.populate_data_sets(data_sets, settings)
 
     def populate_tests(self, project: Project, data: Optional[DataSet]):
         assert type(project) is Project, project
@@ -267,11 +247,13 @@ class ProjectTab:
             else {},
             data,
         )
-        self.plotting_tab.populate_tests(
-            project.get_all_tests(),
-            project.get_data_sets(),
-            self.plotting_tab.get_active_plot(),
-        )
+        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
+        if settings is not None:
+            self.plotting_tab.populate_tests(
+                project.get_all_tests(),
+                project.get_data_sets(),
+                settings,
+            )
 
     def populate_fits(self, project: Project, data: Optional[DataSet]):
         assert type(project) is Project, project
@@ -282,20 +264,25 @@ class ProjectTab:
             else {},
             data,
         )
-        self.plotting_tab.populate_fits(
-            project.get_all_fits(),
-            project.get_data_sets(),
-            self.plotting_tab.get_active_plot(),
-        )
+        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
+        if settings is not None:
+            self.plotting_tab.populate_fits(
+                project.get_all_fits(),
+                project.get_data_sets(),
+                settings,
+            )
 
     def populate_simulations(self, project: Project):
         assert type(project) is Project, project
         self.simulation_tab.populate_simulations(
             {_.get_label(): _ for _ in project.get_simulations()}
         )
-        self.plotting_tab.populate_simulations(
-            project.get_simulations(), self.plotting_tab.get_active_plot()
-        )
+        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
+        if settings is not None:
+            self.plotting_tab.populate_simulations(
+                project.get_simulations(),
+                settings,
+            )
 
     def populate_plots(self, project: Project):
         assert type(project) is Project, project
@@ -351,10 +338,10 @@ class ProjectTab:
     def get_previous_simulation_result(self) -> Optional[SimulationResult]:
         return self.simulation_tab.get_previous_result()
 
-    def get_next_plot(self) -> Optional[PlotType]:
+    def get_next_plot(self) -> Optional[PlotSettings]:
         return self.plotting_tab.get_next_plot()
 
-    def get_previous_plot(self) -> Optional[PlotType]:
+    def get_previous_plot(self) -> Optional[PlotSettings]:
         return self.plotting_tab.get_previous_plot()
 
     def get_next_plot_type(self) -> Optional[PlotType]:
@@ -388,6 +375,7 @@ class ProjectTab:
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
         adjust_limits: bool,
+        plot_only: bool,
     ):
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
@@ -395,13 +383,19 @@ class ProjectTab:
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(adjust_limits) is bool, adjust_limits
+        assert type(plot_only) is bool, plot_only
         self.plotting_tab.select_plot(
-            settings, data_sets, tests, fits, simulations, adjust_limits
+            settings, data_sets, tests, fits, simulations, adjust_limits, plot_only
         )
 
     def select_plot_type(self, plot_type: PlotType):
         assert type(plot_type) is PlotType, plot_type
         self.plotting_tab.select_plot_type(plot_type)
+
+    def set_series_label(self, uuid: str, label: Optional[str]):
+        assert type(uuid) is str, uuid
+        assert type(label) is str or label is None, label
+        self.plotting_tab.set_series_label(uuid, label)
 
     def get_test_settings(self) -> TestSettings:
         return self.kramers_kronig_tab.get_settings()

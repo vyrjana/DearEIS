@@ -17,7 +17,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
@@ -27,6 +27,10 @@ from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
 from deareis.data import Project
 import deareis.themes as themes
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
+)
 
 
 class SeriesBefore:
@@ -34,7 +38,7 @@ class SeriesBefore:
         self,
         series: Union[DataSet, TestResult, FitResult, SimulationResult],
         settings: PlotSettings,
-        marker_lookup: Dict[str, int],
+        marker_lookup: Dict[int, str],
         toggle_callback: Callable,
     ):
         assert type(series) in [
@@ -209,14 +213,21 @@ class CopyPlotAppearance:
                             dpg.add_table_column(label="Line", width_fixed=True)
                             uuid: str
                             for uuid in settings.series_order:
+                                series: Optional[
+                                    Union[
+                                        DataSet, TestResult, FitResult, SimulationResult
+                                    ]
+                                ]
+                                series = settings.find_series(
+                                    uuid,
+                                    self.data_sets,
+                                    self.tests,
+                                    self.fits,
+                                    self.simulations,
+                                )
+                                assert series is not None
                                 SeriesBefore(
-                                    settings.find_series(
-                                        uuid,
-                                        self.data_sets,
-                                        self.tests,
-                                        self.fits,
-                                        self.simulations,
-                                    ),
+                                    series,
                                     settings,
                                     self.marker_lookup,
                                     self.toggle_series,
@@ -286,7 +297,7 @@ class CopyPlotAppearance:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=self.accept_settings,
+                callback=lambda: self.accept_settings(keybinding=True),
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Prior,
@@ -304,7 +315,13 @@ class CopyPlotAppearance:
         dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
-    def accept_settings(self):
+    def accept_settings(self, keybinding: bool = False):
+        if keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
+        ):
+            return
         dpg.hide_item(self.window)
         changes: Dict[str, Tuple[str, List[float], int, bool]] = {}
         row: int
@@ -379,179 +396,3 @@ class CopyPlotAppearance:
     def toggle_series(self, state: bool, uuid: str):
         self.series_checkboxes[uuid] = state
         self.change_source()
-
-
-"""
-plot: Optional[PlotSettings] = self.plotting_tab.get_plot()
-if plot is None:
-    return
-elif len(self.plots) < 2:
-    return
-affected_series: List[DataSet, TestResult, FitResult, SimulationResult] = []
-uuid: str
-for uuid in plot.themes:
-    series: Union[DataSet, TestResult, FitResult, SimulationResult]
-    series = plot.find_series(
-        uuid,
-        self.datasets,
-        self.tests,
-        self.fits,
-        self.simulations,
-    )
-    if series is None:
-        continue
-    affected_series.append(series)
-types: list = [
-    DataSet,
-    TestResult,
-    FitResult,
-    SimulationResult,
-]
-affected_series.sort(
-    key=lambda _: (
-        types.index(type(_)),
-        _.get_label(),
-    )
-)
-affected_checkboxes: Dict[str, bool] = {_.uuid: True for _ in affected_series}
-window: int = dpg.generate_uuid()
-handler: int = dpg.generate_uuid()
-source_combo: int = dpg.generate_uuid()
-preview_table: int = dpg.generate_uuid()
-labels_checkbox: int = dpg.generate_uuid()
-colors_checkbox: int = dpg.generate_uuid()
-markers_checkbox: int = dpg.generate_uuid()
-lines_checkbox: int = dpg.generate_uuid()
-plot_lookup: Dict[str, PlotSettings] = {_.get_label(): _ for _ in self.plots}
-del plot_lookup[plot.get_label()]
-marker_lookup: Dict[int, str] = {v: k for k, v in themes.PLOT_MARKERS.items()}
-label: str
-
-def close():
-    dpg.hide_item(window)
-    dpg.delete_item(window)
-    dpg.delete_item(handler)
-
-def accept_settings():
-    row: int
-    for row in dpg.get_item_children(preview_table, slot=1):
-        uuid = dpg.get_item_user_data(row)
-        i: int
-        item: int
-        for i, item in enumerate(dpg.get_item_children(row, slot=1)):
-            item_type: str = dpg.get_item_type(item)
-            if i == 0:
-                assert "::mvText" in item_type, item_type
-                plot.set_series_label(uuid, dpg.get_item_user_data(item))
-            elif i == 1:
-                assert "::mvTooltip" in item_type, item_type
-            elif i == 2:
-                assert "::mvColorEdit" in item_type, item_type
-                plot.set_series_color(uuid, dpg.get_item_user_data(item))
-                themes.update_plot_theme_color(
-                    plot.themes[uuid], plot.get_series_color(uuid)
-                )
-            elif i == 3:
-                assert "::mvText" in item_type, item_type
-                plot.set_series_marker(uuid, dpg.get_item_user_data(item))
-                themes.update_plot_theme_marker(
-                    plot.themes[uuid], plot.get_series_marker(uuid)
-                )
-            elif i == 4:
-                assert "::mvCheckbox" in item_type, item_type
-                plot.set_series_line(uuid, dpg.get_item_user_data(item))
-    close()
-    self.update_plotting_tab()
-    self.update_state_history()
-
-def change_source(label=""):
-    if label == "":
-        label = dpg.get_value(source_combo)
-    other_plot: PlotSettings = plot_lookup[label]
-    assert other_plot is not None
-    dpg.delete_item(preview_table, children_only=True)
-    dpg.add_table_column(label="Label", parent=preview_table)
-    dpg.add_table_column(label="Color", width_fixed=True, parent=preview_table)
-    dpg.add_table_column(label="Marker", width_fixed=True, parent=preview_table)
-    dpg.add_table_column(label="Line", width_fixed=True, parent=preview_table)
-    copy_labels: bool = dpg.get_value(labels_checkbox)
-    copy_colors: bool = dpg.get_value(colors_checkbox)
-    copy_markers: bool = dpg.get_value(markers_checkbox)
-    copy_lines: bool = dpg.get_value(lines_checkbox)
-    for series in affected_series:
-        uuid = series.uuid
-        source: PlotSettings = (
-            other_plot
-            if uuid in other_plot.themes and affected_checkboxes[uuid] is True
-            else self.settings
-        )
-        with dpg.table_row(parent=preview_table, user_data=uuid):
-            label = (
-                source.get_series_label(uuid)
-                if copy_labels
-                else plot.get_series_label(uuid)
-            )
-            dpg.add_text(
-                label or series.get_label(),
-                user_data=label,
-            )
-            attach_tooltip(
-                label
-                or series.get_label()
-                + (
-                    ""
-                    if (label or series.get_label()) == series.get_label()
-                    else f"\n{series.get_label()}"
-                )
-            )
-            color: List[float] = (
-                source.get_series_color(uuid)
-                if copy_colors
-                else plot.get_series_color(uuid)
-            )
-            dpg.add_color_edit(
-                default_value=color,
-                enabled=False,
-                no_picker=True,
-                alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                no_inputs=True,
-                user_data=color,
-            )
-            marker: int = (
-                source.get_series_marker(uuid)
-                if copy_markers
-                else plot.get_series_marker(uuid)
-            )
-            dpg.add_text(
-                marker_lookup.get(marker, "None"),
-                user_data=marker,
-            )
-            show_line: bool = (
-                source.get_series_line(uuid)
-                if copy_lines
-                else plot.get_series_line(uuid)
-            )
-            dpg.add_checkbox(
-                default_value=show_line,
-                enabled=False,
-                user_data=show_line,
-            )
-
-def toggle_affected_series(state: bool, uuid: str):
-    nonlocal affected_checkboxes
-    affected_checkboxes[uuid] = state
-    change_source()
-
-
-change_source()
-with dpg.handler_registry(tag=handler):
-    dpg.add_key_release_handler(
-        key=dpg.mvKey_Escape,
-        callback=close,
-    )
-    dpg.add_key_release_handler(
-        key=dpg.mvKey_Return,
-        callback=accept_settings,
-    )
-self.modal_window = window
-"""

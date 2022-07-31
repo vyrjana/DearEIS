@@ -17,24 +17,38 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
+from numpy import (
+    array,
+    floor,
+    log10 as log,
+    ndarray,
+)
+from pyimpspec import KramersKronigResult
+import pyimpspec
+from deareis.data import DataSet
 from deareis.data.kramers_kronig import TestSettings
+from deareis.signals import Signal
 from deareis.tooltips import attach_tooltip
 from deareis.utility import calculate_window_position_dimensions
-from numpy import array, floor, log10 as log, ndarray
-from pyimpspec import KramersKronigResult
-from typing import Callable, Dict, List, Tuple
+import deareis.signals as signals
 import deareis.themes as themes
 import deareis.tooltips as tooltips
 import dearpygui.dearpygui as dpg
-from deareis.signals import Signal
-import deareis.signals as signals
-from deareis.data import DataSet
-import pyimpspec
 from deareis.gui.plots import (
     Bode,
     MuXps,
     Nyquist,
     Residuals,
+)
+from deareis.keybindings import (
+    is_alt_down,
+    is_control_down,
 )
 
 
@@ -60,10 +74,10 @@ class ExploratoryResults:
         self.window: int = dpg.generate_uuid()
         self.result_combo: int = dpg.generate_uuid()
         self.accept_button: int = dpg.generate_uuid()
-        self.mu_xps_plot: MuXps = None
-        self.residuals_plot: Residuals = None
-        self.nyquist_plot: Nyquist = None
-        self.bode_plot: Bode = None
+        self.mu_xps_plot: Optional[MuXps] = None
+        self.residuals_plot: Optional[Residuals] = None
+        self.nyquist_plot: Optional[Nyquist] = None
+        self.bode_plot: Optional[Bode] = None
         self.key_handler: int = dpg.generate_uuid()
         self._assemble()
         self._setup_keybindings()
@@ -98,6 +112,14 @@ class ExploratoryResults:
         )
         self.mu: ndarray = array(list(map(lambda _: _.mu, results)))
         self.Xps: ndarray = log(array(list(map(lambda _: _.pseudo_chisqr, results))))
+        assert self.mu_xps_plot is not None
+        self.mu_xps_plot.plot(
+            num_RCs=self.num_RCs,
+            mu=self.mu,
+            Xps=self.Xps,
+            mu_criterion=self.mu_crit,
+            num_RC=5,
+        )
         self.plot(default_label)
         signals.register(Signal.VIEWPORT_RESIZED, self.resize)
 
@@ -110,7 +132,8 @@ class ExploratoryResults:
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
                 callback=lambda: self.accept(
-                    dpg.get_item_user_data(self.accept_button)
+                    dpg.get_item_user_data(self.accept_button),
+                    keybinding=True,
                 ),
             )
             dpg.add_key_release_handler(
@@ -146,7 +169,7 @@ class ExploratoryResults:
             on_close=self.close,
         ):
             with dpg.group(horizontal=True):
-                dpg.add_text("Num. RC circuits")
+                dpg.add_text("Num. RC elements")
                 attach_tooltip(tooltips.kramers_kronig.exploratory_result)
                 dpg.add_combo(
                     width=-100,
@@ -165,9 +188,69 @@ class ExploratoryResults:
                 with dpg.group(horizontal=True):
                     self.mu_xps_plot = MuXps()
                     self.residuals_plot = Residuals()
+                    self.residuals_plot.plot(
+                        frequency=array([]),
+                        real=array([]),
+                        imaginary=array([]),
+                    )
                 with dpg.group(horizontal=True):
                     self.nyquist_plot = Nyquist()
+                    self.nyquist_plot.plot(
+                        real=array([]),
+                        imaginary=array([]),
+                        label="Data",
+                        theme=themes.nyquist.data,
+                    )
+                    self.nyquist_plot.plot(
+                        real=array([]),
+                        imaginary=array([]),
+                        label="Fit",
+                        show_label=False,
+                        line=True,
+                        theme=themes.nyquist.simulation,
+                    )
+                    self.nyquist_plot.plot(
+                        real=array([]),
+                        imaginary=array([]),
+                        label="Fit",
+                        theme=themes.nyquist.simulation,
+                    )
                     self.bode_plot = Bode()
+                    self.bode_plot.plot(
+                        frequency=array([]),
+                        magnitude=array([]),
+                        phase=array([]),
+                        labels=(
+                            "|Z| (d)",
+                            "phi (d)",
+                        ),
+                        themes=(
+                            themes.bode.magnitude_data,
+                            themes.bode.phase_data,
+                        ),
+                    )
+                    self.bode_plot.plot(
+                        frequency=array([]),
+                        magnitude=array([]),
+                        phase=array([]),
+                        labels=("|Z| (f)", "phi (f)"),
+                        show_labels=False,
+                        line=True,
+                        themes=(
+                            themes.bode.magnitude_simulation,
+                            themes.bode.phase_simulation,
+                        ),
+                    )
+                    self.bode_plot.plot(
+                        frequency=array([]),
+                        magnitude=array([]),
+                        phase=array([]),
+                        labels=("|Z| (f)", "phi (f)"),
+                        themes=(
+                            themes.bode.magnitude_simulation,
+                            themes.bode.phase_simulation,
+                        ),
+                    )
         dpg.set_item_callback(self.result_combo, lambda s, a: self.plot(a))
         dpg.set_item_callback(
             self.accept_button,
@@ -176,22 +259,21 @@ class ExploratoryResults:
         self.resize(1, 1)
 
     def plot(self, label: str):
+        assert self.mu_xps_plot is not None
+        assert self.residuals_plot is not None
+        assert self.nyquist_plot is not None
+        assert self.bode_plot is not None
         self.result_index = self.labels.index(label)
         dpg.set_value(self.result_combo, label)
         # Clear plots
-        self.mu_xps_plot.clear()
-        self.residuals_plot.clear()
-        self.nyquist_plot.clear()
-        self.bode_plot.clear()
+        self.residuals_plot.clear(delete=False)
+        self.nyquist_plot.clear(delete=False)
+        self.bode_plot.clear(delete=False)
         # Retrieve the chosen result
         result: KramersKronigResult = self.label_to_result[label]
         dpg.set_item_user_data(self.accept_button, result)
         # Mu-Xps vs num RC
-        self.mu_xps_plot.plot(
-            num_RCs=self.num_RCs,
-            mu=self.mu,
-            Xps=self.Xps,
-            mu_criterion=self.mu_crit,
+        self.mu_xps_plot.update(
             num_RC=result.num_RC,
         )
         # Residuals
@@ -199,7 +281,8 @@ class ExploratoryResults:
         real: ndarray
         imag: ndarray
         freq, real, imag = result.get_residual_data()
-        self.residuals_plot.plot(
+        self.residuals_plot.update(
+            index=0,
             frequency=freq,
             real=real,
             imaginary=imag,
@@ -207,72 +290,50 @@ class ExploratoryResults:
         # Data and fit
         # - Nyquist
         real, imag = self.data.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=0,
             real=real,
             imaginary=imag,
-            label="Data",
-            theme=themes.nyquist.data,
         )
         real, imag = result.get_nyquist_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=1,
             real=real,
             imaginary=imag,
-            label="Fit",
-            show_label=False,
-            line=True,
-            theme=themes.nyquist.simulation,
         )
         real, imag = result.get_nyquist_data()
-        self.nyquist_plot.plot(
+        self.nyquist_plot.update(
+            index=2,
             real=real,
             imaginary=imag,
-            label="Fit",
-            theme=themes.nyquist.simulation,
         )
         # Bode
         mag: ndarray
         phase: ndarray
         freq, mag, phase = self.data.get_bode_data()
-        self.bode_plot.plot(
+        self.bode_plot.update(
+            index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=(
-                "|Z| (d)",
-                "phi (d)",
-            ),
-            themes=(
-                themes.bode.magnitude_data,
-                themes.bode.phase_data,
-            ),
         )
         freq, mag, phase = result.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot.plot(
+        self.bode_plot.update(
+            index=1,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=("|Z| (f)", "phi (f)"),
-            show_labels=False,
-            line=True,
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         freq, mag, phase = result.get_bode_data()
-        self.bode_plot.plot(
+        self.bode_plot.update(
+            index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
-            labels=("|Z| (f)", "phi (f)"),
-            themes=(
-                themes.bode.magnitude_simulation,
-                themes.bode.phase_simulation,
-            ),
         )
         dpg.split_frame()
         self.mu_xps_plot.queue_limits_adjustment()
@@ -281,6 +342,10 @@ class ExploratoryResults:
         self.bode_plot.queue_limits_adjustment()
 
     def resize(self, width: int, height: int):
+        assert self.mu_xps_plot is not None
+        assert self.residuals_plot is not None
+        assert self.nyquist_plot is not None
+        assert self.bode_plot is not None
         x: int
         y: int
         w: int
@@ -313,6 +378,12 @@ class ExploratoryResults:
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         signals.unregister(Signal.VIEWPORT_RESIZED, self.resize)
 
-    def accept(self, result: KramersKronigResult):
+    def accept(self, result: KramersKronigResult, keybinding: bool = False):
+        if keybinding is True and not (
+            is_control_down()
+            if dpg.get_platform() == dpg.mvPlatform_Windows
+            else is_alt_down()
+        ):
+            return
         self.callback(self.data, result, self.settings)
         self.close()

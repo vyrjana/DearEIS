@@ -49,22 +49,23 @@ def _parse_settings_v1(dictionary: dict) -> dict:
 @dataclass(frozen=True)
 class FitSettings:
     """
-A class to store the settings used to perform a circuit fit.
+    A class to store the settings used to perform a circuit fit.
 
-Parameters
-----------
-cdc: str
-    The circuit description code (CDC) for the circuit to fit.
+    Parameters
+    ----------
+    cdc: str
+        The circuit description code (CDC) for the circuit to fit.
 
-method: Method
-    The iterative method to use when performing the fit.
+    method: Method
+        The iterative method to use when performing the fit.
 
-weight: Weight
-    The weight function to use when performing the fit.
+    weight: Weight
+        The weight function to use when performing the fit.
 
-max_nfev: int
-    The maximum number of function evaluations to use when performing the fit.
+    max_nfev: int
+        The maximum number of function evaluations to use when performing the fit.
     """
+
     cdc: str
     method: Method
     weight: Weight
@@ -76,7 +77,7 @@ max_nfev: int
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitSettings":
         """
-Create an instance from a dictionary.
+        Create an instance from a dictionary.
         """
         assert type(dictionary) is dict
         assert "version" in dictionary
@@ -90,7 +91,7 @@ Create an instance from a dictionary.
 
     def to_dict(self) -> dict:
         """
-Return a dictionary that can be used to recreate an instance.
+        Return a dictionary that can be used to recreate an instance.
         """
         return {
             "version": VERSION,
@@ -142,70 +143,71 @@ def _parse_result_v1(dictionary: dict) -> dict:
     }
 
 
-@dataclass(frozen=True)
+@dataclass
 class FitResult:
     """
-A class containing the result of a circuit fit.
+    A class containing the result of a circuit fit.
 
-Parameters
-----------
-uuid: str
-    The universally unique identifier assigned to this result.
+    Parameters
+    ----------
+    uuid: str
+        The universally unique identifier assigned to this result.
 
-timestamp: float
-    The Unix time (in seconds) for when the test was performed.
+    timestamp: float
+        The Unix time (in seconds) for when the test was performed.
 
-circuit: Circuit
-    The final, fitted circuit.
+    circuit: Circuit
+        The final, fitted circuit.
 
-parameters: Dict[str, Dict[str, FittedParameter]]
-    The mapping to the mappings of the final, fitted values of the element parameters.
+    parameters: Dict[str, Dict[str, FittedParameter]]
+        The mapping to the mappings of the final, fitted values of the element parameters.
 
-frequency: ndarray
-    The frequencies used to perform the fit.
+    frequency: ndarray
+        The frequencies used to perform the fit.
 
-impedance: ndarray
-    The complex impedances of the fitted circuit at each of the frequencies.
+    impedance: ndarray
+        The complex impedances of the fitted circuit at each of the frequencies.
 
-real_residual: ndarray
-    The residuals of the real part of the complex impedances.
+    real_residual: ndarray
+        The residuals of the real part of the complex impedances.
 
-imaginary_residual: ndarray
-    The residuals of the imaginary part of the complex impedances.
+    imaginary_residual: ndarray
+        The residuals of the imaginary part of the complex impedances.
 
-mask: Dict[int, bool]
-    The mask that was applied to the DataSet that the circuit was fitted to.
+    mask: Dict[int, bool]
+        The mask that was applied to the DataSet that the circuit was fitted to.
 
-chisqr: float
-    The chi-squared value calculated for the result.
+    chisqr: float
+        The chi-squared value calculated for the result.
 
-red_chisqr: float
-    The reduced chi-squared value calculated for the result.
+    red_chisqr: float
+        The reduced chi-squared value calculated for the result.
 
-aic: float
-    The calculated Akaike information criterion.
+    aic: float
+        The calculated Akaike information criterion.
 
-bic: float
-    The calculated Bayesian information criterion.
+    bic: float
+        The calculated Bayesian information criterion.
 
-ndata: int
-    The number of data points.
+    ndata: int
+        The number of data points.
 
-nfree: int
-    The degrees of freedom.
+    nfree: int
+        The degrees of freedom.
 
-nfev: int
-    The number of function evaluations.
+    nfev: int
+        The number of function evaluations.
 
-method: Method
-    The iterative method that produced the result.
+    method: Method
+        The iterative method that produced the result.
 
-weight: Weight
-    The weight function that produced the result.
+    weight: Weight
+        The weight function that produced the result.
 
-settings: FitSettings
-    The settings that were used to perform the fit.
+    settings: FitSettings
+        The settings that were used to perform the fit.
     """
+
     uuid: str
     timestamp: float
     circuit: Circuit
@@ -226,13 +228,17 @@ settings: FitSettings
     weight: Weight
     settings: FitSettings
 
+    def __post_init__(self):
+        self._cached_frequency: Dict[int, ndarray] = {}
+        self._cached_impedance: Dict[int, ndarray] = {}
+
     def __repr__(self) -> str:
         return f"FitResult ({self.get_label()}, {hex(id(self))})"
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitResult":
         """
-Create an instance from a dictionary.
+        Create an instance from a dictionary.
         """
         assert type(dictionary) is dict
         assert "version" in dictionary
@@ -261,7 +267,7 @@ Create an instance from a dictionary.
 
     def to_dict(self, session: bool) -> dict:
         """
-Return a dictionary that can be used to recreate an instance.
+        Return a dictionary that can be used to recreate an instance.
         """
         assert type(session) is bool, session
         dictionary: dict = {
@@ -302,7 +308,7 @@ Return a dictionary that can be used to recreate an instance.
 
     def to_dataframe(self) -> DataFrame:
         """
-Get a `pandas.DataFrame` instance containing a table of fitted element parameters.
+        Get a `pandas.DataFrame` instance containing a table of fitted element parameters.
         """
         element_labels: List[str] = []
         parameter_labels: List[str] = []
@@ -338,7 +344,7 @@ Get a `pandas.DataFrame` instance containing a table of fitted element parameter
 
     def get_label(self) -> str:
         """
-Generate a label for the result.
+        Generate a label for the result.
         """
         cdc: str = self.settings.cdc
         while "{" in cdc:
@@ -349,45 +355,54 @@ Generate a label for the result.
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
         """
-Get an array of frequencies within the range of frequencies in the data set.
+        Get an array of frequencies within the range of frequencies in the data set.
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            return _interpolate(self.frequency, num_per_decade)
+            if num_per_decade not in self._cached_frequency:
+                self._cached_frequency.clear()
+                self._cached_frequency[num_per_decade] = _interpolate(
+                    self.frequency, num_per_decade
+                )
+            return self._cached_frequency[num_per_decade]
         return self.frequency
 
     def get_impedance(self, num_per_decade: int = -1) -> ndarray:
         """
-Get the complex impedances produced by the fitted circuit within the range of frequencies in the data set.
+        Get the complex impedances produced by the fitted circuit within the range of frequencies in the data set.
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            return self.circuit.impedances(self.get_frequency(num_per_decade))
+            if num_per_decade not in self._cached_impedance:
+                self._cached_impedance.clear()
+                self._cached_impedance[num_per_decade] = self.circuit.impedances(
+                    self.get_frequency(num_per_decade)
+                )
+            return self._cached_impedance[num_per_decade]
         return self.impedance
 
     def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
         """
-Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
+        Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
-            freq: ndarray = self.get_frequency(num_per_decade)
-            Z: ndarray = self.circuit.impedances(freq)
+            Z: ndarray = self.get_impedance(num_per_decade)
             return (
                 Z.real,
                 -Z.imag,
@@ -401,17 +416,17 @@ num_per_decade: int = -1
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+        Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
 
-Parameters
-----------
-num_per_decade: int = -1
-    If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
+        Parameters
+        ----------
+        num_per_decade: int = -1
+            If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
         """
         assert type(num_per_decade) is int
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
-            Z: ndarray = self.circuit.impedances(freq)
+            Z: ndarray = self.get_impedance(num_per_decade)
             return (
                 log(freq),
                 log(abs(Z)),
@@ -425,7 +440,7 @@ num_per_decade: int = -1
 
     def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
         """
-Get the data required to plot the residuals (real and imaginary vs log f).
+        Get the data required to plot the residuals (real and imaginary vs log f).
         """
         return (
             log(self.frequency),

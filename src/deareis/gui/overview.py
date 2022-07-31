@@ -52,12 +52,6 @@ class OverviewTab:
                 tag=self.notes_input,
             )
 
-    def to_dict(self) -> dict:
-        return {}
-
-    def restore_state(self, state: dict):
-        pass
-
     def resize(self, width: int, height: int):
         pass
 

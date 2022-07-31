@@ -45,16 +45,22 @@ from deareis.config import (
     DEFAULT_FIT_SETTINGS,
     DEFAULT_SIMULATION_SETTINGS,
 )
+from deareis.gui.plotting.export import (
+    EXTENSIONS,
+    LEGEND_LOCATIONS,
+    PREVIEW_LIMITS,
+    UNITS_PER_INCH,
+)
 from deareis.signals import Signal
 import deareis.signals as signals
 
 
-def show_defaults_settings_window(state):
+def show_defaults_settings_window(state: "State"):
     x: int
     y: int
     w: int
     h: int
-    x, y, w, h = calculate_window_position_dimensions(366, 540)
+    x, y, w, h = calculate_window_position_dimensions(374, 540)
 
     window: int = dpg.generate_uuid()
     key_handler: int = dpg.generate_uuid()
@@ -326,7 +332,7 @@ def show_defaults_settings_window(state):
                     sim_max_freq_input, DEFAULT_SIMULATION_SETTINGS.max_frequency
                 )
                 dpg.set_value(
-                    sim_per_decade_input, DEFAULT_SIMULATION_SETTINGS.num_freq_per_dec
+                    sim_per_decade_input, DEFAULT_SIMULATION_SETTINGS.num_per_decade
                 )
                 update_default_sim_settings()
 
@@ -380,7 +386,7 @@ def show_defaults_settings_window(state):
                     dpg.add_text("Num. points per decade".rjust(label_pad))
                     attach_tooltip(tooltips.simulation.per_decade)
                     dpg.add_input_int(
-                        default_value=state.config.default_simulation_settings.num_freq_per_dec,
+                        default_value=state.config.default_simulation_settings.num_per_decade,
                         min_value=1,
                         min_clamped=True,
                         step=0,
@@ -394,5 +400,277 @@ def show_defaults_settings_window(state):
                     dpg.add_button(
                         label="Restore defaults",
                         callback=restore_default_sim_settings,
+                    )
+            dpg.add_spacer(height=8)
+
+        with dpg.collapsing_header(label="Export plot", default_open=True):
+            export_units: int = dpg.generate_uuid()
+            export_width: int = dpg.generate_uuid()
+            export_height: int = dpg.generate_uuid()
+            export_dpi: int = dpg.generate_uuid()
+            export_preview: int = dpg.generate_uuid()
+            export_title: int = dpg.generate_uuid()
+            export_legend: int = dpg.generate_uuid()
+            export_legend_location: int = dpg.generate_uuid()
+            export_grid: int = dpg.generate_uuid()
+            export_tight: int = dpg.generate_uuid()
+            export_num_per_decade: int = dpg.generate_uuid()
+            export_extension: int = dpg.generate_uuid()
+            export_experimental_clear_registry: int = dpg.generate_uuid()
+            export_experimental_disable_previews: int = dpg.generate_uuid()
+
+            def restore_default_export_settings():
+                state.config.export_units = 1
+                state.config.export_width = 10.0
+                state.config.export_height = 6.0
+                state.config.export_dpi = 100
+                state.config.export_preview = 4
+                state.config.export_title = True
+                state.config.export_legend = True
+                state.config.export_legend_location = 0
+                state.config.export_grid = False
+                state.config.export_tight = False
+                state.config.export_num_per_decade = 100
+                state.config.export_extension = ".png"
+                state.config.export_experimental_clear_registry = True
+                state.config.export_experimental_disable_previews = False
+                dpg.set_value(
+                    export_units, list(UNITS_PER_INCH)[state.config.export_units]
+                )
+                dpg.set_value(export_width, state.config.export_width)
+                dpg.set_value(export_height, state.config.export_height)
+                dpg.set_value(export_dpi, state.config.export_dpi)
+                dpg.set_value(
+                    export_preview, list(PREVIEW_LIMITS)[state.config.export_preview]
+                )
+                dpg.set_value(export_title, state.config.export_title)
+                dpg.set_value(export_legend, state.config.export_legend)
+                dpg.set_value(
+                    export_legend_location,
+                    list(LEGEND_LOCATIONS)[state.config.export_legend_location],
+                )
+                dpg.set_value(export_grid, state.config.export_grid)
+                dpg.set_value(export_tight, state.config.export_tight)
+                dpg.set_value(export_num_per_decade, state.config.export_num_per_decade)
+                dpg.set_value(export_extension, state.config.export_extension)
+                dpg.set_value(
+                    export_experimental_clear_registry,
+                    state.config.export_experimental_clear_registry,
+                )
+                dpg.set_value(
+                    export_experimental_disable_previews,
+                    state.config.export_experimental_disable_previews,
+                )
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_units(unit: str):
+                state.config.export_units = list(UNITS_PER_INCH).index(unit)
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_width(width: float):
+                state.config.export_width = width
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_height(height: float):
+                state.config.export_height = height
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_dpi(dpi: float):
+                state.config.export_dpi = dpi
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_preview(limit: str):
+                state.config.export_preview = list(PREVIEW_LIMITS).index(limit)
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_title(flag: bool):
+                state.config.export_title = flag
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_legend(flag: bool):
+                state.config.export_legend = flag
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_legend_location(location: str):
+                state.config.export_legend_location = LEGEND_LOCATIONS[location]
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_grid(flag: bool):
+                state.config.export_grid = flag
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_tight(flag: bool):
+                state.config.export_tight = flag
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_num_per_decade(num: int):
+                state.config.export_num_per_decade = num
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_extension(ext: str):
+                state.config.export_extension = EXTENSIONS.index(ext)
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_experimental_clear_registry(flag: bool):
+                state.config.export_experimental_clear_registry = flag
+                state.plot_exporter.update_settings(state.config)
+
+            def update_export_experimental_disable_previews(flag: bool):
+                state.config.export_experimental_disable_previews = flag
+                state.plot_exporter.update_settings(state.config)
+
+            with dpg.child_window(border=False, width=350, height=320):
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Units".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_units)
+                    dpg.add_combo(
+                        width=-1,
+                        items=list(UNITS_PER_INCH.keys()),
+                        default_value=list(UNITS_PER_INCH.keys())[
+                            state.config.export_units
+                        ],
+                        callback=lambda s, a, u: update_export_units(a),
+                        tag=export_units,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Width".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_width)
+                    dpg.add_input_float(
+                        width=-1,
+                        default_value=state.config.export_width,
+                        min_value=0.01,
+                        min_clamped=True,
+                        step=0.0,
+                        format="%.2f",
+                        on_enter=True,
+                        callback=lambda s, a, u: update_export_width(a),
+                        tag=export_width,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Height".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_height)
+                    dpg.add_input_float(
+                        width=-1,
+                        default_value=state.config.export_height,
+                        min_value=0.01,
+                        min_clamped=True,
+                        step=0.0,
+                        format="%.2f",
+                        on_enter=True,
+                        callback=lambda s, a, u: update_export_height(a),
+                        tag=export_height,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("DPI".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_dpi)
+                    dpg.add_input_int(
+                        width=-1,
+                        default_value=state.config.export_dpi,
+                        min_value=1,
+                        min_clamped=True,
+                        step=0,
+                        on_enter=True,
+                        callback=lambda s, a, u: update_export_dpi(a),
+                        tag=export_dpi,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Preview".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_preview)
+                    dpg.add_combo(
+                        width=-1,
+                        items=list(PREVIEW_LIMITS.keys()),
+                        default_value=list(PREVIEW_LIMITS.keys())[
+                            state.config.export_preview
+                        ],
+                        callback=lambda s, a, u: update_export_preview(a),
+                        tag=export_preview,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Title".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_title)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_title,
+                        callback=lambda s, a, u: update_export_title(a),
+                        tag=export_title,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Legend".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_legend)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_legend,
+                        callback=lambda s, a, u: update_export_legend(a),
+                        tag=export_legend,
+                    )
+                    dpg.add_combo(
+                        width=-1,
+                        items=list(LEGEND_LOCATIONS.keys()),
+                        default_value=list(LEGEND_LOCATIONS.keys())[0],
+                        callback=lambda s, a, u: update_export_legend_location(a),
+                        tag=export_legend_location,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Grid".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_grid)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_grid,
+                        callback=lambda s, a, u: update_export_grid(a),
+                        tag=export_grid,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Tight".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_tight)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_tight,
+                        callback=lambda s, a, u: update_export_tight(a),
+                        tag=export_tight,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Points per decade".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_num_per_decade)
+                    dpg.add_input_int(
+                        width=-1,
+                        default_value=state.config.export_num_per_decade,
+                        min_value=1,
+                        min_clamped=True,
+                        step=0,
+                        on_enter=True,
+                        callback=lambda s, a, u: update_export_num_per_decade(a),
+                        tag=export_num_per_decade,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Extension".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_extension)
+                    dpg.add_combo(
+                        width=-1,
+                        items=EXTENSIONS,
+                        default_value=EXTENSIONS[state.config.export_extension],
+                        callback=lambda s, a, u: update_export_extension(a),
+                        tag=export_extension,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Clear texture registry".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_experimental_clear_registry)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_experimental_clear_registry,
+                        callback=lambda s, a, u: update_export_experimental_clear_registry(
+                            a
+                        ),
+                        tag=export_experimental_clear_registry,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Disable plot previews".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_experimental_disable_previews)
+                    dpg.add_checkbox(
+                        default_value=state.config.export_experimental_disable_previews,
+                        callback=lambda s, a, u: update_export_experimental_disable_previews(
+                            a
+                        ),
+                        tag=export_experimental_disable_previews,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("".rjust(label_pad))
+                    dpg.add_button(
+                        label="Restore defaults",
+                        callback=restore_default_export_settings,
                     )
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
