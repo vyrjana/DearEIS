@@ -3,24 +3,37 @@ layout: documentation
 title: API - fitting
 permalink: /api/fitting/
 ---
+
+
 **Table of Contents**
 
-- [FitResult](#deareisfitresult)
-	- [from_dict](#deareisfitresultfrom_dict)
-	- [get_bode_data](#deareisfitresultget_bode_data)
-	- [get_frequency](#deareisfitresultget_frequency)
-	- [get_impedance](#deareisfitresultget_impedance)
-	- [get_label](#deareisfitresultget_label)
-	- [get_nyquist_data](#deareisfitresultget_nyquist_data)
-	- [get_residual_data](#deareisfitresultget_residual_data)
-	- [to_dataframe](#deareisfitresultto_dataframe)
-	- [to_dict](#deareisfitresultto_dict)
-- [FitSettings](#deareisfitsettings)
-	- [from_dict](#deareisfitsettingsfrom_dict)
-	- [to_dict](#deareisfitsettingsto_dict)
+- [deareis.api.fitting](#deareis-api-fitting)
+	- [FitResult](#deareis-api-fittingfitresult)
+		- [from_dict](#deareis-api-fittingfitresultfrom_dict)
+		- [get_bode_data](#deareis-api-fittingfitresultget_bode_data)
+		- [get_frequency](#deareis-api-fittingfitresultget_frequency)
+		- [get_impedance](#deareis-api-fittingfitresultget_impedance)
+		- [get_label](#deareis-api-fittingfitresultget_label)
+		- [get_nyquist_data](#deareis-api-fittingfitresultget_nyquist_data)
+		- [get_residual_data](#deareis-api-fittingfitresultget_residual_data)
+		- [to_dataframe](#deareis-api-fittingfitresultto_dataframe)
+		- [to_dict](#deareis-api-fittingfitresultto_dict)
+	- [FitSettings](#deareis-api-fittingfitsettings)
+		- [from_dict](#deareis-api-fittingfitsettingsfrom_dict)
+		- [to_dict](#deareis-api-fittingfitsettingsto_dict)
+	- [FittedParameter](#deareis-api-fittingfittedparameter)
+		- [from_dict](#deareis-api-fittingfittedparameterfrom_dict)
+		- [to_dict](#deareis-api-fittingfittedparameterto_dict)
+	- [FittingError](#deareis-api-fittingfittingerror)
+	- [Method](#deareis-api-fittingmethod)
+	- [Weight](#deareis-api-fittingweight)
+	- [fit_circuit_to_data](#deareis-api-fittingfit_circuit_to_data)
 
 
-### **deareis.FitResult**
+
+## **deareis.api.fitting**
+
+### **deareis.api.fitting.FitResult**
 
 A class containing the result of a circuit fit.
 
@@ -72,7 +85,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.FitResult.from_dict**
+#### **deareis.api.fitting.FitResult.from_dict**
 
 Create an instance from a dictionary.
 
@@ -91,7 +104,7 @@ _Returns_
 FitResult
 ```
 
-#### **deareis.FitResult.get_bode_data**
+#### **deareis.api.fitting.FitResult.get_bode_data**
 
 Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
 
@@ -110,7 +123,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.FitResult.get_frequency**
+#### **deareis.api.fitting.FitResult.get_frequency**
 
 Get an array of frequencies within the range of frequencies in the data set.
 
@@ -129,7 +142,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.FitResult.get_impedance**
+#### **deareis.api.fitting.FitResult.get_impedance**
 
 Get the complex impedances produced by the fitted circuit within the range of frequencies in the data set.
 
@@ -148,7 +161,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.FitResult.get_label**
+#### **deareis.api.fitting.FitResult.get_label**
 
 Generate a label for the result.
 
@@ -162,7 +175,7 @@ _Returns_
 str
 ```
 
-#### **deareis.FitResult.get_nyquist_data**
+#### **deareis.api.fitting.FitResult.get_nyquist_data**
 
 Get the data required to plot the results as a Nyquist plot (-Z" vs Z').
 
@@ -181,7 +194,7 @@ _Returns_
 Tuple[ndarray, ndarray]
 ```
 
-#### **deareis.FitResult.get_residual_data**
+#### **deareis.api.fitting.FitResult.get_residual_data**
 
 Get the data required to plot the residuals (real and imaginary vs log f).
 
@@ -195,7 +208,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.FitResult.to_dataframe**
+#### **deareis.api.fitting.FitResult.to_dataframe**
 
 Get a `pandas.DataFrame` instance containing a table of fitted element parameters.
 
@@ -209,7 +222,7 @@ _Returns_
 DataFrame
 ```
 
-#### **deareis.FitResult.to_dict**
+#### **deareis.api.fitting.FitResult.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -231,7 +244,7 @@ dict
 
 
 
-### **deareis.FitSettings**
+### **deareis.api.fitting.FitSettings**
 
 A class to store the settings used to perform a circuit fit.
 
@@ -253,7 +266,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.FitSettings.from_dict**
+#### **deareis.api.fitting.FitSettings.from_dict**
 
 Create an instance from a dictionary.
 
@@ -272,7 +285,7 @@ _Returns_
 FitSettings
 ```
 
-#### **deareis.FitSettings.to_dict**
+#### **deareis.api.fitting.FitSettings.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -288,3 +301,164 @@ dict
 
 
 
+
+### **deareis.api.fitting.FittedParameter**
+
+An object representing a fitted parameter.
+
+```python
+class FittedParameter(object):
+	value: float
+	stderr: Optional[float] = None
+	fixed: bool = False
+```
+
+_Constructor parameters_
+
+- `value`: The fitted value.
+- `stderr`: The estimated standard error of the fitted value.
+- `fixed`: Whether or not this parameter had a fixed value during the circuit fitting.
+
+
+_Functions and methods_
+
+#### **deareis.api.fitting.FittedParameter.from_dict**
+
+
+```python
+def from_dict(dictionary: dict) -> FittedParameter:
+```
+
+
+_Parameters_
+
+- `dictionary`
+
+
+_Returns_
+```python
+FittedParameter
+```
+
+#### **deareis.api.fitting.FittedParameter.to_dict**
+
+
+```python
+def to_dict(self) -> dict:
+```
+
+
+_Returns_
+```python
+dict
+```
+
+
+
+
+### **deareis.api.fitting.FittingError**
+
+```python
+class FittingError(Exception):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.fitting.Method**
+
+Iterative methods used during complex non-linear least-squares fitting:
+
+- AUTO: try each method
+- AMPGO
+- BASINHOPPING
+- BFGS
+- BRUTE
+- CG
+- COBYLA
+- DIFFERENTIAL_EVOLUTION
+- DOGLEG
+- DUAL_ANNEALING
+- EMCEE
+- LBFGSB
+- LEASTSQ
+- LEAST_SQUARES
+- NELDER
+- NEWTON
+- POWELL
+- SHGO
+- SLSQP
+- TNC
+- TRUST_CONSTR
+- TRUST_EXACT
+- TRUST_KRYLOV
+- TRUST_NCG
+
+```python
+class Method(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.fitting.Weight**
+
+Types of weights:
+
+- AUTO: try each weight
+- BOUKAMP: 1 / (Zre^2 + Zim^2) (eq. 13, Boukamp, 1995)
+- MODULUS: 1 / |Z|
+- PROPORTIONAL: 1 / Zre^2, 1 / Zim^2
+- UNITY: 1
+
+```python
+class Weight(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.fitting.fit_circuit_to_data**
+
+Wrapper for `pyimpspec.fit_circuit_to_data` function.
+
+Fit a circuit to a data set.
+
+```python
+def fit_circuit_to_data(data: DataSet, settings: FitSettings, num_procs: int = -1) -> FitResult:
+```
+
+
+_Parameters_
+
+- `data`: The data set that the circuit will be fitted to.
+- `settings`: The settings that determine the circuit and how the fit is performed.
+- `num_procs`: The maximum number of parallel processes to use when method is `Method.AUTO` and/or weight is `Weight.AUTO`.
+
+
+_Returns_
+
+```python
+FitResult
+```

@@ -5,37 +5,45 @@ permalink: /api/data-set/
 ---
 
 The `DataSet` class in the DearEIS API differs slightly from the base class found in the pyimpspec API.
-Check the [high-level functions of the pyimpspec API]() for information on how to read data files.
+The `parse_data` function is a wrapper for the corresponding function in pyimpspec's API with the only difference being that the returned `DataSet` instances are the variant used by DearEIS.
+            
 
 **Table of Contents**
 
-- [DataSet](#deareisdataset)
-	- [average](#deareisdatasetaverage)
-	- [copy](#deareisdatasetcopy)
-	- [from_dict](#deareisdatasetfrom_dict)
-	- [get_bode_data](#deareisdatasetget_bode_data)
-	- [get_frequency](#deareisdatasetget_frequency)
-	- [get_imaginary](#deareisdatasetget_imaginary)
-	- [get_impedance](#deareisdatasetget_impedance)
-	- [get_label](#deareisdatasetget_label)
-	- [get_magnitude](#deareisdatasetget_magnitude)
-	- [get_mask](#deareisdatasetget_mask)
-	- [get_num_points](#deareisdatasetget_num_points)
-	- [get_nyquist_data](#deareisdatasetget_nyquist_data)
-	- [get_path](#deareisdatasetget_path)
-	- [get_phase](#deareisdatasetget_phase)
-	- [get_real](#deareisdatasetget_real)
-	- [set_label](#deareisdatasetset_label)
-	- [set_mask](#deareisdatasetset_mask)
-	- [set_path](#deareisdatasetset_path)
-	- [subtract_impedance](#deareisdatasetsubtract_impedance)
-	- [to_dataframe](#deareisdatasetto_dataframe)
-	- [to_dict](#deareisdatasetto_dict)
+- [deareis.api.data](#deareis-api-data)
+	- [DataSet](#deareis-api-datadataset)
+		- [average](#deareis-api-datadatasetaverage)
+		- [copy](#deareis-api-datadatasetcopy)
+		- [from_dict](#deareis-api-datadatasetfrom_dict)
+		- [get_bode_data](#deareis-api-datadatasetget_bode_data)
+		- [get_frequency](#deareis-api-datadatasetget_frequency)
+		- [get_imaginary](#deareis-api-datadatasetget_imaginary)
+		- [get_impedance](#deareis-api-datadatasetget_impedance)
+		- [get_label](#deareis-api-datadatasetget_label)
+		- [get_magnitude](#deareis-api-datadatasetget_magnitude)
+		- [get_mask](#deareis-api-datadatasetget_mask)
+		- [get_num_points](#deareis-api-datadatasetget_num_points)
+		- [get_nyquist_data](#deareis-api-datadatasetget_nyquist_data)
+		- [get_path](#deareis-api-datadatasetget_path)
+		- [get_phase](#deareis-api-datadatasetget_phase)
+		- [get_real](#deareis-api-datadatasetget_real)
+		- [set_label](#deareis-api-datadatasetset_label)
+		- [set_mask](#deareis-api-datadatasetset_mask)
+		- [set_path](#deareis-api-datadatasetset_path)
+		- [subtract_impedance](#deareis-api-datadatasetsubtract_impedance)
+		- [to_dataframe](#deareis-api-datadatasetto_dataframe)
+		- [to_dict](#deareis-api-datadatasetto_dict)
+	- [UnsupportedFileFormat](#deareis-api-dataunsupportedfileformat)
+	- [parse_data](#deareis-api-dataparse_data)
 
 
-### **deareis.DataSet**
 
-Extends `pyimpspec.DataSet` to reduce the amount of data written do disk and to recreate the data when loading from disk.
+## **deareis.api.data**
+
+### **deareis.api.data.DataSet**
+
+Extends `pyimpspec.DataSet` to implement data minimization when writing to disk and to recreate the data when loading from disk.
+Equality checks between DataSet instances is also modified.
 
 ```python
 class DataSet(DataSet):
@@ -49,17 +57,18 @@ class DataSet(DataSet):
 
 _Constructor parameters_
 
-- `frequency`
-- `impedance`
-- `mask`
-- `path`
-- `label`
-- `uuid`
+- `frequency`: A 1-dimensional array of frequencies in hertz.
+- `impedance`: A 1-dimensional array of complex impedances in ohms.
+- `mask`: A mapping of integer indices to boolean values where a value of True means that the data point is to be omitted.
+- `path`: The path to the file that has been parsed to generate this DataSet instance.
+- `label`: The label assigned to this DataSet instance.
+- `uuid`: The universivally unique identifier assigned to this DataSet instance.
+If empty, then one will be automatically assigned.
 
 
 _Functions and methods_
 
-#### **deareis.DataSet.average**
+#### **deareis.api.data.DataSet.average**
 
 Create a DataSet by averaging the impedances of multiple DataSet instances.
 
@@ -79,7 +88,7 @@ _Returns_
 DataSet
 ```
 
-#### **deareis.DataSet.copy**
+#### **deareis.api.data.DataSet.copy**
 
 Create a copy of an existing DataSet.
 
@@ -99,8 +108,9 @@ _Returns_
 DataSet
 ```
 
-#### **deareis.DataSet.from_dict**
+#### **deareis.api.data.DataSet.from_dict**
 
+Return a DataSet instance that has been created based off of a dictionary.
 
 ```python
 def from_dict(dictionary: dict) -> DataSet:
@@ -109,7 +119,7 @@ def from_dict(dictionary: dict) -> DataSet:
 
 _Parameters_
 
-- `dictionary`
+- `dictionary`: Create an instance from a dictionary.
 
 
 _Returns_
@@ -117,7 +127,7 @@ _Returns_
 DataSet
 ```
 
-#### **deareis.DataSet.get_bode_data**
+#### **deareis.api.data.DataSet.get_bode_data**
 
 Get the data necessary to plot this DataSet as a Bode plot: the base-10 logarithms of the frequencies, the base-10 logarithms of the absolute magnitudes of the impedances, and the negative phase angles/shifts of the impedances in degrees.
 
@@ -138,7 +148,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.DataSet.get_frequency**
+#### **deareis.api.data.DataSet.get_frequency**
 
 Get the frequencies in this DataSet.
 
@@ -159,7 +169,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.get_imaginary**
+#### **deareis.api.data.DataSet.get_imaginary**
 
 Get the imaginary parts of the impedances in this DataSet.
 
@@ -180,7 +190,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.get_impedance**
+#### **deareis.api.data.DataSet.get_impedance**
 
 Get the complex impedances in this DataSet.
 
@@ -201,7 +211,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.get_label**
+#### **deareis.api.data.DataSet.get_label**
 
 Get the label assigned to this DataSet.
 
@@ -215,7 +225,7 @@ _Returns_
 str
 ```
 
-#### **deareis.DataSet.get_magnitude**
+#### **deareis.api.data.DataSet.get_magnitude**
 
 Get the absolute magnitudes of the impedances in this DataSet.
 
@@ -236,7 +246,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.get_mask**
+#### **deareis.api.data.DataSet.get_mask**
 
 Get the mask for this DataSet.
 The keys are zero-based indices and the values are booleans.
@@ -252,7 +262,7 @@ _Returns_
 Dict[int, bool]
 ```
 
-#### **deareis.DataSet.get_num_points**
+#### **deareis.api.data.DataSet.get_num_points**
 
 Get the number of data points in this DataSet
 
@@ -273,7 +283,7 @@ _Returns_
 int
 ```
 
-#### **deareis.DataSet.get_nyquist_data**
+#### **deareis.api.data.DataSet.get_nyquist_data**
 
 Get the data necessary to plot this DataSet as a Nyquist plot: the real and the negative imaginary parts of the impedances.
 
@@ -294,7 +304,7 @@ _Returns_
 Tuple[ndarray, ndarray]
 ```
 
-#### **deareis.DataSet.get_path**
+#### **deareis.api.data.DataSet.get_path**
 
 Get the path to the file that was parsed to generate this DataSet.
 
@@ -308,7 +318,7 @@ _Returns_
 str
 ```
 
-#### **deareis.DataSet.get_phase**
+#### **deareis.api.data.DataSet.get_phase**
 
 Get the phase angles/shifts of the impedances in this DataSet in degrees.
 
@@ -329,7 +339,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.get_real**
+#### **deareis.api.data.DataSet.get_real**
 
 Get the real parts of the impedances in this DataSet.
 
@@ -350,7 +360,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.DataSet.set_label**
+#### **deareis.api.data.DataSet.set_label**
 
 Set the label assigned to this DataSet.
 
@@ -363,7 +373,7 @@ _Parameters_
 
 - `label`: The new label.
 
-#### **deareis.DataSet.set_mask**
+#### **deareis.api.data.DataSet.set_mask**
 
 Set the mask for this DataSet.
 
@@ -378,7 +388,7 @@ _Parameters_
 The keys must be zero-based indices and the values must be boolean values.
 True means that the data point is to be omitted and False means that the data point is to be included.
 
-#### **deareis.DataSet.set_path**
+#### **deareis.api.data.DataSet.set_path**
 
 Set the path to the file that was parsed to generate this DataSet.
 
@@ -391,7 +401,7 @@ _Parameters_
 
 - `path`: The path.
 
-#### **deareis.DataSet.subtract_impedance**
+#### **deareis.api.data.DataSet.subtract_impedance**
 
 Subtract either the same complex value from all data points or a unique complex value for each data point in this DataSet.
 
@@ -404,7 +414,7 @@ _Parameters_
 
 - `Z`: The complex value(s) to subtract from this DataSet's impedances.
 
-#### **deareis.DataSet.to_dataframe**
+#### **deareis.api.data.DataSet.to_dataframe**
 
 Create a pandas.DataFrame instance from this DataSet.
 
@@ -432,8 +442,9 @@ _Returns_
 DataFrame
 ```
 
-#### **deareis.DataSet.to_dict**
+#### **deareis.api.data.DataSet.to_dict**
 
+Return a dictionary that can be used to recreate this data set.
 
 ```python
 def to_dict(self, session: bool = True) -> dict:
@@ -442,7 +453,7 @@ def to_dict(self, session: bool = True) -> dict:
 
 _Parameters_
 
-- `session`
+- `session`: If true, then no data minimization is performed.
 
 
 _Returns_
@@ -452,3 +463,48 @@ dict
 
 
 
+
+### **deareis.api.data.UnsupportedFileFormat**
+
+```python
+class UnsupportedFileFormat(Exception):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.data.parse_data**
+
+Wrapper for `pyimpspec.parse_data`.
+
+
+    Parse experimental data and return a list of DataSet instances.
+    One or more specific sheets can be specified by name when parsing spreadsheets (e.g., .xlsx or .ods) to only return DataSet instances for those sheets.
+    If no sheets are specified, then all sheets will be processed and the data from successfully parsed sheets will be returned as DataSet instances.
+
+```python
+def parse_data(path: str, file_format: Optional[str] = None, kwargs) -> List[DataSet]:
+```
+
+
+_Parameters_
+
+- `path`: The path to a file containing experimental data that is to be parsed.
+- `file_format`: The file format (or extension) that should be assumed when parsing the data.
+If no file format is specified, then the file format will be determined based on the file extension.
+If there is no file extension, then attempts will be made to parse the file as if it was one of the supported file formats.
+- `kwargs`: Keyword arguments are passed to the parser.
+
+
+_Returns_
+
+```python
+List[DataSet]
+```

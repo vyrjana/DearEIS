@@ -3,23 +3,121 @@ layout: documentation
 title: API - Kramers-Kronig testing
 permalink: /api/kramers-kronig/
 ---
+
+
 **Table of Contents**
 
-- [TestResult](#deareistestresult)
-	- [from_dict](#deareistestresultfrom_dict)
-	- [get_bode_data](#deareistestresultget_bode_data)
-	- [get_frequency](#deareistestresultget_frequency)
-	- [get_impedance](#deareistestresultget_impedance)
-	- [get_label](#deareistestresultget_label)
-	- [get_nyquist_data](#deareistestresultget_nyquist_data)
-	- [get_residual_data](#deareistestresultget_residual_data)
-	- [to_dict](#deareistestresultto_dict)
-- [TestSettings](#deareistestsettings)
-	- [from_dict](#deareistestsettingsfrom_dict)
-	- [to_dict](#deareistestsettingsto_dict)
+- [deareis.api.kramers_kronig](#deareis-api-kramers_kronig)
+	- [Method](#deareis-api-kramers_kronigmethod)
+	- [Mode](#deareis-api-kramers_kronigmode)
+	- [Test](#deareis-api-kramers_kronigtest)
+	- [TestResult](#deareis-api-kramers_kronigtestresult)
+		- [from_dict](#deareis-api-kramers_kronigtestresultfrom_dict)
+		- [get_bode_data](#deareis-api-kramers_kronigtestresultget_bode_data)
+		- [get_frequency](#deareis-api-kramers_kronigtestresultget_frequency)
+		- [get_impedance](#deareis-api-kramers_kronigtestresultget_impedance)
+		- [get_label](#deareis-api-kramers_kronigtestresultget_label)
+		- [get_nyquist_data](#deareis-api-kramers_kronigtestresultget_nyquist_data)
+		- [get_residual_data](#deareis-api-kramers_kronigtestresultget_residual_data)
+		- [to_dict](#deareis-api-kramers_kronigtestresultto_dict)
+	- [TestSettings](#deareis-api-kramers_kronigtestsettings)
+		- [from_dict](#deareis-api-kramers_kronigtestsettingsfrom_dict)
+		- [to_dict](#deareis-api-kramers_kronigtestsettingsto_dict)
+	- [perform_test](#deareis-api-kramers_kronigperform_test)
 
 
-### **deareis.TestResult**
+
+## **deareis.api.kramers_kronig**
+
+### **deareis.api.kramers_kronig.Method**
+
+Iterative methods used during complex non-linear least-squares fitting:
+
+- AUTO: try each method
+- AMPGO
+- BASINHOPPING
+- BFGS
+- BRUTE
+- CG
+- COBYLA
+- DIFFERENTIAL_EVOLUTION
+- DOGLEG
+- DUAL_ANNEALING
+- EMCEE
+- LBFGSB
+- LEASTSQ
+- LEAST_SQUARES
+- NELDER
+- NEWTON
+- POWELL
+- SHGO
+- SLSQP
+- TNC
+- TRUST_CONSTR
+- TRUST_EXACT
+- TRUST_KRYLOV
+- TRUST_NCG
+
+```python
+class Method(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.kramers_kronig.Mode**
+
+Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
+
+- AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)
+- EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion
+- MANUAL: manually choose the number
+
+```python
+class Mode(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.kramers_kronig.Test**
+
+Types of tests:
+
+- CNLS: complex non-linear least-squares fit of circuit (fig. 1, Boukamp, 1995) with a distribution of fixed time constants
+- COMPLEX: eqs. 11 and 12, Boukamp, 1995
+- IMAGINARY: eqs. 4, 6, and 7, Boukamp, 1995
+- REAL: eqs. 5, 8, 9, and 10, Boukamp, 1995
+
+```python
+class Test(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.kramers_kronig.TestResult**
 
 A class containing the result of a Kramers-Kronig test.
 
@@ -57,7 +155,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.TestResult.from_dict**
+#### **deareis.api.kramers_kronig.TestResult.from_dict**
 
 Create an instance from a dictionary.
 
@@ -76,7 +174,7 @@ _Returns_
 TestResult
 ```
 
-#### **deareis.TestResult.get_bode_data**
+#### **deareis.api.kramers_kronig.TestResult.get_bode_data**
 
 Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
 
@@ -95,7 +193,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.TestResult.get_frequency**
+#### **deareis.api.kramers_kronig.TestResult.get_frequency**
 
 Get an array of frequencies within the range of tested frequencies.
 
@@ -114,7 +212,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.TestResult.get_impedance**
+#### **deareis.api.kramers_kronig.TestResult.get_impedance**
 
 Get the complex impedances produced by the fitted circuit within the range of tested frequencies.
 
@@ -133,7 +231,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.TestResult.get_label**
+#### **deareis.api.kramers_kronig.TestResult.get_label**
 
 Generate a label for the result.
 
@@ -147,7 +245,7 @@ _Returns_
 str
 ```
 
-#### **deareis.TestResult.get_nyquist_data**
+#### **deareis.api.kramers_kronig.TestResult.get_nyquist_data**
 
 Get the data required to plot the results as a Nyquist plot (-Z" vs Z').
 
@@ -166,7 +264,7 @@ _Returns_
 Tuple[ndarray, ndarray]
 ```
 
-#### **deareis.TestResult.get_residual_data**
+#### **deareis.api.kramers_kronig.TestResult.get_residual_data**
 
 Get the data required to plot the residuals (real and imaginary vs log f).
 
@@ -180,7 +278,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.TestResult.to_dict**
+#### **deareis.api.kramers_kronig.TestResult.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -202,7 +300,7 @@ dict
 
 
 
-### **deareis.TestSettings**
+### **deareis.api.kramers_kronig.TestSettings**
 
 A class to store the settings used to perform a Kramers-Kronig test.
 
@@ -236,7 +334,7 @@ The manual mode requires the user to pick the number of parallel RC circuits con
 
 _Functions and methods_
 
-#### **deareis.TestSettings.from_dict**
+#### **deareis.api.kramers_kronig.TestSettings.from_dict**
 
 Create an instance from a dictionary.
 
@@ -255,7 +353,7 @@ _Returns_
 TestSettings
 ```
 
-#### **deareis.TestSettings.to_dict**
+#### **deareis.api.kramers_kronig.TestSettings.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -271,3 +369,38 @@ dict
 
 
 
+
+### **deareis.api.kramers_kronig.perform_test**
+
+Wrapper for `pyimpspec.perform_test` function.
+
+Performs a linear Kramers-Kronig test as described by Boukamp (1995).
+The results can be used to check the validity of an impedance spectrum before performing equivalent circuit fitting.
+If the number of (RC) circuits is less than two, then a suitable number of (RC) circuits is determined using the procedure described by Schönleber et al. (2014) based on a criterion for the calculated mu-value (zero to one).
+A mu-value of one represents underfitting and a mu-value of zero represents overfitting.
+
+References:
+
+- B.A. Boukamp, 1995, J. Electrochem. Soc., 142, 1885-1894 (https://doi.org/10.1149/1.2044210)
+- M. Schönleber, D. Klotz, and E. Ivers-Tiffée, 2014, Electrochim. Acta, 131, 20-27 (https://doi.org/10.1016/j.electacta.2014.01.034)
+
+```python
+def perform_test(data: DataSet, settings: TestSettings, num_procs: int = -1) -> TestResult:
+```
+
+
+_Parameters_
+
+- `data`: The data to be tested.
+- `settings`: The settings that determine how the test is performed.
+Note that `Test.EXPLORATORY` is not supported by this function.
+- `num_procs`: The maximum number of parallel processes to use when performing a test.
+A value less than one results in using the number of cores returned by multiprocessing.cpu_count.
+Applies only to the `Mode.CNLS` test.
+
+
+_Returns_
+
+```python
+TestResult
+```

@@ -3,41 +3,47 @@ layout: documentation
 title: API - plotting
 permalink: /api/plotting/
 ---
+
+
 **Table of Contents**
 
-- [PlotSeries](#deareisplotseries)
-	- [get_color](#deareisplotseriesget_color)
-	- [get_label](#deareisplotseriesget_label)
-	- [get_line_data](#deareisplotseriesget_line_data)
-	- [get_marker](#deareisplotseriesget_marker)
-	- [get_scatter_data](#deareisplotseriesget_scatter_data)
-	- [has_legend](#deareisplotserieshas_legend)
-	- [has_line](#deareisplotserieshas_line)
-	- [has_markers](#deareisplotserieshas_markers)
-- [PlotSettings](#deareisplotsettings)
-	- [add_series](#deareisplotsettingsadd_series)
-	- [find_series](#deareisplotsettingsfind_series)
-	- [from_dict](#deareisplotsettingsfrom_dict)
-	- [get_label](#deareisplotsettingsget_label)
-	- [get_series_color](#deareisplotsettingsget_series_color)
-	- [get_series_label](#deareisplotsettingsget_series_label)
-	- [get_series_line](#deareisplotsettingsget_series_line)
-	- [get_series_marker](#deareisplotsettingsget_series_marker)
-	- [get_series_theme](#deareisplotsettingsget_series_theme)
-	- [get_type](#deareisplotsettingsget_type)
-	- [recreate_themes](#deareisplotsettingsrecreate_themes)
-	- [remove_series](#deareisplotsettingsremove_series)
-	- [set_label](#deareisplotsettingsset_label)
-	- [set_series_color](#deareisplotsettingsset_series_color)
-	- [set_series_label](#deareisplotsettingsset_series_label)
-	- [set_series_line](#deareisplotsettingsset_series_line)
-	- [set_series_marker](#deareisplotsettingsset_series_marker)
-	- [set_type](#deareisplotsettingsset_type)
-	- [to_dict](#deareisplotsettingsto_dict)
-- [PlotType](#deareisplottype)
+- [deareis.api.plotting](#deareis-api-plotting)
+	- [PlotSeries](#deareis-api-plottingplotseries)
+		- [get_color](#deareis-api-plottingplotseriesget_color)
+		- [get_label](#deareis-api-plottingplotseriesget_label)
+		- [get_line_data](#deareis-api-plottingplotseriesget_line_data)
+		- [get_marker](#deareis-api-plottingplotseriesget_marker)
+		- [get_scatter_data](#deareis-api-plottingplotseriesget_scatter_data)
+		- [has_legend](#deareis-api-plottingplotserieshas_legend)
+		- [has_line](#deareis-api-plottingplotserieshas_line)
+		- [has_markers](#deareis-api-plottingplotserieshas_markers)
+	- [PlotSettings](#deareis-api-plottingplotsettings)
+		- [add_series](#deareis-api-plottingplotsettingsadd_series)
+		- [find_series](#deareis-api-plottingplotsettingsfind_series)
+		- [from_dict](#deareis-api-plottingplotsettingsfrom_dict)
+		- [get_label](#deareis-api-plottingplotsettingsget_label)
+		- [get_series_color](#deareis-api-plottingplotsettingsget_series_color)
+		- [get_series_label](#deareis-api-plottingplotsettingsget_series_label)
+		- [get_series_line](#deareis-api-plottingplotsettingsget_series_line)
+		- [get_series_marker](#deareis-api-plottingplotsettingsget_series_marker)
+		- [get_series_theme](#deareis-api-plottingplotsettingsget_series_theme)
+		- [get_type](#deareis-api-plottingplotsettingsget_type)
+		- [recreate_themes](#deareis-api-plottingplotsettingsrecreate_themes)
+		- [remove_series](#deareis-api-plottingplotsettingsremove_series)
+		- [set_label](#deareis-api-plottingplotsettingsset_label)
+		- [set_series_color](#deareis-api-plottingplotsettingsset_series_color)
+		- [set_series_label](#deareis-api-plottingplotsettingsset_series_label)
+		- [set_series_line](#deareis-api-plottingplotsettingsset_series_line)
+		- [set_series_marker](#deareis-api-plottingplotsettingsset_series_marker)
+		- [set_type](#deareis-api-plottingplotsettingsset_type)
+		- [to_dict](#deareis-api-plottingplotsettingsto_dict)
+	- [PlotType](#deareis-api-plottingplottype)
 
 
-### **deareis.PlotSeries**
+
+## **deareis.api.plotting**
+
+### **deareis.api.plotting.PlotSeries**
 
 A class that represents the data used to plot an item/series.
 
@@ -65,7 +71,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.PlotSeries.get_color**
+#### **deareis.api.plotting.PlotSeries.get_color**
 
 
 ```python
@@ -78,7 +84,7 @@ _Returns_
 List[float]
 ```
 
-#### **deareis.PlotSeries.get_label**
+#### **deareis.api.plotting.PlotSeries.get_label**
 
 
 ```python
@@ -91,7 +97,7 @@ _Returns_
 str
 ```
 
-#### **deareis.PlotSeries.get_line_data**
+#### **deareis.api.plotting.PlotSeries.get_line_data**
 
 
 ```python
@@ -104,7 +110,7 @@ _Returns_
 List[ndarray]
 ```
 
-#### **deareis.PlotSeries.get_marker**
+#### **deareis.api.plotting.PlotSeries.get_marker**
 
 
 ```python
@@ -117,7 +123,7 @@ _Returns_
 int
 ```
 
-#### **deareis.PlotSeries.get_scatter_data**
+#### **deareis.api.plotting.PlotSeries.get_scatter_data**
 
 
 ```python
@@ -130,7 +136,7 @@ _Returns_
 List[ndarray]
 ```
 
-#### **deareis.PlotSeries.has_legend**
+#### **deareis.api.plotting.PlotSeries.has_legend**
 
 
 ```python
@@ -143,7 +149,7 @@ _Returns_
 bool
 ```
 
-#### **deareis.PlotSeries.has_line**
+#### **deareis.api.plotting.PlotSeries.has_line**
 
 
 ```python
@@ -156,7 +162,7 @@ _Returns_
 bool
 ```
 
-#### **deareis.PlotSeries.has_markers**
+#### **deareis.api.plotting.PlotSeries.has_markers**
 
 
 ```python
@@ -172,7 +178,7 @@ bool
 
 
 
-### **deareis.PlotSettings**
+### **deareis.api.plotting.PlotSettings**
 
 A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
 
@@ -204,7 +210,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.PlotSettings.add_series**
+#### **deareis.api.plotting.PlotSettings.add_series**
 
 
 ```python
@@ -216,7 +222,7 @@ _Parameters_
 
 - `series`
 
-#### **deareis.PlotSettings.find_series**
+#### **deareis.api.plotting.PlotSettings.find_series**
 
 
 ```python
@@ -238,7 +244,7 @@ _Returns_
 Union[DataSet, TestResult, FitResult, SimulationResult, NoneType]
 ```
 
-#### **deareis.PlotSettings.from_dict**
+#### **deareis.api.plotting.PlotSettings.from_dict**
 
 
 ```python
@@ -256,7 +262,7 @@ _Returns_
 PlotSettings
 ```
 
-#### **deareis.PlotSettings.get_label**
+#### **deareis.api.plotting.PlotSettings.get_label**
 
 
 ```python
@@ -269,7 +275,7 @@ _Returns_
 str
 ```
 
-#### **deareis.PlotSettings.get_series_color**
+#### **deareis.api.plotting.PlotSettings.get_series_color**
 
 
 ```python
@@ -287,7 +293,7 @@ _Returns_
 List[float]
 ```
 
-#### **deareis.PlotSettings.get_series_label**
+#### **deareis.api.plotting.PlotSettings.get_series_label**
 
 
 ```python
@@ -305,7 +311,7 @@ _Returns_
 str
 ```
 
-#### **deareis.PlotSettings.get_series_line**
+#### **deareis.api.plotting.PlotSettings.get_series_line**
 
 
 ```python
@@ -323,7 +329,7 @@ _Returns_
 bool
 ```
 
-#### **deareis.PlotSettings.get_series_marker**
+#### **deareis.api.plotting.PlotSettings.get_series_marker**
 
 
 ```python
@@ -341,7 +347,7 @@ _Returns_
 int
 ```
 
-#### **deareis.PlotSettings.get_series_theme**
+#### **deareis.api.plotting.PlotSettings.get_series_theme**
 
 
 ```python
@@ -359,7 +365,7 @@ _Returns_
 int
 ```
 
-#### **deareis.PlotSettings.get_type**
+#### **deareis.api.plotting.PlotSettings.get_type**
 
 
 ```python
@@ -372,14 +378,14 @@ _Returns_
 PlotType
 ```
 
-#### **deareis.PlotSettings.recreate_themes**
+#### **deareis.api.plotting.PlotSettings.recreate_themes**
 
 
 ```python
 def recreate_themes(self):
 ```
 
-#### **deareis.PlotSettings.remove_series**
+#### **deareis.api.plotting.PlotSettings.remove_series**
 
 
 ```python
@@ -391,7 +397,7 @@ _Parameters_
 
 - `uuid`
 
-#### **deareis.PlotSettings.set_label**
+#### **deareis.api.plotting.PlotSettings.set_label**
 
 
 ```python
@@ -403,7 +409,7 @@ _Parameters_
 
 - `label`
 
-#### **deareis.PlotSettings.set_series_color**
+#### **deareis.api.plotting.PlotSettings.set_series_color**
 
 
 ```python
@@ -416,7 +422,7 @@ _Parameters_
 - `uuid`
 - `color`
 
-#### **deareis.PlotSettings.set_series_label**
+#### **deareis.api.plotting.PlotSettings.set_series_label**
 
 
 ```python
@@ -429,7 +435,7 @@ _Parameters_
 - `uuid`
 - `label`
 
-#### **deareis.PlotSettings.set_series_line**
+#### **deareis.api.plotting.PlotSettings.set_series_line**
 
 
 ```python
@@ -442,7 +448,7 @@ _Parameters_
 - `uuid`
 - `state`
 
-#### **deareis.PlotSettings.set_series_marker**
+#### **deareis.api.plotting.PlotSettings.set_series_marker**
 
 
 ```python
@@ -455,7 +461,7 @@ _Parameters_
 - `uuid`
 - `marker`
 
-#### **deareis.PlotSettings.set_type**
+#### **deareis.api.plotting.PlotSettings.set_type**
 
 
 ```python
@@ -467,7 +473,7 @@ _Parameters_
 
 - `plot_type`
 
-#### **deareis.PlotSettings.to_dict**
+#### **deareis.api.plotting.PlotSettings.to_dict**
 
 
 ```python
@@ -488,13 +494,13 @@ dict
 
 
 
-### **deareis.PlotType**
+### **deareis.api.plotting.PlotType**
 
 Types of plots:
 
-- NYQUIST
-- BODE_MAGNITUDE
-- BODE_PHASE
+- NYQUIST: -Zim vs Zre
+- BODE_MAGNITUDE: |Z| vs log f
+- BODE_PHASE: phi vs log f
 
 ```python
 class PlotType(IntEnum):

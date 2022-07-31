@@ -3,23 +3,30 @@ layout: documentation
 title: API - simulating
 permalink: /api/simulating/
 ---
+
+
 **Table of Contents**
 
-- [SimulationResult](#deareissimulationresult)
-	- [from_dict](#deareissimulationresultfrom_dict)
-	- [get_bode_data](#deareissimulationresultget_bode_data)
-	- [get_frequency](#deareissimulationresultget_frequency)
-	- [get_impedance](#deareissimulationresultget_impedance)
-	- [get_label](#deareissimulationresultget_label)
-	- [get_nyquist_data](#deareissimulationresultget_nyquist_data)
-	- [to_dataframe](#deareissimulationresultto_dataframe)
-	- [to_dict](#deareissimulationresultto_dict)
-- [SimulationSettings](#deareissimulationsettings)
-	- [from_dict](#deareissimulationsettingsfrom_dict)
-	- [to_dict](#deareissimulationsettingsto_dict)
+- [deareis.api.simulation](#deareis-api-simulation)
+	- [SimulationResult](#deareis-api-simulationsimulationresult)
+		- [from_dict](#deareis-api-simulationsimulationresultfrom_dict)
+		- [get_bode_data](#deareis-api-simulationsimulationresultget_bode_data)
+		- [get_frequency](#deareis-api-simulationsimulationresultget_frequency)
+		- [get_impedance](#deareis-api-simulationsimulationresultget_impedance)
+		- [get_label](#deareis-api-simulationsimulationresultget_label)
+		- [get_nyquist_data](#deareis-api-simulationsimulationresultget_nyquist_data)
+		- [to_dataframe](#deareis-api-simulationsimulationresultto_dataframe)
+		- [to_dict](#deareis-api-simulationsimulationresultto_dict)
+	- [SimulationSettings](#deareis-api-simulationsimulationsettings)
+		- [from_dict](#deareis-api-simulationsimulationsettingsfrom_dict)
+		- [to_dict](#deareis-api-simulationsimulationsettingsto_dict)
+	- [simulate_spectrum](#deareis-api-simulationsimulate_spectrum)
 
 
-### **deareis.SimulationResult**
+
+## **deareis.api.simulation**
+
+### **deareis.api.simulation.SimulationResult**
 
 A class containing the result of a simulation.
 
@@ -41,7 +48,7 @@ _Constructor parameters_
 
 _Functions and methods_
 
-#### **deareis.SimulationResult.from_dict**
+#### **deareis.api.simulation.SimulationResult.from_dict**
 
 Create an instance from a dictionary.
 
@@ -60,7 +67,7 @@ _Returns_
 SimulationResult
 ```
 
-#### **deareis.SimulationResult.get_bode_data**
+#### **deareis.api.simulation.SimulationResult.get_bode_data**
 
 Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
 
@@ -79,7 +86,7 @@ _Returns_
 Tuple[ndarray, ndarray, ndarray]
 ```
 
-#### **deareis.SimulationResult.get_frequency**
+#### **deareis.api.simulation.SimulationResult.get_frequency**
 
 Get an array of frequencies within the range of simulated frequencies.
 
@@ -98,7 +105,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.SimulationResult.get_impedance**
+#### **deareis.api.simulation.SimulationResult.get_impedance**
 
 Get the complex impedances produced by the simulated circuit within the range of frequencies used to generate the original simulation result.
 
@@ -117,7 +124,7 @@ _Returns_
 ndarray
 ```
 
-#### **deareis.SimulationResult.get_label**
+#### **deareis.api.simulation.SimulationResult.get_label**
 
 Generate a label for the result.
 
@@ -131,7 +138,7 @@ _Returns_
 str
 ```
 
-#### **deareis.SimulationResult.get_nyquist_data**
+#### **deareis.api.simulation.SimulationResult.get_nyquist_data**
 
 Get the data required to plot the results as a Nyquist plot (-Z" vs Z').
 
@@ -150,7 +157,7 @@ _Returns_
 Tuple[ndarray, ndarray]
 ```
 
-#### **deareis.SimulationResult.to_dataframe**
+#### **deareis.api.simulation.SimulationResult.to_dataframe**
 
 Get a `pandas.DataFrame` instance containing a table of element parameters.
 
@@ -164,7 +171,7 @@ _Returns_
 DataFrame
 ```
 
-#### **deareis.SimulationResult.to_dict**
+#### **deareis.api.simulation.SimulationResult.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -181,7 +188,7 @@ dict
 
 
 
-### **deareis.SimulationSettings**
+### **deareis.api.simulation.SimulationSettings**
 
 A class to store the settings used to perform a simulation.
 
@@ -190,7 +197,7 @@ class SimulationSettings(object):
 	cdc: str
 	min_frequency: float
 	max_frequency: float
-	num_freq_per_dec: int
+	num_per_decade: int
 ```
 
 _Constructor parameters_
@@ -198,13 +205,13 @@ _Constructor parameters_
 - `cdc`: The circuit description code (CDC) for the circuit to simulate.
 - `min_frequency`: The minimum frequency (in hertz) to simulate.
 - `max_frequency`: The maximum frequency (in hertz) to simulate.
-- `num_freq_per_dec`: The number of frequencies per decade to simulate.
+- `num_per_decade`: The number of frequencies per decade to simulate.
 The frequencies are distributed logarithmically within the inclusive boundaries defined by `min_frequency` and `max_frequency`.
 
 
 _Functions and methods_
 
-#### **deareis.SimulationSettings.from_dict**
+#### **deareis.api.simulation.SimulationSettings.from_dict**
 
 Create an instance from a dictionary.
 
@@ -223,7 +230,7 @@ _Returns_
 SimulationSettings
 ```
 
-#### **deareis.SimulationSettings.to_dict**
+#### **deareis.api.simulation.SimulationSettings.to_dict**
 
 Return a dictionary that can be used to recreate an instance.
 
@@ -239,3 +246,25 @@ dict
 
 
 
+
+### **deareis.api.simulation.simulate_spectrum**
+
+Wrapper for `pyimpspec.simulate_spectrum` function.
+
+Simulate the impedance spectrum generated by a circuit in a certain frequency range.
+
+```python
+def simulate_spectrum(settings: SimulationSettings) -> SimulationResult:
+```
+
+
+_Parameters_
+
+- `settings`: The settings to use when performing the simulation.
+
+
+_Returns_
+
+```python
+SimulationResult
+```

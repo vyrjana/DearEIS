@@ -38,14 +38,12 @@ permalink: /api/project/
 	- [get_simulations](#deareisprojectget_simulations)
 	- [get_tests](#deareisprojectget_tests)
 	- [merge](#deareisprojectmerge)
-	- [parse](#deareisprojectparse)
 	- [replace_data_set](#deareisprojectreplace_data_set)
 	- [save](#deareisprojectsave)
 	- [set_label](#deareisprojectset_label)
 	- [set_notes](#deareisprojectset_notes)
 	- [set_path](#deareisprojectset_path)
 	- [to_dict](#deareisprojectto_dict)
-	- [update](#deareisprojectupdate)
 
 
 ### **deareis.Project**
@@ -77,7 +75,7 @@ def add_data_set(self, data: DataSet):
 
 _Parameters_
 
-- `data`
+- `data`: The data set to add.
 
 #### **deareis.Project.add_fit**
 
@@ -90,8 +88,8 @@ def add_fit(self, data: DataSet, fit: FitResult):
 
 _Parameters_
 
-- `data`
-- `fit`
+- `data`: The data set that a circuit was fit to.
+- `fit`: The result of the circuit fit.
 
 #### **deareis.Project.add_plot**
 
@@ -104,7 +102,7 @@ def add_plot(self, plot: PlotSettings):
 
 _Parameters_
 
-- `plot`
+- `plot`: The settings for the plot.
 
 #### **deareis.Project.add_simulation**
 
@@ -117,7 +115,7 @@ def add_simulation(self, simulation: SimulationResult):
 
 _Parameters_
 
-- `simulation`
+- `simulation`: The result of the simulation.
 
 #### **deareis.Project.add_test**
 
@@ -130,12 +128,12 @@ def add_test(self, data: DataSet, test: TestResult):
 
 _Parameters_
 
-- `data`
-- `test`
+- `data`: The data set that was tested.
+- `test`: The result of the test.
 
 #### **deareis.Project.delete_data_set**
 
-Delete a data set from the project.
+Delete a data set (and its associated test and fit results) from the project.
 
 ```python
 def delete_data_set(self, data: DataSet):
@@ -144,7 +142,7 @@ def delete_data_set(self, data: DataSet):
 
 _Parameters_
 
-- `data`
+- `data`: The data set to remove.
 
 #### **deareis.Project.delete_fit**
 
@@ -157,8 +155,8 @@ def delete_fit(self, data: DataSet, fit: FitResult):
 
 _Parameters_
 
-- `data`
-- `fit`
+- `data`: The data set associated with the fit result.
+- `fit`: The fit result to delete.
 
 #### **deareis.Project.delete_plot**
 
@@ -171,7 +169,7 @@ def delete_plot(self, plot: PlotSettings):
 
 _Parameters_
 
-- `plot`
+- `plot`: The plot settings to delete.
 
 #### **deareis.Project.delete_simulation**
 
@@ -184,7 +182,7 @@ def delete_simulation(self, simulation: SimulationResult):
 
 _Parameters_
 
-- `simulation`
+- `simulation`: The simulation result to delete.
 
 #### **deareis.Project.delete_test**
 
@@ -197,8 +195,8 @@ def delete_test(self, data: DataSet, test: TestResult):
 
 _Parameters_
 
-- `data`
-- `test`
+- `data`: The data set associated with the test result.
+- `test`: The test result to delete.
 
 #### **deareis.Project.edit_data_set_label**
 
@@ -212,8 +210,8 @@ def edit_data_set_label(self, data: DataSet, label: str):
 
 _Parameters_
 
-- `data`
-- `label`
+- `data`: The data set to rename.
+- `label`: The new label.
 
 #### **deareis.Project.edit_data_set_path**
 
@@ -226,8 +224,8 @@ def edit_data_set_path(self, data: DataSet, path: str):
 
 _Parameters_
 
-- `data`
-- `path`
+- `data`: The data set to edit.
+- `path`: The new path.
 
 #### **deareis.Project.edit_plot_label**
 
@@ -241,8 +239,8 @@ def edit_plot_label(self, plot: PlotSettings, label: str):
 
 _Parameters_
 
-- `plot`
-- `label`
+- `plot`: The plot settings to edit.
+- `label`: The new label.
 
 #### **deareis.Project.from_dict**
 
@@ -255,7 +253,7 @@ def from_dict(state: dict) -> Project:
 
 _Parameters_
 
-- `state`
+- `state`: A dictionary-based representation of a project state.
 
 
 _Returns_
@@ -274,7 +272,7 @@ def from_file(path: str) -> Project:
 
 _Parameters_
 
-- `path`
+- `path`: The path to a file containing a serialized project state.
 
 
 _Returns_
@@ -293,7 +291,7 @@ def from_json(json: str) -> Project:
 
 _Parameters_
 
-- `json`
+- `json`: A JSON representation of a project state.
 
 
 _Returns_
@@ -345,7 +343,7 @@ List[DataSet]
 
 #### **deareis.Project.get_fits**
 
-Get fit results of the provided data set.
+Get fit results associated with a specific data set.
 
 ```python
 def get_fits(self, data: DataSet) -> List[FitResult]:
@@ -354,7 +352,7 @@ def get_fits(self, data: DataSet) -> List[FitResult]:
 
 _Parameters_
 
-- `data`
+- `data`: The data set whose fits to get.
 
 
 _Returns_
@@ -407,7 +405,7 @@ str
 
 #### **deareis.Project.get_plot_series**
 
-Get PlotSeries instances of each of the plotted items/series in the provided plot.
+Get PlotSeries instances of each of the plotted items/series in a specific plot.
 
 ```python
 def get_plot_series(self, plot: PlotSettings, num_per_decade: int = 100) -> List[PlotSeries]:
@@ -416,8 +414,9 @@ def get_plot_series(self, plot: PlotSettings, num_per_decade: int = 100) -> List
 
 _Parameters_
 
-- `plot`
-- `num_per_decade`
+- `plot`: The plot whose items/series to get.
+- `num_per_decade`: The number of data points in fitted/simulated spectra.
+Can be used to adjust how smooth an item/series looks.
 
 
 _Returns_
@@ -455,7 +454,7 @@ List[SimulationResult]
 
 #### **deareis.Project.get_tests**
 
-Get the Kramers-Kronig test results of the provided data set.
+Get the Kramers-Kronig test results associated with a specific data set.
 
 ```python
 def get_tests(self, data: DataSet) -> List[TestResult]:
@@ -464,7 +463,7 @@ def get_tests(self, data: DataSet) -> List[TestResult]:
 
 _Parameters_
 
-- `data`
+- `data`: The data set whose tests to get.
 
 
 _Returns_
@@ -476,7 +475,7 @@ List[TestResult]
 
 Create an instance by merging multiple Project instances.
 All UUIDs are replaced to avoid collisions.
-The labels of certain objects are also replaced to avoid collisions.
+The labels of some objects are also replaced to avoid collisions.
 
 ```python
 def merge(projects: List[Project]) -> Project:
@@ -493,24 +492,6 @@ _Returns_
 Project
 ```
 
-#### **deareis.Project.parse**
-
-
-```python
-def parse(state: dict) -> dict:
-```
-
-
-_Parameters_
-
-- `state`
-
-
-_Returns_
-```python
-dict
-```
-
 #### **deareis.Project.replace_data_set**
 
 Replace a data set in the project with another one.
@@ -522,8 +503,8 @@ def replace_data_set(self, old: DataSet, new: DataSet):
 
 _Parameters_
 
-- `old`
-- `new`
+- `old`: The data set to be replaced.
+- `new`: The replacement data set.
 
 #### **deareis.Project.save**
 
@@ -536,7 +517,8 @@ def save(self, path: Optional[str] = None):
 
 _Parameters_
 
-- `path`
+- `path`: The path to write the project state to.
+If this is None, then the most recently defined path is used.
 
 #### **deareis.Project.set_label**
 
@@ -549,7 +531,7 @@ def set_label(self, label: str):
 
 _Parameters_
 
-- `label`
+- `label`: The new label.
 
 #### **deareis.Project.set_notes**
 
@@ -562,7 +544,7 @@ def set_notes(self, notes: str):
 
 _Parameters_
 
-- `notes`
+- `notes`: The project notes.
 
 #### **deareis.Project.set_path**
 
@@ -575,11 +557,12 @@ def set_path(self, path: str):
 
 _Parameters_
 
-- `path`
+- `path`: The path where the project's state should be saved.
 
 #### **deareis.Project.to_dict**
 
-Return a dictionary that can be used to recreate an instance.
+Return a dictionary containing the project state.
+The dictionary can be used to recreate a project or to restore a project state.
 
 ```python
 def to_dict(self, session: bool) -> dict:
@@ -588,26 +571,13 @@ def to_dict(self, session: bool) -> dict:
 
 _Parameters_
 
-- `session`
+- `session`: If true, then data minimization is not performed.
 
 
 _Returns_
 ```python
 dict
 ```
-
-#### **deareis.Project.update**
-
-
-```python
-def update(self, args, kwargs):
-```
-
-
-_Parameters_
-
-- `args`
-- `kwargs`
 
 
 

@@ -9,27 +9,27 @@ These functions are for basic visualization of various objects (e.g., `DataSet`,
 
 **Table of Contents**
 
-- [deareis.plot.mpl](#deareis-plot-mpl)
-	- [plot](#deareis-plot-mplplot)
-	- [plot_bode](#deareis-plot-mplplot_bode)
-	- [plot_circuit](#deareis-plot-mplplot_circuit)
-	- [plot_data](#deareis-plot-mplplot_data)
-	- [plot_exploratory_tests](#deareis-plot-mplplot_exploratory_tests)
-	- [plot_fit](#deareis-plot-mplplot_fit)
-	- [plot_mu_xps](#deareis-plot-mplplot_mu_xps)
-	- [plot_nyquist](#deareis-plot-mplplot_nyquist)
-	- [plot_residual](#deareis-plot-mplplot_residual)
+- [deareis.api.plot.mpl](#deareis-api-plot-mpl)
+	- [plot](#deareis-api-plot-mplplot)
+	- [plot_bode](#deareis-api-plot-mplplot_bode)
+	- [plot_circuit](#deareis-api-plot-mplplot_circuit)
+	- [plot_data](#deareis-api-plot-mplplot_data)
+	- [plot_exploratory_tests](#deareis-api-plot-mplplot_exploratory_tests)
+	- [plot_fit](#deareis-api-plot-mplplot_fit)
+	- [plot_mu_xps](#deareis-api-plot-mplplot_mu_xps)
+	- [plot_nyquist](#deareis-api-plot-mplplot_nyquist)
+	- [plot_residual](#deareis-api-plot-mplplot_residual)
 
 
 
-## **deareis.plot.mpl**
+## **deareis.api.plot.mpl**
 
-### **deareis.plot.mpl.plot**
+### **deareis.api.plot.mpl.plot**
 
 Plot a complex plot containing one or more items from a project based on the provided settings.
 
 ```python
-def plot(settings: PlotSettings, project: Project, fig: Optional[Figure] = None, axis: Optional[Axes] = None, num_per_decade: int = 100, show_legend: Optional[bool] = None) -> Tuple[Figure, Axes]:
+def plot(settings: PlotSettings, project: Project, x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None, y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None, show_title: bool = True, show_legend: Optional[bool] = None, legend_loc: Union[int, str] = 0, show_grid: bool = False, tight_layout: bool = False, fig: Optional[Figure] = None, axis: Optional[Axes] = None, num_per_decade: int = 100) -> Tuple[Figure, Axes]:
 ```
 
 
@@ -37,10 +37,16 @@ _Parameters_
 
 - `settings`: The settings for the plot.
 - `project`: The project that the plot is a part of.
+- `x_limits`: The lower and upper limits of the x-axis.
+- `y_limits`: The lower and upper limits of the y-axis.
+- `show_title`: Whether or not to include the title in the figure.
+- `show_legend`: Whether or not to include a legend in the figure.
+- `legend_loc`: The position of the legend in the figure. See matplotlib's documentation for valid values.
+- `show_grid`: Whether or not to include a grid in the figure.
+- `tight_layout`: Whether or not to apply a tight layout that the sizes of the reduces margins.
 - `fig`: The matplotlib.figure.Figure instance to use when plotting the data.
 - `axis`: The matplotlib.axes.Axes instance to use when plotting the data.
 - `num_per_decade`: If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).
-- `show_legend`: Whether or not a legend should be shown.
 
 
 _Returns_
@@ -48,7 +54,7 @@ _Returns_
 ```python
 Tuple[Figure, Axes]
 ```
-### **deareis.plot.mpl.plot_bode**
+### **deareis.api.plot.mpl.plot_bode**
 
 Plot some data as a Bode plot (log |Z| and phi vs log f).
 
@@ -74,7 +80,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Axes]]
 ```
-### **deareis.plot.mpl.plot_circuit**
+### **deareis.api.plot.mpl.plot_circuit**
 
 Plot the simulated impedance response of a circuit as both a Nyquist and a Bode plot.
 
@@ -105,7 +111,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Axes]]
 ```
-### **deareis.plot.mpl.plot_data**
+### **deareis.api.plot.mpl.plot_data**
 
 Plot a DataSet instance as both a Nyquist and a Bode plot.
 
@@ -128,7 +134,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Axes]]
 ```
-### **deareis.plot.mpl.plot_exploratory_tests**
+### **deareis.api.plot.mpl.plot_exploratory_tests**
 
 Plot the results of an exploratory Kramers-Kronig test and the tested DataSet as a Nyquist plot, a Bode plot, a plot of the residuals, and a plot of the mu-values and pseudo chi-squared values.
 
@@ -153,7 +159,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Axes]]
 ```
-### **deareis.plot.mpl.plot_fit**
+### **deareis.api.plot.mpl.plot_fit**
 
 Plot a the result of a circuit fit as a Nyquist plot, a Bode plot, and a plot of the residuals.
 
@@ -177,7 +183,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Tuple[Axes]]]
 ```
-### **deareis.plot.mpl.plot_mu_xps**
+### **deareis.api.plot.mpl.plot_mu_xps**
 
 Plot the mu-values and pseudo chi-squared values of exploratory Kramers-Kronig test results.
 
@@ -202,7 +208,7 @@ _Returns_
 ```python
 Tuple[Figure, List[Axes]]
 ```
-### **deareis.plot.mpl.plot_nyquist**
+### **deareis.api.plot.mpl.plot_nyquist**
 
 Plot some data as a Nyquist plot (-Z" vs Z').
 
@@ -227,7 +233,7 @@ _Returns_
 ```python
 Tuple[Figure, Axes]
 ```
-### **deareis.plot.mpl.plot_residual**
+### **deareis.api.plot.mpl.plot_residual**
 
 Plot the residuals of a test or fit result.
 
