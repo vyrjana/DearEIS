@@ -41,8 +41,7 @@ The program includes features such as:
 
 - Linux
 - Windows
-
-DearEIS **may** also work on other platforms such as, e.g., MacOS.
+- MacOS
 
 
 ### Step-by-step
