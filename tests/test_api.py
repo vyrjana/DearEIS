@@ -131,7 +131,7 @@ class TestAPI(TestCase):
     def test_05_fit_circuit_to_data(self):
         control_data: pyimpspec.DataSet = pyimpspec.parse_data(TEST_DATA_PATH)[0]
         data: deareis.DataSet = deareis.parse_data(TEST_DATA_PATH)[0]
-        cdc: str = "R(RC)(RW)"
+        cdc: str = "R{R=90}(R{R=230}C{C=7.8E-7})(R{R=570}W{Y=4.25E-4})"
         method: deareis.Method = deareis.Method.LEAST_SQUARES
         weight: deareis.Weight = deareis.Weight.PROPORTIONAL
         max_nfev: int = 200
@@ -153,18 +153,18 @@ class TestAPI(TestCase):
             self.assertEqual(res.settings.weight, weight)
             self.assertEqual(res.settings.max_nfev, max_nfev)
         self.assertEqual(control_result.chisqr, result.chisqr)
-        self.assertAlmostEqual(result.parameters["R_0"]["R"].value, 100, delta=1e-1)
-        self.assertAlmostEqual(result.parameters["R_1"]["R"].value, 200, delta=1e-1)
+        self.assertAlmostEqual(result.parameters["R_0"]["R"].value, 100, delta=1e0)
+        self.assertAlmostEqual(result.parameters["R_1"]["R"].value, 200, delta=1e0)
         self.assertAlmostEqual(result.parameters["C_2"]["C"].value, 800e-9, delta=1e-8)
-        self.assertAlmostEqual(result.parameters["R_3"]["R"].value, 500, delta=1e-1)
+        self.assertAlmostEqual(result.parameters["R_3"]["R"].value, 500, delta=1e0)
         self.assertAlmostEqual(result.parameters["W_4"]["Y"].value, 400e-6, delta=1e-5)
         data_impedance: ndarray = data.get_impedance()
         fit_impedance: ndarray = result.get_impedance()
         self.assertTrue(type(data_impedance) == type(fit_impedance))
         self.assertEqual(type(fit_impedance), ndarray)
         self.assertEqual(len(fit_impedance), len(data_impedance))
-        self.assertTrue(abs(sum(data_impedance.real - fit_impedance.real)) < 3e-1)
-        self.assertTrue(abs(sum(data_impedance.imag - fit_impedance.imag)) < 8e-2)
+        self.assertTrue(abs(sum(data_impedance.real - fit_impedance.real)) < 5e-1)
+        self.assertTrue(abs(sum(data_impedance.imag - fit_impedance.imag)) < 5e-1)
 
     def test_06_simulate_spectrum(self):
         cdc: str = "R{R=25}(R{R=100}C{C=1.5E-6})"
