@@ -1,3 +1,9 @@
+# 2.0.1
+
+- Added GitHub Actions workflow for testing the package (API only) on Linux (Ubuntu), MacOS, and Windows.
+- Fixed issues that prevented tests from passing.
+
+
 # 2.0.0
 
 - Added a window for exporting plots using matplotlib.

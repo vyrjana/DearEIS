@@ -26,7 +26,7 @@ entry_points = {
 copyright_notice = ""
 with open(join(dirname(__file__), "COPYRIGHT")) as fp:
     copyright_notice = fp.read().strip()
-version = "2.0.0"
+version = "2.0.1"
 with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
     fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
 
@@ -56,7 +56,7 @@ setup(
     entry_points=entry_points,
     install_requires=[
         "dearpygui>=1.6.2",  # Used to implement the GUI.
-        "pyimpspec>=2.0.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "pyimpspec>=2.0.1",  # Used for parsing, fitting, and analyzing impedance spectra.
         "tabulate>=0.8.10",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],
@@ -65,9 +65,13 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS",
         "Operating System :: Microsoft :: Windows",
-        "Programming Language :: Python :: 3",
+        "Operating System :: POSIX :: Linux",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Scientific/Engineering",

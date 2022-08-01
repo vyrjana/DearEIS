@@ -2,6 +2,11 @@
 
 A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
+[![tests](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
+![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)
+![PyPI](https://img.shields.io/pypi/v/DearEIS)
+
 
 ## Table of contents
 
@@ -53,11 +58,10 @@ If you encounter issues, then please open an issue on [GitHub](https://github.co
 ### Supported platforms
 
 - Linux
-	- Primary development and testing platform.
 - Windows
-	- Tested on Windows 10 (x86-64).
+- MacOS
 
-The package **may** also work on other platforms (e.g., MacOS) depending on whether or not those platforms are supported by DearEIS' [dependencies](setup.py).
+The package **may** also work on other platforms depending on whether or not those platforms are supported by DearEIS' [dependencies](setup.py).
 
 
 ### Requirements
