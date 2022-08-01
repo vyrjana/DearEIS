@@ -1,3 +1,9 @@
+[![tests](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
+![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)
+![PyPI](https://img.shields.io/pypi/v/DearEIS)
+
+
 DearEIS is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
 The target audience is researchers who use electrochemical impedance spectroscopy (EIS) though the program may also be useful in educational settings.
 The program includes features such as:
