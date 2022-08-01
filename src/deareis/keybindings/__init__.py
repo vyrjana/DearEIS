@@ -44,9 +44,9 @@ def is_alt_down() -> bool:
 
 
 class KeybindingHandler:
-    def __init__(self, keybindings: List[Keybinding], state: "State"):
+    def __init__(self, keybindings: List[Keybinding], state):
         self.block_events: bool = False
-        self.state: "State" = state
+        self.state = state
         self.keybindings: List[Keybinding] = keybindings
         if not keybindings:
             return
@@ -123,8 +123,8 @@ class KeybindingHandler:
             )
         if not filtered_keybindings:
             return
-        project: Optional["Project"] = self.state.get_active_project()
-        project_tab: Optional["ProjectTab"] = self.state.get_active_project_tab()
+        project = self.state.get_active_project()  # Optional[Project]
+        project_tab = self.state.get_active_project_tab()  # Optional[ProjectTab]
         context: Context
         if project is not None and project_tab is not None:
             context = project_tab.get_active_context()
@@ -174,8 +174,8 @@ class KeybindingHandler:
         self,
         action: Action,
         context: Context,
-        project: Optional["Project"],
-        project_tab: Optional["ProjectTab"],
+        project,  # Optional["Project"]
+        project_tab,  # Optional["ProjectTab"]
     ):
         assert type(action) is Action, action
         assert type(context) is Context, context
@@ -496,7 +496,7 @@ class KeybindingHandler:
                         data=data,
                     )
             elif context == Context.PLOTTING_TAB:
-                settings: Optional[PlotSettings] = project_tab.get_active_plot()
+                settings = project_tab.get_active_plot()  # Optional[PlotSettings]
                 # Project-level: plotting tab
                 data_sets: List[DataSet]
                 tests: List[TestResult]

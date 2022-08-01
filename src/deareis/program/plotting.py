@@ -300,7 +300,7 @@ def export_plot(*args, **kwargs):
 
 
 def save_plot(*args, **kwargs):
-    fig: Optional[Figure] = kwargs["figure"]
+    fig = kwargs["figure"]  # Optional[matplotlib.figure.Figure]
     if fig is None:
         return
     STATE.close_plot_exporter()

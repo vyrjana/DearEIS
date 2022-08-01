@@ -51,6 +51,7 @@ from deareis.keybindings import (
     is_alt_down,
     is_control_down,
 )
+from deareis.config import Config
 
 
 PREVIEW_LIMITS: Dict[str, int] = {
@@ -97,7 +98,7 @@ EXTENSIONS: List[str] = [
 
 
 class PlotExporter:
-    def __init__(self, config: "Config"):
+    def __init__(self, config: Config):
         self.key_handler: int = -1
         self.settings: Optional[PlotSettings] = None
         self.project: Optional[Project] = None
@@ -366,7 +367,7 @@ class PlotExporter:
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         # dpg.delete_item(self.key_handler)
 
-    def update_settings(self, config: "Config"):
+    def update_settings(self, config: Config):
         dpg.set_value(self.unit_combo, list(UNITS_PER_INCH.keys())[config.export_units])
         dpg.set_value(self.width_input, config.export_width)
         dpg.set_value(self.height_input, config.export_height)

@@ -18,7 +18,10 @@
 # the LICENSES folder.
 
 from time import time
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 from uuid import uuid4
 import pyimpspec
 from pyimpspec import Circuit

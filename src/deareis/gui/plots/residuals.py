@@ -17,9 +17,16 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 import dearpygui.dearpygui as dpg
-from numpy import array, ceil, ndarray
+from numpy import (
+    array,
+    ceil,
+    ndarray,
+)
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 

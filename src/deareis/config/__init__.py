@@ -17,11 +17,27 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from json import dumps as dump_json, load as load_json, loads as parse_json
+from json import (
+    dumps as dump_json,
+    load as load_json,
+    loads as parse_json,
+)
 from os import makedirs
-from os.path import exists, isdir, join
+from os.path import (
+    exists,
+    isdir,
+    join,
+)
 from traceback import format_exc
-from typing import Any, Callable, Dict, IO, List, Optional, Set
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    IO,
+    List,
+    Optional,
+    Set,
+)
 from xdg import (
     xdg_cache_home,  #  User-specific cache files
     xdg_config_home,  # User-specific configuration files

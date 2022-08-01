@@ -30,7 +30,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
 )
 import dearpygui.dearpygui as dpg
 from deareis.data import (

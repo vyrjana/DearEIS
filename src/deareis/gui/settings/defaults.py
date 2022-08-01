@@ -55,7 +55,7 @@ from deareis.signals import Signal
 import deareis.signals as signals
 
 
-def show_defaults_settings_window(state: "State"):
+def show_defaults_settings_window(state):
     x: int
     y: int
     w: int

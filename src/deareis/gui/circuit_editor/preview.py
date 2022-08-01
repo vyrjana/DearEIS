@@ -17,7 +17,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Optional
+from typing import Optional
 import dearpygui.dearpygui as dpg
 from pyimpspec import Circuit
 from deareis.gui.circuit_editor.parser import Parser

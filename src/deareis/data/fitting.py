@@ -19,8 +19,19 @@
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Tuple, Union
-from numpy import angle, array, log10 as log, ndarray
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Tuple,
+    Union,
+)
+from numpy import (
+    angle,
+    array,
+    log10 as log,
+    ndarray,
+)
 from pandas import DataFrame
 import pyimpspec
 from pyimpspec import Circuit, FittedParameter
@@ -29,7 +40,6 @@ from deareis.enums import (
     Method,
     Weight,
 )
-from deareis.data import DataSet
 from deareis.utility import format_timestamp
 
 

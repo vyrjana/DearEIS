@@ -17,13 +17,16 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Union
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.utility import calculate_window_position_dimensions
 from .base import Plot
-from .bode import Bode, BodeMagnitude, BodePhase
+from .bode import (
+    Bode,
+    BodeMagnitude,
+    BodePhase,
+)
 from .image import Image
 from .mu_xps import MuXps
 from .nyquist import Nyquist

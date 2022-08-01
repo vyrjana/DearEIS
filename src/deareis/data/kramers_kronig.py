@@ -18,8 +18,17 @@
 # the LICENSES folder.
 
 from dataclasses import dataclass
-from typing import Callable, Dict, Tuple, Optional
-from numpy import angle, array, log10 as log, ndarray
+from typing import (
+    Callable,
+    Dict,
+    Tuple,
+)
+from numpy import (
+    angle,
+    array,
+    log10 as log,
+    ndarray,
+)
 import pyimpspec
 from pyimpspec import Circuit
 from deareis.data.data_sets import DataSet

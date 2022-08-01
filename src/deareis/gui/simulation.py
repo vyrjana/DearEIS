@@ -1039,7 +1039,7 @@ class SimulationTab:
         circuit: Optional[Circuit] = None
         try:
             circuit = pyimpspec.string_to_circuit(self.get_settings().cdc)
-        except ParsingError:
+        except pyimpspec.ParsingError:
             pass
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.circuit_editor.window)
         self.circuit_editor.show(circuit)
