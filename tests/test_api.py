@@ -17,7 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from math import isclose
 from os.path import (
     dirname,
     join,
@@ -154,15 +153,11 @@ class TestAPI(TestCase):
             self.assertEqual(res.settings.weight, weight)
             self.assertEqual(res.settings.max_nfev, max_nfev)
         self.assertEqual(control_result.chisqr, result.chisqr)
-        self.assertTrue(isclose(result.parameters["R_0"]["R"].value, 100, abs_tol=1e-1))
-        self.assertTrue(isclose(result.parameters["R_1"]["R"].value, 200, abs_tol=1e-1))
-        self.assertTrue(
-            isclose(result.parameters["C_2"]["C"].value, 800e-9, abs_tol=1e-8)
-        )
-        self.assertTrue(isclose(result.parameters["R_3"]["R"].value, 500, abs_tol=1e-1))
-        self.assertTrue(
-            isclose(result.parameters["W_4"]["Y"].value, 400e-6, abs_tol=1e-5)
-        )
+        self.assertAlmostEqual(result.parameters["R_0"]["R"].value, 100, delta=1e-1)
+        self.assertAlmostEqual(result.parameters["R_1"]["R"].value, 200, delta=1e-1)
+        self.assertAlmostEqual(result.parameters["C_2"]["C"].value, 800e-9, delta=1e-8)
+        self.assertAlmostEqual(result.parameters["R_3"]["R"].value, 500, delta=1e-1)
+        self.assertAlmostEqual(result.parameters["W_4"]["Y"].value, 400e-6, delta=1e-5)
         data_impedance: ndarray = data.get_impedance()
         fit_impedance: ndarray = result.get_impedance()
         self.assertTrue(type(data_impedance) == type(fit_impedance))

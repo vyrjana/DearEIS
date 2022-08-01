@@ -345,7 +345,6 @@ class TestUtility(TestCase):
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[2]
-        self.assertEqual(series.get_label(), "2022-03-21 07:23:37")
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
@@ -370,7 +369,7 @@ class TestUtility(TestCase):
         self.assertEqual(plot.get_type(), PlotType.NYQUIST)
         plot_series = project.get_plot_series(plot)
         series = plot_series[0]
-        self.assertEqual(series.get_label(), "[R(RC)(RW)] (2022-03-21 07:23:54)")
+        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
@@ -386,7 +385,7 @@ class TestUtility(TestCase):
         self.assertEqual(series.has_markers(), False)
         self.assertEqual(series.has_line(), True)
         series = plot_series[1]
-        self.assertEqual(series.get_label(), "[R(RC)(RW)] (2022-03-21 07:24:08)")
+        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
@@ -494,7 +493,6 @@ class TestUtility(TestCase):
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[2]
-        self.assertEqual(series.get_label(), "2022-03-21 07:23:37")
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
@@ -519,7 +517,7 @@ class TestUtility(TestCase):
         self.assertEqual(plot.get_type(), PlotType.NYQUIST)
         plot_series = project.get_plot_series(plot)
         series = plot_series[0]
-        self.assertEqual(series.get_label(), "[R(RC)(RW)] (2022-03-21 07:23:54)")
+        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
@@ -535,7 +533,7 @@ class TestUtility(TestCase):
         self.assertEqual(series.has_markers(), False)
         self.assertEqual(series.has_line(), True)
         series = plot_series[1]
-        self.assertEqual(series.get_label(), "[R(RC)(RW)] (2022-03-21 07:24:08)")
+        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
         self.assertEqual(type(series.get_scatter_data()), list)
         self.assertEqual(len(series.get_scatter_data()), 2)
         self.assertTrue(
