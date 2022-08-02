@@ -16,7 +16,7 @@ on:
 
 jobs:
 
-  build-ubuntu:
+  linux:
 
     runs-on: ubuntu-latest
     strategy:
@@ -45,7 +45,7 @@ jobs:
       working-directory: ./tests
       run: python -m unittest discover .
 
-  build-macos:
+  macos:
 
     runs-on: macos-latest
     strategy:
@@ -74,7 +74,7 @@ jobs:
       working-directory: ./tests
       run: python -m unittest discover .
 
-  build-windows:
+  windows:
 
     runs-on: windows-latest
     strategy:
