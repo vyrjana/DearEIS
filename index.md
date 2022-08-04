@@ -1,4 +1,5 @@
 [![tests](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml)
+[![build](https://github.com/vyrjana/DearEIS/actions/workflows/test-wheel.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-wheel.yml)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
 [![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![PyPI](https://img.shields.io/pypi/v/DearEIS)](https://pypi.org/project/deareis/)
@@ -72,7 +73,7 @@ Alternatively, the installer can be executed again.
 
 ## How to run
 
-### Linux
+### Linux and MacOS
 
 DearEIS can be run by executing the `deareis` command in a terminal.
 The command may also be available in application launchers (e.g., in the `run` mode in [rofi](https://github.com/davatorium/rofi)).
