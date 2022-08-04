@@ -198,14 +198,18 @@ def plot(
         assert len(line_data) > 0 or len(scatter_data) > 0
         colors: dict = {}
         if settings.get_series_marker(uuid) in _UNFILLED_MARKERS:
-            colors.update({
-                "color": color,
-            })
+            colors.update(
+                {
+                    "color": color,
+                }
+            )
         else:
-            colors.update({
-                "edgecolor": color,
-                "facecolor": "none",
-            })
+            colors.update(
+                {
+                    "edgecolor": color,
+                    "facecolor": "none",
+                }
+            )
         if marker is not None and has_line:
             axis.plot(*line_data, label=label, color=color)
             axis.scatter(

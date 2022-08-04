@@ -1,3 +1,15 @@
+# 2.1.0
+
+- Added a setting for the interval for saving automatic backups to the `Settings - defaults` window.
+- Added a changelog window that is shown automatically when DearEIS has been updated.
+- Added the ability to check if a new version of DearEIS is available on PyPI.
+	- The `requests` package has been added as a dependency.
+- Updated minimum versions for dependencies.
+- Updated the `About` window (e.g., so that the URLs can be highlighted and copied).
+- Fixed a bug that caused the table of keybindings to not apply filters when updating.
+- Refactored code.
+
+
 # 2.0.1
 
 - Added GitHub Actions workflow for testing the package (API only) on Linux (Ubuntu), MacOS, and Windows.
@@ -9,10 +21,10 @@
 - Added a window for exporting plots using matplotlib.
 	- Testing showed that attempting to free the memory allocated to the plot previews caused DearEIS to always crash on one of the computers used for testing.
 	  The cause is not known at the moment but it could a bug in the GPU drivers (NVIDIA 515.57 on Linux) and/or in the GUI framework (Dear PyGui 1.6.2).
-	- Two workarounds have been implemented in the form of two settings that can be found in the **Settings - defaults** window:
-		- Disabling the **Clear texture registry** setting prevents the crashes without taking away the ability to have plot previews.
+	- Two workarounds have been implemented in the form of two settings that can be found in the `Settings - defaults` window:
+		- Disabling the `Clear texture registry` setting prevents the crashes without taking away the ability to have plot previews.
 		  However, doing so introduces a memory leak since the memory allocated to each plot preview is not freed until DearEIS is closed.
-		- Alternatively, enabling the **Disable plot previews** setting prevents the crashes without introducing a memory leak by not generating plot previews at all.
+		- Alternatively, enabling the `Disable plot previews` setting prevents the crashes without introducing a memory leak by not generating plot previews at all.
 - Added settings for the default values used when exporting plots (e.g., dimensions and extension).
 - Added support for the new data formats supported by pyimpspec.
 - Added tests for the API and the GUI.

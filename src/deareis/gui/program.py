@@ -247,6 +247,14 @@ class MenuBar:
                     label="About", callback=lambda: signals.emit(Signal.SHOW_HELP_ABOUT)
                 )
                 dpg.add_menu_item(
+                    label="Changelog",
+                    callback=lambda: signals.emit(Signal.SHOW_CHANGELOG),
+                )
+                dpg.add_menu_item(
+                    label="Check for updates",
+                    callback=lambda: signals.emit(Signal.CHECK_UPDATES),
+                )
+                dpg.add_menu_item(
                     label="Licenses",
                     callback=lambda: signals.emit(Signal.SHOW_HELP_LICENSES),
                 )

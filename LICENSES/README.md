@@ -53,6 +53,11 @@
 - License: GPLv3 or later
 - Dependency.
 
+# requests
+- https://github.com/psf/requests
+- License: Apache License v2.0
+- Dependency.
+
 # sympy
 - https://github.com/sympy/sympy
 - License: BSD 3-clause

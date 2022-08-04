@@ -204,6 +204,10 @@ class KeybindingHandler:
             signals.emit(Signal.SHOW_SETTINGS_KEYBINDINGS)
         elif action == Action.SHOW_COMMAND_PALETTE:
             signals.emit(Signal.SHOW_COMMAND_PALETTE)
+        elif action == Action.SHOW_CHANGELOG:
+            signals.emit(Signal.SHOW_CHANGELOG)
+        elif action == Action.CHECK_UPDATES:
+            signals.emit(Signal.CHECK_UPDATES)
         elif project is not None:
             assert project is not None
             assert project_tab is not None

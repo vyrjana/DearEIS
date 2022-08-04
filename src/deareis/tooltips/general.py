@@ -60,5 +60,10 @@ Search for an action to perform based on its description. Results can be navigat
 
 The highlighted result can be executed by pressing Enter. The window can be closed by pressing Esc.
     """.strip(),
+        "auto_backup_interval": """
+The number of actions between automatically saving a backup of the current state of a project in case of, e.g., crashes or power outages.
+
+Setting this interval to zero disables automatic backups.
+    """.strip(),
     }
 )

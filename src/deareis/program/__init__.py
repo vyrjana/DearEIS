@@ -114,7 +114,9 @@ from .plotting import (
     select_plot_type,
     toggle_plot_series,
 )
+from .check_updates import perform_update_check
 from deareis.gui.plots import show_modal_plot_window
+from deareis.gui.changelog import show_changelog
 from deareis.enums import (
     Context,
     Output,
@@ -154,6 +156,7 @@ from deareis.gui.settings import (
     KeybindingRemapping,
     show_defaults_settings_window,
 )
+import deareis.themes as themes
 from deareis.version import PACKAGE_VERSION
 
 
@@ -492,7 +495,7 @@ def show_help_about(*args, **kwargs):
     y: int
     w: int
     h: int
-    x, y, w, h = calculate_window_position_dimensions(256, 130)
+    x, y, w, h = calculate_window_position_dimensions(270, 100)
     window: int = dpg.generate_uuid()
     key_handler: int = dpg.generate_uuid()
 
@@ -522,16 +525,22 @@ def show_help_about(*args, **kwargs):
         on_close=close_window,
         tag=window,
     ):
-        dpg.add_text(
-            f"""
-DearEIS
-
-Version: {PACKAGE_VERSION}
-
-https://vyrjana.github.io/DearEIS
-
-https://github.com/vyrjana/DearEIS
-            """.strip()
+        dpg.add_text(f"DearEIS ({PACKAGE_VERSION})")
+        dpg.bind_item_theme(
+            dpg.add_input_text(
+                default_value="https://vyrjana.github.io/DearEIS",
+                enabled=False,
+                width=-1,
+            ),
+            themes.url_theme,
+        )
+        dpg.bind_item_theme(
+            dpg.add_input_text(
+                default_value="https://github.com/vyrjana/DearEIS",
+                enabled=False,
+                width=-1,
+            ),
+            themes.url_theme,
         )
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
 
@@ -699,6 +708,8 @@ def initialize_program(args: Namespace):
     )
     signals.register(Signal.EXPORT_PLOT, export_plot)
     signals.register(Signal.SAVE_PLOT, save_plot)
+    signals.register(Signal.CHECK_UPDATES, perform_update_check)
+    signals.register(Signal.SHOW_CHANGELOG, show_changelog)
     # signals.register(Signal., )
     if args.data_files:
         signals.emit(Signal.NEW_PROJECT, data=args.data_files)
@@ -706,6 +717,7 @@ def initialize_program(args: Namespace):
         signals.emit(Signal.LOAD_PROJECT_FILES, paths=args.project_files)
     restore_unsaved_project_snapshots()
     signals.emit_backlog()
+    STATE.check_version()
 
 
 def program_closing():

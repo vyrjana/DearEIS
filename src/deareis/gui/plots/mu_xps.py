@@ -41,7 +41,9 @@ class MuXps(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(dpg.mvXAxis, label="number of RC elements")
+            self._x_axis: int = dpg.add_plot_axis(
+                dpg.mvXAxis, label="number of RC elements"
+            )
             self._y_axis_1: int = dpg.add_plot_axis(dpg.mvYAxis, label="µ")
             self._y_axis_2: int = dpg.add_plot_axis(
                 dpg.mvYAxis, label="log X² (pseudo)"

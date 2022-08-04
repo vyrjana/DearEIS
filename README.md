@@ -3,6 +3,7 @@
 A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
 [![tests](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-package.yml)
+[![build](https://github.com/vyrjana/DearEIS/actions/workflows/test-wheel.yml/badge.svg)](https://github.com/vyrjana/DearEIS/actions/workflows/test-wheel.yml)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
 [![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![PyPI](https://img.shields.io/pypi/v/DearEIS)](https://pypi.org/project/deareis/)
@@ -70,6 +71,7 @@ The package **may** also work on other platforms depending on whether or not tho
 - The following Python packages
 	- [Dear PyGui](https://github.com/hoffstadt/DearPyGui): cross-platform GUI toolkit
 	- [pyimpspec](https://github.com/vyrjana/pyimpspec): data parsing, data validation, circuits, and fitting
+	- [requests](https://github.com/psf/requests): checking the latest version of DearEIS available on PyPI
 	- [tabulate](https://github.com/astanin/python-tabulate): formatting of Markdown tables
 	- [xdg](https://github.com/srstevenson/xdg): XDG Base Directory Specification compliant paths
 

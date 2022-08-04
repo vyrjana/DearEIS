@@ -810,7 +810,7 @@ class Config:
         self.export_experimental_clear_registry = settings[
             "export_experimental_clear_registry"
         ]
-        self.export_experimental_disable_previews= settings[
+        self.export_experimental_disable_previews = settings[
             "export_experimental_disable_previews"
         ]
         self.keybindings = list(map(Keybinding.from_dict, settings["keybindings"]))

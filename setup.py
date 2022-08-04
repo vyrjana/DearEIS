@@ -1,6 +1,28 @@
-from setuptools import setup, find_packages
+from setuptools import (
+    setup,
+    find_packages,
+)
 from os import walk
-from os.path import dirname, join
+from os.path import (
+    basename,
+    exists,
+    join,
+)
+
+
+entry_points = {
+    "gui_scripts": [
+        "deareis = deareis.program:main",
+    ],
+    "console_scripts": [
+        "deareis-debug = deareis.program:debug",  # For the convenience of users on Windows
+    ],
+}
+
+
+# The version number defined below is propagated to /src/deareis/version.py
+# when running this script.
+version = "2.1.0"
 
 
 licenses = []
@@ -14,21 +36,49 @@ for _, _, files in walk("LICENSES"):
         )
     )
 
-entry_points = {
-    "gui_scripts": [
-        "deareis = deareis.program:main",
-    ],
-    "console_scripts": [
-        "deareis-debug = deareis.program:debug",  # For the convenience of users on Windows
-    ],
-}
+
+def update_file(src: str, dst: str):
+    if not exists(src):
+        return
+    src_contents = ""
+    with open(src, "r") as fp:
+        src_contents = fp.read()
+    if exists(dst):
+        with open(dst, "r") as fp:
+            if fp.read() == src_contents:
+                return
+    with open(dst, "w") as fp:
+        fp.write(src_contents)
+
 
 copyright_notice = ""
-with open(join(dirname(__file__), "COPYRIGHT")) as fp:
+with open("COPYRIGHT") as fp:
     copyright_notice = fp.read().strip()
-version = "2.0.1"
-with open(join(dirname(__file__), "src", "deareis", "version.py"), "w") as fp:
+
+with open(join("src", "deareis", "version.py"), "w") as fp:
     fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
+
+# The changelog bundled with the package will also be updated when running this script.
+update_file(
+    join("CHANGELOG.md"),
+    join("src", "deareis", "gui", "changelog", "CHANGELOG.md"),
+)
+
+# The licenses bundled with the package will also be updated when running this script.
+update_file(
+    join("LICENSE"),
+    join("src", "deareis", "gui", "licenses", "LICENSE-DearEIS.txt"),
+)
+list(
+    map(
+        lambda _: update_file(
+            _,
+            join("src", "deareis", "gui", "licenses", basename(_)),
+        ),
+        licenses,
+    )
+)
+
 
 setup(
     name="deareis",
@@ -41,6 +91,7 @@ setup(
         "COPYRIGHT",
         "CONTRIBUTORS",
         "LICENSES/README.md",
+        "src/deareis/gui/changelog/CHANGELOG.md",
     ]
     + licenses,
     url="https://vyrjana.github.io/DearEIS",
@@ -56,7 +107,8 @@ setup(
     entry_points=entry_points,
     install_requires=[
         "dearpygui>=1.6.2",  # Used to implement the GUI.
-        "pyimpspec>=2.0.1",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "pyimpspec>=2.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+        "requests>=2.27.1",  # Used to check package status on PyPI.
         "tabulate>=0.8.10",  # Required by pandas to generate Markdown tables.
         "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
     ],

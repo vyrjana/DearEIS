@@ -17,7 +17,10 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 from numpy import allclose
 import pyimpspec
 
@@ -113,7 +116,7 @@ class DataSet(pyimpspec.DataSet):
             Create an instance from a dictionary.
         """
         # This is implemented to deal with the effects of the modified to_dict method.
-        mask: Dict[str, bool] = dictionary.get("mask")
+        mask: Optional[Dict[str, bool]] = dictionary.get("mask")
         if type(mask) is dict and len(mask) < len(dictionary["frequency"]):
             i: int
             for i in range(0, len(dictionary["frequency"])):

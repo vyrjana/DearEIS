@@ -47,7 +47,7 @@ from deareis.enums import (
     method_to_value,
 )
 from deareis.gui import ProjectTab
-from deareis.gui.exploratory_results import ExploratoryResults
+from deareis.gui.kramers_kronig.exploratory_results import ExploratoryResults
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.state import STATE

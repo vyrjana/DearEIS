@@ -131,3 +131,5 @@ dmypy.json
 docs/API*.md
 docs/API*.pdf
 docs/documentation
+src/deareis/gui/changelog/*.md
+src/deareis/gui/licenses/*.txt

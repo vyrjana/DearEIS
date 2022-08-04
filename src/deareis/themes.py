@@ -655,6 +655,18 @@ with dpg.theme() as transparent_modal_background:
         )
 
 
+# URL theme
+url_theme: int
+with dpg.theme() as url_theme:
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(dpg.mvThemeCol_Text, [255.0, 255.0, 255.0, 255.0])
+        dpg.add_theme_color(dpg.mvThemeCol_Button, [255.0, 255.0, 255.0, 255.0])
+        dpg.add_theme_color(dpg.mvThemeCol_FrameBg, [37.0, 37.0, 38.0, 255.0])
+        dpg.add_theme_style(
+            dpg.mvStyleVar_FramePadding, 0.0, 2.0, category=dpg.mvThemeCat_Core
+        )
+
+
 # Global theme
 _greyed_out: List[float] = [
     100.0,

@@ -39,6 +39,7 @@ from xdg import (
     xdg_state_home,  #  User-specific state data files
 )
 import dearpygui.dearpygui as dpg
+from deareis.version import PACKAGE_VERSION
 from deareis.config import Config
 from deareis.data import (
     Project,
@@ -60,6 +61,8 @@ from deareis.gui.command_palette import CommandPalette
 from deareis.keybindings import KeybindingHandler
 from deareis.utility import calculate_checksum
 from deareis.gui.plotting.export import PlotExporter
+from deareis.signals import Signal
+import deareis.signals as signals
 
 
 class State:
@@ -314,6 +317,21 @@ class State:
 
     def is_busy_message_visible(self) -> bool:
         return self.program_window.busy_message.is_visible()
+
+    def check_version(self):
+        recent_version_path: str = join(self.state_directory_path, "recent_version")
+        fp: IO
+        if not exists(recent_version_path):
+            with open(recent_version_path, "w") as fp:
+                fp.write(PACKAGE_VERSION)
+            return
+        version: str = ""
+        with open(recent_version_path, "r") as fp:
+            version = fp.read().strip()
+        if version != PACKAGE_VERSION:
+            with open(recent_version_path, "w") as fp:
+                fp.write(PACKAGE_VERSION)
+            signals.emit(Signal.SHOW_CHANGELOG)
 
 
 STATE: State = State()

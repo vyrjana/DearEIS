@@ -31,13 +31,20 @@ from deareis.config import DEFAULT_KEYBINDINGS
 
 
 class KeybindingTable:
-    def __init__(self, state):
+    def __init__(self, key_filter_input: int, description_filter_input: int, state):
+        self.key_filter_input: int = key_filter_input
+        self.description_filter_input: int = description_filter_input
         self.state = state
         self.remapping: bool = False
         self.info_window: int = dpg.generate_uuid()
         with dpg.child_window(width=-1, height=-26, tag=self.info_window):
             self.info_text: int = dpg.generate_uuid()
-            dpg.add_text("", tag=self.info_text, user_data="Press a key...", wrap=680)
+            dpg.add_text(
+                "",
+                tag=self.info_text,
+                user_data="Press a key or Esc to clear the current key mapping...",
+                wrap=680,
+            )
         self.table: int = dpg.generate_uuid()
         with dpg.table(
             borders_outerV=True,
@@ -136,8 +143,11 @@ class KeybindingTable:
                     short_description = short_description[:-1] + "..."
                 dpg.add_text(short_description)
                 attach_tooltip(description)
+        self.filter()
 
-    def filter(self, key: str = "", description: str = ""):
+    def filter(self):
+        key: str = dpg.get_value(self.key_filter_input).strip().lower()
+        description: str = dpg.get_value(self.description_filter_input).strip().lower()
         row: int
         for row in dpg.get_item_children(self.table, slot=1):
             key_filter: str
@@ -300,12 +310,7 @@ class KeybindingRemapping:
             description_filter_input: int = dpg.generate_uuid()
             with dpg.group(horizontal=True):
                 dpg.add_input_text(
-                    callback=lambda s, a, u: self.table.filter(
-                        key=a.strip().lower(),
-                        description=dpg.get_value(description_filter_input)
-                        .strip()
-                        .lower(),
-                    ),
+                    callback=lambda s, a, u: self.table.filter(),
                     hint="Filter key(s)",
                     width=200,
                     tag=key_filter_input,
@@ -316,10 +321,7 @@ Filter based on keys or modifiers ('alt', 'ctrl', or 'shift'). Multiple modifier
                 """.strip()
                 )
                 dpg.add_input_text(
-                    callback=lambda s, a, u: self.table.filter(
-                        key=dpg.get_value(key_filter_input).strip().lower(),
-                        description=a.strip().lower(),
-                    ),
+                    callback=lambda s, a, u: self.table.filter(),
                     hint="Filter description(s)",
                     width=-1,
                     tag=description_filter_input,
@@ -329,7 +331,9 @@ Filter based on keys or modifiers ('alt', 'ctrl', or 'shift'). Multiple modifier
 Filter based on descriptions.
                 """.strip()
                 )
-            self.table: KeybindingTable = KeybindingTable(state)
+            self.table: KeybindingTable = KeybindingTable(
+                key_filter_input, description_filter_input, state
+            )
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Clear all", callback=self.clear_all)
                 dpg.add_button(label="Reset", callback=self.reset)

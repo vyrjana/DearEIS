@@ -46,6 +46,8 @@ class Action(IntEnum):
     SHOW_SETTINGS_DEFAULTS = auto()
     SHOW_SETTINGS_KEYBINDINGS = auto()
     SHOW_COMMAND_PALETTE = auto()
+    SHOW_CHANGELOG = auto()
+    CHECK_UPDATES = auto()
 
     # Project-level
     SAVE_PROJECT = auto()
@@ -133,6 +135,8 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.SHOW_SETTINGS_DEFAULTS: [Context.PROGRAM],
     Action.SHOW_SETTINGS_KEYBINDINGS: [Context.PROGRAM],
     Action.SHOW_COMMAND_PALETTE: [Context.PROGRAM],
+    Action.SHOW_CHANGELOG: [Context.PROGRAM],
+    Action.CHECK_UPDATES: [Context.PROGRAM],
     Action.SAVE_PROJECT: [Context.PROJECT],
     Action.SAVE_PROJECT_AS: [Context.PROJECT],
     Action.CLOSE_PROJECT: [Context.PROJECT],
@@ -259,6 +263,8 @@ action_to_string: Dict[Action, str] = {
     Action.SHOW_SETTINGS_DEFAULTS: "show-settings-defaults",
     Action.SHOW_SETTINGS_KEYBINDINGS: "show-settings-keybindings",
     Action.SHOW_COMMAND_PALETTE: "show-command-palette",
+    Action.SHOW_CHANGELOG: "show-changelog",
+    Action.CHECK_UPDATES: "check-updates",
     Action.SAVE_PROJECT: "save-project",
     Action.SAVE_PROJECT_AS: "save-project-as",
     Action.CLOSE_PROJECT: "close-project",
@@ -300,6 +306,10 @@ action_to_string: Dict[Action, str] = {
     Action.EXPORT_PLOT: "export-plot",
 }
 string_to_action: Dict[str, Action] = {v: k for k, v in action_to_string.items()}
+# Check that there are no duplicate keys
+assert len(action_to_string) == len(set(action_to_string.values())) and len(
+    action_to_string
+) == len(string_to_action), "Duplicate action string keys detected!"
 
 
 action_descriptions: Dict[Action, str] = {
@@ -338,6 +348,12 @@ Show the 'Settings - keybindings' window.
 """.strip(),
     Action.SHOW_COMMAND_PALETTE: """
 Show the command palette, which can be used as an alternative to other keybindings for performing actions.
+""".strip(),
+    Action.SHOW_CHANGELOG: """
+Show the changelog.
+""".strip(),
+    Action.CHECK_UPDATES: """
+Check for updates.
 """.strip(),
     Action.SAVE_PROJECT: """
 Save the current project.
@@ -490,6 +506,10 @@ Collapse/expand the sidebar while in the 'Plotting' tab.
 Export the current plot using matplotlib.
 """.strip(),
 }
+# Check that every action has a description
+assert set(action_to_string.keys()) == set(
+    action_descriptions.keys()
+), "Missing action descriptions detected!"
 
 
 class Method(IntEnum):
@@ -602,6 +622,9 @@ method_to_value: Dict[Method, str] = {
     Method.DUAL_ANNEALING: "dual_annealing",
 }
 value_to_method: Dict[str, Method] = {v: k for k, v in method_to_value.items()}
+assert set(method_to_value.keys()) == set(
+    value_to_method.values()
+), "Duplicate method string keys detected!"
 
 
 class Mode(IntEnum):
@@ -618,12 +641,15 @@ class Mode(IntEnum):
     MANUAL = 3
 
 
-label_to_mode: Dict[str, Mode] = {
-    "Auto": Mode.AUTO,
-    "Exploratory": Mode.EXPLORATORY,
-    "Manual": Mode.MANUAL,
+mode_to_label: Dict[Mode, str] = {
+    Mode.AUTO: "Auto",
+    Mode.EXPLORATORY: "Exploratory",
+    Mode.MANUAL: "Manual",
 }
-mode_to_label: Dict[Mode, str] = {v: k for k, v in label_to_mode.items()}
+label_to_mode: Dict[str, Mode] = {v: k for k, v in mode_to_label.items()}
+assert set(mode_to_label.keys()) == set(
+    label_to_mode.values()
+), "Duplicate mode string labels detected!"
 
 
 class Output(IntEnum):
@@ -640,20 +666,23 @@ class Output(IntEnum):
     SYMPY_EXPR_VALUES = auto()
 
 
-label_to_output: Dict[str, Output] = {
-    "CDC - basic": Output.CDC_BASIC,
-    "CDC - extended": Output.CDC_EXTENDED,
-    "CSV - impedance table": Output.CSV_DATA_TABLE,
-    "CSV - parameters table": Output.CSV_PARAMETERS_TABLE,
-    "JSON - parameters table": Output.JSON_PARAMETERS_TABLE,
-    "LaTeX - circuit diagram": Output.LATEX_DIAGRAM,
-    "LaTeX - expression": Output.LATEX_EXPR,
-    "LaTeX - parameters table": Output.LATEX_PARAMETERS_TABLE,
-    "Markdown - parameters table": Output.MARKDOWN_PARAMETERS_TABLE,
-    "SymPy - expression": Output.SYMPY_EXPR,
-    "SymPy - expression and values": Output.SYMPY_EXPR_VALUES,
+output_to_label: Dict[Output, str] = {
+    Output.CDC_BASIC: "CDC - basic",
+    Output.CDC_EXTENDED: "CDC - extended",
+    Output.CSV_DATA_TABLE: "CSV - impedance table",
+    Output.CSV_PARAMETERS_TABLE: "CSV - parameters table",
+    Output.JSON_PARAMETERS_TABLE: "JSON - parameters table",
+    Output.LATEX_DIAGRAM: "LaTeX - circuit diagram",
+    Output.LATEX_EXPR: "LaTeX - expression",
+    Output.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
+    Output.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
+    Output.SYMPY_EXPR: "SymPy - expression",
+    Output.SYMPY_EXPR_VALUES: "SymPy - expression and values",
 }
-output_to_label: Dict[Output, str] = {v: k for k, v in label_to_output.items()}
+label_to_output: Dict[str, Output] = {v: k for k, v in output_to_label.items()}
+assert set(output_to_label.keys()) == set(
+    label_to_output.values()
+), "Duplicate output string labels detected!"
 
 
 class PlotType(IntEnum):
@@ -670,12 +699,15 @@ class PlotType(IntEnum):
     BODE_PHASE = 3
 
 
-label_to_plot_type: Dict[str, PlotType] = {
-    "Nyquist": PlotType.NYQUIST,
-    "Bode - magnitude": PlotType.BODE_MAGNITUDE,
-    "Bode - phase": PlotType.BODE_PHASE,
+plot_type_to_label: Dict[PlotType, str] = {
+    PlotType.NYQUIST: "Nyquist",
+    PlotType.BODE_MAGNITUDE: "Bode - magnitude",
+    PlotType.BODE_PHASE: "Bode - phase",
 }
-plot_type_to_label: Dict[PlotType, str] = {v: k for k, v in label_to_plot_type.items()}
+label_to_plot_type: Dict[str, PlotType] = {v: k for k, v in plot_type_to_label.items()}
+assert set(plot_type_to_label.keys()) == set(
+    label_to_plot_type.values()
+), "Duplicate plot type string labels detected!"
 
 
 class Test(IntEnum):
@@ -694,19 +726,25 @@ class Test(IntEnum):
     REAL = 4
 
 
-label_to_test: Dict[str, Test] = {
-    "CNLS": Test.CNLS,
-    "Complex": Test.COMPLEX,
-    "Imaginary": Test.IMAGINARY,
-    "Real": Test.REAL,
+test_to_label: Dict[Test, str] = {
+    Test.CNLS: "CNLS",
+    Test.COMPLEX: "Complex",
+    Test.IMAGINARY: "Imaginary",
+    Test.REAL: "Real",
 }
-test_to_label: Dict[Test, str] = {v: k for k, v in label_to_test.items()}
+label_to_test: Dict[str, Test] = {v: k for k, v in test_to_label.items()}
 test_to_value: Dict[Test, str] = {
     Test.CNLS: "cnls",
     Test.COMPLEX: "complex",
     Test.IMAGINARY: "imaginary",
     Test.REAL: "real",
 }
+assert set(test_to_label.keys()) == set(
+    label_to_test.values()
+), "Duplicate test string keys detected!"
+assert set(test_to_label.keys()) == set(
+    test_to_value.keys()
+), "Missing test string values detected!"
 
 
 class Weight(IntEnum):
@@ -727,14 +765,14 @@ class Weight(IntEnum):
     BOUKAMP = 5
 
 
-label_to_weight: Dict[str, Weight] = {
-    "Modulus": Weight.MODULUS,
-    "Proportional": Weight.PROPORTIONAL,
-    "Unity": Weight.UNITY,
-    "Boukamp": Weight.BOUKAMP,
+weight_to_label: Dict[Weight, str] = {
+    Weight.AUTO: "Auto",
+    Weight.MODULUS: "Modulus",
+    Weight.PROPORTIONAL: "Proportional",
+    Weight.UNITY: "Unity",
+    Weight.BOUKAMP: "Boukamp",
 }
-weight_to_label: Dict[Weight, str] = {v: k for k, v in label_to_weight.items()}
-weight_to_label[Weight.AUTO] = "Auto"
+label_to_weight: Dict[str, Weight] = {v: k for k, v in weight_to_label.items()}
 weight_to_value: Dict[Weight, str] = {
     Weight.AUTO: "auto",
     Weight.UNITY: "unity",
@@ -743,3 +781,12 @@ weight_to_value: Dict[Weight, str] = {
     Weight.BOUKAMP: "boukamp",
 }
 value_to_weight: Dict[str, Weight] = {v: k for k, v in weight_to_value.items()}
+assert set(weight_to_label.keys()) == set(
+    label_to_weight.values()
+), "Duplicate weight string labels detected!"
+assert set(weight_to_label.keys()) == set(
+    weight_to_value.keys()
+), "Missing weight string values detected!"
+assert set(weight_to_value.keys()) == set(
+    value_to_weight.values()
+), "Duplicate weight string values detected!"

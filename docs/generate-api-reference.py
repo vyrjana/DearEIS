@@ -172,7 +172,8 @@ The `parse_data` function is a wrapper for the corresponding function in pyimpsp
             objects_to_ignore=[
                 deareis.get_elements,
                 deareis.Element,
-            ] + list(deareis.get_elements().values()),
+            ]
+            + list(deareis.get_elements().values()),
             description="",
         ),
     )

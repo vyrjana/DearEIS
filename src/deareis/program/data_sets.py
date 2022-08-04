@@ -35,11 +35,11 @@ from deareis.data import (
 )
 from deareis.enums import Context
 from deareis.gui import ProjectTab
-from deareis.gui.average_data_sets import AverageDataSets
-from deareis.gui.copy_mask import CopyMask
+from deareis.gui.data_sets.average_data_sets import AverageDataSets
+from deareis.gui.data_sets.copy_mask import CopyMask
+from deareis.gui.data_sets.subtract_impedance import SubtractImpedance
+from deareis.gui.data_sets.toggle_data_points import ToggleDataPoints
 from deareis.gui.file_dialog import FileDialog
-from deareis.gui.subtract_impedance import SubtractImpedance
-from deareis.gui.toggle_data_points import ToggleDataPoints
 from deareis.signals import Signal
 from deareis.state import STATE
 import deareis.signals as signals
