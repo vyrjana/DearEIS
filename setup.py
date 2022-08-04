@@ -19,11 +19,20 @@ entry_points = {
     ],
 }
 
+dependencies = [
+    "dearpygui>=1.6.2",  # Used to implement the GUI.
+    "pyimpspec>=2.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "requests>=2.27.1",  # Used to check package status on PyPI.
+    "tabulate>=0.8.10",  # Required by pandas to generate Markdown tables.
+    "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
+]
+
+with open("requirements.txt", "w") as fp:
+    fp.write("\n".join(dependencies))
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
 version = "2.1.0"
-
 
 licenses = []
 for _, _, files in walk("LICENSES"):
@@ -105,13 +114,7 @@ setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     entry_points=entry_points,
-    install_requires=[
-        "dearpygui>=1.6.2",  # Used to implement the GUI.
-        "pyimpspec>=2.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
-        "requests>=2.27.1",  # Used to check package status on PyPI.
-        "tabulate>=0.8.10",  # Required by pandas to generate Markdown tables.
-        "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
-    ],
+    install_requires=dependencies,
     python_requires=">=3.8",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
