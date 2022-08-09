@@ -17,6 +17,7 @@ The program includes features such as:
 - [simulation of impedance spectra](assets/images/example-simulation.gif)
 - [composition of complex plots](assets/images/example-plotting.gif)
 - [export plots using matplotlib](assets/images/example-export-plot.gif)
+- [Python API for scripting (e.g., batch processing)](https://vyrjana.github.io/DearEIS/api/)
 
 
 ## Recent news
