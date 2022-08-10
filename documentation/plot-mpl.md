@@ -164,7 +164,7 @@ Tuple[Figure, List[Axes]]
 Plot a the result of a circuit fit as a Nyquist plot, a Bode plot, and a plot of the residuals.
 
 ```python
-def plot_fit(fit: Union[FittingResult, KramersKronigResult], data: Optional[DataSet] = None, title: Optional[str] = None, fig: Optional[Figure] = None, axes: List[Axes] = []) -> Tuple[Figure, List[Tuple[Axes]]]:
+def plot_fit(fit: Union[FittingResult, KramersKronigResult], data: Optional[DataSet] = None, title: Optional[str] = None, fig: Optional[Figure] = None, axes: List[Axes] = [], num_per_decade: int = 100) -> Tuple[Figure, List[Tuple[Axes]]]:
 ```
 
 
@@ -176,6 +176,7 @@ _Parameters_
 If no title is provided, then the circuit description code (and label of the DataSet) is used instead.
 - `fig`: The matplotlib.figure.Figure instance to use when plotting the data.
 - `axes`: A list of matplotlib.axes.Axes instances to use when plotting the data.
+- `num_per_decade`: The number of points per decade to use when plotting the line for the fit (i.e., it affects how smooth or angular the line looks).
 
 
 _Returns_
