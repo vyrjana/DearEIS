@@ -1,5 +1,6 @@
-# 2.1.1
+# 2.2.0
 
+- Added `num_per_decade` argument to the `deareis.mpl.plot_fit` function.
 - Added sorting of elements to the `to_dataframe` methods in the `FitResult` and `SimulationResult` classes.
 - Updated the required minimum version for `pyimpspec`.
 - Fixed a bug where an exception would occur in the GUI program because a `Project` instance created outside of the GUI program would not have a `PlotSettings` instance.

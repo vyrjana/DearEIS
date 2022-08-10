@@ -31,7 +31,7 @@ with open("requirements.txt", "w") as fp:
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "2.1.1"
+version = "2.2.0"
 
 licenses = []
 for _, _, files in walk("LICENSES"):
