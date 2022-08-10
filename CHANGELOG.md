@@ -1,3 +1,11 @@
+# 2.1.1
+
+- Added sorting of elements to the `to_dataframe` methods in the `FitResult` and `SimulationResult` classes.
+- Updated the required minimum version for `pyimpspec`.
+- Fixed a bug where an exception would occur in the GUI program because a `Project` instance created outside of the GUI program would not have a `PlotSettings` instance.
+- Fixed bugs that prevented the entries for Kramers-Kronig test results and circuit fit results in the plotting tab from updating properly when deleting those results or when undoing/redoing changes affecting those results.
+
+
 # 2.1.0
 
 - Added a setting for the interval for saving automatic backups to the `Settings - defaults` window.

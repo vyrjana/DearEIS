@@ -133,3 +133,4 @@ docs/API*.pdf
 docs/documentation
 src/deareis/gui/changelog/*.md
 src/deareis/gui/licenses/*.txt
+examples/example-2.json

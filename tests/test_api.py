@@ -146,18 +146,21 @@ class TestAPI(TestCase):
         )
         result: deareis.FitResult = deareis.fit_circuit_to_data(data, settings)
         self.assertTrue(type(control_result) == type(result) == deareis.FitResult)
+        # Settings
         res: deareis.FitResult
         for res in [result, control_result]:
             self.assertEqual(res.settings.cdc, cdc)
             self.assertEqual(res.settings.method, method)
             self.assertEqual(res.settings.weight, weight)
             self.assertEqual(res.settings.max_nfev, max_nfev)
+        # Statistics and fitted parameters
         self.assertEqual(control_result.chisqr, result.chisqr)
         self.assertAlmostEqual(result.parameters["R_0"]["R"].value, 100, delta=1e0)
         self.assertAlmostEqual(result.parameters["R_1"]["R"].value, 200, delta=1e0)
         self.assertAlmostEqual(result.parameters["C_2"]["C"].value, 800e-9, delta=1e-8)
         self.assertAlmostEqual(result.parameters["R_3"]["R"].value, 500, delta=1e0)
         self.assertAlmostEqual(result.parameters["W_4"]["Y"].value, 400e-6, delta=1e-5)
+        # Impedance
         data_impedance: ndarray = data.get_impedance()
         fit_impedance: ndarray = result.get_impedance()
         self.assertTrue(type(data_impedance) == type(fit_impedance))
@@ -165,9 +168,92 @@ class TestAPI(TestCase):
         self.assertEqual(len(fit_impedance), len(data_impedance))
         self.assertTrue(abs(sum(data_impedance.real - fit_impedance.real)) < 5e-1)
         self.assertTrue(abs(sum(data_impedance.imag - fit_impedance.imag)) < 5e-1)
+        # Markdown table
+        lines: List[str] = result.to_dataframe().to_markdown().split("\n")
+        self.assertEqual(len(lines), 7)
+        line: str = lines.pop(0)
+        self.assertTrue(
+            0
+            < line.index("Element")
+            < line.index("Parameter")
+            < line.index("Value")
+            < line.index("Std. err. (%)")
+            < line.index("Fixed")
+        )
+        lines.pop(0)
+        i: int = 0
+        while lines:
+            line = lines.pop(0)
+            columns: List[str] = list(
+                filter(lambda _: _ != "", map(str.strip, line.split("|")))
+            )
+            self.assertEqual(len(columns), 6)
+            self.assertEqual(int(columns[0]), i)
+            self.assertTrue(columns[1].endswith(f"_{i}"))
+            self.assertTrue(columns[1] in result.parameters)
+            self.assertAlmostEqual(
+                float(columns[3]),
+                result.parameters[columns[1]][columns[2]].value,
+                delta=0.1 * result.parameters[columns[1]][columns[2]].value,
+            )
+            self.assertEqual(
+                columns[5],
+                "Yes"
+                if result.parameters[columns[1]][columns[2]].fixed is True
+                else "No",
+            )
+            i += 1
+        # LaTeX table
+        lines = result.to_dataframe().to_latex().split("\n")
+        self.assertEqual(lines.pop(0), r"\begin{tabular}{lllrrl}")
+        self.assertEqual(lines.pop(0), r"\toprule")
+        line = lines.pop(0)
+        self.assertTrue(
+            0
+            < line.index("Element")
+            < line.index("Parameter")
+            < line.index("Value")
+            < line.index(r"Std. err. (\%)")
+            < line.index("Fixed")
+        )
+        self.assertEqual(lines.pop(0), r"\midrule")
+        self.assertEqual(lines.pop(), "")
+        self.assertEqual(lines.pop(), r"\end{tabular}")
+        self.assertEqual(lines.pop(), r"\bottomrule")
+        i = 0
+        while lines:
+            line = lines.pop(0).replace(r"\\", "").strip()
+            if line == "":
+                continue
+            columns: List[str] = list(
+                filter(lambda _: _ != "", map(str.strip, line.split("&")))
+            )
+            self.assertEqual(len(columns), 6)
+            self.assertEqual(int(columns[0]), i)
+            self.assertTrue(columns[1].endswith(f"_{i}"))
+            self.assertTrue(columns[1].replace(r"\_", "_") in result.parameters)
+            self.assertAlmostEqual(
+                float(columns[3]),
+                result.parameters[columns[1].replace(r"\_", "_")][columns[2]].value,
+                delta=0.1
+                * result.parameters[columns[1].replace(r"\_", "_")][columns[2]].value,
+            )
+            self.assertEqual(
+                columns[5],
+                "Yes"
+                if result.parameters[columns[1].replace(r"\_", "_")][columns[2]].fixed
+                is True
+                else "No",
+            )
+            i += 1
 
     def test_06_simulate_spectrum(self):
-        cdc: str = "R{R=25}(R{R=100}C{C=1.5E-6})"
+        parameter_values: List[float] = [
+            25.0,  # R_0
+            100.0,  # R_1
+            1.5e-6,  # C_2
+        ]
+        cdc: str = f"R{{R={parameter_values[0]}}}(R{{R={parameter_values[1]}}}C{{C={parameter_values[2]}}})"
         min_frequency: float = 2.5e-1
         max_frequency: float = 5e5
         num_per_decade: int = 5
@@ -211,6 +297,56 @@ class TestAPI(TestCase):
         self.assertTrue(allclose(log(frequency), bode_data[0]))
         self.assertTrue(allclose(log(abs(impedance)), bode_data[1]))
         self.assertTrue(allclose(-angle(impedance, deg=True), bode_data[2]))
+        # Markdown table
+        lines: List[str] = simulation.to_dataframe().to_markdown().split("\n")
+        self.assertEqual(len(lines), 5)
+        line: str = lines.pop(0)
+        self.assertTrue(
+            0 < line.index("Element") < line.index("Parameter") < line.index("Value")
+        )
+        lines.pop(0)
+        i: int = 0
+        while lines:
+            line = lines.pop(0)
+            columns: List[str] = list(
+                filter(lambda _: _ != "", map(str.strip, line.split("|")))
+            )
+            self.assertEqual(len(columns), 4)
+            self.assertEqual(int(columns[0]), i)
+            self.assertTrue(columns[1].endswith(f"_{i}"))
+            self.assertAlmostEqual(
+                float(columns[3]),
+                parameter_values[i],
+                delta=0.1 * parameter_values[i],
+            )
+            i += 1
+        # LaTeX table
+        lines = simulation.to_dataframe().to_latex().split("\n")
+        self.assertEqual(lines.pop(0), r"\begin{tabular}{lllr}")
+        self.assertEqual(lines.pop(0), r"\toprule")
+        line = lines.pop(0)
+        self.assertTrue(
+            0 < line.index("Element") < line.index("Parameter") < line.index("Value")
+        )
+        self.assertEqual(lines.pop(0), r"\midrule")
+        self.assertEqual(lines.pop(), "")
+        self.assertEqual(lines.pop(), r"\end{tabular}")
+        self.assertEqual(lines.pop(), r"\bottomrule")
+        i = 0
+        while lines:
+            line = lines.pop(0).replace(r"\\", "").strip()
+            columns: List[str] = list(
+                filter(lambda _: _ != "", map(str.strip, line.split("&")))
+            )
+            self.assertEqual(len(columns), 4)
+            self.assertEqual(int(columns[0]), i)
+            self.assertTrue(columns[1].endswith(f"_{i}"))
+            self.assertAlmostEqual(
+                float(columns[3]),
+                parameter_values[i],
+                delta=0.35 * parameter_values[i],
+            )
+            i += 1
 
     def test_07_mpl(self):
         project: deareis.Project = deareis.Project.from_file(TEST_PROJECT_PATH)

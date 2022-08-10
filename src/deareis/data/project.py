@@ -42,12 +42,19 @@ from typing import (
     Union,
 )
 from uuid import uuid4
-from numpy import ndarray
+from numpy import (
+    integer,
+    issubdtype,
+    ndarray,
+)
 from deareis.data import DataSet
 from deareis.data.fitting import FitResult
 from deareis.data.kramers_kronig import TestResult
 from deareis.data.simulation import SimulationResult
-from deareis.data.plotting import PlotSettings, PlotSeries
+from deareis.data.plotting import (
+    PlotSettings,
+    PlotSeries,
+)
 from deareis.enums import PlotType
 
 
@@ -131,6 +138,20 @@ class Project:
         self._plots: List[PlotSettings] = list(
             map(PlotSettings.from_dict, kwargs.get("plots", []))
         )
+        if len(self._plots) == 0:
+            self._plots.append(
+                PlotSettings(
+                    "Plot",
+                    PlotType.NYQUIST,
+                    [],
+                    {},
+                    {},
+                    {},
+                    {},
+                    {},
+                    uuid4().hex,
+                )
+            )
         self._simulations: List[SimulationResult] = list(
             map(SimulationResult.from_dict, kwargs.get("simulations", []))
         )
@@ -408,6 +429,7 @@ class Project:
             path = self.get_path()
         else:
             self.set_path(path)
+        assert path != ""
         assert exists(dirname(path)), path
         suffix: str = f".bak-{uuid4().hex}"
         tmp_path: str = path + suffix
@@ -748,7 +770,9 @@ class Project:
             Can be used to adjust how smooth an item/series looks.
         """
         assert type(plot) is PlotSettings, plot
-        assert type(num_per_decade) is int and num_per_decade > 0, num_per_decade
+        assert (
+            issubdtype(type(num_per_decade), integer) and num_per_decade > 0
+        ), num_per_decade
         data_sets: List[DataSet] = self.get_data_sets()
         tests: Dict[str, List[TestResult]] = self.get_all_tests()
         fits: Dict[str, List[FitResult]] = self.get_all_fits()

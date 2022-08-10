@@ -499,9 +499,7 @@ def plotting_tab_settings(label_pad: int, state):
             dpg.add_combo(
                 width=-1,
                 items=list(UNITS_PER_INCH.keys()),
-                default_value=list(UNITS_PER_INCH.keys())[
-                    state.config.export_units
-                ],
+                default_value=list(UNITS_PER_INCH.keys())[state.config.export_units],
                 callback=lambda s, a, u: update_export_units(a),
                 tag=export_units,
             )
@@ -552,9 +550,7 @@ def plotting_tab_settings(label_pad: int, state):
             dpg.add_combo(
                 width=-1,
                 items=list(PREVIEW_LIMITS.keys()),
-                default_value=list(PREVIEW_LIMITS.keys())[
-                    state.config.export_preview
-                ],
+                default_value=list(PREVIEW_LIMITS.keys())[state.config.export_preview],
                 callback=lambda s, a, u: update_export_preview(a),
                 tag=export_preview,
             )
@@ -625,9 +621,7 @@ def plotting_tab_settings(label_pad: int, state):
             attach_tooltip(tooltips.plotting.export_experimental_clear_registry)
             dpg.add_checkbox(
                 default_value=state.config.export_experimental_clear_registry,
-                callback=lambda s, a, u: update_export_experimental_clear_registry(
-                    a
-                ),
+                callback=lambda s, a, u: update_export_experimental_clear_registry(a),
                 tag=export_experimental_clear_registry,
             )
         with dpg.group(horizontal=True):
@@ -635,9 +629,7 @@ def plotting_tab_settings(label_pad: int, state):
             attach_tooltip(tooltips.plotting.export_experimental_disable_previews)
             dpg.add_checkbox(
                 default_value=state.config.export_experimental_disable_previews,
-                callback=lambda s, a, u: update_export_experimental_disable_previews(
-                    a
-                ),
+                callback=lambda s, a, u: update_export_experimental_disable_previews(a),
                 tag=export_experimental_disable_previews,
             )
         with dpg.group(horizontal=True):

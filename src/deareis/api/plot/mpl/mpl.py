@@ -29,9 +29,14 @@ import dearpygui.dearpygui as dpg
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-from numpy import ndarray
-from pyimpspec import DataSet
+from numpy import (
+    floating,
+    integer,
+    issubdtype,
+    ndarray,
+)
 from deareis.data import (
+    DataSet,
     FitResult,
     PlotSeries,
     PlotSettings,
@@ -121,23 +126,39 @@ def plot(
     assert x_limits is None or (
         type(x_limits) is tuple
         and len(x_limits) == 2
-        and all(map(lambda _: _ is None or type(_) is float, x_limits))
+        and all(
+            map(
+                lambda _: _ is None
+                or issubdtype(type(_), integer)
+                or issubdtype(type(_), floating),
+                x_limits,
+            )
+        )
     ), x_limits
     assert y_limits is None or (
         type(y_limits) is tuple
         and len(y_limits) == 2
-        and all(map(lambda _: _ is None or type(_) is float, y_limits))
+        and all(
+            map(
+                lambda _: _ is None
+                or issubdtype(type(_), integer)
+                or issubdtype(type(_), floating),
+                y_limits,
+            )
+        )
     ), y_limits
     assert type(show_title) is bool, show_title
     assert type(show_legend) is bool or show_legend is None, show_legend
-    assert type(legend_loc) is int or type(legend_loc) is str, legend_loc
+    assert issubdtype(type(legend_loc), integer) or type(legend_loc) is str, legend_loc
     assert type(show_grid) is bool, show_grid
     assert type(tight_layout) is bool, tight_layout
     assert type(fig) is Figure or fig is None
     if fig is None:
         fig, axis = plt.subplots()
     assert axis is not None
-    assert type(num_per_decade) is int and num_per_decade >= 1, num_per_decade
+    assert (
+        issubdtype(type(num_per_decade), integer) and num_per_decade >= 1
+    ), num_per_decade
     plot_type: PlotType = settings.get_type()
     uuid: str
     for uuid in settings.series_order:

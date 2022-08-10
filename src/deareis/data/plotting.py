@@ -26,7 +26,11 @@ from typing import (
     Union,
 )
 import dearpygui.dearpygui as dpg
-from numpy import ndarray
+from numpy import (
+    integer,
+    issubdtype,
+    ndarray,
+)
 from deareis.data import DataSet
 from deareis.data.kramers_kronig import TestResult
 from deareis.data.fitting import FitResult
@@ -261,7 +265,7 @@ class PlotSettings:
 
     def set_series_marker(self, uuid: str, marker: int):
         assert type(uuid) is str, uuid
-        assert type(marker) is int, marker
+        assert issubdtype(type(marker), integer), marker
         theme: int = self.themes[uuid]
         if marker >= 0:
             update_plot_series_theme_marker(theme, marker)

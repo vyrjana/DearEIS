@@ -26,6 +26,8 @@ from typing import (
 from numpy import (
     angle,
     array,
+    integer,
+    issubdtype,
     log10 as log,
     ndarray,
 )
@@ -310,7 +312,7 @@ class TestResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_frequency:
                 self._cached_frequency.clear()
@@ -329,7 +331,7 @@ class TestResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_impedance:
                 self._cached_impedance.clear()
@@ -348,7 +350,7 @@ class TestResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             Z: ndarray = self.get_impedance(num_per_decade)
             return (
@@ -371,7 +373,7 @@ class TestResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.get_impedance(num_per_decade)

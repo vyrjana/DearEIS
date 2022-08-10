@@ -18,10 +18,24 @@
 # the LICENSES folder.
 
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple
-from numpy import angle, log10 as log, ndarray
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Tuple,
+)
+from numpy import (
+    angle,
+    integer,
+    issubdtype,
+    log10 as log,
+    ndarray,
+)
 from pandas import DataFrame
-from pyimpspec import Circuit, Element
+from pyimpspec import (
+    Circuit,
+    Element,
+)
 import pyimpspec
 from pyimpspec.analysis.fitting import _interpolate
 from deareis.utility import format_timestamp
@@ -202,15 +216,16 @@ class SimulationResult:
         parameter_labels: List[str] = []
         values: List[float] = []
         element: Element
-        for element in self.circuit.get_elements():
-            i: int
+        for element in sorted(
+            self.circuit.get_elements(flattened=True),
+            key=lambda _: _.get_identifier(),
+        ):
+            parameters: Dict[str, float] = element.get_parameters()
             parameter_label: str
-            for i, (parameter_label, value) in enumerate(
-                element.get_parameters().items()
-            ):
+            for parameter_label in sorted(parameters.keys()):
                 element_labels.append(element.get_label())
                 parameter_labels.append(parameter_label)
-                values.append(value)
+                values.append(parameters[parameter_label])
         return DataFrame.from_dict(
             {
                 "Element": element_labels,
@@ -239,7 +254,7 @@ class SimulationResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies defined by the minimum and maximum frequencies used to generate the original simulation result.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_frequency:
                 self._cached_frequency.clear()
@@ -259,7 +274,7 @@ class SimulationResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of simulated frequencies and used to calculate the impedance produced by the simulated circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_impedance:
                 self._cached_impedance.clear()
@@ -278,7 +293,7 @@ class SimulationResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies and used to calculate the impedance produced by the simulated circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         Z: ndarray = self.get_impedance(num_per_decade)
         return (
             Z.real,
@@ -296,7 +311,7 @@ class SimulationResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         f: ndarray = self.get_frequency(num_per_decade)
         Z: ndarray = self.get_impedance(num_per_decade)
         return (

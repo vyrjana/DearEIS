@@ -61,11 +61,17 @@ TEST_DATA_PATHS: List[str] = list(
 
 
 class TestUtility(TestCase):
-    def test_01_parsing(self):
+    def test_01_instantiation(self):
+        project: Project = Project()
+        self.assertEqual(len(project.get_data_sets()), 0)
+        self.assertEqual(len(project.get_all_tests()), 0)
+        self.assertEqual(len(project.get_all_fits()), 0)
+        self.assertEqual(len(project.get_simulations()), 0)
+        self.assertEqual(len(project.get_plots()), 1)
         path: str
         for path in TEST_PROJECT_PATHS:
             self.assertTrue(exists(path))
-            project: Project = Project.from_file(path)
+            project = Project.from_file(path)
 
     def test_02_merge(self):
         project: Project = Project.merge(

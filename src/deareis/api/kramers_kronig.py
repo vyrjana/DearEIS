@@ -19,6 +19,10 @@
 
 from time import time as _time
 from uuid import uuid4 as _uuid4
+from numpy import (
+    integer as _integer,
+    issubdtype as _issubdtype,
+)
 import pyimpspec
 from deareis.data import (
     DataSet,
@@ -75,7 +79,7 @@ def perform_test(
     assert (
         settings.mode != Mode.EXPLORATORY
     ), "Use pyimpspec.perform_exploratory_tests and pyimpspec.score_test_results to perform the tests, and then create a deareis.TestResult instance from your chosen pyimpspec.KramersKronigResult."
-    assert type(num_procs) is int, num_procs
+    assert _issubdtype(type(num_procs), _integer), num_procs
     result: pyimpspec.KramersKronigResult = pyimpspec.perform_test(
         data=data,
         test=test_to_value[settings.test],

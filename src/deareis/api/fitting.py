@@ -20,6 +20,10 @@
 from time import time as _time
 from typing import Optional
 from uuid import uuid4 as _uuid4
+from numpy import (
+    integer as _integer,
+    issubdtype as _issubdtype,
+)
 import pyimpspec
 from pyimpspec import (
     Circuit,
@@ -68,7 +72,7 @@ def fit_circuit_to_data(
     """
     assert isinstance(data, pyimpspec.DataSet), data
     assert type(settings) is FitSettings, settings
-    assert type(num_procs) is int, num_procs
+    assert _issubdtype(type(num_procs), _integer), num_procs
     circuit: Circuit = pyimpspec.string_to_circuit(settings.cdc)
     result: pyimpspec.FittingResult = pyimpspec.fit_circuit_to_data(
         circuit=circuit,

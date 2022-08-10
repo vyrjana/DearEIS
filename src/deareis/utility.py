@@ -29,8 +29,11 @@ from typing import (
 )
 import dearpygui.dearpygui as dpg
 from numpy import (
+    floating,
     floor,
     inf,
+    integer,
+    issubdtype,
     log10 as log,
     nan,
     pad,
@@ -58,22 +61,22 @@ def calculate_checksum(*args, **kwargs) -> str:
 def calculate_window_position_dimensions(
     width: Union[int, float] = 0.9, height: Union[int, float] = 0.9
 ) -> Tuple[int, int, int, int]:
-    assert (type(width) is float and width > 0.0 and width < 1.0) or (
-        type(width) is int and width > 0
+    assert (issubdtype(type(width), floating) and width > 0.0 and width < 1.0) or (
+        issubdtype(type(width), integer) and width > 0
     )
-    assert (type(height) is float and height > 0.0 and height < 1.0) or (
-        type(width) is int and height > 0
+    assert (issubdtype(type(height), floating) and height > 0.0 and height < 1.0) or (
+        issubdtype(type(width), integer) and height > 0
     )
     viewport_width: int = dpg.get_viewport_width()
     x: int
-    if type(width) is float:
+    if issubdtype(type(width), floating):
         x = floor(viewport_width * (1.0 - width) / 2)
         width = floor(viewport_width * width)
     else:
         x = floor((viewport_width - width) / 2)
     viewport_height: int = dpg.get_viewport_height()
     y: int
-    if type(height) is float:
+    if issubdtype(type(height), floating):
         y = floor(viewport_height * (1.0 - height) / 2)
         height = floor(viewport_height * height)
     else:
@@ -87,7 +90,7 @@ def calculate_window_position_dimensions(
 
 
 def format_timestamp(timestamp: float) -> str:
-    assert type(timestamp) is float
+    assert issubdtype(type(timestamp), floating), timestamp
     return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -99,10 +102,10 @@ def format_number(
     significants: int = 0,
 ) -> str:
     float(value)  # Make sure that the value can at least be converted to a float
-    assert type(decimals) is int
-    assert type(width) is int
-    assert type(exponent) is bool
-    assert type(significants) is int and significants >= 0
+    assert issubdtype(type(decimals), integer), decimals
+    assert issubdtype(type(width), integer), width
+    assert type(exponent) is bool, exponent
+    assert issubdtype(type(significants), integer) and significants >= 0, significants
     fmt: str = "{:." + str(decimals) + "f}"
     if significants > 0:
         fmt = "{:." + str(significants) + "g}"

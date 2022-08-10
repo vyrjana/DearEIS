@@ -524,7 +524,7 @@
   ]
  },
  "label": "Example project - Version 3",
- "notes": "This is for keeping notes about the project.",
+ "notes": "",
  "plots": [
   {
    "colors": {
@@ -554,26 +554,26 @@
     ],
     "38f8dbb9423c4862bafa169ecda46fca": [
      238.0,
-     119.0,
      51.0,
+     119.0,
      255.0
     ],
     "4f178100388d42a48b5072700c4fb5af": [
-     51.0,
+     0.0,
+     119.0,
      187.0,
-     238.0,
      255.0
     ],
     "6ea698689b2747d2b11a4975a743d0ed": [
-     187.0,
-     187.0,
-     187.0,
-     255.0
-    ],
-    "a2b8e2662b05457493146d0fde7ecefa": [
      0.0,
      153.0,
      136.0,
+     255.0
+    ],
+    "a2b8e2662b05457493146d0fde7ecefa": [
+     238.0,
+     51.0,
+     119.0,
      255.0
     ]
    },
@@ -588,14 +588,14 @@
     "a2b8e2662b05457493146d0fde7ecefa": ""
    },
    "markers": {
-    "06c745c13cbe4640aef9c07da4b6ec86": 3,
+    "06c745c13cbe4640aef9c07da4b6ec86": 2,
     "1316178abcbc490ca473af2ca3ec2fdd": 8,
     "191d62811c81464e9573f4483e963e06": 4,
     "229060d4f6cd42b2a1b3116065c4b537": 7,
-    "38f8dbb9423c4862bafa169ecda46fca": 5,
-    "4f178100388d42a48b5072700c4fb5af": 1,
-    "6ea698689b2747d2b11a4975a743d0ed": 9,
-    "a2b8e2662b05457493146d0fde7ecefa": 4
+    "38f8dbb9423c4862bafa169ecda46fca": 0,
+    "4f178100388d42a48b5072700c4fb5af": 8,
+    "6ea698689b2747d2b11a4975a743d0ed": 1,
+    "a2b8e2662b05457493146d0fde7ecefa": 0
    },
    "plot_label": "Appearance template",
    "plot_type": 1,
@@ -614,10 +614,10 @@
     "1316178abcbc490ca473af2ca3ec2fdd": true,
     "191d62811c81464e9573f4483e963e06": true,
     "229060d4f6cd42b2a1b3116065c4b537": true,
-    "38f8dbb9423c4862bafa169ecda46fca": true,
+    "38f8dbb9423c4862bafa169ecda46fca": false,
     "4f178100388d42a48b5072700c4fb5af": true,
     "6ea698689b2747d2b11a4975a743d0ed": false,
-    "a2b8e2662b05457493146d0fde7ecefa": true
+    "a2b8e2662b05457493146d0fde7ecefa": false
    },
    "themes": {
     "06c745c13cbe4640aef9c07da4b6ec86": -1,
@@ -640,247 +640,7 @@
      17.0,
      255.0
     ],
-    "1316178abcbc490ca473af2ca3ec2fdd": [
-     0.0,
-     119.0,
-     187.0,
-     255.0
-    ],
-    "191d62811c81464e9573f4483e963e06": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "229060d4f6cd42b2a1b3116065c4b537": [
-     238.0,
-     51.0,
-     119.0,
-     255.0
-    ],
-    "38f8dbb9423c4862bafa169ecda46fca": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "4f178100388d42a48b5072700c4fb5af": [
-     51.0,
-     187.0,
-     238.0,
-     255.0
-    ],
     "6ea698689b2747d2b11a4975a743d0ed": [
-     187.0,
-     187.0,
-     187.0,
-     255.0
-    ],
-    "a2b8e2662b05457493146d0fde7ecefa": [
-     0.0,
-     153.0,
-     136.0,
-     255.0
-    ]
-   },
-   "labels": {
-    "06c745c13cbe4640aef9c07da4b6ec86": "Ideal",
-    "1316178abcbc490ca473af2ca3ec2fdd": "Fit",
-    "191d62811c81464e9573f4483e963e06": "",
-    "229060d4f6cd42b2a1b3116065c4b537": "Extrapolated",
-    "38f8dbb9423c4862bafa169ecda46fca": "",
-    "4f178100388d42a48b5072700c4fb5af": "",
-    "6ea698689b2747d2b11a4975a743d0ed": "",
-    "a2b8e2662b05457493146d0fde7ecefa": " "
-   },
-   "markers": {
-    "06c745c13cbe4640aef9c07da4b6ec86": 3,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": 4,
-    "229060d4f6cd42b2a1b3116065c4b537": 7,
-    "38f8dbb9423c4862bafa169ecda46fca": 5,
-    "4f178100388d42a48b5072700c4fb5af": 1,
-    "6ea698689b2747d2b11a4975a743d0ed": 9,
-    "a2b8e2662b05457493146d0fde7ecefa": 4
-   },
-   "plot_label": "Ideal - Bode (magnitude)",
-   "plot_type": 2,
-   "series_order": [
-    "a2b8e2662b05457493146d0fde7ecefa",
-    "1316178abcbc490ca473af2ca3ec2fdd",
-    "06c745c13cbe4640aef9c07da4b6ec86",
-    "229060d4f6cd42b2a1b3116065c4b537"
-   ],
-   "show_lines": {
-    "06c745c13cbe4640aef9c07da4b6ec86": false,
-    "1316178abcbc490ca473af2ca3ec2fdd": true,
-    "191d62811c81464e9573f4483e963e06": true,
-    "229060d4f6cd42b2a1b3116065c4b537": true,
-    "38f8dbb9423c4862bafa169ecda46fca": true,
-    "4f178100388d42a48b5072700c4fb5af": true,
-    "6ea698689b2747d2b11a4975a743d0ed": false,
-    "a2b8e2662b05457493146d0fde7ecefa": true
-   },
-   "themes": {
-    "06c745c13cbe4640aef9c07da4b6ec86": -1,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": -1,
-    "229060d4f6cd42b2a1b3116065c4b537": -1,
-    "38f8dbb9423c4862bafa169ecda46fca": -1,
-    "4f178100388d42a48b5072700c4fb5af": -1,
-    "6ea698689b2747d2b11a4975a743d0ed": -1,
-    "a2b8e2662b05457493146d0fde7ecefa": -1
-   },
-   "uuid": "2da705260a564009bad4ec5276c2887d",
-   "version": 1
-  },
-  {
-   "colors": {
-    "06c745c13cbe4640aef9c07da4b6ec86": [
-     204.0,
-     51.0,
-     17.0,
-     255.0
-    ],
-    "1316178abcbc490ca473af2ca3ec2fdd": [
-     0.0,
-     119.0,
-     187.0,
-     255.0
-    ],
-    "191d62811c81464e9573f4483e963e06": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "229060d4f6cd42b2a1b3116065c4b537": [
-     238.0,
-     51.0,
-     119.0,
-     255.0
-    ],
-    "38f8dbb9423c4862bafa169ecda46fca": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "4f178100388d42a48b5072700c4fb5af": [
-     51.0,
-     187.0,
-     238.0,
-     255.0
-    ],
-    "6ea698689b2747d2b11a4975a743d0ed": [
-     187.0,
-     187.0,
-     187.0,
-     255.0
-    ],
-    "a2b8e2662b05457493146d0fde7ecefa": [
-     0.0,
-     153.0,
-     136.0,
-     255.0
-    ]
-   },
-   "labels": {
-    "06c745c13cbe4640aef9c07da4b6ec86": "Ideal",
-    "1316178abcbc490ca473af2ca3ec2fdd": "Fit",
-    "191d62811c81464e9573f4483e963e06": "",
-    "229060d4f6cd42b2a1b3116065c4b537": "Extrapolated",
-    "38f8dbb9423c4862bafa169ecda46fca": "",
-    "4f178100388d42a48b5072700c4fb5af": "",
-    "6ea698689b2747d2b11a4975a743d0ed": "",
-    "a2b8e2662b05457493146d0fde7ecefa": " "
-   },
-   "markers": {
-    "06c745c13cbe4640aef9c07da4b6ec86": 3,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": 4,
-    "229060d4f6cd42b2a1b3116065c4b537": 7,
-    "38f8dbb9423c4862bafa169ecda46fca": 5,
-    "4f178100388d42a48b5072700c4fb5af": 1,
-    "6ea698689b2747d2b11a4975a743d0ed": 9,
-    "a2b8e2662b05457493146d0fde7ecefa": 4
-   },
-   "plot_label": "Ideal - Nyquist",
-   "plot_type": 1,
-   "series_order": [
-    "a2b8e2662b05457493146d0fde7ecefa",
-    "1316178abcbc490ca473af2ca3ec2fdd",
-    "06c745c13cbe4640aef9c07da4b6ec86",
-    "229060d4f6cd42b2a1b3116065c4b537"
-   ],
-   "show_lines": {
-    "06c745c13cbe4640aef9c07da4b6ec86": false,
-    "1316178abcbc490ca473af2ca3ec2fdd": true,
-    "191d62811c81464e9573f4483e963e06": true,
-    "229060d4f6cd42b2a1b3116065c4b537": true,
-    "38f8dbb9423c4862bafa169ecda46fca": true,
-    "4f178100388d42a48b5072700c4fb5af": true,
-    "6ea698689b2747d2b11a4975a743d0ed": false,
-    "a2b8e2662b05457493146d0fde7ecefa": true
-   },
-   "themes": {
-    "06c745c13cbe4640aef9c07da4b6ec86": -1,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": -1,
-    "229060d4f6cd42b2a1b3116065c4b537": -1,
-    "38f8dbb9423c4862bafa169ecda46fca": -1,
-    "4f178100388d42a48b5072700c4fb5af": -1,
-    "6ea698689b2747d2b11a4975a743d0ed": -1,
-    "a2b8e2662b05457493146d0fde7ecefa": -1
-   },
-   "uuid": "bebb45efd5634f91985e6ac1d3375637",
-   "version": 1
-  },
-  {
-   "colors": {
-    "06c745c13cbe4640aef9c07da4b6ec86": [
-     204.0,
-     51.0,
-     17.0,
-     255.0
-    ],
-    "1316178abcbc490ca473af2ca3ec2fdd": [
-     0.0,
-     119.0,
-     187.0,
-     255.0
-    ],
-    "191d62811c81464e9573f4483e963e06": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "229060d4f6cd42b2a1b3116065c4b537": [
-     238.0,
-     51.0,
-     119.0,
-     255.0
-    ],
-    "38f8dbb9423c4862bafa169ecda46fca": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "4f178100388d42a48b5072700c4fb5af": [
-     51.0,
-     187.0,
-     238.0,
-     255.0
-    ],
-    "6ea698689b2747d2b11a4975a743d0ed": [
-     187.0,
-     187.0,
-     187.0,
-     255.0
-    ],
-    "a2b8e2662b05457493146d0fde7ecefa": [
      0.0,
      153.0,
      136.0,
@@ -889,61 +649,35 @@
    },
    "labels": {
     "06c745c13cbe4640aef9c07da4b6ec86": "",
-    "1316178abcbc490ca473af2ca3ec2fdd": "",
-    "191d62811c81464e9573f4483e963e06": "",
-    "229060d4f6cd42b2a1b3116065c4b537": "",
-    "38f8dbb9423c4862bafa169ecda46fca": "",
-    "4f178100388d42a48b5072700c4fb5af": "",
-    "6ea698689b2747d2b11a4975a743d0ed": "",
-    "a2b8e2662b05457493146d0fde7ecefa": ""
+    "6ea698689b2747d2b11a4975a743d0ed": ""
    },
    "markers": {
-    "06c745c13cbe4640aef9c07da4b6ec86": 3,
-    "1316178abcbc490ca473af2ca3ec2fdd": 8,
-    "191d62811c81464e9573f4483e963e06": 4,
-    "229060d4f6cd42b2a1b3116065c4b537": 7,
-    "38f8dbb9423c4862bafa169ecda46fca": 5,
-    "4f178100388d42a48b5072700c4fb5af": 1,
-    "6ea698689b2747d2b11a4975a743d0ed": 9,
-    "a2b8e2662b05457493146d0fde7ecefa": 4
+    "06c745c13cbe4640aef9c07da4b6ec86": 2,
+    "6ea698689b2747d2b11a4975a743d0ed": 1
    },
-   "plot_label": "Noisy - Bode (phase)",
-   "plot_type": 3,
+   "plot_label": "Data sets",
+   "plot_type": 1,
    "series_order": [
-    "4f178100388d42a48b5072700c4fb5af",
-    "191d62811c81464e9573f4483e963e06",
-    "38f8dbb9423c4862bafa169ecda46fca",
+    "06c745c13cbe4640aef9c07da4b6ec86",
     "6ea698689b2747d2b11a4975a743d0ed"
    ],
    "show_lines": {
     "06c745c13cbe4640aef9c07da4b6ec86": false,
-    "1316178abcbc490ca473af2ca3ec2fdd": true,
-    "191d62811c81464e9573f4483e963e06": true,
-    "229060d4f6cd42b2a1b3116065c4b537": true,
-    "38f8dbb9423c4862bafa169ecda46fca": true,
-    "4f178100388d42a48b5072700c4fb5af": true,
-    "6ea698689b2747d2b11a4975a743d0ed": false,
-    "a2b8e2662b05457493146d0fde7ecefa": true
+    "6ea698689b2747d2b11a4975a743d0ed": false
    },
    "themes": {
     "06c745c13cbe4640aef9c07da4b6ec86": -1,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": -1,
-    "229060d4f6cd42b2a1b3116065c4b537": -1,
-    "38f8dbb9423c4862bafa169ecda46fca": -1,
-    "4f178100388d42a48b5072700c4fb5af": -1,
-    "6ea698689b2747d2b11a4975a743d0ed": -1,
-    "a2b8e2662b05457493146d0fde7ecefa": -1
+    "6ea698689b2747d2b11a4975a743d0ed": -1
    },
-   "uuid": "66ae0cdedbe547349db947d6c894da40",
+   "uuid": "a51d6abdf0bf412dad00c441842fd47a",
    "version": 1
   },
   {
    "colors": {
     "06c745c13cbe4640aef9c07da4b6ec86": [
-     204.0,
-     51.0,
-     17.0,
+     0.0,
+     153.0,
+     136.0,
      255.0
     ],
     "1316178abcbc490ca473af2ca3ec2fdd": [
@@ -952,37 +686,58 @@
      187.0,
      255.0
     ],
-    "191d62811c81464e9573f4483e963e06": [
-     238.0,
-     119.0,
-     51.0,
-     255.0
-    ],
-    "229060d4f6cd42b2a1b3116065c4b537": [
+    "a2b8e2662b05457493146d0fde7ecefa": [
      238.0,
      51.0,
      119.0,
      255.0
-    ],
+    ]
+   },
+   "labels": {
+    "06c745c13cbe4640aef9c07da4b6ec86": "Data",
+    "1316178abcbc490ca473af2ca3ec2fdd": "Fit",
+    "a2b8e2662b05457493146d0fde7ecefa": "Test"
+   },
+   "markers": {
+    "06c745c13cbe4640aef9c07da4b6ec86": 2,
+    "1316178abcbc490ca473af2ca3ec2fdd": 8,
+    "a2b8e2662b05457493146d0fde7ecefa": 0
+   },
+   "plot_label": "Ideal data",
+   "plot_type": 1,
+   "series_order": [
+    "06c745c13cbe4640aef9c07da4b6ec86",
+    "a2b8e2662b05457493146d0fde7ecefa",
+    "1316178abcbc490ca473af2ca3ec2fdd"
+   ],
+   "show_lines": {
+    "06c745c13cbe4640aef9c07da4b6ec86": false,
+    "1316178abcbc490ca473af2ca3ec2fdd": true,
+    "a2b8e2662b05457493146d0fde7ecefa": false
+   },
+   "themes": {
+    "06c745c13cbe4640aef9c07da4b6ec86": -1,
+    "1316178abcbc490ca473af2ca3ec2fdd": -1,
+    "a2b8e2662b05457493146d0fde7ecefa": -1
+   },
+   "uuid": "f7fb928bd1764a20bc8b232be8e3e237",
+   "version": 1
+  },
+  {
+   "colors": {
     "38f8dbb9423c4862bafa169ecda46fca": [
      238.0,
-     119.0,
      51.0,
+     119.0,
      255.0
     ],
     "4f178100388d42a48b5072700c4fb5af": [
-     51.0,
+     0.0,
+     119.0,
      187.0,
-     238.0,
      255.0
     ],
     "6ea698689b2747d2b11a4975a743d0ed": [
-     51.00000075995922,
-     187.00000405311584,
-     238.00000101327896,
-     255.0
-    ],
-    "a2b8e2662b05457493146d0fde7ecefa": [
      0.0,
      153.0,
      136.0,
@@ -990,54 +745,33 @@
     ]
    },
    "labels": {
-    "06c745c13cbe4640aef9c07da4b6ec86": "",
-    "1316178abcbc490ca473af2ca3ec2fdd": "",
-    "191d62811c81464e9573f4483e963e06": "",
-    "229060d4f6cd42b2a1b3116065c4b537": "",
-    "38f8dbb9423c4862bafa169ecda46fca": "",
-    "4f178100388d42a48b5072700c4fb5af": "",
-    "6ea698689b2747d2b11a4975a743d0ed": "",
-    "a2b8e2662b05457493146d0fde7ecefa": ""
+    "38f8dbb9423c4862bafa169ecda46fca": "Test",
+    "4f178100388d42a48b5072700c4fb5af": "Fit",
+    "6ea698689b2747d2b11a4975a743d0ed": "Noisy"
    },
    "markers": {
-    "06c745c13cbe4640aef9c07da4b6ec86": 3,
-    "1316178abcbc490ca473af2ca3ec2fdd": 8,
-    "191d62811c81464e9573f4483e963e06": 4,
-    "229060d4f6cd42b2a1b3116065c4b537": 7,
-    "38f8dbb9423c4862bafa169ecda46fca": 5,
-    "4f178100388d42a48b5072700c4fb5af": 1,
-    "6ea698689b2747d2b11a4975a743d0ed": 9,
-    "a2b8e2662b05457493146d0fde7ecefa": 4
+    "38f8dbb9423c4862bafa169ecda46fca": 0,
+    "4f178100388d42a48b5072700c4fb5af": 8,
+    "6ea698689b2747d2b11a4975a743d0ed": 1
    },
-   "plot_label": "Noisy - Nyquist",
+   "plot_label": "Noisy data",
    "plot_type": 1,
    "series_order": [
-    "4f178100388d42a48b5072700c4fb5af",
-    "191d62811c81464e9573f4483e963e06",
+    "6ea698689b2747d2b11a4975a743d0ed",
     "38f8dbb9423c4862bafa169ecda46fca",
-    "6ea698689b2747d2b11a4975a743d0ed"
+    "4f178100388d42a48b5072700c4fb5af"
    ],
    "show_lines": {
-    "06c745c13cbe4640aef9c07da4b6ec86": false,
-    "1316178abcbc490ca473af2ca3ec2fdd": true,
-    "191d62811c81464e9573f4483e963e06": true,
-    "229060d4f6cd42b2a1b3116065c4b537": true,
-    "38f8dbb9423c4862bafa169ecda46fca": true,
+    "38f8dbb9423c4862bafa169ecda46fca": false,
     "4f178100388d42a48b5072700c4fb5af": true,
-    "6ea698689b2747d2b11a4975a743d0ed": false,
-    "a2b8e2662b05457493146d0fde7ecefa": true
+    "6ea698689b2747d2b11a4975a743d0ed": false
    },
    "themes": {
-    "06c745c13cbe4640aef9c07da4b6ec86": -1,
-    "1316178abcbc490ca473af2ca3ec2fdd": -1,
-    "191d62811c81464e9573f4483e963e06": -1,
-    "229060d4f6cd42b2a1b3116065c4b537": -1,
     "38f8dbb9423c4862bafa169ecda46fca": -1,
     "4f178100388d42a48b5072700c4fb5af": -1,
-    "6ea698689b2747d2b11a4975a743d0ed": -1,
-    "a2b8e2662b05457493146d0fde7ecefa": -1
+    "6ea698689b2747d2b11a4975a743d0ed": -1
    },
-   "uuid": "f9ec878ca72b40f3abe3854a62cc20ad",
+   "uuid": "9cfbae2160004389800739d4c367311d",
    "version": 1
   }
  ],

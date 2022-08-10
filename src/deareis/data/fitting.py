@@ -29,12 +29,18 @@ from typing import (
 from numpy import (
     angle,
     array,
+    integer,
+    issubdtype,
     log10 as log,
     ndarray,
 )
 from pandas import DataFrame
 import pyimpspec
-from pyimpspec import Circuit, FittedParameter
+from pyimpspec import (
+    Circuit,
+    Element,
+    FittedParameter,
+)
 from pyimpspec.analysis.fitting import _interpolate
 from deareis.enums import (
     Method,
@@ -329,19 +335,26 @@ class FitResult:
         parameters: Union[
             Dict[str, FittedParameter], Dict[int, OrderedDict[str, float]]
         ]
-        for element_label, parameters in self.parameters.items():
+        element: Element
+        for element in sorted(
+            self.circuit.get_elements(flattened=True),
+            key=lambda _: _.get_identifier(),
+        ):
+            element_label = element.get_label()
+            parameters = self.parameters[element_label]
             parameter_label: str
-            parameter: FittedParameter
-            for parameter_label, parameter in parameters.items():
+            param: FittedParameter
+            for parameter_label in sorted(parameters.keys()):
+                param = parameters[parameter_label]
                 element_labels.append(element_label)
                 parameter_labels.append(parameter_label)
-                fitted_values.append(parameter.value)
+                fitted_values.append(param.value)
                 stderr_values.append(
-                    parameter.stderr / parameter.value * 100
-                    if parameter.stderr is not None
+                    param.stderr / param.value * 100
+                    if param.stderr is not None
                     else "-"
                 )
-                fixed.append("Yes" if parameter.fixed else "No")
+                fixed.append("Yes" if param.fixed else "No")
         return DataFrame.from_dict(
             {
                 "Element": element_labels,
@@ -372,7 +385,7 @@ class FitResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_frequency:
                 self._cached_frequency.clear()
@@ -391,7 +404,7 @@ class FitResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of fitted frequencies and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             if num_per_decade not in self._cached_impedance:
                 self._cached_impedance.clear()
@@ -410,7 +423,7 @@ class FitResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             Z: ndarray = self.get_impedance(num_per_decade)
             return (
@@ -433,7 +446,7 @@ class FitResult:
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies in the data set and used to calculate the impedance produced by the fitted circuit.
         """
-        assert type(num_per_decade) is int
+        assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
             freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.get_impedance(num_per_decade)

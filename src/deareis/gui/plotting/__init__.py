@@ -248,6 +248,9 @@ class TestResultGroup:
         self.old_hash = ""
 
     def populate(self, tests: List[TestResult], data: DataSet, settings: PlotSettings):
+        assert type(tests) is list, tests
+        assert type(data) is DataSet, data
+        assert type(settings) is PlotSettings, settings
         test: TestResult
         new_hash: str = ",".join([_.uuid for _ in tests])
         if new_hash != self.old_hash:
@@ -414,6 +417,8 @@ class TestsGroup:
         data: DataSet
         for data in data_sets:
             if not tests[data.uuid]:
+                if data.uuid in self.groups:
+                    self.groups[data.uuid].clear()
                 continue
             if data.uuid not in self.groups:
                 self.groups[data.uuid] = TestResultGroup(self.header)
@@ -500,6 +505,9 @@ class FitResultGroup:
         self.old_hash = ""
 
     def populate(self, fits: List[FitResult], data: DataSet, settings: PlotSettings):
+        assert type(fits) is list, fits
+        assert type(data) is DataSet, data
+        assert type(settings) is PlotSettings, settings
         fit: FitResult
         new_hash: str = ",".join([_.uuid for _ in fits])
         if new_hash != self.old_hash:
@@ -645,7 +653,6 @@ class FitsGroup:
         data_sets: List[DataSet],
         settings: PlotSettings,
     ):
-        pass
         assert type(fits) is dict, fits
         assert type(data_sets) is list, data_sets
         assert type(settings) is PlotSettings, settings
@@ -668,6 +675,8 @@ class FitsGroup:
         data: DataSet
         for data in data_sets:
             if not fits[data.uuid]:
+                if data.uuid in self.groups:
+                    self.groups[data.uuid].clear()
                 continue
             if data.uuid not in self.groups:
                 self.groups[data.uuid] = FitResultGroup(self.header)
