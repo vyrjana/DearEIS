@@ -9,16 +9,16 @@ These functions are for basic visualization of various objects (e.g., `DataSet`,
 
 **Table of Contents**
 
-- [deareis.api.plot.mpl](#deareis-api-plot-mpl)
-	- [plot](#deareis-api-plot-mplplot)
-	- [plot_bode](#deareis-api-plot-mplplot_bode)
-	- [plot_circuit](#deareis-api-plot-mplplot_circuit)
-	- [plot_data](#deareis-api-plot-mplplot_data)
-	- [plot_exploratory_tests](#deareis-api-plot-mplplot_exploratory_tests)
-	- [plot_fit](#deareis-api-plot-mplplot_fit)
-	- [plot_mu_xps](#deareis-api-plot-mplplot_mu_xps)
-	- [plot_nyquist](#deareis-api-plot-mplplot_nyquist)
-	- [plot_residual](#deareis-api-plot-mplplot_residual)
+- [deareis.api.plot.mpl](#deareisapiplotmpl)
+	- [plot](#deareisapiplotmplplot)
+	- [plot_bode](#deareisapiplotmplplot_bode)
+	- [plot_circuit](#deareisapiplotmplplot_circuit)
+	- [plot_data](#deareisapiplotmplplot_data)
+	- [plot_exploratory_tests](#deareisapiplotmplplot_exploratory_tests)
+	- [plot_fit](#deareisapiplotmplplot_fit)
+	- [plot_mu_xps](#deareisapiplotmplplot_mu_xps)
+	- [plot_nyquist](#deareisapiplotmplplot_nyquist)
+	- [plot_residual](#deareisapiplotmplplot_residual)
 
 
 

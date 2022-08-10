@@ -7,20 +7,20 @@ permalink: /api/simulating/
 
 **Table of Contents**
 
-- [deareis.api.simulation](#deareis-api-simulation)
-	- [SimulationResult](#deareis-api-simulationsimulationresult)
-		- [from_dict](#deareis-api-simulationsimulationresultfrom_dict)
-		- [get_bode_data](#deareis-api-simulationsimulationresultget_bode_data)
-		- [get_frequency](#deareis-api-simulationsimulationresultget_frequency)
-		- [get_impedance](#deareis-api-simulationsimulationresultget_impedance)
-		- [get_label](#deareis-api-simulationsimulationresultget_label)
-		- [get_nyquist_data](#deareis-api-simulationsimulationresultget_nyquist_data)
-		- [to_dataframe](#deareis-api-simulationsimulationresultto_dataframe)
-		- [to_dict](#deareis-api-simulationsimulationresultto_dict)
-	- [SimulationSettings](#deareis-api-simulationsimulationsettings)
-		- [from_dict](#deareis-api-simulationsimulationsettingsfrom_dict)
-		- [to_dict](#deareis-api-simulationsimulationsettingsto_dict)
-	- [simulate_spectrum](#deareis-api-simulationsimulate_spectrum)
+- [deareis.api.simulation](#deareisapisimulation)
+	- [SimulationResult](#deareisapisimulationsimulationresult)
+		- [from_dict](#deareisapisimulationsimulationresultfrom_dict)
+		- [get_bode_data](#deareisapisimulationsimulationresultget_bode_data)
+		- [get_frequency](#deareisapisimulationsimulationresultget_frequency)
+		- [get_impedance](#deareisapisimulationsimulationresultget_impedance)
+		- [get_label](#deareisapisimulationsimulationresultget_label)
+		- [get_nyquist_data](#deareisapisimulationsimulationresultget_nyquist_data)
+		- [to_dataframe](#deareisapisimulationsimulationresultto_dataframe)
+		- [to_dict](#deareisapisimulationsimulationresultto_dict)
+	- [SimulationSettings](#deareisapisimulationsimulationsettings)
+		- [from_dict](#deareisapisimulationsimulationsettingsfrom_dict)
+		- [to_dict](#deareisapisimulationsimulationsettingsto_dict)
+	- [simulate_spectrum](#deareisapisimulationsimulate_spectrum)
 
 
 
