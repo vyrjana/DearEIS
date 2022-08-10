@@ -72,7 +72,6 @@ The package **may** also work on other platforms depending on whether or not tho
 	- [Dear PyGui](https://github.com/hoffstadt/DearPyGui): cross-platform GUI toolkit
 	- [pyimpspec](https://github.com/vyrjana/pyimpspec): data parsing, data validation, circuits, and fitting
 	- [requests](https://github.com/psf/requests): checking the latest version of DearEIS available on PyPI
-	- [tabulate](https://github.com/astanin/python-tabulate): formatting of Markdown tables
 	- [xdg](https://github.com/srstevenson/xdg): XDG Base Directory Specification compliant paths
 
 The Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).

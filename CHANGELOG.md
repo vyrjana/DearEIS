@@ -4,6 +4,7 @@
 - Updated the required minimum version for `pyimpspec`.
 - Fixed a bug where an exception would occur in the GUI program because a `Project` instance created outside of the GUI program would not have a `PlotSettings` instance.
 - Fixed bugs that prevented the entries for Kramers-Kronig test results and circuit fit results in the plotting tab from updating properly when deleting those results or when undoing/redoing changes affecting those results.
+- Removed `tabulate` as explicit dependency since it was added as an explicit dependency to `pyimpspec`.
 
 
 # 2.1.0

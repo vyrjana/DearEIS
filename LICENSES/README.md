@@ -66,7 +66,7 @@
 # tabulate
 - https://github.com/astanin/python-tabulate
 - License: MIT
-- Dependency via *pandas*.
+- Dependency via *pyimpspec*
 
 # tol_colors
 - https://personal.sron.nl/~pault/data/tol_colors.py
