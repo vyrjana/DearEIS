@@ -194,6 +194,7 @@ The `parse_data` function is a wrapper for the corresponding function in pyimpsp
             minimal_classes=list(deareis.get_elements().values()),
             objects_to_ignore=[
                 deareis.Circuit,
+                deareis.CircuitBuilder,
                 deareis.Connection,
                 deareis.Parallel,
                 deareis.Series,
