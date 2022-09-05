@@ -12,6 +12,7 @@ The program includes features such as:
 - [projects that can contain multiple experimental data sets](assets/images/example-projects.gif)
 - reading experimental data from several different data formats
 - [validation of impedance spectra by checking if the data is Kramers-Kronig transformable](assets/images/example-kramers-kronig.gif)
+- [distribution of relaxation times (DRT) analysis](assets/images/example-drt-analysis.gif)
 - [construction of equivalent circuits either by parsing a circuit description code (CDC) or by using the included graphical editor](assets/images/example-circuit-editor.gif)
 - [equivalent circuit fitting](assets/images/example-fitting.gif)
 - [simulation of impedance spectra](assets/images/example-simulation.gif)
@@ -50,7 +51,7 @@ The program includes features such as:
 
 - Make sure to first install a recent version of Python if you do not already have it installed.
 - DearEIS can then be installed with [pip](https://pip.pypa.io/en/stable/), which is the package installer for Python and should be included with most distributions of the official Python runtime.
-	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/1.0.1/DearEIS-installer.exe) is available for Windows.
+	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/3.0.0/DearEIS-installer.exe) is available for Windows.
 		The installer takes care of installing DearEIS for you using pip so the next step can be ignored.
 		Additionally, the installer also creates a few shortcuts in the start menu.
 - Execute the following command in a terminal (e.g., PowerShell on Windows) once Python has been installed:
