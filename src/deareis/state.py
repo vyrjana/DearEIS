@@ -29,6 +29,7 @@ from os.path import (
     join,
 )
 from typing import (
+    Any,
     Dict,
     IO,
     List,
@@ -36,24 +37,17 @@ from typing import (
     Tuple,
 )
 from xdg import (
-    xdg_state_home,  #  User-specific state data files
+    xdg_state_home,  # User-specific state data files
 )
 import dearpygui.dearpygui as dpg
 from deareis.version import PACKAGE_VERSION
 from deareis.config import Config
 from deareis.data import (
-    Project,
-    FitSettings,
     PlotSettings,
-    SimulationSettings,
-    TestSettings,
+    Project,
 )
 from deareis.enums import (
     Context,
-    Method,
-    Mode,
-    Test,
-    Weight,
 )
 from deareis.gui.project import ProjectTab
 from deareis.gui.program import ProgramWindow
@@ -92,18 +86,21 @@ class State:
             self.config.keybindings, self
         )
         self.active_modal_window: Optional[int] = None
+        self.active_modal_window_object: Any = None
         self.project_state_snapshots: Dict[str, List[str]] = {}
         self.project_state_snapshot_indices: Dict[str, int] = {}
         self.project_state_saved_indices: Dict[str, int] = {}
         self.command_palette: CommandPalette = CommandPalette(self.keybinding_handler)
         self.plot_exporter: PlotExporter = PlotExporter(self.config)
 
-    def set_active_modal_window(self, window: int):
+    def set_active_modal_window(self, window: int, window_object: Any):
         assert type(window) is int
         if dpg.does_item_exist(window):
             self.active_modal_window = window
+            self.active_modal_window_object = window_object
         else:
             self.active_modal_window = None
+            self.active_modal_window_object = None
 
     def get_active_modal_window(self) -> Optional[int]:
         return self.active_modal_window
@@ -241,8 +238,16 @@ class State:
             self.recent_projects
         )
 
-    def clear_recent_projects(self):
-        self.recent_projects.clear()
+    def clear_recent_projects(self, selected_projects: List[str]):
+        assert type(selected_projects) is list and all(
+            map(lambda _: type(_) is str, selected_projects)
+        ), selected_projects
+        if len(selected_projects) > 0:
+            for path in selected_projects:
+                if path in self.recent_projects:
+                    self.recent_projects.remove(path)
+        else:
+            self.recent_projects.clear()
         self.program_window.project_tab_bar.home_tab.update_recent_projects_table(
             self.recent_projects
         )

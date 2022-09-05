@@ -36,5 +36,8 @@ Select project(s) to merge into a new project. If one or more recent projects ar
 
 If a project file has been copied and renamed, then this function can be used to reassign all of the universally uniqued identifiers (UUIDs) in the copy. This will then prevent DearEIS from mistaking the copy for the original if there is an attempt to load the copy when the original is already open (or vice versa).
     """.strip(),
+        "clear_recent_projects": """
+Clear the list of recent projects. If one or more recent projects are marked, then only those will be cleared from the list.
+    """.strip(),
     }
 )

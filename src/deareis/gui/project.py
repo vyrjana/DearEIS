@@ -17,10 +17,16 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Dict, List, Optional, Tuple
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 import dearpygui.dearpygui as dpg
 from deareis.gui.plots import Plot
 from deareis.gui.data_sets import DataSetsTab
+from deareis.gui.drt import DRTTab
 from deareis.gui.fitting import FittingTab
 from deareis.gui.kramers_kronig import KramersKronigTab
 from deareis.gui.overview import OverviewTab
@@ -28,8 +34,13 @@ from deareis.gui.plotting import PlottingTab
 from deareis.gui.simulation import SimulationTab
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.enums import PlotType, Output
+from deareis.enums import (
+    PlotType,
+    FitSimOutput,
+)
 from deareis.data import (
+    DRTResult,
+    DRTSettings,
     DataSet,
     FitResult,
     FitSettings,
@@ -78,6 +89,7 @@ class ProjectTab:
                 self.overview_tab: OverviewTab = OverviewTab()
                 self.data_sets_tab: DataSetsTab = DataSetsTab()
                 self.kramers_kronig_tab: KramersKronigTab = KramersKronigTab(state)
+                self.drt_tab: DRTTab = DRTTab(state)
                 self.fitting_tab: FittingTab = FittingTab(state)
                 self.simulation_tab: SimulationTab = SimulationTab(state)
                 self.plotting_tab: PlottingTab = PlottingTab(state)
@@ -86,6 +98,7 @@ class ProjectTab:
                     self.overview_tab.tab: self.overview_tab,
                     self.data_sets_tab.tab: self.data_sets_tab,
                     self.kramers_kronig_tab.tab: self.kramers_kronig_tab,
+                    self.drt_tab.tab: self.drt_tab,
                     self.fitting_tab.tab: self.fitting_tab,
                     self.simulation_tab.tab: self.simulation_tab,
                     self.plotting_tab.tab: self.plotting_tab,
@@ -96,6 +109,7 @@ class ProjectTab:
                     self.overview_tab.tab: Context.OVERVIEW_TAB,
                     self.data_sets_tab.tab: Context.DATA_SETS_TAB,
                     self.kramers_kronig_tab.tab: Context.KRAMERS_KRONIG_TAB,
+                    self.drt_tab.tab: Context.DRT_TAB,
                     self.fitting_tab.tab: Context.FITTING_TAB,
                     self.simulation_tab.tab: Context.SIMULATION_TAB,
                     self.plotting_tab.tab: Context.PLOTTING_TAB,
@@ -126,6 +140,7 @@ class ProjectTab:
         assert type(height) is int and height > 0, height
         self.data_sets_tab.resize(width, height)
         self.kramers_kronig_tab.resize(width, height)
+        self.drt_tab.resize(width, height)
         self.fitting_tab.resize(width, height)
         self.simulation_tab.resize(width, height)
         self.plotting_tab.resize(width, height)
@@ -166,6 +181,7 @@ class ProjectTab:
             tag = {
                 Context.DATA_SETS_TAB: self.data_sets_tab.delete_button,
                 Context.KRAMERS_KRONIG_TAB: self.kramers_kronig_tab.perform_test_button,
+                Context.DRT_TAB: self.drt_tab.perform_drt_button,
                 Context.FITTING_TAB: self.fitting_tab.perform_fit_button,
                 Context.SIMULATION_TAB: self.simulation_tab.perform_sim_button,
             }.get(context)
@@ -173,6 +189,7 @@ class ProjectTab:
             tag = {
                 self.data_sets_tab.tab: self.data_sets_tab.delete_button,
                 self.kramers_kronig_tab.tab: self.kramers_kronig_tab.perform_test_button,
+                self.drt_tab.tab: self.drt_tab.perform_drt_button,
                 self.fitting_tab.tab: self.fitting_tab.perform_fit_button,
                 self.simulation_tab.tab: self.simulation_tab.perform_sim_button,
             }.get(dpg.get_value(self.tab_bar))
@@ -182,6 +199,9 @@ class ProjectTab:
 
     def get_active_test(self) -> Optional[TestResult]:
         return dpg.get_item_user_data(self.kramers_kronig_tab.delete_button).get("test")
+
+    def get_active_drt(self) -> Optional[DRTResult]:
+        return dpg.get_item_user_data(self.drt_tab.delete_button).get("drt")
 
     def get_active_fit(self) -> Optional[FitResult]:
         return dpg.get_item_user_data(self.fitting_tab.delete_button).get("fit")
@@ -200,6 +220,9 @@ class ProjectTab:
 
     def select_kramers_kronig_tab(self):
         dpg.set_value(self.tab_bar, self.kramers_kronig_tab.tab)
+
+    def select_drt_tab(self):
+        dpg.set_value(self.tab_bar, self.drt_tab.tab)
 
     def select_fitting_tab(self):
         dpg.set_value(self.tab_bar, self.fitting_tab.tab)
@@ -232,11 +255,9 @@ class ProjectTab:
         labels: List[str] = list(lookup.keys())
         self.data_sets_tab.populate_data_sets(labels, lookup)
         self.kramers_kronig_tab.populate_data_sets(labels, lookup)
+        self.drt_tab.populate_data_sets(labels, lookup)
         self.fitting_tab.populate_data_sets(labels, lookup)
         self.simulation_tab.populate_data_sets(labels, lookup)
-        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
-        if settings is not None:
-            self.plotting_tab.populate_data_sets(data_sets, settings)
 
     def populate_tests(self, project: Project, data: Optional[DataSet]):
         assert type(project) is Project, project
@@ -247,13 +268,16 @@ class ProjectTab:
             else {},
             data,
         )
-        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
-        if settings is not None:
-            self.plotting_tab.populate_tests(
-                project.get_all_tests(),
-                project.get_data_sets(),
-                settings,
-            )
+
+    def populate_drts(self, project: Project, data: Optional[DataSet]):
+        assert type(project) is Project, project
+        assert type(data) is DataSet or data is None, data
+        self.drt_tab.populate_drts(
+            {_.get_label(): _ for _ in project.get_drts(data)}
+            if data is not None
+            else {},
+            data,
+        )
 
     def populate_fits(self, project: Project, data: Optional[DataSet]):
         assert type(project) is Project, project
@@ -264,25 +288,12 @@ class ProjectTab:
             else {},
             data,
         )
-        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
-        if settings is not None:
-            self.plotting_tab.populate_fits(
-                project.get_all_fits(),
-                project.get_data_sets(),
-                settings,
-            )
 
     def populate_simulations(self, project: Project):
         assert type(project) is Project, project
         self.simulation_tab.populate_simulations(
             {_.get_label(): _ for _ in project.get_simulations()}
         )
-        settings: Optional[PlotSettings] = self.plotting_tab.get_active_plot()
-        if settings is not None:
-            self.plotting_tab.populate_simulations(
-                project.get_simulations(),
-                settings,
-            )
 
     def populate_plots(self, project: Project):
         assert type(project) is Project, project
@@ -294,6 +305,7 @@ class ProjectTab:
         assert type(data) is DataSet or data is None, data
         self.data_sets_tab.select_data_set(data)
         self.kramers_kronig_tab.select_test_result(None, data)
+        self.drt_tab.select_drt_result(None, data)
         self.fitting_tab.select_fit_result(None, data)
 
     def get_next_data_set(self, context: Context) -> Optional[DataSet]:
@@ -301,6 +313,8 @@ class ProjectTab:
             return self.data_sets_tab.get_next_data_set()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.get_next_data_set()
+        elif context == Context.DRT_TAB:
+            return self.drt_tab.get_next_data_set()
         elif context == Context.FITTING_TAB:
             return self.fitting_tab.get_next_data_set()
         return None
@@ -310,6 +324,8 @@ class ProjectTab:
             return self.data_sets_tab.get_previous_data_set()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.get_previous_data_set()
+        elif context == Context.DRT_TAB:
+            return self.drt_tab.get_previous_data_set()
         elif context == Context.FITTING_TAB:
             return self.fitting_tab.get_previous_data_set()
         return None
@@ -325,6 +341,12 @@ class ProjectTab:
 
     def get_previous_test_result(self) -> Optional[TestResult]:
         return self.kramers_kronig_tab.get_previous_result()
+
+    def get_next_drt_result(self) -> Optional[DRTResult]:
+        return self.drt_tab.get_next_result()
+
+    def get_previous_drt_result(self) -> Optional[DRTResult]:
+        return self.drt_tab.get_previous_result()
 
     def get_next_fit_result(self) -> Optional[FitResult]:
         return self.fitting_tab.get_next_result()
@@ -355,6 +377,11 @@ class ProjectTab:
         assert type(data) is DataSet, data
         self.kramers_kronig_tab.select_test_result(test, data)
 
+    def select_drt_result(self, drt: DRTResult, data: DataSet):
+        assert type(drt) is DRTResult, drt
+        assert type(data) is DataSet, data
+        self.drt_tab.select_drt_result(drt, data)
+
     def select_fit_result(self, fit: FitResult, data: DataSet):
         assert type(fit) is FitResult, fit
         assert type(data) is DataSet, data
@@ -372,6 +399,7 @@ class ProjectTab:
         settings: PlotSettings,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
         adjust_limits: bool,
@@ -380,12 +408,20 @@ class ProjectTab:
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(adjust_limits) is bool, adjust_limits
         assert type(plot_only) is bool, plot_only
         self.plotting_tab.select_plot(
-            settings, data_sets, tests, fits, simulations, adjust_limits, plot_only
+            settings,
+            data_sets,
+            tests,
+            drts,
+            fits,
+            simulations,
+            adjust_limits,
+            plot_only,
         )
 
     def select_plot_type(self, plot_type: PlotType):
@@ -410,6 +446,13 @@ class ProjectTab:
     def set_fit_settings(self, settings: FitSettings):
         assert type(settings) is FitSettings, settings
         self.fitting_tab.set_settings(settings)
+
+    def get_drt_settings(self) -> DRTSettings:
+        return self.drt_tab.get_settings()
+
+    def set_drt_settings(self, settings: DRTSettings):
+        assert type(settings) is DRTSettings, settings
+        self.drt_tab.set_settings(settings)
 
     def get_simulation_settings(self) -> SimulationSettings:
         return self.simulation_tab.get_settings()
@@ -437,7 +480,18 @@ class ProjectTab:
     def show_enlarged_residuals(self):
         {
             self.kramers_kronig_tab.tab: self.kramers_kronig_tab.show_enlarged_residuals,
+            self.drt_tab.tab: self.drt_tab.show_enlarged_residuals,
             self.fitting_tab.tab: self.fitting_tab.show_enlarged_residuals,
+        }.get(dpg.get_value(self.tab_bar))()
+
+    def show_enlarged_drt(self):
+        {
+            self.drt_tab.tab: self.drt_tab.show_enlarged_drt,
+        }.get(dpg.get_value(self.tab_bar))()
+
+    def show_enlarged_impedance(self):
+        {
+            self.drt_tab.tab: self.drt_tab.show_enlarged_impedance,
         }.get(dpg.get_value(self.tab_bar))()
 
     def update_plots(
@@ -445,22 +499,35 @@ class ProjectTab:
         settings: PlotSettings,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
     ):
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         self.plotting_tab.plot_series(
             data_sets,
             tests,
+            drts,
             fits,
             simulations,
             settings,
             adjust_limits=False,
         )
+
+    def get_drt_plot(self, context: Context) -> Optional[Plot]:
+        if context == Context.DRT_TAB:
+            return self.drt_tab.drt_plot
+        return None
+
+    def get_impedance_plot(self, context: Context) -> Optional[Plot]:
+        if context == Context.DRT_TAB:
+            return self.drt_tab.impedance_plot
+        return None
 
     def get_nyquist_plot(self, context: Context) -> Optional[Plot]:
         if context == Context.KRAMERS_KRONIG_TAB:
@@ -483,11 +550,13 @@ class ProjectTab:
     def get_residuals_plot(self, context: Context) -> Optional[Plot]:
         if context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.residuals_plot
+        elif context == Context.DRT_TAB:
+            return self.drt_tab.residuals_plot
         elif context == Context.FITTING_TAB:
             return self.fitting_tab.residuals_plot
         return None
 
-    def get_active_output(self, context: Context) -> Optional[Output]:
+    def get_active_output(self, context: Context) -> Optional[FitSimOutput]:
         if context == Context.FITTING_TAB:
             return self.fitting_tab.get_active_output()
         elif context == Context.SIMULATION_TAB:
@@ -497,12 +566,17 @@ class ProjectTab:
     def get_filtered_plot_series(
         self,
     ) -> Tuple[
-        List[DataSet], List[TestResult], List[FitResult], List[SimulationResult]
+        List[DataSet],
+        List[TestResult],
+        List[DRTResult],
+        List[FitResult],
+        List[SimulationResult],
     ]:
         string: str = self.plotting_tab.get_filter_string()
         return (
             self.plotting_tab.possible_data_sets.filter(string, False),
             self.plotting_tab.possible_tests.filter(string, False),
+            self.plotting_tab.possible_drts.filter(string, False),
             self.plotting_tab.possible_fits.filter(string, False),
             self.plotting_tab.possible_simulations.filter(string, False),
         )
@@ -517,6 +591,8 @@ class ProjectTab:
             return self.data_sets_tab.has_active_input()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.has_active_input()
+        elif context == Context.DRT_TAB:
+            return self.drt_tab.has_active_input()
         elif context == Context.FITTING_TAB:
             return self.fitting_tab.has_active_input()
         elif context == Context.SIMULATION_TAB:

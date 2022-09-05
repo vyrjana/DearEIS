@@ -24,7 +24,7 @@ from numpy import (
     integer as _integer,
     issubdtype as _issubdtype,
 )
-import pyimpspec
+import pyimpspec as _pyimpspec
 from pyimpspec import (
     Circuit,
     FittedParameter,
@@ -36,22 +36,22 @@ from deareis.data import (
     FitSettings,
 )
 from deareis.enums import (
-    Method,
+    CNLSMethod,
     Weight,
-    value_to_method,
-    value_to_weight,
-    method_to_value,
-    weight_to_value,
+    value_to_cnls_method as _value_to_cnls_method,
+    value_to_weight as _value_to_weight,
+    cnls_method_to_value as _cnls_method_to_value,
+    weight_to_value as _weight_to_value,
 )
 
 
-def fit_circuit_to_data(
+def fit_circuit(
     data: DataSet,
     settings: FitSettings,
     num_procs: int = -1,
 ) -> FitResult:
     """
-    Wrapper for `pyimpspec.fit_circuit_to_data` function.
+    Wrapper for the `pyimpspec.fit_circuit` function.
 
     Fit a circuit to a data set.
 
@@ -64,26 +64,26 @@ def fit_circuit_to_data(
         The settings that determine the circuit and how the fit is performed.
 
     num_procs: int = -1
-        The maximum number of parallel processes to use when method is `Method.AUTO` and/or weight is `Weight.AUTO`.
+        The maximum number of parallel processes to use when method is `CNLSMethod.AUTO` and/or weight is `Weight.AUTO`.
 
     Returns
     -------
     FitResult
     """
-    assert isinstance(data, pyimpspec.DataSet), data
+    assert isinstance(data, _pyimpspec.DataSet), data
     assert type(settings) is FitSettings, settings
     assert _issubdtype(type(num_procs), _integer), num_procs
-    circuit: Circuit = pyimpspec.string_to_circuit(settings.cdc)
-    result: pyimpspec.FittingResult = pyimpspec.fit_circuit_to_data(
+    circuit: Circuit = _pyimpspec.parse_cdc(settings.cdc)
+    result: _pyimpspec.FitResult = _pyimpspec.fit_circuit(
         circuit=circuit,
         data=data,
-        method=method_to_value.get(settings.method, "auto"),
-        weight=weight_to_value.get(settings.weight, "auto"),
+        method=_cnls_method_to_value.get(settings.method, "auto"),
+        weight=_weight_to_value.get(settings.weight, "auto"),
         max_nfev=settings.max_nfev,
         num_procs=num_procs,
     )
-    method: Optional[Method] = value_to_method.get(result.method)
-    weight: Optional[Weight] = value_to_weight.get(result.weight)
+    method: Optional[CNLSMethod] = _value_to_cnls_method.get(result.method)
+    weight: Optional[Weight] = _value_to_weight.get(result.weight)
     assert method is not None
     assert weight is not None
     return FitResult(

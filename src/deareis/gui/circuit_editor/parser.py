@@ -523,7 +523,7 @@ class Parser:
         list(map(lambda _: _.set_valid(), self.nodes))
         try:
             self.walk_nodes(self.wes_node, stack, visited_nodes, pending_nodes)
-            circuit = pyimpspec.string_to_circuit("".join(stack))
+            circuit = pyimpspec.parse_cdc("".join(stack))
         except AssertionError as e:
             msg = str(e)
         except ParsingError as e:

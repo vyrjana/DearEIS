@@ -18,27 +18,15 @@
 # the LICENSES folder.
 
 from multiprocessing import cpu_count
-from time import time
 from typing import (
     Optional,
 )
-from uuid import uuid4
-import pyimpspec
-from pyimpspec import (
-    Circuit,
-    FittingResult,
-)
 import deareis.api.fitting as api
-from deareis.enums import (
-    method_to_value,
-    weight_to_value,
-    value_to_method,
-    value_to_weight,
-)
 from deareis.data import (
     DataSet,
     FitResult,
     FitSettings,
+    PlotSettings,
     Project,
 )
 from deareis.gui import (
@@ -58,7 +46,12 @@ def select_fit_result(*args, **kwargs):
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or fit is None:
         return
+    is_busy_message_visible: bool = STATE.is_busy_message_visible()
+    if not is_busy_message_visible:
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading fit result")
     project_tab.select_fit_result(fit, data)
+    if not is_busy_message_visible:
+        signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def delete_fit_result(*args, **kwargs):
@@ -70,10 +63,23 @@ def delete_fit_result(*args, **kwargs):
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or fit is None:
         return
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting fit result")
+    settings: Optional[PlotSettings] = project_tab.get_active_plot()
+    update_plot: bool = (
+        fit.uuid in settings.series_order if settings is not None else False
+    )
     project.delete_fit(data, fit)
     project_tab.populate_fits(project, data)
-    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=project_tab.get_active_plot())
+    if settings is not None:
+        project_tab.plotting_tab.populate_fits(
+            project.get_all_fits(),
+            project.get_data_sets(),
+            settings,
+        )
+    if update_plot:
+        signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def apply_fit_settings(*args, **kwargs):
@@ -99,11 +105,14 @@ def perform_fit(*args, **kwargs):
     assert data.get_num_points() > 0, "There are no data points to fit the circuit to!"
     # Prevent the GUI from becoming unresponsive or sluggish
     num_procs: int = max(2, cpu_count() - 1)
-    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing fit(s)")
-    fit: FitResult = api.fit_circuit_to_data(
-        data=data, settings=settings, num_procs=num_procs
-    )
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing fit")
+    fit: FitResult = api.fit_circuit(data=data, settings=settings, num_procs=num_procs)
     project.add_fit(data, fit)
-    signals.emit(Signal.SELECT_DATA_SET, data=data)
+    project_tab.populate_fits(project, data)
+    project_tab.plotting_tab.populate_fits(
+        project.get_all_fits(),
+        project.get_data_sets(),
+        project_tab.get_active_plot(),
+    )
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)

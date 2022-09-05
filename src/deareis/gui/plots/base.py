@@ -37,6 +37,13 @@ class Plot:
         self.adjust_limits()
         self._is_limits_adjustment_queued = False
 
+    @classmethod
+    def duplicate(Class, original: "Plot", *args, **kwargs) -> "Plot":
+        raise Exception("Method has not been implemented!")
+
+    def copy_limits(self, other: "Plot"):
+        raise Exception("Method has not been implemented!")
+
     def show(self):
         dpg.show_item(self._plot)
 

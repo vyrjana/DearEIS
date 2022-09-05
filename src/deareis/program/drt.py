@@ -17,57 +17,61 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from multiprocessing import cpu_count
 from typing import (
     Optional,
 )
+import deareis.api.drt as api
 from deareis.data import (
+    DRTResult,
+    DRTSettings,
     DataSet,
     PlotSettings,
     Project,
-    SimulationResult,
-    SimulationSettings,
 )
-import deareis.api.simulation as api
-from deareis.enums import Context
 from deareis.gui import ProjectTab
 from deareis.signals import Signal
-from deareis.state import STATE
 import deareis.signals as signals
+from deareis.state import STATE
 
 
-def select_simulation_result(*args, **kwargs):
+def select_drt_result(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    simulation: Optional[SimulationResult] = kwargs.get("simulation")
+    drt: Optional[DRTResult] = kwargs.get("drt")
     data: Optional[DataSet] = kwargs.get("data")
+    if data is None or drt is None:
+        return
     is_busy_message_visible: bool = STATE.is_busy_message_visible()
     if not is_busy_message_visible:
-        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading simulation result")
-    project_tab.select_simulation_result(simulation, data)
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading analysis result")
+    project_tab.select_drt_result(drt, data)
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
-def delete_simulation_result(*args, **kwargs):
+def delete_drt_result(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    simulation: Optional[SimulationResult] = kwargs.get("simulation")
-    if simulation is None:
+    drt: Optional[DRTResult] = kwargs.get("drt")
+    data: Optional[DataSet] = kwargs.get("data")
+    if data is None or drt is None:
         return
-    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting simulation result")
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting analysis result")
     settings: Optional[PlotSettings] = project_tab.get_active_plot()
     update_plot: bool = (
-        simulation.uuid in settings.series_order if settings is not None else False
+        drt.uuid in settings.series_order if settings is not None else False
     )
-    project.delete_simulation(simulation)
-    project_tab.populate_simulations(project)
+    project.delete_drt(data, drt)
+    project_tab.populate_drts(project, data)
     if settings is not None:
-        project_tab.plotting_tab.populate_simulations(
-            project.get_simulations(),
+        project_tab.plotting_tab.populate_drts(
+            project.get_all_drts(),
+            project.get_data_sets(),
             settings,
         )
     if update_plot:
@@ -76,39 +80,41 @@ def delete_simulation_result(*args, **kwargs):
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
-def apply_simulation_settings(*args, **kwargs):
+def apply_drt_settings(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    settings: Optional[SimulationSettings] = kwargs.get("settings")
+    settings: Optional[DRTSettings] = kwargs.get("settings")
     if settings is None:
         return
-    project_tab.set_simulation_settings(settings)
+    project_tab.set_drt_settings(settings)
 
 
-def perform_simulation(*args, **kwargs):
+def perform_drt(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    settings: Optional[SimulationSettings] = kwargs.get("settings")
-    if settings is None:
+    data: Optional[DataSet] = kwargs.get("data")
+    settings: Optional[DRTSettings] = kwargs.get("settings")
+    if data is None or settings is None:
         return
     assert (
-        settings.min_frequency != settings.max_frequency
-    ), "The minimum and maximum frequencies cannot be the same!"
-    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing simulation")
-    simulation: SimulationResult = api.simulate_spectrum(settings)
-    project.add_simulation(simulation)
-    project_tab.populate_simulations(project)
-    signals.emit(
-        Signal.SELECT_SIMULATION_RESULT,
-        simulation=simulation,
-        data=project_tab.get_active_data_set(context=Context.SIMULATION_TAB),
+        data.get_num_points() > 0
+    ), "There are no data points to use to calculate the distribution of relaxation times!"
+    num_procs: int = max(2, cpu_count() - 1)
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing analysis")
+    drt: DRTResult = api.calculate_drt(
+        data=data,
+        settings=settings,
+        num_procs=num_procs,
     )
-    project_tab.plotting_tab.populate_simulations(
-        project.get_simulations(),
+    project.add_drt(data=data, drt=drt)
+    project_tab.populate_drts(project, data)
+    project_tab.plotting_tab.populate_drts(
+        project.get_all_drts(),
+        project.get_data_sets(),
         project_tab.get_active_plot(),
     )
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

@@ -42,14 +42,22 @@ class Nyquist(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(dpg.mvXAxis, label="Z' (ohm)")
-            self._y_axis: int = dpg.add_plot_axis(dpg.mvYAxis, label='-Z" (ohm)')
+            self._x_axis: int = dpg.add_plot_axis(
+                dpg.mvXAxis,
+                label="Z' (ohm)",
+                no_gridlines=True,
+            )
+            self._y_axis: int = dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label='-Z" (ohm)',
+                no_gridlines=True,
+            )
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
     @classmethod
-    def duplicate(Class, original: "Nyquist", *args, **kwargs) -> "Nyquist":
-        copy: "Nyquist" = Class(*args, **kwargs)
+    def duplicate(Class, original: Plot, *args, **kwargs) -> Plot:
+        copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
         return copy
@@ -146,7 +154,7 @@ class Nyquist(Plot):
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
 
-    def copy_limits(self, other: "Nyquist"):
+    def copy_limits(self, other: Plot):
         src: int
         dst: int
         for src, dst in zip(

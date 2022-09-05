@@ -29,22 +29,12 @@ The equivalent circuit to fit to the data. A circuit description code (CDC) can 
         "method": """
 See the documentation for the 'lmfit' Python package for information about the fitting methods.
 
-The 'Auto' setting performs parallel fits with each of the fitting methods and returns the result with the lowest chi-squared value.
+The 'Auto' setting performs parallel fits with each of the fitting methods and returns the result with the smallest chi-squared value.
     """.strip(),
         "weight": f"""
-The weight function used when calculating residuals during fitting.
+The 'Auto' setting performs parallel fits with each of the weight functions listed above and returns the results with the smallest chi-squared value.
 
-Modulus: (1/|Z_fit|, 1/|Z_fit|)
-
-Proportional: (1/Z_fit'^2, 1/Z_fit\"^2)
-
-Unity: (1, 1)
-
-Boukamp: (1/Z_exp'^2 + 1/Z_exp\"^2, 1/Z_exp'^2 + 1/Z_exp\"^2) (eq. 13)
-
-The 'Auto' setting performs parallel fits with each of the weight functions listed above and returns the results with the lowest chi-squared value.
-
-{boukamp1995}
+Reference: {boukamp1995}
     """.strip(),
         "nfev": """
 The maximum number of function evaluations to perform. This setting can be used to limit the amount of time spent performing a fit. If this setting is set to zero, then no limit is applied.

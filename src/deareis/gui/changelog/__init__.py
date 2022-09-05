@@ -117,4 +117,4 @@ def show_changelog():
         tag=window,
     ):
         dpg.add_text(format_changelog(changelog, w - 40))
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)

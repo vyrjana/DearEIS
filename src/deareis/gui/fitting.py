@@ -17,8 +17,20 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional, Tuple, Type
-from numpy import allclose, array, log10 as log, ndarray
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
+from numpy import (
+    allclose,
+    array,
+    log10 as log,
+    ndarray,
+)
 from pyimpspec import (
     Circuit,
     Element,
@@ -31,13 +43,13 @@ from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.enums import (
     Context,
-    Method,
-    Output,
+    CNLSMethod,
+    FitSimOutput,
     Weight,
-    label_to_method,
+    label_to_cnls_method,
     label_to_weight,
-    label_to_output,
-    method_to_label,
+    label_to_fit_sim_output,
+    cnls_method_to_label,
     weight_to_label,
 )
 from deareis.data import (
@@ -45,25 +57,255 @@ from deareis.data import (
     FitResult,
     FitSettings,
 )
-from deareis.gui.plots import Bode, Nyquist, Residuals
+from deareis.gui.plots import (
+    Bode,
+    Nyquist,
+    Residuals,
+)
 import deareis.tooltips as tooltips
-from deareis.tooltips import attach_tooltip, update_tooltip
+from deareis.tooltips import (
+    attach_tooltip,
+    update_tooltip,
+)
 from deareis.utility import (
     align_numbers,
     calculate_window_position_dimensions,
     format_number,
+    render_math,
 )
 import deareis.themes as themes
-from deareis.gui.circuit_editor import CircuitPreview, CircuitEditor
+from deareis.gui.circuit_editor import (
+    CircuitPreview,
+    CircuitEditor,
+)
 
 
-LABEL_PAD: int = 23
+MATH_WEIGHT_WIDTH: int = 300
+MATH_WEIGHT_HEIGHT: int = 40
+MATH_WEIGHT_MODULUS: int = render_math(
+    r"$w_i = [|Z_{\rm re}(f_i)|, |Z_{\rm im}(f_i)|]^{-1}$",
+    width=MATH_WEIGHT_WIDTH,
+    height=MATH_WEIGHT_HEIGHT,
+)
+MATH_WEIGHT_PROPORTIONAL: int = render_math(
+    r"$w_i = [Z_{\rm re}(f_i)^2, Z_{\rm im}(f_i)^2]^{-1}$",
+    width=MATH_WEIGHT_WIDTH,
+    height=MATH_WEIGHT_HEIGHT,
+)
+MATH_WEIGHT_UNITY: int = render_math(
+    r"$w_i = [1]$",
+    width=MATH_WEIGHT_WIDTH,
+    height=MATH_WEIGHT_HEIGHT,
+)
+MATH_WEIGHT_BOUKAMP: int = render_math(
+    r"$w_i = [(Z_{{\rm re},i})^2 + (Z_{{\rm im},i})^2]^{-1}$",
+    width=MATH_WEIGHT_WIDTH,
+    height=MATH_WEIGHT_HEIGHT,
+)
+MATH_Z_FIT: int = render_math(
+    r"$Z_{\rm re/im}(f_i)$",
+    width=54,
+    height=20,
+    fontsize=10,
+)
+MATH_Z_EXP: int = render_math(
+    r"$Z_{{\rm re/im},i}$",
+    width=44,
+    height=20,
+    fontsize=10,
+)
+
+
+class SettingsMenu:
+    def __init__(
+        self,
+        default_settings: FitSettings,
+        label_pad: int,
+        circuit_editor: Optional[CircuitEditor] = None,
+    ):
+        self.circuit_editor: Optional[CircuitEditor] = circuit_editor
+        with dpg.group(horizontal=True):
+            dpg.add_text("Circuit".rjust(label_pad))
+            attach_tooltip(tooltips.fitting.cdc)
+            self.cdc_input: int = dpg.generate_uuid()
+            dpg.add_input_text(
+                width=-50 if circuit_editor is not None else -1,
+                tag=self.cdc_input,
+                on_enter=True,
+                callback=lambda s, a, u: self.parse_cdc(a, s),
+            )
+            self.cdc_tooltip: int = dpg.generate_uuid()
+            attach_tooltip("", tag=self.cdc_tooltip, parent=self.cdc_input)
+            dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
+            if circuit_editor is not None:
+                self.editor_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Edit",
+                    callback=self.show_circuit_editor,
+                    width=-1,
+                    tag=self.editor_button,
+                )
+                attach_tooltip(tooltips.general.open_circuit_editor)
+        with dpg.group(horizontal=True):
+            dpg.add_text("Method".rjust(label_pad))
+            attach_tooltip(tooltips.fitting.method)
+            self.method_combo: int = dpg.generate_uuid()
+            dpg.add_combo(
+                items=list(label_to_cnls_method.keys()),
+                default_value="Auto",
+                width=-1,
+                tag=self.method_combo,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Weight".rjust(label_pad))
+            with dpg.tooltip(dpg.last_item()):
+                dpg.add_text(
+                    "The weight function used when calculating residuals during fitting."
+                )
+                with dpg.table(
+                    borders_outerV=True,
+                    borders_outerH=True,
+                    borders_innerV=True,
+                    borders_innerH=True,
+                    scrollY=True,
+                    freeze_rows=1,
+                    height=18 + 4 * (MATH_WEIGHT_HEIGHT + 4),
+                ):
+                    dpg.add_table_column(
+                        label="Label",
+                        width_fixed=True,
+                    )
+                    dpg.add_table_column(
+                        label="Equation",
+                        width_fixed=False,
+                    )
+                    with dpg.table_row():
+                        dpg.add_text("Modulus")
+                        dpg.add_image(MATH_WEIGHT_MODULUS)
+                    with dpg.table_row():
+                        dpg.add_text("Proportional")
+                        dpg.add_image(MATH_WEIGHT_PROPORTIONAL)
+                    with dpg.table_row():
+                        dpg.add_text("Unity")
+                        dpg.add_image(MATH_WEIGHT_UNITY)
+                    with dpg.table_row():
+                        dpg.add_text("Boukamp (eq. 13)")
+                        dpg.add_image(MATH_WEIGHT_BOUKAMP)
+                with dpg.group(horizontal=True):
+                    dpg.add_image(MATH_Z_FIT)
+                    dpg.add_text(
+                        "is the real/imaginary part of the ith modeled impedance."
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_image(MATH_Z_EXP)
+                    dpg.add_text(
+                        "is the real/imaginary part of the ith experimental impedance."
+                    )
+                dpg.add_text(tooltips.fitting.weight, wrap=500)
+            self.weight_combo: int = dpg.generate_uuid()
+            dpg.add_combo(
+                items=list(label_to_weight.keys()),
+                default_value="Auto",
+                width=-1,
+                tag=self.weight_combo,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Max. num. of func. eval.".rjust(label_pad))
+            attach_tooltip(tooltips.fitting.nfev)
+            self.max_nfev_input: int = dpg.generate_uuid()
+            dpg.add_input_int(
+                default_value=1000,
+                min_value=0,
+                min_clamped=True,
+                step=0,
+                on_enter=True,
+                tag=self.max_nfev_input,
+                width=-1,
+            )
+        self.set_settings(default_settings)
+
+    def get_settings(self) -> FitSettings:
+        cdc: str = dpg.get_value(self.cdc_input) or ""
+        circuit: Optional[Circuit] = dpg.get_item_user_data(self.cdc_input)
+        if circuit is None or cdc != circuit.to_string():
+            circuit = self.parse_cdc(cdc, self.cdc_input)
+        return FitSettings(
+            cdc=circuit.to_string(12) if circuit is not None else "",
+            method=label_to_cnls_method.get(
+                dpg.get_value(self.method_combo), CNLSMethod.AUTO
+            ),
+            weight=label_to_weight.get(dpg.get_value(self.weight_combo), Weight.AUTO),
+            max_nfev=dpg.get_value(self.max_nfev_input),
+        )
+
+    def set_settings(self, settings: FitSettings):
+        assert type(settings) is FitSettings, settings
+        self.parse_cdc(settings.cdc)
+        dpg.set_value(self.method_combo, cnls_method_to_label.get(settings.method))
+        dpg.set_value(self.weight_combo, weight_to_label.get(settings.weight))
+        dpg.set_value(self.max_nfev_input, settings.max_nfev)
+
+    def parse_cdc(self, cdc: str, sender: int = -1) -> Optional[Circuit]:
+        assert type(cdc) is str, cdc
+        assert type(sender) is int, sender
+        try:
+            circuit: Circuit = pyimpspec.parse_cdc(cdc)
+        except (pyimpspec.ParsingError, pyimpspec.UnexpectedCharacter) as err:
+            dpg.bind_item_theme(self.cdc_input, themes.cdc.invalid)
+            update_tooltip(self.cdc_tooltip, str(err))
+            dpg.show_item(dpg.get_item_parent(self.cdc_tooltip))
+            dpg.set_item_user_data(self.cdc_input, None)
+            return None
+        dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
+        dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
+        dpg.set_item_user_data(self.cdc_input, circuit)
+        if sender != self.cdc_input:
+            dpg.set_value(self.cdc_input, circuit.to_string())
+        return circuit
+
+    def show_circuit_editor(self):
+        if self.circuit_editor is None:
+            return
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions()
+        dpg.configure_item(
+            self.circuit_editor.window,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+        )
+        circuit: Optional[Circuit] = None
+        try:
+            circuit = pyimpspec.parse_cdc(self.get_settings().cdc)
+        except pyimpspec.ParsingError:
+            pass
+        signals.emit(
+            Signal.BLOCK_KEYBINDINGS,
+            window=self.circuit_editor.window,
+            window_object=self.circuit_editor,
+        )
+        self.circuit_editor.show(circuit)
+
+    def has_active_input(self) -> bool:
+        return dpg.is_item_active(self.cdc_input) or dpg.is_item_active(
+            self.max_nfev_input
+        )
 
 
 class ParametersTable:
     def __init__(self):
         self._header: int = dpg.generate_uuid()
-        with dpg.collapsing_header(label=" Parameters", leaf=True, tag=self._header):
+        with dpg.collapsing_header(
+            label=" Parameters",
+            leaf=True,
+            tag=self._header,
+        ):
             self._table: int = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
@@ -150,7 +392,7 @@ class ParametersTable:
                     f"{format_number(parameter.value, decimals=6).strip()}"
                 )
                 if parameter.stderr is not None:
-                    error: float = parameter.stderr / parameter.value * 100
+                    error: float = parameter.get_relative_error() * 100
                     if error > 100.0:
                         error_value = ">100"
                     elif error < 0.01:
@@ -206,6 +448,7 @@ class ParametersTable:
 
 class StatisticsTable:
     def __init__(self):
+        label_pad: int = 23
         self._header: int = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Statistics", leaf=True, tag=self._header):
             self._table: int = dpg.generate_uuid()
@@ -220,7 +463,7 @@ class StatisticsTable:
                 tag=self._table,
             ):
                 dpg.add_table_column(
-                    label="Label".rjust(LABEL_PAD),
+                    label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
                 dpg.add_table_column(
@@ -268,7 +511,7 @@ class StatisticsTable:
                     ),
                 ]:
                     with dpg.table_row():
-                        dpg.add_text(label.rjust(LABEL_PAD))
+                        dpg.add_text(label.rjust(label_pad))
                         attach_tooltip(tooltip)
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
@@ -323,7 +566,7 @@ class StatisticsTable:
             ),
             (
                 cells[7],
-                method_to_label.get(fit.method, ""),
+                cnls_method_to_label.get(fit.method, ""),
             ),
             (
                 cells[8],
@@ -338,6 +581,7 @@ class StatisticsTable:
 
 class SettingsTable:
     def __init__(self):
+        label_pad: int = 23
         self._header: int = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Settings", leaf=True, tag=self._header):
             self._table: int = dpg.generate_uuid()
@@ -352,7 +596,7 @@ class SettingsTable:
                 tag=self._table,
             ):
                 dpg.add_table_column(
-                    label="Label".rjust(LABEL_PAD),
+                    label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
                 dpg.add_table_column(
@@ -367,7 +611,7 @@ class SettingsTable:
                     "Max. num. func. eval.",
                 ]:
                     with dpg.table_row():
-                        dpg.add_text(label.rjust(LABEL_PAD))
+                        dpg.add_text(label.rjust(label_pad))
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
@@ -414,7 +658,7 @@ class SettingsTable:
             rows,
             cells,
         )
-        circuit: Circuit = pyimpspec.string_to_circuit(fit.settings.cdc)
+        circuit: Circuit = pyimpspec.parse_cdc(fit.settings.cdc)
         tag: int
         value: str
         for (row, tag, value) in [
@@ -426,7 +670,7 @@ class SettingsTable:
             (
                 rows[1],
                 cells[1][1],
-                method_to_label.get(fit.settings.method, ""),
+                cnls_method_to_label.get(fit.settings.method, ""),
             ),
             (
                 rows[2],
@@ -597,79 +841,31 @@ class FittingTab:
                     width=self.sidebar_width,
                     tag=self.sidebar_window,
                 ):
-                    # TODO: Move to a separate class?
-                    # Settings
-                    with dpg.child_window(border=True, width=-1, height=128):
+                    with dpg.child_window(
+                        border=True,
+                        width=-1,
+                        height=128,
+                    ):
+                        self.circuit_editor: CircuitEditor = CircuitEditor(
+                            window=dpg.add_window(
+                                label="Circuit editor",
+                                show=False,
+                                modal=True,
+                                on_close=lambda s, a, u: self.accept_circuit(None),
+                            ),
+                            callback=self.accept_circuit,
+                        )
+                        self.settings_menu: SettingsMenu = SettingsMenu(
+                            state.config.default_fit_settings,
+                            label_pad,
+                            circuit_editor=self.circuit_editor,
+                        )
                         with dpg.group(horizontal=True):
                             self.visibility_item: int = dpg.generate_uuid()
                             dpg.add_text(
-                                "Circuit".rjust(label_pad), tag=self.visibility_item
+                                "?".rjust(label_pad),
+                                tag=self.visibility_item,
                             )
-                            attach_tooltip(tooltips.fitting.cdc)
-                            self.cdc_input: int = dpg.generate_uuid()
-                            dpg.add_input_text(
-                                width=-50,
-                                tag=self.cdc_input,
-                                on_enter=True,
-                                callback=lambda s, a, u: self.parse_cdc(a, s),
-                            )
-                            self.cdc_tooltip: int = dpg.generate_uuid()
-                            attach_tooltip(
-                                "", tag=self.cdc_tooltip, parent=self.cdc_input
-                            )
-                            dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
-                            self.circuit_editor: CircuitEditor = CircuitEditor(
-                                window=dpg.add_window(
-                                    label="Circuit editor",
-                                    show=False,
-                                    modal=True,
-                                    on_close=lambda s, a, u: self.accept_circuit(None),
-                                ),
-                                callback=self.accept_circuit,
-                            )
-                            self.editor_button: int = dpg.generate_uuid()
-                            dpg.add_button(
-                                label="Edit",
-                                callback=self.show_circuit_editor,
-                                width=-1,
-                                tag=self.editor_button,
-                            )
-                            attach_tooltip(tooltips.general.open_circuit_editor)
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Method".rjust(label_pad))
-                            attach_tooltip(tooltips.fitting.method)
-                            self.method_combo: int = dpg.generate_uuid()
-                            dpg.add_combo(
-                                items=["Auto"] + list(label_to_method.keys()),
-                                default_value="Auto",
-                                width=-1,
-                                tag=self.method_combo,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Weight".rjust(label_pad))
-                            attach_tooltip(tooltips.fitting.weight)
-                            self.weight_combo: int = dpg.generate_uuid()
-                            dpg.add_combo(
-                                items=["Auto"] + list(label_to_weight.keys()),
-                                default_value="Auto",
-                                width=-1,
-                                tag=self.weight_combo,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Max. num. of func. eval.".rjust(label_pad))
-                            attach_tooltip(tooltips.fitting.nfev)
-                            self.max_nfev_input: int = dpg.generate_uuid()
-                            dpg.add_input_int(
-                                default_value=1000,
-                                min_value=0,
-                                min_clamped=True,
-                                step=0,
-                                on_enter=True,
-                                tag=self.max_nfev_input,
-                                width=-1,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("?".rjust(label_pad))
                             attach_tooltip(tooltips.fitting.perform)
                             self.perform_fit_button: int = dpg.generate_uuid()
                             dpg.add_button(
@@ -683,6 +879,7 @@ class FittingTab:
                                 width=-1,
                                 tag=self.perform_fit_button,
                             )
+                    # Results
                     with dpg.child_window(width=-1, height=82):
                         label_pad = 8
                         with dpg.group(horizontal=True):
@@ -712,8 +909,8 @@ class FittingTab:
                             # TODO: Split into combo class?
                             self.output_combo: int = dpg.generate_uuid()
                             dpg.add_combo(
-                                items=list(label_to_output.keys()),
-                                default_value=list(label_to_output.keys())[0],
+                                items=list(label_to_fit_sim_output.keys()),
+                                default_value=list(label_to_fit_sim_output.keys())[0],
                                 tag=self.output_combo,
                                 width=-60,
                             )
@@ -730,6 +927,7 @@ class FittingTab:
                                 tag=self.copy_output_button,
                             )
                             attach_tooltip(tooltips.general.copy_output)
+                    #
                     with dpg.child_window(width=-1, height=-1):
                         self.result_group: int = dpg.generate_uuid()
                         with dpg.group(tag=self.result_group):
@@ -1002,29 +1200,15 @@ class FittingTab:
                             ),
                         )
                         attach_tooltip(tooltips.general.copy_plot_data_as_csv)
-        self.set_settings(self.state.config.default_fit_settings)
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
 
     def get_settings(self) -> FitSettings:
-        cdc: str = dpg.get_value(self.cdc_input) or ""
-        circuit: Optional[Circuit] = dpg.get_item_user_data(self.cdc_input)
-        if circuit is None or cdc != circuit.to_string():
-            circuit = self.parse_cdc(cdc, self.cdc_input)
-        return FitSettings(
-            circuit.to_string(12) if circuit is not None else "",
-            label_to_method.get(dpg.get_value(self.method_combo), Method.AUTO),
-            label_to_weight.get(dpg.get_value(self.weight_combo), Weight.AUTO),
-            dpg.get_value(self.max_nfev_input),
-        )
+        return self.settings_menu.get_settings()
 
     def set_settings(self, settings: FitSettings):
-        assert type(settings) is FitSettings, settings
-        self.parse_cdc(settings.cdc)
-        dpg.set_value(self.method_combo, method_to_label.get(settings.method))
-        dpg.set_value(self.weight_combo, weight_to_label.get(settings.weight))
-        dpg.set_value(self.max_nfev_input, settings.max_nfev)
+        self.settings_menu.set_settings(settings)
 
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0
@@ -1071,7 +1255,9 @@ class FittingTab:
         dpg.hide_item(dpg.get_item_parent(self.validity_text))
         if data is not None and self.results_combo.labels:
             signals.emit(
-                Signal.SELECT_FIT_RESULT, fit=self.results_combo.get(), data=data
+                Signal.SELECT_FIT_RESULT,
+                fit=self.results_combo.get(),
+                data=data,
             )
         else:
             self.parameters_table.clear(hide=True)
@@ -1149,7 +1335,7 @@ class FittingTab:
         }
         num_masked_exp: int = list(data.get_mask().values()).count(True)
         num_masked_fit: int = list(fit.mask.values()).count(True)
-        assert num_masked_exp == num_masked_fit, f"The masks are different sizes!"
+        assert num_masked_exp == num_masked_fit, "The masks are different sizes!"
         i: int
         for i in mask_fit.keys():
             assert (
@@ -1214,8 +1400,7 @@ class FittingTab:
         self.parameters_table.populate(fit)
         self.statistics_table.populate(fit)
         self.settings_table.populate(fit, data)
-        window: int = dpg.add_window(show=False)
-        self.circuit_preview.update(pyimpspec.string_to_circuit(fit.settings.cdc))
+        self.circuit_preview.update(pyimpspec.parse_cdc(fit.settings.cdc))
         real: ndarray
         imag: ndarray
         real, imag = fit.get_nyquist_data()
@@ -1282,53 +1467,15 @@ class FittingTab:
         if dpg.get_value(self.adjust_residuals_limits_checkbox):
             self.residuals_plot.queue_limits_adjustment()
 
-    def parse_cdc(self, cdc: str, sender: int = -1) -> Optional[Circuit]:
-        assert type(cdc) is str, cdc
-        assert type(sender) is int, sender
-        try:
-            circuit: Circuit = pyimpspec.string_to_circuit(cdc)
-        except (pyimpspec.ParsingError, pyimpspec.UnexpectedCharacter) as err:
-            dpg.bind_item_theme(self.cdc_input, themes.cdc.invalid)
-            update_tooltip(self.cdc_tooltip, str(err))
-            dpg.show_item(dpg.get_item_parent(self.cdc_tooltip))
-            dpg.set_item_user_data(self.cdc_input, None)
-            return None
-        dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
-        dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
-        dpg.set_item_user_data(self.cdc_input, circuit)
-        if sender != self.cdc_input:
-            dpg.set_value(self.cdc_input, circuit.to_string())
-        return circuit
-
     def show_circuit_editor(self):
-        x: int
-        y: int
-        w: int
-        h: int
-        x, y, w, h = calculate_window_position_dimensions()
-        dpg.configure_item(
-            self.circuit_editor.window,
-            pos=(
-                x,
-                y,
-            ),
-            width=w,
-            height=h,
-        )
-        circuit: Optional[Circuit] = None
-        try:
-            circuit = pyimpspec.string_to_circuit(self.get_settings().cdc)
-        except pyimpspec.ParsingError:
-            pass
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.circuit_editor.window)
-        self.circuit_editor.show(circuit)
+        self.settings_menu.show_circuit_editor()
 
     def accept_circuit(self, circuit: Optional[Circuit]):
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         self.circuit_editor.hide()
         if circuit is None:
             return
-        self.parse_cdc(circuit.to_string(12))
+        self.settings_menu.parse_cdc(circuit.to_string(12))
 
     def show_enlarged_nyquist(self):
         signals.emit(
@@ -1351,10 +1498,8 @@ class FittingTab:
             adjust_limits=dpg.get_value(self.adjust_residuals_limits_checkbox),
         )
 
-    def get_active_output(self) -> Optional[Output]:
-        return label_to_output.get(dpg.get_value(self.output_combo))
+    def get_active_output(self) -> Optional[FitSimOutput]:
+        return label_to_fit_sim_output.get(dpg.get_value(self.output_combo))
 
     def has_active_input(self) -> bool:
-        return dpg.is_item_active(self.cdc_input) or dpg.is_item_active(
-            self.max_nfev_input
-        )
+        return self.settings_menu.has_active_input()

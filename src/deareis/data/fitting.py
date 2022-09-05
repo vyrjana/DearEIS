@@ -31,7 +31,6 @@ from numpy import (
     array,
     integer,
     issubdtype,
-    log10 as log,
     ndarray,
 )
 from pandas import DataFrame
@@ -43,7 +42,7 @@ from pyimpspec import (
 )
 from pyimpspec.analysis.fitting import _interpolate
 from deareis.enums import (
-    Method,
+    CNLSMethod,
     Weight,
 )
 from deareis.utility import format_timestamp
@@ -56,7 +55,7 @@ def _parse_settings_v1(dictionary: dict) -> dict:
     assert type(dictionary) is dict
     return {
         "cdc": dictionary["cdc"],
-        "method": Method(dictionary["method"]),
+        "method": CNLSMethod(dictionary["method"]),
         "weight": Weight(dictionary["weight"]),
         "max_nfev": dictionary["max_nfev"],
     }
@@ -72,7 +71,7 @@ class FitSettings:
     cdc: str
         The circuit description code (CDC) for the circuit to fit.
 
-    method: Method
+    method: CNLSMethod
         The iterative method to use when performing the fit.
 
     weight: Weight
@@ -83,7 +82,7 @@ class FitSettings:
     """
 
     cdc: str
-    method: Method
+    method: CNLSMethod
     weight: Weight
     max_nfev: int
 
@@ -123,7 +122,7 @@ def _parse_result_v1(dictionary: dict) -> dict:
     return {
         "uuid": dictionary["uuid"],
         "timestamp": dictionary["timestamp"],
-        "circuit": pyimpspec.string_to_circuit(dictionary["circuit"]),
+        "circuit": pyimpspec.parse_cdc(dictionary["circuit"]),
         "parameters": {
             element_label: {
                 parameter_label: FittedParameter.from_dict(param)
@@ -214,7 +213,7 @@ class FitResult:
     nfev: int
         The number of function evaluations.
 
-    method: Method
+    method: CNLSMethod
         The iterative method that produced the result.
 
     weight: Weight
@@ -240,7 +239,7 @@ class FitResult:
     ndata: int
     nfree: int
     nfev: int
-    method: Method
+    method: CNLSMethod
     weight: Weight
     settings: FitSettings
 
@@ -251,6 +250,7 @@ class FitResult:
     def __repr__(self) -> str:
         return f"FitResult ({self.get_label()}, {hex(id(self))})"
 
+    # TODO: Refactor
     @classmethod
     def from_dict(Class, dictionary: dict) -> "FitResult":
         """
@@ -274,12 +274,13 @@ class FitResult:
             "real_impedance" not in dictionary
             or "imaginary_impedance" not in dictionary
         ):
-            Z: ndarray = pyimpspec.string_to_circuit(dictionary["circuit"]).impedances(
+            Z: ndarray = pyimpspec.parse_cdc(dictionary["circuit"]).impedances(
                 dictionary["frequency"]
             )
             dictionary["real_impedance"] = list(Z.real)
             dictionary["imaginary_impedance"] = list(Z.imag)
-        return Class(**parsers[version](dictionary))
+        dictionary = parsers[version](dictionary)
+        return Class(**dictionary)
 
     def to_dict(self, session: bool) -> dict:
         """
@@ -374,7 +375,10 @@ class FitResult:
             i: int = cdc.find("{")
             j: int = cdc.find("}")
             cdc = cdc.replace(cdc[i : j + 1], "")
-        return f"{cdc} ({format_timestamp(self.timestamp)})"
+        if cdc.startswith("[") and cdc.endswith("]"):
+            cdc = cdc[1:-1]
+        timestamp: str = format_timestamp(self.timestamp)
+        return f"{cdc} ({timestamp})"
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
         """
@@ -439,7 +443,7 @@ class FitResult:
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+        Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
 
         Parameters
         ----------
@@ -451,22 +455,22 @@ class FitResult:
             freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.get_impedance(num_per_decade)
             return (
-                log(freq),
-                log(abs(Z)),
+                freq,
+                abs(Z),
                 -angle(Z, deg=True),
             )
         return (
-            log(self.frequency),
-            log(abs(self.impedance)),
+            self.frequency,
+            abs(self.impedance),
             -angle(self.impedance, deg=True),
         )
 
     def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        Get the data required to plot the residuals (real and imaginary vs log f).
+        Get the data required to plot the residuals (real and imaginary vs f).
         """
         return (
-            log(self.frequency),
+            self.frequency,
             self.real_residual * 100,
             self.imaginary_residual * 100,
         )

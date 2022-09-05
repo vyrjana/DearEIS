@@ -1,10 +1,53 @@
+# 3.0.0
+
+**Breaking changes in the API!**
+
+- `DataSet`, `TestResult`, `FitResult`, and `SimulationResult` methods such as `get_bode_data` that previously returned base-10 logarithms of, e.g., frequencies now instead return the non-logarithmic values.
+- The `perform_exploratory_tests` function now returns a list of `deareis.TestResult` instead of a list of `pyimpspec.KramersKronigResult` and the results have already been sorted from best to worst.
+- The `score_test_results` function has been removed.
+- The `string_to_circuit` function has been renamed to `parse_cdc`.
+- The `fit_circuit_to_data` function has been renamed to `fit_circuit`.
+- The `PlotSeries` class now has methods such as `get_nyquist_data`, `get_bode_data`, etc.
+  Thus, such objects can be either passed directly to the plotting functions available through the API of DearEIS or they can be used with unsupported plotting libraries.
+  The underlying source of the data is stored in a `data` property but accessing the data needed for plotting purposes is best accessed via the methods.
+	If the data is not available because the source does not contain it (e.g., `TestResult` objects do not have the data required to plot a distribution of relaxation times), then empty `numpy.ndarray` objects are returned.
+- Some enums have been renamed (e.g., `Method` is now `CNLSMethod`).
+
+# 
+
+- Added a `DRT analysis` tab with support for calculating the distribution of relaxation times using a few different methods.
+- Added appearance settings for the new plot types used in the `DRT analysis` tab.
+- Added new keybindings for use in the `DRT analysis` tab.
+- Added new plot types to the `Plotting` tab.
+- Added support for rendering math using matplotlib.
+- Added new plotting functions to the API.
+- Added `perform_exploratory_tests` function to the API.
+- Added overlay messages when switching to, e.g., another data set.
+- Added `CircuitBuilder` class to the API.
+- Updated tooltips (e.g., to make use of the new math rendering capability).
+- Updated formatting of axis limits in the popup window for exporting plots created in the `Plotting` tab.
+- Updated the appearances of plots (e.g., removal of grid lines and changing over to using logarithmic scales).
+- Updated config file structure as a result of changes to plot exporting settings and the addition of DRT analysis settings.
+- Updated the `Project` class and its corresponding file structure to support DRT analysis results.
+- Updated how labels are generated for `TestResult`, `FitResult`, and `SimulationResult` objects.
+- Updated buttons in the home tab to have dynamic labels according to whether or not recent projects have been selected.
+- Updated overlay messages to use pyimpspec's API for more detailed progress information when performing, e.g., Kramers-Kronig tests.
+- Updated number formatting.
+- Refactored how the tabs are updated when switching to, e.g., another data set.
+- Refactored the `deareis.mpl.plot` function to make better use of `pyimpspec`'s API.
+- Refactored settings for exporting plots.
+- Refactored the settings menus in the `Kramers-Kronig`, `Fitting`, and `Simulation` tabs.
+- Refactored the window for defining default settings.
+- Fixed bugs that caused (un)selecting groups of items in the `Plotting` tab to not work properly.
+
+
 # 2.2.0
 
 - Added `num_per_decade` argument to the `deareis.mpl.plot_fit` function.
 - Added sorting of elements to the `to_dataframe` methods in the `FitResult` and `SimulationResult` classes.
 - Updated the required minimum version for `pyimpspec`.
 - Fixed a bug where an exception would occur in the GUI program because a `Project` instance created outside of the GUI program would not have a `PlotSettings` instance.
-- Fixed bugs that prevented the entries for Kramers-Kronig test results and circuit fit results in the plotting tab from updating properly when deleting those results or when undoing/redoing changes affecting those results.
+- Fixed bugs that prevented the entries for Kramers-Kronig test results and circuit fit results in the `Plotting` tab from updating properly when deleting those results or when undoing/redoing changes affecting those results.
 - Removed `tabulate` as explicit dependency since it was added as an explicit dependency to `pyimpspec`.
 
 
@@ -53,7 +96,7 @@
 - Fixed bugs that occurred when trying to copy a mask or subtract an impedance with fewer than two data sets present in a project.
 - Fixed issues detected by mypy.
 - Fixed the incorrect label on the x-axis of the mu/chi-squared vs num. RC plot.
-- Optimized the plotting tab to reduce loading times (by approx. 25-30 % based on testing).
+- Optimized the `Plotting` tab to reduce loading times (by approx. 25-30 % based on testing).
 - Refactored code and removed deprecated code.
 
 
@@ -92,7 +135,7 @@
 
 # 0.3.0
 
-- Added a "Plotting" tab that can be used to plot multiple data sets, test results, fit results, and simulation results in a single figure. Currently supports Nyquist, Bode (magnitude), and Bode (phase) plot types.
+- Added a `Plotting` tab that can be used to plot multiple data sets, test results, fit results, and simulation results in a single figure. Currently supports Nyquist, Bode (magnitude), and Bode (phase) plot types.
 - Added a setting for specifying the number of points per decade to use when drawing simulated responses as lines.
 - Added an "Edit" menu to the menu bar with "Undo" and "Redo" actions.
 - Added indicators for when the program is busy loading data files or loading/saving projects.

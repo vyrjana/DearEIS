@@ -27,6 +27,7 @@ class Context(IntEnum):
     OVERVIEW_TAB = auto()
     DATA_SETS_TAB = auto()
     KRAMERS_KRONIG_TAB = auto()
+    DRT_TAB = auto()
     FITTING_TAB = auto()
     SIMULATION_TAB = auto()
     PLOTTING_TAB = auto()
@@ -58,6 +59,7 @@ class Action(IntEnum):
     NEXT_PROJECT_TAB = auto()
     PREVIOUS_PROJECT_TAB = auto()
     SELECT_DATA_SETS_TAB = auto()
+    SELECT_DRT_TAB = auto()
     SELECT_FITTING_TAB = auto()
     SELECT_KRAMERS_KRONIG_TAB = auto()
     SELECT_OVERVIEW_TAB = auto()
@@ -89,17 +91,23 @@ class Action(IntEnum):
     # - Plot type
     APPLY_SETTINGS = auto()
     # - Kramers-Kronig tab
+    # - DRT tab
     # - Fitting tab
     # - Simulation tab
     APPLY_MASK = auto()
     # - Kramers-Kronig tab
+    # - DRT tab
     # - Fitting tab
     SHOW_ENLARGED_NYQUIST = auto()
     SHOW_ENLARGED_BODE = auto()
     SHOW_ENLARGED_RESIDUALS = auto()
+    SHOW_ENLARGED_DRT = auto()
+    SHOW_ENLARGED_IMPEDANCE = auto()
     SHOW_CIRCUIT_EDITOR = auto()
     # - Fitting tab
     # - Simulation tab
+    COPY_DRT_DATA = auto()
+    COPY_IMPEDANCE_DATA = auto()
     COPY_NYQUIST_DATA = auto()
     COPY_BODE_DATA = auto()
     COPY_RESIDUALS_DATA = auto()
@@ -145,6 +153,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.NEXT_PROJECT_TAB: [Context.PROJECT],
     Action.PREVIOUS_PROJECT_TAB: [Context.PROJECT],
     Action.SELECT_DATA_SETS_TAB: [Context.PROJECT],
+    Action.SELECT_DRT_TAB: [Context.PROJECT],
     Action.SELECT_FITTING_TAB: [Context.PROJECT],
     Action.SELECT_KRAMERS_KRONIG_TAB: [Context.PROJECT],
     Action.SELECT_OVERVIEW_TAB: [Context.PROJECT],
@@ -153,6 +162,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.PERFORM_ACTION: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
@@ -160,6 +170,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.DELETE_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
@@ -167,6 +178,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.NEXT_PRIMARY_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
@@ -174,30 +186,41 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.PREVIOUS_PRIMARY_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
     ],
     Action.NEXT_SECONDARY_RESULT: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
     ],
     Action.PREVIOUS_SECONDARY_RESULT: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
     ],
     Action.APPLY_SETTINGS: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
     Action.APPLY_MASK: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
+    ],
+    Action.SHOW_ENLARGED_IMPEDANCE: [
+        Context.DRT_TAB,
+    ],
+    Action.SHOW_ENLARGED_DRT: [
+        Context.DRT_TAB,
     ],
     Action.SHOW_ENLARGED_NYQUIST: [
         Context.DATA_SETS_TAB,
@@ -213,11 +236,18 @@ action_contexts: Dict[Action, List[Context]] = {
     ],
     Action.SHOW_ENLARGED_RESIDUALS: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
     ],
     Action.SHOW_CIRCUIT_EDITOR: [
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
+    ],
+    Action.COPY_DRT_DATA: [
+        Context.DRT_TAB,
+    ],
+    Action.COPY_IMPEDANCE_DATA: [
+        Context.DRT_TAB,
     ],
     Action.COPY_NYQUIST_DATA: [
         Context.KRAMERS_KRONIG_TAB,
@@ -231,9 +261,11 @@ action_contexts: Dict[Action, List[Context]] = {
     ],
     Action.COPY_RESIDUALS_DATA: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
     ],
     Action.COPY_OUTPUT: [
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
@@ -251,59 +283,64 @@ action_contexts: Dict[Action, List[Context]] = {
 
 
 action_to_string: Dict[Action, str] = {
-    Action.NEW_PROJECT: "new-project",
-    Action.LOAD_PROJECT: "load-project",
+    Action.APPLY_MASK: "apply-mask",
+    Action.APPLY_SETTINGS: "apply-settings",
+    Action.AVERAGE_DATA_SETS: "average-data-sets",
+    Action.CHECK_UPDATES: "check-updates",
+    Action.CLOSE_PROJECT: "close-project",
+    Action.COPY_BODE_DATA: "copy-bode-data",
+    Action.COPY_DATA_SET_MASK: "copy-data-set-mask",
+    Action.COPY_DRT_DATA: "copy-drt-data",
+    Action.COPY_IMPEDANCE_DATA: "copy-impedance-data",
+    Action.COPY_NYQUIST_DATA: "copy-nyquist-data",
+    Action.COPY_OUTPUT: "copy-output",
+    Action.COPY_PLOT_APPEARANCE: "copy-plot-appearance",
+    Action.COPY_PLOT_DATA: "copy-plot-data",
+    Action.COPY_RESIDUALS_DATA: "copy-residuals-data",
+    Action.DELETE_RESULT: "delete-result",
     Action.EXIT: "exit-program",
+    Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
+    Action.EXPORT_PLOT: "export-plot",
+    Action.LOAD_PROJECT: "load-project",
+    Action.NEW_PROJECT: "new-project",
+    Action.NEXT_PRIMARY_RESULT: "next-primary-result",
     Action.NEXT_PROGRAM_TAB: "next-program-tab",
+    Action.NEXT_PROJECT_TAB: "next-project-tab",
+    Action.NEXT_SECONDARY_RESULT: "next-secondary-result",
+    Action.PERFORM_ACTION: "perform-action",
+    Action.PREVIOUS_PRIMARY_RESULT: "previous-primary-result",
     Action.PREVIOUS_PROGRAM_TAB: "previous-program-tab",
+    Action.PREVIOUS_PROJECT_TAB: "previous-project-tab",
+    Action.PREVIOUS_SECONDARY_RESULT: "previous-secondary-result",
+    Action.REDO: "redo",
+    Action.SAVE_PROJECT: "save-project",
+    Action.SAVE_PROJECT_AS: "save-project-as",
+    Action.SELECT_ALL_PLOT_SERIES: "select-all-plot-series",
+    Action.SELECT_DATA_SETS_TAB: "select-data-sets-tab",
+    Action.SELECT_DRT_TAB: "select-drt-tab",
+    Action.SELECT_FITTING_TAB: "select-fitting-tab",
     Action.SELECT_HOME_TAB: "select-home-tab",
+    Action.SELECT_KRAMERS_KRONIG_TAB: "select-kramers-kronig-tab",
+    Action.SELECT_OVERVIEW_TAB: "select-overview-tab",
+    Action.SELECT_PLOTTING_TAB: "select-plotting-tab",
+    Action.SELECT_SIMULATION_TAB: "select-simulation-tab",
+    Action.SHOW_CHANGELOG: "show-changelog",
+    Action.SHOW_CIRCUIT_EDITOR: "show-circuit-editor",
+    Action.SHOW_COMMAND_PALETTE: "show-command-palette",
+    Action.SHOW_ENLARGED_BODE: "show-enlarged-bode",
+    Action.SHOW_ENLARGED_DRT: "show-enlarged-drt",
+    Action.SHOW_ENLARGED_IMPEDANCE: "show-enlarged-impedance",
+    Action.SHOW_ENLARGED_NYQUIST: "show-enlarged-nyquist",
+    Action.SHOW_ENLARGED_RESIDUALS: "show-enlarged-residuals",
     Action.SHOW_HELP_ABOUT: "show-help-about",
     Action.SHOW_HELP_LICENSES: "show-help-licenses",
     Action.SHOW_SETTINGS_APPEARANCE: "show-settings-appearance",
     Action.SHOW_SETTINGS_DEFAULTS: "show-settings-defaults",
     Action.SHOW_SETTINGS_KEYBINDINGS: "show-settings-keybindings",
-    Action.SHOW_COMMAND_PALETTE: "show-command-palette",
-    Action.SHOW_CHANGELOG: "show-changelog",
-    Action.CHECK_UPDATES: "check-updates",
-    Action.SAVE_PROJECT: "save-project",
-    Action.SAVE_PROJECT_AS: "save-project-as",
-    Action.CLOSE_PROJECT: "close-project",
-    Action.UNDO: "undo",
-    Action.REDO: "redo",
-    Action.NEXT_PROJECT_TAB: "next-project-tab",
-    Action.PREVIOUS_PROJECT_TAB: "previous-project-tab",
-    Action.SELECT_DATA_SETS_TAB: "select-data-sets-tab",
-    Action.SELECT_FITTING_TAB: "select-fitting-tab",
-    Action.SELECT_KRAMERS_KRONIG_TAB: "select-kramers-kronig-tab",
-    Action.SELECT_OVERVIEW_TAB: "select-overview-tab",
-    Action.SELECT_PLOTTING_TAB: "select-plotting-tab",
-    Action.SELECT_SIMULATION_TAB: "select-simulation-tab",
-    Action.PERFORM_ACTION: "perform-action",
-    Action.DELETE_RESULT: "delete-result",
-    Action.NEXT_PRIMARY_RESULT: "next-primary-result",
-    Action.PREVIOUS_PRIMARY_RESULT: "previous-primary-result",
-    Action.NEXT_SECONDARY_RESULT: "next-secondary-result",
-    Action.PREVIOUS_SECONDARY_RESULT: "previous-secondary-result",
-    Action.APPLY_SETTINGS: "apply-settings",
-    Action.APPLY_MASK: "apply-mask",
-    Action.SHOW_ENLARGED_NYQUIST: "show-enlarged-nyquist",
-    Action.SHOW_ENLARGED_BODE: "show-enlarged-bode",
-    Action.SHOW_ENLARGED_RESIDUALS: "show-enlarged-residuals",
-    Action.SHOW_CIRCUIT_EDITOR: "show-circuit-editor",
-    Action.COPY_NYQUIST_DATA: "copy-nyquist-data",
-    Action.COPY_BODE_DATA: "copy-bode-data",
-    Action.COPY_RESIDUALS_DATA: "copy-residuals-data",
-    Action.COPY_OUTPUT: "copy-output",
-    Action.AVERAGE_DATA_SETS: "average-data-sets",
-    Action.TOGGLE_DATA_POINTS: "toggle-data-points",
-    Action.COPY_DATA_SET_MASK: "copy-data-set-mask",
     Action.SUBTRACT_IMPEDANCE: "subtract-impedance",
-    Action.SELECT_ALL_PLOT_SERIES: "select-all-plot-series",
+    Action.TOGGLE_DATA_POINTS: "toggle-data-points",
+    Action.UNDO: "undo",
     Action.UNSELECT_ALL_PLOT_SERIES: "unselect-all-plot-series",
-    Action.COPY_PLOT_APPEARANCE: "copy-plot-appearance",
-    Action.COPY_PLOT_DATA: "copy-plot-data",
-    Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
-    Action.EXPORT_PLOT: "export-plot",
 }
 string_to_action: Dict[str, Action] = {v: k for k, v in action_to_string.items()}
 # Check that there are no duplicate keys
@@ -379,6 +416,9 @@ Go to the previous project tab.
     Action.SELECT_DATA_SETS_TAB: """
 Go to the 'Data sets' tab.
 """.strip(),
+    Action.SELECT_DRT_TAB: """
+Go to the 'DRT analysis' tab.
+""".strip(),
     Action.SELECT_FITTING_TAB: """
 Go to the 'Fitting' tab.
 """.strip(),
@@ -398,6 +438,7 @@ Go to the 'Simulation' tab.
 Perform the primary action of the current project tab:
 - Data sets: select files to load.
 - Kramers-Kronig: perform test.
+- DRT analysis: perform analysis.
 - Fitting: perform fit.
 - Simulation: perform simulation.
 - Plotting: create a new plot.
@@ -406,6 +447,7 @@ Perform the primary action of the current project tab:
 Delete the current result in the current project tab:
 - Data sets: delete the current data set.
 - Kramers-Kronig: delete the current test result.
+- DRT analysis: delete the current analysis result.
 - Fitting: delete the current fit result.
 - Simulation: delete the current simulation result.
 - Plotting: delete the current plot.
@@ -414,6 +456,7 @@ Delete the current result in the current project tab:
 Select the next primary result of the current project tab:
 - Data sets: data set.
 - Kramers-Kronig: data set.
+- DRT analysis: data set.
 - Fitting: data set.
 - Simulation: data set.
 - Plotting: plot.
@@ -422,6 +465,7 @@ Select the next primary result of the current project tab:
 Select the previous primary result of the current project tab:
 - Data sets: data set.
 - Kramers-Kronig: data set.
+- DRT analysis: data set.
 - Fitting: data set.
 - Simulation: data set.
 - Plotting: plot.
@@ -429,6 +473,7 @@ Select the previous primary result of the current project tab:
     Action.NEXT_SECONDARY_RESULT: """
 Select the next secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
 - Plotting: plot type.
@@ -436,6 +481,7 @@ Select the next secondary result of the current project tab:
     Action.PREVIOUS_SECONDARY_RESULT: """
 Select the previous secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
 - Plotting: plot type.
@@ -443,13 +489,21 @@ Select the previous secondary result of the current project tab:
     Action.APPLY_SETTINGS: """
 Apply the settings used in the current secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
 """.strip(),
     Action.APPLY_MASK: """
 Apply the mask used in the current secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- DRT analysis: analysis result.
 - Fitting: fit result.
+""".strip(),
+    Action.SHOW_ENLARGED_DRT: """
+Show an enlarged DRT plot.
+""".strip(),
+    Action.SHOW_ENLARGED_IMPEDANCE: """
+Show an enlarged impedance plot.
 """.strip(),
     Action.SHOW_ENLARGED_NYQUIST: """
 Show an enlarged Nyquist plot.
@@ -463,6 +517,12 @@ Show an enlarged residuals plot.
     Action.SHOW_CIRCUIT_EDITOR: """
 Show the circuit editor window.
 """.strip(),
+    Action.COPY_DRT_DATA: """
+Copy the data from the DRT plot.
+""".strip(),
+    Action.COPY_IMPEDANCE_DATA: """
+Copy the data from the impedance plot.
+""".strip(),
     Action.COPY_NYQUIST_DATA: """
 Copy the data from the Nyquist plot.
 """.strip(),
@@ -473,7 +533,7 @@ Copy the data from the Bode plot.
 Copy the data from the residuals plot.
 """.strip(),
     Action.COPY_OUTPUT: """
-Copy the chosen output while in the 'Fitting' or the 'Simulation' tab.
+Copy the chosen output while in the 'DRT analysis', 'Fitting', or the 'Simulation' tab.
 """.strip(),
     Action.AVERAGE_DATA_SETS: """
 Select data sets to average.
@@ -512,7 +572,7 @@ assert set(action_to_string.keys()) == set(
 ), "Missing action descriptions detected!"
 
 
-class Method(IntEnum):
+class CNLSMethod(IntEnum):
     """
     Iterative methods used during complex non-linear least-squares fitting:
 
@@ -568,66 +628,71 @@ class Method(IntEnum):
     DUAL_ANNEALING = 24
 
 
-label_to_method: Dict[str, Method] = {
-    "Levenberg-Marquardt": Method.LEASTSQ,
-    "Least-squares (trust-region reflective)": Method.LEAST_SQUARES,
-    "Powell": Method.POWELL,  # Had some problem fitting
-    "BFGS": Method.BFGS,  # Had some problem fitting
-    "Nelder-Mead": Method.NELDER,  # Had some problem fitting
-    "Conjugate Gradient": Method.CG,  # Had some problem fitting
-    "Truncated Newton": Method.TNC,  # Had some problem fitting
-    "L-BFGS-B": Method.LBFGSB,  # NaN errors
-    # "COBYLA": Method.COBYLA,  # Had some problem fitting
-    "Sequential Linear Squares Programming": Method.SLSQP,  # Had some problem fitting
-    # "Basin hopping": Method.BASINHOPPING,  # NaN errors
-    # "Differential Evolution": Method.DIFFERENTIAL_EVOLUTION,  # Requires finite bounds for all mutable parameters
-    # "Brute force method": Method.BRUTE,  # Requires that brute_step is defined for mutable parameters
-    # "Adaptive Memory Programming for Global Optimization": Method.AMPGO,  # NaN errors
-    # "Newton": Method.NEWTON,  # Requires Jacobian
-    # "Newton CG": Method.TRUST_NCG,  # Requires Jacobian for trust region
-    # "Exact trust-region": Method.TRUST_EXACT,  # Requires Jacobian for trust region
-    # "Newton GLTR trust-region": Method.TRUST_KRYLOV,  # Requires Jacobian for trust region
-    # "Constrained trust-region": Method.TRUST_CONSTR,  # NaN errors
-    # "Dog-leg trust-region": Method.DOGLEG,  # Requires Jacobian
-    # "Simplicial Homology Global Optimization": Method.SHGO,  # NaN errors
-    # "Dual Annealing": Method.DUAL_ANNEALING,  # Requires finite bounds for all mutable parameters
-    # "Maximum likelyhood via Monte-Carlo Markov chain": Method.EMCEE,  # Requires the emcee package (version 3)
+label_to_cnls_method: Dict[str, CNLSMethod] = {
+    "Auto": CNLSMethod.AUTO,
+    "Levenberg-Marquardt": CNLSMethod.LEASTSQ,
+    "Least-squares (trust-region reflective)": CNLSMethod.LEAST_SQUARES,
+    "Powell": CNLSMethod.POWELL,  # Had some problem fitting
+    "BFGS": CNLSMethod.BFGS,  # Had some problem fitting
+    "Nelder-Mead": CNLSMethod.NELDER,  # Had some problem fitting
+    "Conjugate Gradient": CNLSMethod.CG,  # Had some problem fitting
+    "Truncated Newton": CNLSMethod.TNC,  # Had some problem fitting
+    "L-BFGS-B": CNLSMethod.LBFGSB,  # NaN errors
+    # "COBYLA": CNLSMethod.COBYLA,  # Had some problem fitting
+    "Sequential Linear Squares Programming": CNLSMethod.SLSQP,  # Had some problem fitting
+    # "Basin hopping": CNLSMethod.BASINHOPPING,  # NaN errors
+    # "Differential Evolution": CNLSMethod.DIFFERENTIAL_EVOLUTION,  # Requires finite bounds for all mutable parameters
+    # "Brute force method": CNLSMethod.BRUTE,  # Requires that brute_step is defined for mutable parameters
+    # "Adaptive Memory Programming for Global Optimization": CNLSMethod.AMPGO,  # NaN errors
+    # "Newton": CNLSMethod.NEWTON,  # Requires Jacobian
+    # "Newton CG": CNLSMethod.TRUST_NCG,  # Requires Jacobian for trust region
+    # "Exact trust-region": CNLSMethod.TRUST_EXACT,  # Requires Jacobian for trust region
+    # "Newton GLTR trust-region": CNLSMethod.TRUST_KRYLOV,  # Requires Jacobian for trust region
+    # "Constrained trust-region": CNLSMethod.TRUST_CONSTR,  # NaN errors
+    # "Dog-leg trust-region": CNLSMethod.DOGLEG,  # Requires Jacobian
+    # "Simplicial Homology Global Optimization": CNLSMethod.SHGO,  # NaN errors
+    # "Dual Annealing": CNLSMethod.DUAL_ANNEALING,  # Requires finite bounds for all mutable parameters
+    # "Maximum likelyhood via Monte-Carlo Markov chain": CNLSMethod.EMCEE,  # Requires the emcee package (version 3)
 }
-method_to_label: Dict[Method, str] = {v: k for k, v in label_to_method.items()}
-method_to_label[Method.AUTO] = "Auto"
-method_to_value: Dict[Method, str] = {
-    Method.AUTO: "auto",
-    Method.LEASTSQ: "leastsq",
-    Method.LEAST_SQUARES: "least_squares",
-    Method.DIFFERENTIAL_EVOLUTION: "differential_evolution",
-    Method.BRUTE: "brute",
-    Method.BASINHOPPING: "basinhopping",
-    Method.AMPGO: "ampgo",
-    Method.NELDER: "nelder",
-    Method.LBFGSB: "lbfgsb",
-    Method.POWELL: "powell",
-    Method.CG: "cg",
-    Method.NEWTON: "newton",
-    Method.COBYLA: "cobyla",
-    Method.BFGS: "bfgs",
-    Method.TNC: "tnc",
-    Method.TRUST_NCG: "trust-ncg",
-    Method.TRUST_EXACT: "trust-exact",
-    Method.TRUST_KRYLOV: "trust-krylov",
-    Method.TRUST_CONSTR: "trust-constr",
-    Method.DOGLEG: "dogleg",
-    Method.SLSQP: "slsqp",
-    Method.EMCEE: "emcee",
-    Method.SHGO: "shgo",
-    Method.DUAL_ANNEALING: "dual_annealing",
+cnls_method_to_label: Dict[CNLSMethod, str] = {
+    v: k for k, v in label_to_cnls_method.items()
 }
-value_to_method: Dict[str, Method] = {v: k for k, v in method_to_value.items()}
-assert set(method_to_value.keys()) == set(
-    value_to_method.values()
+cnls_method_to_label[CNLSMethod.AUTO] = "Auto"
+cnls_method_to_value: Dict[CNLSMethod, str] = {
+    CNLSMethod.AUTO: "auto",
+    CNLSMethod.LEASTSQ: "leastsq",
+    CNLSMethod.LEAST_SQUARES: "least_squares",
+    CNLSMethod.DIFFERENTIAL_EVOLUTION: "differential_evolution",
+    CNLSMethod.BRUTE: "brute",
+    CNLSMethod.BASINHOPPING: "basinhopping",
+    CNLSMethod.AMPGO: "ampgo",
+    CNLSMethod.NELDER: "nelder",
+    CNLSMethod.LBFGSB: "lbfgsb",
+    CNLSMethod.POWELL: "powell",
+    CNLSMethod.CG: "cg",
+    CNLSMethod.NEWTON: "newton",
+    CNLSMethod.COBYLA: "cobyla",
+    CNLSMethod.BFGS: "bfgs",
+    CNLSMethod.TNC: "tnc",
+    CNLSMethod.TRUST_NCG: "trust-ncg",
+    CNLSMethod.TRUST_EXACT: "trust-exact",
+    CNLSMethod.TRUST_KRYLOV: "trust-krylov",
+    CNLSMethod.TRUST_CONSTR: "trust-constr",
+    CNLSMethod.DOGLEG: "dogleg",
+    CNLSMethod.SLSQP: "slsqp",
+    CNLSMethod.EMCEE: "emcee",
+    CNLSMethod.SHGO: "shgo",
+    CNLSMethod.DUAL_ANNEALING: "dual_annealing",
+}
+value_to_cnls_method: Dict[str, CNLSMethod] = {
+    v: k for k, v in cnls_method_to_value.items()
+}
+assert set(cnls_method_to_value.keys()) == set(
+    value_to_cnls_method.values()
 ), "Duplicate method string keys detected!"
 
 
-class Mode(IntEnum):
+class TestMode(IntEnum):
     """
     Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
 
@@ -641,18 +706,18 @@ class Mode(IntEnum):
     MANUAL = 3
 
 
-mode_to_label: Dict[Mode, str] = {
-    Mode.AUTO: "Auto",
-    Mode.EXPLORATORY: "Exploratory",
-    Mode.MANUAL: "Manual",
+test_mode_to_label: Dict[TestMode, str] = {
+    TestMode.AUTO: "Auto",
+    TestMode.EXPLORATORY: "Exploratory",
+    TestMode.MANUAL: "Manual",
 }
-label_to_mode: Dict[str, Mode] = {v: k for k, v in mode_to_label.items()}
-assert set(mode_to_label.keys()) == set(
-    label_to_mode.values()
-), "Duplicate mode string labels detected!"
+label_to_test_mode: Dict[str, TestMode] = {v: k for k, v in test_mode_to_label.items()}
+assert set(test_mode_to_label.keys()) == set(
+    label_to_test_mode.values()
+), "Duplicate test mode string labels detected!"
 
 
-class Output(IntEnum):
+class FitSimOutput(IntEnum):
     CDC_BASIC = auto()
     CDC_EXTENDED = auto()
     CSV_DATA_TABLE = auto()
@@ -666,22 +731,24 @@ class Output(IntEnum):
     SYMPY_EXPR_VALUES = auto()
 
 
-output_to_label: Dict[Output, str] = {
-    Output.CDC_BASIC: "CDC - basic",
-    Output.CDC_EXTENDED: "CDC - extended",
-    Output.CSV_DATA_TABLE: "CSV - impedance table",
-    Output.CSV_PARAMETERS_TABLE: "CSV - parameters table",
-    Output.JSON_PARAMETERS_TABLE: "JSON - parameters table",
-    Output.LATEX_DIAGRAM: "LaTeX - circuit diagram",
-    Output.LATEX_EXPR: "LaTeX - expression",
-    Output.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
-    Output.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
-    Output.SYMPY_EXPR: "SymPy - expression",
-    Output.SYMPY_EXPR_VALUES: "SymPy - expression and values",
+fit_sim_output_to_label: Dict[FitSimOutput, str] = {
+    FitSimOutput.CDC_BASIC: "CDC - basic",
+    FitSimOutput.CDC_EXTENDED: "CDC - extended",
+    FitSimOutput.CSV_DATA_TABLE: "CSV - impedance table",
+    FitSimOutput.CSV_PARAMETERS_TABLE: "CSV - parameters table",
+    FitSimOutput.JSON_PARAMETERS_TABLE: "JSON - parameters table",
+    FitSimOutput.LATEX_DIAGRAM: "LaTeX - circuit diagram",
+    FitSimOutput.LATEX_EXPR: "LaTeX - expression",
+    FitSimOutput.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
+    FitSimOutput.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
+    FitSimOutput.SYMPY_EXPR: "SymPy - expression",
+    FitSimOutput.SYMPY_EXPR_VALUES: "SymPy - expression and values",
 }
-label_to_output: Dict[str, Output] = {v: k for k, v in output_to_label.items()}
-assert set(output_to_label.keys()) == set(
-    label_to_output.values()
+label_to_fit_sim_output: Dict[str, FitSimOutput] = {
+    v: k for k, v in fit_sim_output_to_label.items()
+}
+assert set(fit_sim_output_to_label.keys()) == set(
+    label_to_fit_sim_output.values()
 ), "Duplicate output string labels detected!"
 
 
@@ -690,19 +757,28 @@ class PlotType(IntEnum):
     Types of plots:
 
     - NYQUIST: -Zim vs Zre
-    - BODE_MAGNITUDE: |Z| vs log f
-    - BODE_PHASE: phi vs log f
+    - BODE_MAGNITUDE: |Z| vs f
+    - BODE_PHASE: phi vs f
+    - DRT: gamma vs tau
+    - IMPEDANCE_REAL: Zre vs f
+    - IMPEDANCE_IMAGINARY: Zim vs f
     """
 
     NYQUIST = 1
     BODE_MAGNITUDE = 2
     BODE_PHASE = 3
+    IMPEDANCE_REAL = 4
+    IMPEDANCE_IMAGINARY = 5
+    DRT = 6
 
 
 plot_type_to_label: Dict[PlotType, str] = {
     PlotType.NYQUIST: "Nyquist",
     PlotType.BODE_MAGNITUDE: "Bode - magnitude",
     PlotType.BODE_PHASE: "Bode - phase",
+    PlotType.IMPEDANCE_REAL: "Impedance - real",
+    PlotType.IMPEDANCE_IMAGINARY: "Impedance - imaginary",
+    PlotType.DRT: "Distribution of relaxation times",
 }
 label_to_plot_type: Dict[str, PlotType] = {v: k for k, v in plot_type_to_label.items()}
 assert set(plot_type_to_label.keys()) == set(
@@ -790,3 +866,249 @@ assert set(weight_to_label.keys()) == set(
 assert set(weight_to_value.keys()) == set(
     value_to_weight.values()
 ), "Duplicate weight string values detected!"
+
+
+class DRTMethod(IntEnum):
+    TR_NNLS = 1
+    TR_RBF = 2
+    BHT = 3
+
+
+drt_method_to_label: Dict[DRTMethod, str] = {
+    DRTMethod.BHT: "BHT",
+    DRTMethod.TR_NNLS: "TR-NNLS",
+    DRTMethod.TR_RBF: "TR-RBF",
+}
+label_to_drt_method: Dict[str, DRTMethod] = {
+    v: k for k, v in drt_method_to_label.items()
+}
+drt_method_to_value: Dict[DRTMethod, str] = {
+    DRTMethod.BHT: "bht",
+    DRTMethod.TR_NNLS: "tr-nnls",
+    DRTMethod.TR_RBF: "tr-rbf",
+}
+assert set(drt_method_to_label.keys()) == set(
+    label_to_drt_method.values()
+), "Duplicate DRT method string labels detected!"
+assert set(drt_method_to_label.keys()) == set(
+    drt_method_to_value.keys()
+), "Missing DRT method string values detected!"
+
+
+class DRTMode(IntEnum):
+    COMPLEX = 1
+    REAL = 2
+    IMAGINARY = 3
+
+
+drt_mode_to_label: Dict[DRTMode, str] = {
+    DRTMode.COMPLEX: "Complex",
+    DRTMode.REAL: "Real",
+    DRTMode.IMAGINARY: "Imaginary",
+}
+label_to_drt_mode: Dict[str, DRTMode] = {v: k for k, v in drt_mode_to_label.items()}
+drt_mode_to_value: Dict[DRTMode, str] = {
+    DRTMode.COMPLEX: "complex",
+    DRTMode.REAL: "real",
+    DRTMode.IMAGINARY: "imaginary",
+}
+assert set(drt_mode_to_label.keys()) == set(
+    label_to_drt_mode.values()
+), "Duplicate DRT mode string labels detected!"
+assert set(drt_mode_to_label.keys()) == set(
+    drt_mode_to_value.keys()
+), "Missing DRT mode string values detected!"
+
+
+class RBFType(IntEnum):
+    C0_MATERN = 1
+    C2_MATERN = 2
+    C4_MATERN = 3
+    C6_MATERN = 4
+    CAUCHY = 5
+    GAUSSIAN = 6
+    INVERSE_QUADRATIC = 7
+    INVERSE_QUADRIC = 8
+    PIECEWISE_LINEAR = 9
+
+
+rbf_type_to_label: Dict[RBFType, str] = {
+    RBFType.C0_MATERN: "C^0 Matérn",
+    RBFType.C2_MATERN: "C^2 Matérn",
+    RBFType.C4_MATERN: "C^4 Matérn",
+    RBFType.C6_MATERN: "C^6 Matérn",
+    RBFType.CAUCHY: "Cauchy",
+    RBFType.GAUSSIAN: "Gaussian",
+    RBFType.INVERSE_QUADRATIC: "Inverse quadratic",
+    RBFType.INVERSE_QUADRIC: "Inverse quadric",
+    RBFType.PIECEWISE_LINEAR: "Piecewise linear",
+}
+label_to_rbf_type: Dict[str, RBFType] = {v: k for k, v in rbf_type_to_label.items()}
+rbf_type_to_value: Dict[RBFType, str] = {
+    RBFType.C0_MATERN: "c0-matern",
+    RBFType.C2_MATERN: "c2-matern",
+    RBFType.C4_MATERN: "c4-matern",
+    RBFType.C6_MATERN: "c6-matern",
+    RBFType.CAUCHY: "cauchy",
+    RBFType.GAUSSIAN: "gaussian",
+    RBFType.INVERSE_QUADRATIC: "inverse-quadratic",
+    RBFType.INVERSE_QUADRIC: "inverse-quadric",
+    RBFType.PIECEWISE_LINEAR: "piecewise-linear",
+}
+assert set(rbf_type_to_label.keys()) == set(
+    label_to_rbf_type.values()
+), "Duplicate RBF type string labels detected!"
+assert set(rbf_type_to_label.keys()) == set(
+    rbf_type_to_value.keys()
+), "Missing RBF type string values detected!"
+
+
+class RBFShape(IntEnum):
+    FWHM = 1
+    FACTOR = 2
+
+
+rbf_shape_to_label: Dict[RBFShape, str] = {
+    RBFShape.FACTOR: "Factor",
+    RBFShape.FWHM: "FWHM",
+}
+label_to_rbf_shape: Dict[str, RBFShape] = {v: k for k, v in rbf_shape_to_label.items()}
+rbf_shape_to_value: Dict[RBFShape, str] = {
+    RBFShape.FACTOR: "factor",
+    RBFShape.FWHM: "fwhm",
+}
+assert set(rbf_shape_to_label.keys()) == set(
+    label_to_rbf_shape.values()
+), "Duplicate RBF shape string labels detected!"
+assert set(rbf_shape_to_label.keys()) == set(
+    rbf_shape_to_value.keys()
+), "Missing RBF shape string values detected!"
+
+
+derivative_order_to_label: Dict[int, str] = {
+    1: "1st",
+    2: "2nd",
+}
+label_to_derivative_order: Dict[str, int] = {
+    v: k for k, v in derivative_order_to_label.items()
+}
+
+
+class DRTOutput(IntEnum):
+    CSV_SCORES = auto()
+    JSON_SCORES = auto()
+    LATEX_SCORES = auto()
+    MARKDOWN_SCORES = auto()
+
+
+drt_output_to_label: Dict[DRTOutput, str] = {
+    DRTOutput.CSV_SCORES: "CSV - scores",
+    DRTOutput.JSON_SCORES: "JSON - scores",
+    DRTOutput.LATEX_SCORES: "LaTeX - scores",
+    DRTOutput.MARKDOWN_SCORES: "Markdown - scores",
+}
+label_to_drt_output: Dict[str, DRTOutput] = {
+    v: k for k, v in drt_output_to_label.items()
+}
+assert set(drt_output_to_label.keys()) == set(
+    label_to_drt_output.values()
+), "Duplicate DRT output string labels detected!"
+
+
+class PlotUnits(IntEnum):
+    INCHES = 1
+    CENTIMETERS = 2
+
+
+plot_units_to_label: Dict[PlotUnits, str] = {
+    PlotUnits.INCHES: "Inches",
+    PlotUnits.CENTIMETERS: "Centimeters",
+}
+label_to_plot_units: Dict[str, PlotUnits] = {
+    v: k for k, v in plot_units_to_label.items()
+}
+plot_units_per_inch: Dict[PlotUnits, float] = {
+    PlotUnits.INCHES: 1.0,
+    PlotUnits.CENTIMETERS: 2.54,
+}
+assert set(plot_units_to_label.keys()) == set(
+    label_to_plot_units.values()
+), "Duplicate plot unit string labels detected!"
+assert set(plot_units_to_label.keys()) == set(
+    plot_units_per_inch.keys()
+), "Missing plot unit string values detected!"
+
+
+class PlotPreviewLimit(IntEnum):
+    NONE = 0
+    PX256 = 8
+    PX512 = 9
+    PX1024 = 10
+    PX2048 = 11
+    PX4096 = 12
+    PX8192 = 13
+    PX16384 = 14
+
+
+plot_preview_limit_to_label: Dict[PlotPreviewLimit, str] = {
+    PlotPreviewLimit.NONE: "No limit",
+    PlotPreviewLimit.PX256: f"{2**8} px",
+    PlotPreviewLimit.PX512: f"{2**9} px",
+    PlotPreviewLimit.PX1024: f"{2**10} px",
+    PlotPreviewLimit.PX2048: f"{2**11} px",
+    PlotPreviewLimit.PX4096: f"{2**12} px",
+    PlotPreviewLimit.PX8192: f"{2**13} px",
+    PlotPreviewLimit.PX16384: f"{2**14} px",
+}
+label_to_plot_preview_limit: Dict[str, PlotPreviewLimit] = {
+    v: k for k, v in plot_preview_limit_to_label.items()
+}
+assert set(plot_preview_limit_to_label.keys()) == set(
+    label_to_plot_preview_limit.values()
+), "Duplicate plot preview limit string labels detected!"
+
+
+class PlotLegendLocation(IntEnum):
+    AUTO = 0
+    UPPER_RIGHT = 1
+    UPPER_LEFT = 2
+    LOWER_LEFT = 3
+    LOWER_RIGHT = 4
+    RIGHT = 5
+    CENTER_LEFT = 6
+    CENTER_RIGHT = 7
+    LOWER_CENTER = 8
+    UPPER_CENTER = 9
+    CENTER = 10
+
+
+plot_legend_location_to_label: Dict[PlotLegendLocation, str] = {
+    PlotLegendLocation.AUTO: "Automatic",
+    PlotLegendLocation.UPPER_RIGHT: "Upper right",
+    PlotLegendLocation.UPPER_LEFT: "Upper left",
+    PlotLegendLocation.LOWER_LEFT: "Lower left",
+    PlotLegendLocation.LOWER_RIGHT: "Lower right",
+    PlotLegendLocation.RIGHT: "Right",
+    PlotLegendLocation.CENTER_LEFT: "Center left",
+    PlotLegendLocation.CENTER_RIGHT: "Center right",
+    PlotLegendLocation.LOWER_CENTER: "Lower center",
+    PlotLegendLocation.UPPER_CENTER: "Upper center",
+    PlotLegendLocation.CENTER: "Center",
+}
+label_to_plot_legend_location: Dict[str, PlotLegendLocation] = {
+    v: k for k, v in plot_legend_location_to_label.items()
+}
+assert set(plot_legend_location_to_label.keys()) == set(
+    label_to_plot_legend_location.values()
+), "Duplicate plot legend location string labels detected!"
+
+
+PLOT_EXTENSIONS: List[str] = [
+    ".eps",
+    ".jpg",
+    ".pdf",
+    ".pgf",
+    ".png",
+    ".ps",
+    ".svg",
+]

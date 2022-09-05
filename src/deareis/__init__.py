@@ -31,6 +31,7 @@ from deareis.api.data import (
 )
 from deareis.api.circuit import (
     Circuit,
+    CircuitBuilder,
     # - connections
     Connection,
     Parallel,
@@ -52,28 +53,29 @@ from deareis.api.circuit import (
     UnexpectedCharacter,
     # - functions
     get_elements,
-    string_to_circuit,
+    parse_cdc,
 )
 from deareis.api.kramers_kronig import (
     TestResult,
     TestSettings,
     # - enums
-    Mode,
+    TestMode,
     Test,
     # - functions
     perform_test,
+    perform_exploratory_tests,
 )
 from deareis.api.fitting import (
     FitResult,
     FitSettings,
     FittedParameter,
     # - enums
-    Method,
+    CNLSMethod,
     Weight,
     # - exceptions
     FittingError,
     # - functions
-    fit_circuit_to_data,
+    fit_circuit,
 )
 from deareis.api.simulation import (
     SimulationResult,
@@ -86,5 +88,18 @@ from deareis.api.plotting import (
     PlotSettings,
     # - enums
     PlotType,
+)
+from deareis.api.drt import (
+    DRTResult,
+    DRTSettings,
+    # - enums
+    DRTMethod,
+    DRTMode,
+    RBFShape,
+    RBFType,
+    # - exceptions
+    DRTError,
+    # - functions
+    calculate_drt,
 )
 from deareis.api.plot import mpl  # matplotlib-based plotting

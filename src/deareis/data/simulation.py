@@ -28,7 +28,6 @@ from numpy import (
     angle,
     integer,
     issubdtype,
-    log10 as log,
     ndarray,
 )
 from pandas import DataFrame
@@ -127,7 +126,7 @@ def _parse_result_v2(dictionary: dict) -> dict:
     return {
         "uuid": dictionary["uuid"],
         "timestamp": dictionary["timestamp"],
-        "circuit": pyimpspec.string_to_circuit(dictionary["circuit"]),
+        "circuit": pyimpspec.parse_cdc(dictionary["circuit"]),
         "settings": SimulationSettings.from_dict(dictionary["settings"]),
     }
 
@@ -137,7 +136,7 @@ def _parse_result_v1(dictionary: dict) -> dict:
     return {
         "uuid": dictionary["uuid"],
         "timestamp": dictionary["timestamp"],
-        "circuit": pyimpspec.string_to_circuit(dictionary["circuit"]),
+        "circuit": pyimpspec.parse_cdc(dictionary["circuit"]),
         "settings": SimulationSettings.from_dict(dictionary["settings"]),
     }
 
@@ -243,7 +242,10 @@ class SimulationResult:
             i: int = cdc.find("{")
             j: int = cdc.find("}")
             cdc = cdc.replace(cdc[i : j + 1], "")
-        return f"{cdc} ({format_timestamp(self.timestamp)})"
+        if cdc.startswith("[") and cdc.endswith("]"):
+            cdc = cdc[1:-1]
+        timestamp: str = format_timestamp(self.timestamp)
+        return f"{cdc} ({timestamp})"
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
         """
@@ -304,7 +306,7 @@ class SimulationResult:
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+        Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
 
         Parameters
         ----------
@@ -315,7 +317,7 @@ class SimulationResult:
         f: ndarray = self.get_frequency(num_per_decade)
         Z: ndarray = self.get_impedance(num_per_decade)
         return (
-            log(f),
-            log(abs(Z)),
+            f,
+            abs(Z),
             -angle(Z, deg=True),
         )

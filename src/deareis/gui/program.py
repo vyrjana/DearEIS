@@ -60,25 +60,33 @@ class HomeTab:
                         callback=lambda: signals.emit(Signal.NEW_PROJECT),
                     )
                     attach_tooltip(tooltips.home.new_project)
+                    self.load_projects_button: int = dpg.generate_uuid()
                     dpg.add_button(
                         label="Load project(s)",
                         callback=lambda: signals.emit(Signal.SELECT_PROJECT_FILES),
+                        tag=self.load_projects_button,
                     )
                     attach_tooltip(tooltips.home.load_projects)
+                    self.merge_projects_button: int = dpg.generate_uuid()
                     dpg.add_button(
                         label="Merge projects",
                         callback=lambda: signals.emit(
                             Signal.SELECT_PROJECT_FILES,
                             merge=True,
                         ),
+                        tag=self.merge_projects_button,
                     )
                     attach_tooltip(tooltips.home.merge_projects)
+                    self.clear_recent_projects_button: int = dpg.generate_uuid()
                     dpg.add_button(
-                        label="Clear list",
+                        label="Clear recent projects",
                         callback=lambda: signals.emit(
                             Signal.CLEAR_RECENT_PROJECTS,
+                            selected_projects=self.get_selected_projects(),
                         ),
+                        tag=self.clear_recent_projects_button,
                     )
+                    attach_tooltip(tooltips.home.clear_recent_projects)
 
     def update_recent_projects_table(self, paths: List[str]):
         assert type(paths) is list, paths
@@ -98,8 +106,53 @@ class HomeTab:
                 attach_tooltip(tooltips.home.load)
                 dpg.add_text(basename(path))
                 attach_tooltip(path)
-                dpg.add_checkbox(user_data=path)
+                dpg.add_checkbox(
+                    user_data=path,
+                    callback=lambda s, a, u: self.updated_selection(),
+                )
                 attach_tooltip(tooltips.recent_projects.checkbox)
+
+    def updated_selection(self):
+        paths: List[str] = self.get_selected_projects()
+        if len(paths) > 1:
+            dpg.set_item_label(
+                self.load_projects_button,
+                "Load selected projects",
+            )
+            dpg.set_item_label(
+                self.merge_projects_button,
+                "Merge selected projects",
+            )
+            dpg.set_item_label(
+                self.clear_recent_projects_button,
+                "Clear selected recent projects",
+            )
+        elif len(paths) == 1:
+            dpg.set_item_label(
+                self.load_projects_button,
+                "Load selected project",
+            )
+            dpg.set_item_label(
+                self.merge_projects_button,
+                "Merge selected projects",
+            )
+            dpg.set_item_label(
+                self.clear_recent_projects_button,
+                "Clear selected recent project",
+            )
+        else:
+            dpg.set_item_label(
+                self.load_projects_button,
+                "Load project(s)",
+            )
+            dpg.set_item_label(
+                self.merge_projects_button,
+                "Merge projects",
+            )
+            dpg.set_item_label(
+                self.clear_recent_projects_button,
+                "Clear recent projects",
+            )
 
     def get_selected_projects(self) -> List[str]:
         paths: List[str] = []

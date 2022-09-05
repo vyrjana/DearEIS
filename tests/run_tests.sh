@@ -26,7 +26,7 @@ if [ "$#" -ne 1 ]; then
 	exit
 fi
 if ! [ "$1" == "gui" ]; then
-	python -m unittest discover .
+	python -m unittest discover . -v
 fi
 if [ "$?" -eq "0" ] && ! [ "$1" == "api" ]; then
 	python -c "from deareis.program import main; from test_gui import setup_tests; setup_tests(); main()"

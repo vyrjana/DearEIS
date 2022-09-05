@@ -343,7 +343,7 @@ Filter based on descriptions.
                 key=dpg.mvKey_Escape,
                 callback=self.close_window,
             )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
 
     def clear_all(self):
         self.state.config.keybindings = []

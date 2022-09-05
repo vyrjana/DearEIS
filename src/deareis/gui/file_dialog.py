@@ -255,7 +255,7 @@ class FileDialog:
         dpg.show_item(self._window)
         if self._save:
             dpg.focus_item(self._name_input)
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self._window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self._window, window_object=None)
 
     def close(self):
         self.hide()
@@ -325,7 +325,7 @@ class FileDialog:
         dpg.show_item(window)
         dpg.split_frame()
         dpg.focus_item(name_input)
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
     def clear_search(self, keybinding: bool = False):
         assert type(keybinding) is bool, keybinding

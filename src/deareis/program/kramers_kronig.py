@@ -18,33 +18,26 @@
 # the LICENSES folder.
 
 from multiprocessing import cpu_count
-from time import time
 from traceback import format_exc
 from typing import (
     List,
     Optional,
 )
-from uuid import uuid4
 from numpy import (
     array,
     ndarray,
 )
-import pyimpspec
-from pyimpspec import (
-    KramersKronigResult,
-    FittingError,
-)
+from pyimpspec import FittingError
 import deareis.api.kramers_kronig as api
 from deareis.data import (
     DataSet,
+    PlotSettings,
     Project,
     TestResult,
     TestSettings,
 )
 from deareis.enums import (
-    Mode,
-    test_to_value,
-    method_to_value,
+    TestMode,
 )
 from deareis.gui import ProjectTab
 from deareis.gui.kramers_kronig.exploratory_results import ExploratoryResults
@@ -62,7 +55,12 @@ def select_test_result(*args, **kwargs):
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or test is None:
         return
+    is_busy_message_visible: bool = STATE.is_busy_message_visible()
+    if not is_busy_message_visible:
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading test result")
     project_tab.select_test_result(test, data)
+    if not is_busy_message_visible:
+        signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def delete_test_result(*args, **kwargs):
@@ -74,10 +72,26 @@ def delete_test_result(*args, **kwargs):
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or test is None:
         return
-    project.delete_test(data, test)
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting test result")
+    settings: Optional[PlotSettings] = project_tab.get_active_plot()
+    update_plot: bool = (
+        test.uuid in settings.series_order if settings is not None else False
+    )
+    project.delete_test(
+        data=data,
+        test=test,
+    )
     project_tab.populate_tests(project, data)
-    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=project_tab.get_active_plot())
+    if settings is not None:
+        project_tab.plotting_tab.populate_tests(
+            project.get_all_tests(),
+            project.get_data_sets(),
+            settings,
+        )
+    if update_plot:
+        signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def apply_test_settings(*args, **kwargs):
@@ -91,47 +105,35 @@ def apply_test_settings(*args, **kwargs):
     project_tab.set_test_settings(settings)
 
 
-def accept_exploratory_result(
-    data: DataSet, result: KramersKronigResult, settings: TestSettings
-):
+def accept_exploratory_result(data: DataSet, test: TestResult, settings: TestSettings):
     assert type(data) is DataSet
-    assert type(result) is KramersKronigResult
+    assert type(test) is TestResult
     assert type(settings) is TestSettings
     project: Optional[Project] = STATE.get_active_project()
-    if project is None:
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
         return
-    test: TestResult = TestResult(
-        uuid4().hex,
-        time(),
-        result.circuit,
-        result.num_RC,
-        result.mu,
-        result.pseudo_chisqr,
-        result.frequency,
-        result.impedance,
-        result.real_residual,
-        result.imaginary_residual,
-        data.get_mask().copy(),
-        settings,
-    )
     project.add_test(
         data=data,
         test=test,
     )
-    signals.emit(Signal.SELECT_DATA_SET, data=data)
+    project_tab.populate_tests(project, data)
+    project_tab.plotting_tab.populate_tests(
+        project.get_all_tests(),
+        project.get_data_sets(),
+        project_tab.get_active_plot(),
+    )
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
 
 def show_exploratory_results(
     data: DataSet,
-    results: List[KramersKronigResult],
+    results: List[TestResult],
     settings: TestSettings,
     num_RCs: ndarray,
 ):
     assert type(data) is DataSet
-    assert type(results) is list and all(
-        map(lambda _: type(_) is KramersKronigResult, results)
-    )
+    assert type(results) is list and all(map(lambda _: type(_) is TestResult, results))
     assert type(settings) is TestSettings
     assert type(num_RCs) is ndarray
     exploratory_results: ExploratoryResults = ExploratoryResults(
@@ -145,6 +147,7 @@ def show_exploratory_results(
     signals.emit(
         Signal.BLOCK_KEYBINDINGS,
         window=exploratory_results.window,
+        window_object=exploratory_results,
     )
 
 
@@ -160,7 +163,7 @@ def perform_test(*args, **kwargs):
     assert data.get_num_points() > 0, "There are no data points to test!"
     # Prevent the GUI from becoming unresponsive or sluggish
     num_procs: int = max(2, cpu_count() - 1)
-    if settings.mode == Mode.AUTO or settings.mode == Mode.MANUAL:
+    if settings.mode == TestMode.AUTO or settings.mode == TestMode.MANUAL:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test(s)")
         try:
             test: TestResult = api.perform_test(
@@ -176,34 +179,31 @@ def perform_test(*args, **kwargs):
             data=data,
             test=test,
         )
-        signals.emit(Signal.SELECT_DATA_SET, data=data)
+        project_tab.populate_tests(project, data)
+        project_tab.plotting_tab.populate_tests(
+            project.get_all_tests(),
+            project.get_data_sets(),
+            project_tab.get_active_plot(),
+        )
         signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
-    elif settings.mode == Mode.EXPLORATORY:
-        num_RCs: List[int] = list(range(1, settings.num_RC + 1))
-        if not num_RCs:
-            return
-        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test(s)")
+    elif settings.mode == TestMode.EXPLORATORY:
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test")
         try:
-            results: List[KramersKronigResult] = pyimpspec.perform_exploratory_tests(
+            results: List[TestResult] = api.perform_exploratory_tests(
                 data=data,
-                test=test_to_value[settings.test],
-                num_RCs=num_RCs,
-                mu_criterion=settings.mu_criterion,
-                add_capacitance=settings.add_capacitance,
-                add_inductance=settings.add_inductance,
-                method=method_to_value[settings.method],
-                max_nfev=settings.max_nfev,
+                settings=settings,
                 num_procs=num_procs,
             )
         except FittingError:
             signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
             return
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
+        num_RCs: ndarray = array(list(range(1, settings.num_RC + 1)))
         show_exploratory_results(
             data,
             results,
             settings,
-            array(num_RCs),
+            num_RCs,
         )
     else:
         raise Exception("Unsupported mode!")

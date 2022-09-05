@@ -17,7 +17,10 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import List, Tuple
+from typing import (
+    List,
+    Tuple,
+)
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
@@ -95,7 +98,7 @@ class Image(Plot):
         dpg.fit_axis_data(self._x_axis)
         dpg.fit_axis_data(self._y_axis)
 
-    def copy_limits(self, other: "Image"):
+    def copy_limits(self, other: Plot):
         src: int
         dst: int
         for src, dst in zip(

@@ -17,26 +17,55 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from uuid import uuid4
+from time import time
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.themes import PLOT_MARKERS
-from typing import Dict, List, Optional, Tuple
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 from deareis.utility import calculate_window_position_dimensions
 from deareis.tooltips import attach_tooltip
 from deareis.state import STATE
 from deareis.gui.plots import (
     Bode,
+    DRT,
+    Impedance,
+    MuXps,
     Nyquist,
     Residuals,
-    MuXps,
 )
-from numpy import array, logspace, log10 as log, ndarray
+from numpy import (
+    array,
+    exp,
+    log10 as log,
+    logspace,
+    ndarray,
+)
 from numpy.random import normal
 from pyimpspec import Circuit
-from deareis.data import DataSet
+from deareis.data import (
+    DRTResult,
+    DRTSettings,
+    DataSet,
+)
+from deareis.enums import (
+    DRTMethod,
+    DRTMode,
+    RBFShape,
+    RBFType,
+)
 import pyimpspec
 from deareis.signals import Signal
 import deareis.signals as signals
+
+
+# TODO: Refactor color and marker widgets to reduce code duplication
+# TODO: Refactor update_*_* functions to reduce code duplication
 
 
 class AppearanceSettings:
@@ -52,6 +81,7 @@ class AppearanceSettings:
         self.real_residual: ndarray
         self.imag_residual: ndarray
         self.noise: ndarray
+        self.drt: DRTResult
         (
             self.data,
             self.sim_data,
@@ -59,6 +89,7 @@ class AppearanceSettings:
             self.real_residual,
             self.imag_residual,
             self.noise,
+            self.drt,
         ) = self.generate_data()
         x: int
         y: int
@@ -103,10 +134,6 @@ This affects how smooth the lines will look but it may also affect performance w
                 dpg.add_spacer(height=8)
             with dpg.collapsing_header(label="Bode plots", default_open=True):
                 self.bode_plot = Bode(width=-1, height=200)
-                # bode_show_legend_checkbox: int = dpg.generate_uuid()
-                # bode_legend_outside_checkbox: int = dpg.generate_uuid()
-                # bode_horizontal_legend_checkbox: int = dpg.generate_uuid()
-                # bode_legend_location_combo: int = dpg.generate_uuid()
                 self.bode_data_mag_color: int = dpg.generate_uuid()
                 self.bode_data_phase_color: int = dpg.generate_uuid()
                 self.bode_sim_mag_color: int = dpg.generate_uuid()
@@ -115,22 +142,6 @@ This affects how smooth the lines will look but it may also affect performance w
                 self.bode_data_phase_marker: int = dpg.generate_uuid()
                 self.bode_sim_mag_marker: int = dpg.generate_uuid()
                 self.bode_sim_phase_marker: int = dpg.generate_uuid()
-                # Legend checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Show legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_bode_plot)
-                # Legend outside
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend outside plot".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_bode_plot)
-                # Legend horizontal checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Horizontal legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_bode_plot)
-                # Legend location combo
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend location".rjust(label_pad))
-                #    dpg.add_combo(width=-1, callback=update_bode_plot)
                 # Data colors and markers
                 with dpg.group(horizontal=True):
                     dpg.add_text("Data - magnitude".rjust(self.label_pad))
@@ -226,32 +237,178 @@ This affects how smooth the lines will look but it may also affect performance w
                     )
                 self.update_bode_plot(True)
                 dpg.add_spacer(height=8)
+            with dpg.collapsing_header(label="DRT plots", default_open=True):
+                self.drt_plot = DRT(width=-1, height=200)
+                self.drt_real_gamma_color: int = dpg.generate_uuid()
+                self.drt_imaginary_gamma_color: int = dpg.generate_uuid()
+                self.drt_mean_gamma_color: int = dpg.generate_uuid()
+                self.drt_credible_intervals_color: int = dpg.generate_uuid()
+                with dpg.group(horizontal=True):
+                    dpg.add_text("gamma (real)".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["drt_real_gamma"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_drt_color,
+                        user_data=themes.drt.real_gamma,
+                        tag=self.drt_real_gamma_color,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("gamma (imaginary)".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["drt_imaginary_gamma"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_drt_color,
+                        user_data=themes.drt.imaginary_gamma,
+                        tag=self.drt_imaginary_gamma_color,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text(
+                        "gamma (mean) and credible intervals".rjust(self.label_pad)
+                    )
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["drt_mean_gamma"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_drt_color,
+                        user_data=themes.drt.mean_gamma,
+                        tag=self.drt_mean_gamma_color,
+                    )
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["drt_credible_intervals"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_drt_color,
+                        user_data=themes.drt.credible_intervals,
+                        tag=self.drt_credible_intervals_color,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("".rjust(self.label_pad))
+                    dpg.add_button(
+                        label="Restore defaults",
+                        callback=self.reset_drt_plot,
+                        width=-1,
+                    )
+                self.update_drt_plot(True)
+                dpg.add_spacer(height=8)
+            with dpg.collapsing_header(label="Impedance plots", default_open=True):
+                self.impedance_plot = Impedance(width=-1, height=200)
+                self.impedance_real_data_color: int = dpg.generate_uuid()
+                self.impedance_real_simulation_color: int = dpg.generate_uuid()
+                self.impedance_imaginary_data_color: int = dpg.generate_uuid()
+                self.impedance_imaginary_simulation_color: int = dpg.generate_uuid()
+                self.impedance_real_data_marker: int = dpg.generate_uuid()
+                self.impedance_real_simulation_marker: int = dpg.generate_uuid()
+                self.impedance_imaginary_data_marker: int = dpg.generate_uuid()
+                self.impedance_imaginary_simulation_marker: int = dpg.generate_uuid()
+                # Data colors and markers
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Data - real".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["impedance_real_data"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_impedance_color,
+                        user_data=themes.impedance.real_data,
+                        tag=self.impedance_real_data_color,
+                    )
+                    dpg.add_combo(
+                        items=self.marker_items,
+                        default_value=self.marker_label_lookup[
+                            STATE.config.markers["impedance_real_data"]
+                        ],
+                        callback=self.update_impedance_marker,
+                        user_data=themes.impedance.real_data,
+                        tag=self.impedance_real_data_marker,
+                        width=-1,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Data - imaginary".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["impedance_imaginary_data"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_impedance_color,
+                        user_data=themes.impedance.imaginary_data,
+                        tag=self.impedance_imaginary_data_color,
+                    )
+                    dpg.add_combo(
+                        items=self.marker_items,
+                        default_value=self.marker_label_lookup[
+                            STATE.config.markers["impedance_imaginary_data"]
+                        ],
+                        callback=self.update_impedance_marker,
+                        user_data=themes.impedance.imaginary_data,
+                        tag=self.impedance_imaginary_data_marker,
+                        width=-1,
+                    )
+                # Sim/fit colors and markers
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Fit/simulation - real".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors["impedance_real_simulation"],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_impedance_color,
+                        user_data=themes.impedance.real_simulation,
+                        tag=self.impedance_real_simulation_color,
+                    )
+                    dpg.add_combo(
+                        items=self.marker_items,
+                        default_value=self.marker_label_lookup[
+                            STATE.config.markers["impedance_real_simulation"]
+                        ],
+                        callback=self.update_impedance_marker,
+                        user_data=themes.impedance.real_simulation,
+                        tag=self.impedance_real_simulation_marker,
+                        width=-1,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Fit/simulation - imaginary".rjust(self.label_pad))
+                    dpg.add_color_edit(
+                        default_value=STATE.config.colors[
+                            "impedance_imaginary_simulation"
+                        ],
+                        alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
+                        no_inputs=True,
+                        alpha_bar=True,
+                        callback=self.update_impedance_color,
+                        user_data=themes.impedance.imaginary_simulation,
+                        tag=self.impedance_imaginary_simulation_color,
+                    )
+                    dpg.add_combo(
+                        items=self.marker_items,
+                        default_value=self.marker_label_lookup[
+                            STATE.config.markers["impedance_imaginary_simulation"]
+                        ],
+                        callback=self.update_impedance_marker,
+                        user_data=themes.impedance.imaginary_simulation,
+                        tag=self.impedance_imaginary_simulation_marker,
+                        width=-1,
+                    )
+                with dpg.group(horizontal=True):
+                    dpg.add_text("".rjust(self.label_pad))
+                    dpg.add_button(
+                        label="Restore defaults",
+                        callback=self.reset_impedance_plot,
+                        width=-1,
+                    )
+                self.update_impedance_plot(True)
+                dpg.add_spacer(height=8)
             with dpg.collapsing_header(label="Nyquist plots", default_open=True):
                 self.nyquist_plot = Nyquist(width=-1, height=200)
-                # nyquist_show_legend_checkbox: int = dpg.generate_uuid()
-                # nyquist_legend_outside_checkbox: int = dpg.generate_uuid()
-                # nyquist_horizontal_legend_checkbox: int = dpg.generate_uuid()
-                # nyquist_legend_location_combo: int = dpg.generate_uuid()
                 self.nyquist_data_color: int = dpg.generate_uuid()
                 self.nyquist_sim_color: int = dpg.generate_uuid()
                 self.nyquist_data_marker: int = dpg.generate_uuid()
                 self.nyquist_sim_marker: int = dpg.generate_uuid()
-                # Legend checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Show legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_nyquist_plot)
-                # Legend outside
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend outside plot".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_nyquist_plot)
-                # Legend horizontal checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Horizontal legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_nyquist_plot)
-                # Legend location combo
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend location".rjust(label_pad))
-                #    dpg.add_combo(width=-1, callback=update_nyquist_plot)
                 # Data colors and markers
                 with dpg.group(horizontal=True):
                     dpg.add_text("Data".rjust(self.label_pad))
@@ -307,30 +464,10 @@ This affects how smooth the lines will look but it may also affect performance w
                 dpg.add_spacer(height=8)
             with dpg.collapsing_header(label="Residuals plots", default_open=True):
                 self.residuals_plot = Residuals(width=-1, height=200)
-                # residuals_show_legend_checkbox: int = dpg.generate_uuid()
-                # residuals_legend_outside_checkbox: int = dpg.generate_uuid()
-                # residuals_horizontal_legend_checkbox: int = dpg.generate_uuid()
-                # residuals_legend_location_combo: int = dpg.generate_uuid()
                 self.residuals_real_color: int = dpg.generate_uuid()
                 self.residuals_imag_color: int = dpg.generate_uuid()
                 self.residuals_real_marker: int = dpg.generate_uuid()
                 self.residuals_imag_marker: int = dpg.generate_uuid()
-                # Legend checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Show legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_residuals_plot)
-                # Legend outside
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend outside plot".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_residuals_plot)
-                # Legend horizontal checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Horizontal legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_residuals_plot)
-                # Legend location combo
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend location".rjust(label_pad))
-                #    dpg.add_combo(width=-1, callback=update_residuals_plot)
                 # Zre color and marker
                 with dpg.group(horizontal=True):
                     dpg.add_text("Z' error".rjust(self.label_pad))
@@ -386,10 +523,6 @@ This affects how smooth the lines will look but it may also affect performance w
                 dpg.add_spacer(height=8)
             with dpg.collapsing_header(label="µ-X² (pseudo) plots", default_open=True):
                 self.muxps_plot = MuXps(width=-1, height=200)
-                # muxps_show_legend_checkbox: int = dpg.generate_uuid()
-                # muxps_legend_outside_checkbox: int = dpg.generate_uuid()
-                # muxps_horizontal_legend_checkbox: int = dpg.generate_uuid()
-                # muxps_legend_location_combo: int = dpg.generate_uuid()
                 self.muxps_mu_criterion_color: int = dpg.generate_uuid()
                 self.muxps_mu_color: int = dpg.generate_uuid()
                 self.muxps_mu_highlight_color: int = dpg.generate_uuid()
@@ -397,22 +530,6 @@ This affects how smooth the lines will look but it may also affect performance w
                 self.muxps_xps_highlight_color: int = dpg.generate_uuid()
                 self.muxps_mu_marker: int = dpg.generate_uuid()
                 self.muxps_xps_marker: int = dpg.generate_uuid()
-                # Legend checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Show legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_muxps_plot)
-                # Legend outside
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend outside plot".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_muxps_plot)
-                # Legend horizontal checkbox
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Horizontal legend".rjust(label_pad))
-                #    dpg.add_checkbox(callback=update_muxps_plot)
-                # Legend location combo
-                # with dpg.group(horizontal=True):
-                #    dpg.add_text("Legend location".rjust(label_pad))
-                #    dpg.add_combo(width=-1, callback=update_muxps_plot)
                 # Mu-criterion color
                 with dpg.group(horizontal=True):
                     dpg.add_text("µ-criterion".rjust(self.label_pad))
@@ -501,7 +618,7 @@ This affects how smooth the lines will look but it may also affect performance w
                 key=dpg.mvKey_Escape,
                 callback=self.close_window,
             )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
 
     def close_window(self):
         if dpg.does_item_exist(self.window):
@@ -513,11 +630,16 @@ This affects how smooth the lines will look but it may also affect performance w
     def generate_data(
         self,
         noise: Optional[ndarray] = None,
-    ) -> Tuple[DataSet, DataSet, DataSet, ndarray, ndarray, ndarray]:
-        circuit: Circuit = pyimpspec.string_to_circuit(
-            "R{R=100}(C{C=1e-6}[R{R=500}W{Y=4e-4}])"
+    ) -> Tuple[DataSet, DataSet, DataSet, ndarray, ndarray, ndarray, DRTResult]:
+        circuit: Circuit = pyimpspec.parse_cdc("R{R=100}(C{C=1e-6}[R{R=500}W{Y=4e-4}])")
+        data: DataSet = pyimpspec.simulate_spectrum(
+            circuit,
+            logspace(
+                0,
+                5,
+                num=23,
+            ),
         )
-        data: DataSet = pyimpspec.simulate_spectrum(circuit, logspace(0, 5, num=20))
         Z: complex
         sd: float = 0.01
         if noise is None:
@@ -533,10 +655,17 @@ This affects how smooth the lines will look but it may also affect performance w
                 )
             )
         data.subtract_impedance(-noise)
-        sim_data: DataSet = pyimpspec.simulate_spectrum(circuit, data.get_frequency())
+        sim_data: DataSet = pyimpspec.simulate_spectrum(
+            circuit,
+            data.get_frequency(),
+        )
         smooth_data: DataSet = pyimpspec.simulate_spectrum(
             circuit,
-            logspace(0, 5, num=5 * STATE.config.num_per_decade_in_simulated_lines + 1),
+            logspace(
+                0,
+                5,
+                num=5 * STATE.config.num_per_decade_in_simulated_lines + 1,
+            ),
         )
         real_residual: ndarray = (
             (data.get_impedance().real - sim_data.get_impedance().real)
@@ -548,7 +677,94 @@ This affects how smooth the lines will look but it may also affect performance w
             / abs(data.get_impedance())
             * 100
         )
-        return (data, sim_data, smooth_data, real_residual, imag_residual, noise)
+        f: ndarray = smooth_data.get_frequency()
+        tau: ndarray = 1 / f
+        gamma: ndarray = array(
+            list(
+                map(
+                    lambda _, a=1.1, b=0.0001, c=0.00001: a
+                    * exp(-((_ - b) ** 2) / (2 * c**2)),
+                    tau,
+                )
+            )
+        )
+        mean_gamma: ndarray = array(
+            list(
+                map(
+                    lambda _, a=0.9, b=0.012, c=0.001: a
+                    * exp(-((_ - b) ** 2) / (2 * c**2)),
+                    tau,
+                )
+            )
+        )
+        lower_bound: ndarray = array(
+            list(
+                map(
+                    lambda _, a=0.4, b=0.012, c=0.001: a
+                    * exp(-((_ - b) ** 2) / (2 * c**2)),
+                    tau,
+                )
+            )
+        )
+        upper_bound: ndarray = array(
+            list(
+                map(
+                    lambda _, a=1.4, b=0.012, c=0.002: a
+                    * exp(-((_ - b) ** 2) / (2 * c**2)),
+                    tau,
+                )
+            )
+        )
+        imaginary_gamma: ndarray = array(
+            list(
+                map(
+                    lambda _, a=1.0, b=0.001, c=0.0001: a
+                    * exp(-((_ - b) ** 2) / (2 * c**2)),
+                    tau,
+                )
+            )
+        )
+        drt: DRTResult = DRTResult(
+            uuid4().hex,
+            time(),
+            tau,
+            gamma,
+            f,
+            sim_data.get_impedance(),
+            real_residual,
+            imag_residual,
+            mean_gamma,
+            lower_bound,
+            upper_bound,
+            imaginary_gamma,
+            {},
+            0.0,
+            0.0,
+            {},
+            DRTSettings(
+                DRTMethod.BHT,
+                DRTMode.COMPLEX,
+                0.0,
+                RBFType.GAUSSIAN,
+                1,
+                RBFShape.FWHM,
+                0.5,
+                False,
+                True,
+                2000,
+                50,
+                0.5,
+            ),
+        )
+        return (
+            data,
+            sim_data,
+            smooth_data,
+            real_residual,
+            imag_residual,
+            noise,
+            drt,
+        )
 
     def update_simulated_num_per_decade(self, sender: int, value: int):
         STATE.config.num_per_decade_in_simulated_lines = value
@@ -559,8 +775,11 @@ This affects how smooth the lines will look but it may also affect performance w
             self.real_residual,
             self.imag_residual,
             _,
+            _,
         ) = self.generate_data(self.noise)
         self.update_bode_plot()
+        self.update_drt_plot()
+        self.update_impedance_plot()
         self.update_nyquist_plot()
         self.update_residuals_plot()
         self.update_muxps_plot()
@@ -587,8 +806,8 @@ This affects how smooth the lines will look but it may also affect performance w
             magnitude=mag,
             phase=phase,
             labels=(
-                "|Z| (fit/sim.)",
-                "phi (fit/sim.)",
+                "|Z| (f)",
+                "phi (f)",
             ),
             line=True,
             themes=(
@@ -602,8 +821,8 @@ This affects how smooth the lines will look but it may also affect performance w
             magnitude=mag,
             phase=phase,
             labels=(
-                "|Z| (fit/sim.)",
-                "phi (fit/sim.)",
+                "|Z| (f)",
+                "phi (f)",
             ),
             line=False,
             show_labels=False,
@@ -716,6 +935,281 @@ This affects how smooth the lines will look but it may also affect performance w
             themes.bode.phase_simulation,
         )
 
+    def update_drt_plot(self, adjust_limits: bool = False):
+        self.drt_plot.clear()
+        # TODO: Plot
+        tau: ndarray
+        gamma: ndarray
+        tau, gamma = self.drt.get_drt_data()
+        self.drt_plot.plot(
+            tau=tau,
+            gamma=gamma,
+            label="gamma (real)",
+            theme=themes.drt.real_gamma,
+        )
+        tau, gamma = self.drt.get_drt_data(imaginary=True)
+        self.drt_plot.plot(
+            tau=tau,
+            gamma=gamma,
+            label="gamma (imag.",
+            theme=themes.drt.imaginary_gamma,
+        )
+        lower: ndarray
+        upper: ndarray
+        tau, gamma, lower, upper = self.drt.get_drt_credible_intervals()
+        self.drt_plot.plot(
+            tau=tau,
+            lower=lower,
+            upper=upper,
+            theme=themes.drt.credible_intervals,
+        )
+        self.drt_plot.plot(
+            tau=tau,
+            gamma=gamma,
+            label="gamma (mean)",
+            theme=themes.drt.mean_gamma,
+        )
+        if adjust_limits:
+            self.drt_plot.adjust_limits()
+
+    def update_drt_color(self, sender: int, _, theme: int):
+        assert type(sender) is int
+        assert type(theme) is int
+        color: List[float] = dpg.get_value(sender)
+        themes.update_plot_series_theme_color(theme, color)
+        STATE.config.colors[
+            {
+                themes.drt.real_gamma: "drt_real_gamma",
+                themes.drt.imaginary_gamma: "drt_imaginary_gamma",
+                themes.drt.mean_gamma: "drt_mean_gamma",
+                themes.drt.credible_intervals: "drt_credible_intervals",
+            }[theme]
+        ] = color
+
+    def reset_drt_plot(self):
+        dpg.set_value(
+            self.drt_real_gamma_color,
+            (
+                51.0,
+                187.0,
+                238.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.drt_imaginary_gamma_color,
+            (
+                238.0,
+                119.0,
+                51.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.drt_mean_gamma_color,
+            (
+                238.0,
+                119.0,
+                51.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.drt_credible_intervals_color,
+            (
+                238.0,
+                119.0,
+                51.0,
+                48.0,
+            ),
+        )
+        self.update_drt_color(
+            self.drt_real_gamma_color,
+            None,
+            themes.drt.real_gamma,
+        )
+        self.update_drt_color(
+            self.drt_imaginary_gamma_color,
+            None,
+            themes.drt.imaginary_gamma,
+        )
+        self.update_drt_color(
+            self.drt_mean_gamma_color,
+            None,
+            themes.drt.mean_gamma,
+        )
+        self.update_drt_color(
+            self.drt_credible_intervals_color,
+            None,
+            themes.drt.credible_intervals,
+        )
+
+    def update_impedance_plot(self, adjust_limits: bool = False):
+        self.impedance_plot.clear()
+        f: ndarray = self.data.get_frequency()
+        Z: ndarray = self.data.get_impedance()
+        self.impedance_plot.plot(
+            frequency=f,
+            real=Z.real,
+            imaginary=-Z.imag,
+            labels=(
+                "Z' (d)",
+                'Z" (d)',
+            ),
+            themes=(
+                themes.impedance.real_data,
+                themes.impedance.imaginary_data,
+            ),
+        )
+        f = self.sim_data.get_frequency()
+        Z = self.sim_data.get_impedance()
+        self.impedance_plot.plot(
+            frequency=f,
+            real=Z.real,
+            imaginary=-Z.imag,
+            labels=(
+                "Z' (f)",
+                'Z" (f)',
+            ),
+            fit=True,
+            line=False,
+            themes=(
+                themes.impedance.real_simulation,
+                themes.impedance.imaginary_simulation,
+            ),
+        )
+        f = self.smooth_data.get_frequency()
+        Z = self.smooth_data.get_impedance()
+        self.impedance_plot.plot(
+            frequency=f,
+            real=Z.real,
+            imaginary=-Z.imag,
+            labels=(
+                "Z' (f)",
+                'Z" (f)',
+            ),
+            fit=True,
+            line=True,
+            themes=(
+                themes.impedance.real_simulation,
+                themes.impedance.imaginary_simulation,
+            ),
+            show_labels=False,
+        )
+        if adjust_limits:
+            self.impedance_plot.adjust_limits()
+
+    def update_impedance_color(self, sender: int, _, theme: int):
+        assert type(sender) is int
+        assert type(theme) is int
+        color: List[float] = dpg.get_value(sender)
+        themes.update_plot_series_theme_color(theme, color)
+        STATE.config.colors[
+            {
+                themes.impedance.real_data: "impedance_real_data",
+                themes.impedance.real_simulation: "impedance_real_simulation",
+                themes.impedance.imaginary_data: "impedance_imaginary_data",
+                themes.impedance.imaginary_simulation: "impedance_imaginary_simulation",
+            }[theme]
+        ] = color
+
+    def update_impedance_marker(self, sender: int, label: str, theme: int):
+        assert type(sender) is int
+        assert type(label) is str
+        assert type(theme) is int
+        marker: int = PLOT_MARKERS[label]
+        themes.update_plot_series_theme_marker(theme, marker)
+        STATE.config.markers[
+            {
+                themes.impedance.real_data: "impedance_real_data",
+                themes.impedance.real_simulation: "impedance_real_simulation",
+                themes.impedance.imaginary_data: "impedance_imaginary_data",
+                themes.impedance.imaginary_simulation: "impedance_imaginary_simulation",
+            }[theme]
+        ] = marker
+
+    def reset_impedance_plot(self):
+        dpg.set_value(
+            self.impedance_real_data_color,
+            (
+                51.0,
+                187.0,
+                238.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.impedance_real_simulation_color,
+            (
+                238.0,
+                51.0,
+                119.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.impedance_imaginary_data_color,
+            (
+                238.0,
+                119.0,
+                51.0,
+                190.0,
+            ),
+        )
+        dpg.set_value(
+            self.impedance_imaginary_simulation_color,
+            (
+                0.0,
+                153.0,
+                136.0,
+                190.0,
+            ),
+        )
+        self.update_impedance_color(
+            self.impedance_real_data_color,
+            None,
+            themes.impedance.real_data,
+        )
+        self.update_impedance_color(
+            self.impedance_real_simulation_color,
+            None,
+            themes.impedance.real_simulation,
+        )
+        self.update_impedance_color(
+            self.impedance_imaginary_data_color,
+            None,
+            themes.impedance.imaginary_data,
+        )
+        self.update_impedance_color(
+            self.impedance_imaginary_simulation_color,
+            None,
+            themes.impedance.imaginary_simulation,
+        )
+        dpg.set_value(self.impedance_real_data_marker, "Circle")
+        dpg.set_value(self.impedance_real_simulation_marker, "Cross")
+        dpg.set_value(self.impedance_imaginary_data_marker, "Square")
+        dpg.set_value(self.impedance_imaginary_simulation_marker, "Plus")
+        self.update_impedance_marker(
+            self.impedance_real_data_marker,
+            dpg.get_value(self.impedance_real_data_marker),
+            themes.impedance.real_data,
+        )
+        self.update_impedance_marker(
+            self.impedance_real_simulation_marker,
+            dpg.get_value(self.impedance_real_simulation_marker),
+            themes.impedance.real_simulation,
+        )
+        self.update_impedance_marker(
+            self.impedance_imaginary_data_marker,
+            dpg.get_value(self.impedance_imaginary_data_marker),
+            themes.impedance.imaginary_data,
+        )
+        self.update_impedance_marker(
+            self.impedance_imaginary_simulation_marker,
+            dpg.get_value(self.impedance_imaginary_simulation_marker),
+            themes.impedance.imaginary_simulation,
+        )
+
     def update_nyquist_plot(self, adjust_limits: bool = False):
         self.nyquist_plot.clear()
         real, imag = self.data.get_nyquist_data()
@@ -729,7 +1223,7 @@ This affects how smooth the lines will look but it may also affect performance w
         self.nyquist_plot.plot(
             real=real,
             imaginary=imag,
-            label="Fit/sim.",
+            label="Fit",
             line=True,
             theme=themes.nyquist.simulation,
         )
@@ -737,7 +1231,7 @@ This affects how smooth the lines will look but it may also affect performance w
         self.nyquist_plot.plot(
             real=real,
             imaginary=imag,
-            label="Fit/sim.",
+            label="Fit",
             show_label=False,
             theme=themes.nyquist.simulation,
         )
@@ -808,7 +1302,7 @@ This affects how smooth the lines will look but it may also affect performance w
     def update_residuals_plot(self, adjust_limits: bool = False):
         self.residuals_plot.clear()
         self.residuals_plot.plot(
-            frequency=log(self.data.get_frequency()),
+            frequency=self.data.get_frequency(),
             real=self.real_residual,
             imaginary=self.imag_residual,
         )

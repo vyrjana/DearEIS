@@ -17,7 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from inspect import signature
 from json import (
     dumps as dump_json,
     load as load_json,
@@ -39,16 +38,16 @@ from typing import (
     IO,
     List,
     Optional,
+    Tuple,
     Union,
 )
 from uuid import uuid4
 from numpy import (
-    integer,
-    issubdtype,
     ndarray,
 )
 from deareis.data import DataSet
 from deareis.data.fitting import FitResult
+from deareis.data.drt import DRTResult
 from deareis.data.kramers_kronig import TestResult
 from deareis.data.simulation import SimulationResult
 from deareis.data.plotting import (
@@ -58,12 +57,17 @@ from deareis.data.plotting import (
 from deareis.enums import PlotType
 
 
-VERSION: int = 3
+VERSION: int = 4
+
+
+def _parse_v4(state: dict) -> dict:
+    # TODO: Update implementation when VERSION is incremented
+    return state
 
 
 def _parse_v3(state: dict) -> dict:
-    # TODO: Update implementation when VERSION is incremented
-    return state
+    state["drts"] = {_["uuid"]: [] for _ in state["data_sets"]}
+    return _parse_v4(state)
 
 
 def _parse_v2(state: dict) -> dict:
@@ -126,6 +130,10 @@ class Project:
         self._data_sets: List[DataSet] = list(
             map(DataSet.from_dict, kwargs.get("data_sets", []))
         )
+        self._drts: Dict[str, List[DRTResult]] = {
+            k: list(map(DRTResult.from_dict, v))
+            for k, v in kwargs.get("drts", {}).items()
+        }
         self._fits: Dict[str, List[FitResult]] = {
             k: list(map(FitResult.from_dict, v))
             for k, v in kwargs.get("fits", {}).items()
@@ -178,6 +186,7 @@ class Project:
                 1: _parse_v1,
                 2: _parse_v2,
                 3: _parse_v3,
+                4: _parse_v4,
             }
             assert version in parsers, (
                 version,
@@ -188,6 +197,7 @@ class Project:
         # Basic validation
         assert type(state["data_sets"]) is list
         assert type(state["fits"]) is dict
+        assert type(state["drts"]) is dict
         assert type(state["label"]) is str
         assert type(state["notes"]) is str
         assert type(state["plots"]) is list
@@ -282,6 +292,7 @@ class Project:
             other: dict = replace_uuids(project.to_dict(session=True))
             state["data_sets"].extend(other["data_sets"])
             state["fits"].update(other["fits"])
+            state["drts"].update(other["drts"])
             state["notes"] = state["notes"] + "\n\n" + other["notes"]
             state["plots"].extend(other["plots"])
             state["simulations"].extend(other["simulations"])
@@ -293,6 +304,8 @@ class Project:
         uuids.extend(list(map(lambda _: _["uuid"], state["data_sets"])))
         for fits in state["fits"].values():
             uuids.extend(list(map(lambda _: _["uuid"], fits)))
+        for drts in state["drts"].values():
+            uuids.extend(list(map(lambda _: _["uuid"], drts)))
         uuids.extend(list(map(lambda _: _["uuid"], state["plots"])))
         uuids.extend(list(map(lambda _: _["uuid"], state["simulations"])))
         for tests in state["tests"].values():
@@ -345,6 +358,9 @@ class Project:
             "fits": {
                 k: list(map(lambda _: _.to_dict(session=session), v))
                 for k, v in self._fits.items()
+            },
+            "drts": {
+                k: list(map(lambda _: _.to_dict(), v)) for k, v in self._drts.items()
             },
             "label": self._label,
             "notes": self._notes,
@@ -471,6 +487,7 @@ class Project:
             data.set_label(label)
         self._data_sets.append(data)
         self._fits[data.uuid] = []
+        self._drts[data.uuid] = []
         self._tests[data.uuid] = []
         self._data_sets.sort(key=lambda _: _.get_label())
 
@@ -529,7 +546,9 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         self._data_sets.remove(data)
         del self._fits[data.uuid]
+        del self._drts[data.uuid]
         del self._tests[data.uuid]
+        list(map(lambda _: _.remove_series(data.uuid), self._plots))
 
     def replace_data_set(self, old: DataSet, new: DataSet):
         """
@@ -608,6 +627,63 @@ class Project:
         assert type(test) is TestResult, test
         assert test in self._tests[data.uuid], test
         self._tests[data.uuid].remove(test)
+        list(map(lambda _: _.remove_series(test.uuid), self._plots))
+
+    def get_all_drts(self) -> Dict[str, List[DRTResult]]:
+        """
+        Get a mapping of data set UUIDs to the corresponding DRT analysis results of those data sets.
+        """
+        return self._drts
+
+    def get_drts(self, data: DataSet) -> List[DRTResult]:
+        """
+        Get the DRT analysis results associated with a specific data set.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set whose analyses to get.
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        return self._drts[data.uuid]
+
+    def add_drt(self, data: DataSet, drt: DRTResult):
+        """
+        Add the provided DRT analysis result to the provided data set's list of DRT analysis results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set that was analyzed.
+
+        drt: DRTResult
+            The result of the analysis.
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        assert type(drt) is DRTResult, drt
+        assert drt.uuid not in list(map(lambda _: _.uuid, self._drts[data.uuid]))
+        self._drts[data.uuid].insert(0, drt)
+
+    def delete_drt(self, data: DataSet, drt: DRTResult):
+        """
+        Delete the provided DRT analysis result from the provided data set's list of DRT analysis results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set associated with the analysis result.
+
+        drt: DRTResult
+            The analysis result to delete.
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        assert type(drt) is DRTResult, drt
+        assert drt in self._drts[data.uuid], drt
+        self._drts[data.uuid].remove(drt)
+        list(map(lambda _: _.remove_series(drt.uuid), self._plots))
 
     def get_all_fits(self) -> Dict[str, List[FitResult]]:
         """
@@ -663,6 +739,7 @@ class Project:
         assert type(fit) is FitResult, fit
         assert fit in self._fits[data.uuid], fit
         self._fits[data.uuid].remove(fit)
+        list(map(lambda _: _.remove_series(fit.uuid), self._plots))
 
     def get_simulations(self) -> List[SimulationResult]:
         """
@@ -695,6 +772,7 @@ class Project:
         assert type(simulation) is SimulationResult, simulation
         assert simulation in self._simulations
         self._simulations.remove(simulation)
+        list(map(lambda _: _.remove_series(simulation.uuid), self._plots))
 
     def get_plots(self) -> List[PlotSettings]:
         """
@@ -755,7 +833,8 @@ class Project:
         self._plots.remove(plot)
 
     def get_plot_series(
-        self, plot: PlotSettings, num_per_decade: int = 100
+        self,
+        plot: PlotSettings,
     ) -> List[PlotSeries]:
         """
         Get PlotSeries instances of each of the plotted items/series in a specific plot.
@@ -764,74 +843,41 @@ class Project:
         ----------
         plot: PlotSettings
             The plot whose items/series to get.
-
-        num_per_decade: int = 100
-            The number of data points in fitted/simulated spectra.
-            Can be used to adjust how smooth an item/series looks.
         """
         assert type(plot) is PlotSettings, plot
-        assert (
-            issubdtype(type(num_per_decade), integer) and num_per_decade > 0
-        ), num_per_decade
         data_sets: List[DataSet] = self.get_data_sets()
         tests: Dict[str, List[TestResult]] = self.get_all_tests()
+        drts: Dict[str, List[DRTResult]] = self.get_all_drts()
         fits: Dict[str, List[FitResult]] = self.get_all_fits()
         simulations: List[SimulationResult] = self.get_simulations()
         results: List[PlotSeries] = []
         uuid: str
         for uuid in plot.series_order:
-            series: Optional[Union[DataSet, TestResult, FitResult, SimulationResult]]
-            series = plot.find_series(uuid, data_sets, tests, fits, simulations)
+            series: Optional[
+                Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+            ]
+            series = plot.find_series(uuid, data_sets, tests, drts, fits, simulations)
             if series is None:
                 continue
             label: str = plot.get_series_label(uuid) or series.get_label()
-            line_data: List[ndarray]
-            scatter_data: List[ndarray]
-            plot_type: PlotType = plot.get_type()
-            if plot_type == PlotType.NYQUIST:
-                if "num_per_decade" in signature(series.get_nyquist_data).parameters:
-                    line_data = [
-                        *series.get_nyquist_data(num_per_decade=num_per_decade)
-                    ]
-                    scatter_data = [*series.get_nyquist_data()]
-                else:
-                    scatter_data = [*series.get_nyquist_data()]
-                    line_data = scatter_data
-            elif plot_type == PlotType.BODE_MAGNITUDE:
-                if "num_per_decade" in signature(series.get_bode_data).parameters:
-                    line_data = [*series.get_bode_data(num_per_decade=num_per_decade)]
-                    scatter_data = [*series.get_bode_data()]
-                    line_data.pop(2)
-                    scatter_data.pop(2)
-                else:
-                    scatter_data = [*series.get_bode_data()]
-                    line_data = scatter_data
-                    scatter_data.pop(2)
-            elif plot_type == PlotType.BODE_PHASE:
-                if "num_per_decade" in signature(series.get_bode_data).parameters:
-                    line_data = [*series.get_bode_data(num_per_decade=num_per_decade)]
-                    scatter_data = [*series.get_bode_data()]
-                    line_data.pop(1)
-                    scatter_data.pop(1)
-                else:
-                    scatter_data = [*series.get_bode_data()]
-                    line_data = scatter_data
-                    scatter_data.pop(1)
-            else:
-                raise Exception(f"Unsupported plot type: {repr(plot_type)}!")
+            scatter_data: Tuple[ndarray, ndarray]
+            line_data: Tuple[ndarray, ndarray]
+            fill_data: Tuple[ndarray, ndarray, ndarray]
+            color: Tuple[float, float, float, float] = tuple(
+                map(
+                    lambda _: _ / 255.0,
+                    plot.get_series_color(uuid) or [0.0, 0.0, 0.0, 255.0],
+                )
+            )
+            marker: int = plot.get_series_marker(uuid)
+            line: bool = plot.get_series_line(uuid)
             results.append(
                 PlotSeries(
+                    series,
                     label,
-                    list(scatter_data),
-                    list(line_data),
-                    list(
-                        map(
-                            lambda _: _ / 255.0,
-                            plot.get_series_color(uuid) or [0.0, 0.0, 0.0, 255.0],
-                        )
-                    ),
-                    plot.get_series_marker(uuid),
-                    plot.get_series_line(uuid),
+                    color,
+                    marker,
+                    line,
                     label.strip() != "",
                 )
             )

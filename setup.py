@@ -21,7 +21,7 @@ entry_points = {
 
 dependencies = [
     "dearpygui>=1.6.2",  # Used to implement the GUI.
-    "pyimpspec>=2.2.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "pyimpspec>=3.0.0",  # Used for parsing, fitting, and analyzing impedance spectra.
     "requests>=2.27.1",  # Used to check package status on PyPI.
     "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
 ]
@@ -31,7 +31,7 @@ with open("requirements.txt", "w") as fp:
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "2.2.0"
+version = "3.0.0"
 
 licenses = []
 for _, _, files in walk("LICENSES"):

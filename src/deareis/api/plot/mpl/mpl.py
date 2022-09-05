@@ -17,7 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from inspect import signature
 from typing import (
     Dict,
     List,
@@ -35,10 +34,11 @@ from numpy import (
     issubdtype,
     ndarray,
 )
+from pyimpspec.plot import mpl
 from deareis.data import (
+    DRTResult,
     DataSet,
     FitResult,
-    PlotSeries,
     PlotSettings,
     Project,
     SimulationResult,
@@ -160,21 +160,38 @@ def plot(
         issubdtype(type(num_per_decade), integer) and num_per_decade >= 1
     ), num_per_decade
     plot_type: PlotType = settings.get_type()
+    selected_series: List[
+        Tuple[str, Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]]
+    ] = []
     uuid: str
     for uuid in settings.series_order:
-        series: Optional[Union[DataSet, TestResult, FitResult, SimulationResult]]
+        series: Optional[
+            Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+        ]
         series = settings.find_series(
             uuid,
             project.get_data_sets(),
             project.get_all_tests(),
+            project.get_all_drts(),
             project.get_all_fits(),
             project.get_simulations(),
         )
         if series is None:
             continue
+        # Filter out stuff that cannot be plotted
+        if plot_type == PlotType.DRT and type(series) is not DRTResult:
+            continue
+        selected_series.append(
+            (
+                uuid,
+                series,
+            )
+        )
+    num_series: int = len(selected_series)
+    for i, (uuid, series) in enumerate(selected_series):
         label: Optional[str] = settings.get_series_label(uuid) or series.get_label()
         if label.strip() == "" and label != "":  # type: ignore
-            label = None
+            label = ""
         if label is not None and show_legend is None:
             show_legend = True
         color: List[float] = list(
@@ -182,87 +199,161 @@ def plot(
         )
         has_line: bool = settings.get_series_line(uuid)
         marker: Optional[str] = MPL_MARKERS.get(settings.get_series_marker(uuid))
-        scatter_data: List[ndarray] = []
-        line_data: List[ndarray] = []
+        scatter_data: List[ndarray]
+        line_data: List[ndarray]
         if plot_type == PlotType.NYQUIST:
-            if "num_per_decade" in signature(series.get_nyquist_data).parameters:
-                x, y = series.get_nyquist_data(num_per_decade=num_per_decade)  # type: ignore
-                line_data = [x, y]
-                x, y = series.get_nyquist_data()
-                scatter_data = [x, y]
-            else:
-                x, y = series.get_nyquist_data()
-                line_data = [x, y]
-                scatter_data = [x, y]
+            if has_line:
+                mpl.plot_nyquist(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=True,
+                    label=label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=num_per_decade,
+                    adjust_axes=i == num_series - 1,
+                )
+            if marker is not None:
+                mpl.plot_nyquist(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=False,
+                    label="" if has_line else label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=-1,
+                    adjust_axes=i == num_series - 1,
+                )
         elif plot_type == PlotType.BODE_MAGNITUDE:
-            if "num_per_decade" in signature(series.get_bode_data).parameters:
-                x, y, _ = series.get_bode_data(num_per_decade=num_per_decade)  # type: ignore
-                line_data = [x, y]
-                x, y, _ = series.get_bode_data()
-                scatter_data = [x, y]
-            else:
-                x, y, _ = series.get_bode_data()
-                line_data = [x, y]
-                scatter_data = [x, y]
+            if has_line:
+                mpl.plot_impedance_magnitude(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=True,
+                    label=label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=num_per_decade,
+                    adjust_axes=i == num_series - 1,
+                )
+            if marker is not None:
+                mpl.plot_impedance_magnitude(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=False,
+                    label="" if has_line else label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=-1,
+                    adjust_axes=i == num_series - 1,
+                )
         elif plot_type == PlotType.BODE_PHASE:
-            if "num_per_decade" in signature(series.get_bode_data).parameters:
-                x, _, y = series.get_bode_data(num_per_decade=num_per_decade)  # type: ignore
-                line_data = [x, y]
-                x, _, y = series.get_bode_data()
-                scatter_data = [x, y]
-            else:
-                x, _, y = series.get_bode_data()
-                line_data = [x, y]
-                scatter_data = [x, y]
-        else:
-            raise Exception(f"Unsupported plot type: {plot_type}")
-        assert len(line_data) > 0 or len(scatter_data) > 0
-        colors: dict = {}
-        if settings.get_series_marker(uuid) in _UNFILLED_MARKERS:
-            colors.update(
-                {
-                    "color": color,
-                }
-            )
-        else:
-            colors.update(
-                {
-                    "edgecolor": color,
-                    "facecolor": "none",
-                }
-            )
-        if marker is not None and has_line:
-            axis.plot(*line_data, label=label, color=color)
-            axis.scatter(
-                *scatter_data,
-                marker=marker,
-                **colors,
-            )
-        elif has_line:
-            axis.plot(*line_data, label=label, color=color)
-        elif marker is not None:
-            axis.scatter(
-                *scatter_data,
+            if has_line:
+                mpl.plot_impedance_phase(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=True,
+                    label=label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=num_per_decade,
+                    adjust_axes=i == num_series - 1,
+                )
+            if marker is not None:
+                mpl.plot_impedance_phase(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=False,
+                    label="" if has_line else label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=-1,
+                    adjust_axes=i == num_series - 1,
+                )
+        elif plot_type == PlotType.DRT:
+            mpl.plot_gamma(
+                series,
+                color=color,
                 label=label,
-                marker=marker,
-                **colors,
+                legend=False,
+                fig=fig,
+                axis=axis,
+                adjust_axes=i == num_series - 1,
             )
+        elif plot_type == PlotType.IMPEDANCE_REAL:
+            if has_line:
+                mpl.plot_real_impedance(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=True,
+                    label=label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=num_per_decade,
+                    adjust_axes=i == num_series - 1,
+                )
+            if marker is not None:
+                mpl.plot_real_impedance(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=False,
+                    label="" if has_line else label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=-1,
+                    adjust_axes=i == num_series - 1,
+                )
+        elif plot_type == PlotType.IMPEDANCE_IMAGINARY:
+            if has_line:
+                mpl.plot_imaginary_impedance(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=True,
+                    label=label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=num_per_decade,
+                    adjust_axes=i == num_series - 1,
+                )
+            if marker is not None:
+                mpl.plot_imaginary_impedance(
+                    series,
+                    color=color,
+                    marker=marker,
+                    line=False,
+                    label="" if has_line else label,
+                    legend=False,
+                    fig=fig,
+                    axis=axis,
+                    num_per_decade=-1,
+                    adjust_axes=i == num_series - 1,
+                )
+        else:
+            raise Exception(f"Unsupported plot type: {plot_type=}")
     if x_limits is not None:
         axis.set_xlim(x_limits)
     if y_limits is not None:
         axis.set_ylim(y_limits)
     if show_title and settings.get_label() != "":
         fig.suptitle(settings.get_label())
-    if plot_type == PlotType.NYQUIST:
-        axis.set_xlabel(r"$Z_{\rm re}$ ($\Omega$)")
-        axis.set_ylabel(r"$-Z_{\rm im}$ ($\Omega$)")
-        axis.set_aspect("equal")
-    elif plot_type == PlotType.BODE_MAGNITUDE:
-        axis.set_xlabel(r"$\log{f}$")
-        axis.set_ylabel(r"$\log{|Z|}$")
-    elif plot_type == PlotType.BODE_PHASE:
-        axis.set_xlabel(r"$\log{f}$")
-        axis.set_ylabel(r"$-\phi$ ($^\circ$)")
     if show_legend:
         axis.legend(loc=legend_loc)
     axis.grid(visible=show_grid)

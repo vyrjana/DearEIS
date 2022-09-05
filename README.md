@@ -21,6 +21,7 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 	- [Projects](#projects)
 	- [Data sets](#data-sets)
 	- [Data validation](#data-validation)
+	- [Distribution of relaxation times](#distribution-of-relaxation-times)
 	- [Circuit fitting and simulation](#circuit-fitting-and-simulation)
 	- [Visualization](#visualization)
 	- [Scripting](#scripting)
@@ -137,7 +138,16 @@ See pyimpspec's documentation for information about which data formats are curre
 ### Data validation
 
 Data sets can be validated by checking if they are Kramers-Kronig transformable.
+A few different implementations are included.
+
 See [pyimpspec](https://github.com/vyrjana/pyimpspec/) for more details regarding the implementation of the tests.
+
+
+### Distribution of relaxation times
+
+The distribution of relaxation times can be calculated using a few different methods (TR-NNLS, TR-RBF, and BHT).
+
+See [pyimpspec](https://github.com/vyrjana/pyimpspec/) for more details regarding the implementation of the calculations.
 
 
 ### Circuit fitting and simulation
@@ -158,6 +168,7 @@ The mathematical expression for a circuit's impedance as a function of the appli
 Data sets and their corresponding results (Kramers-Kronig tests and equivalent circuit fits) are visualized using simple Nyquist plots, Bode plots, and residual plots.
 More complex plots containing multiple data sets, Kramers-Kronig test results, equivalent circuit fitting results, and/or simulation results can also be created.
 These complex plots can be used to overlay and compare results.
+The plots can also be exported using matplotlib to render them as either bitmap graphics or vector graphics.
 However, they can also be used to compose plots that can be turned into publication-ready figures with the help of a Python script (see the [Scripting](#scripting) section for more details) or by copying the plot's data to another program.
 
 

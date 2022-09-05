@@ -86,15 +86,15 @@ class TestUtility(TestCase):
         self.assertEqual(format_number(5.6230364, width=10), "   5.6    ")
         self.assertEqual(format_number(5.6230364, exponent=False), "5.6")
         self.assertEqual(format_number(5.6230364e-5, exponent=False), "0.0")
-        self.assertEqual(format_number(5.6230364e-5, exponent=True), "56.2E-06")
+        self.assertEqual(format_number(5.6230364e-5, exponent=True), "56.2e-06")
         self.assertEqual(
-            format_number(5.6230364e-5, decimals=0, exponent=True), "56E-06"
+            format_number(5.6230364e-5, decimals=0, exponent=True), "56e-06"
         )
         self.assertEqual(
-            format_number(5.6230364e-5, significants=4, exponent=True), "56.23E-06"
+            format_number(5.6230364e-5, significants=4, exponent=True), "56.23e-06"
         )
         self.assertEqual(
-            format_number(5.6230364e4, significants=4, exponent=True), "56.23E+03"
+            format_number(5.6230364e4, significants=4, exponent=True), "56.23e+03"
         )
         with self.assertRaises(ValueError):
             format_number("test")

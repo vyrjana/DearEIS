@@ -235,7 +235,7 @@ class CircuitEditor:
             self.clear_parameter_window()
         circuit: Optional[Circuit] = None
         try:
-            circuit = pyimpspec.string_to_circuit(cdc)
+            circuit = pyimpspec.parse_cdc(cdc)
             dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
             self.update_outputs(circuit=circuit)
             self.update_status("OK", False)
@@ -431,7 +431,7 @@ A dummy node that can be used as a junction when required to construct a circuit
                 dpg.add_input_float(
                     default_value=initial_value,
                     step=0,
-                    format="%.4E",
+                    format="%.4g",
                     width=-48,
                     tag=cv_input_field,
                     on_enter=True,
@@ -448,7 +448,7 @@ A dummy node that can be used as a junction when required to construct a circuit
                 dpg.add_input_float(
                     default_value=lower_limit,
                     step=0,
-                    format="%.4E",
+                    format="%.4g",
                     width=-48,
                     tag=ll_input_field,
                     on_enter=True,
@@ -467,7 +467,7 @@ A dummy node that can be used as a junction when required to construct a circuit
                 dpg.add_input_float(
                     default_value=upper_limit,
                     step=0,
-                    format="%.4E",
+                    format="%.4g",
                     width=-48,
                     tag=ul_input_field,
                     on_enter=True,

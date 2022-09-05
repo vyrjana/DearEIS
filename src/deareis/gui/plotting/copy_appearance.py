@@ -17,11 +17,25 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.data import DataSet, PlotSettings, TestResult, FitResult, SimulationResult
+from deareis.data import (
+    DRTResult,
+    DataSet,
+    FitResult,
+    PlotSettings,
+    SimulationResult,
+    TestResult,
+)
 from deareis.utility import calculate_window_position_dimensions
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
@@ -36,16 +50,17 @@ from deareis.keybindings import (
 class SeriesBefore:
     def __init__(
         self,
-        series: Union[DataSet, TestResult, FitResult, SimulationResult],
+        series: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult],
         settings: PlotSettings,
         marker_lookup: Dict[int, str],
         toggle_callback: Callable,
     ):
         assert type(series) in [
+            DRTResult,
             DataSet,
-            TestResult,
             FitResult,
             SimulationResult,
+            TestResult,
         ], series
         assert type(settings) is PlotSettings, settings
         assert type(marker_lookup) is dict, marker_lookup
@@ -161,6 +176,7 @@ class CopyPlotAppearance:
         }
         self.data_sets: List[DataSet] = project.get_data_sets()
         self.tests: Dict[str, List[TestResult]] = project.get_all_tests()
+        self.drts: Dict[str, List[DRTResult]] = project.get_all_drts()
         self.fits: Dict[str, List[FitResult]] = project.get_all_fits()
         self.simulations: List[SimulationResult] = project.get_simulations()
         x: int
@@ -222,6 +238,7 @@ class CopyPlotAppearance:
                                     uuid,
                                     self.data_sets,
                                     self.tests,
+                                    self.drts,
                                     self.fits,
                                     self.simulations,
                                 )
@@ -254,7 +271,7 @@ class CopyPlotAppearance:
             with dpg.group(horizontal=True):
                 dpg.add_button(
                     label="Accept",
-                    callback=self.accept_settings,
+                    callback=self.accept,
                 )
                 dpg.add_spacer(width=354)
                 self.labels_checkbox: int = dpg.generate_uuid()
@@ -297,7 +314,7 @@ class CopyPlotAppearance:
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Return,
-                callback=lambda: self.accept_settings(keybinding=True),
+                callback=lambda: self.accept(keybinding=True),
             )
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Prior,
@@ -307,7 +324,7 @@ class CopyPlotAppearance:
                 key=dpg.mvKey_Next,
                 callback=lambda: self.cycle_source(1),
             )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
         self.change_source()
 
     def close(self):
@@ -315,7 +332,7 @@ class CopyPlotAppearance:
         dpg.delete_item(self.window)
         dpg.delete_item(self.key_handler)
 
-    def accept_settings(self, keybinding: bool = False):
+    def accept(self, keybinding: bool = False):
         if keybinding is True and not (
             is_control_down()
             if dpg.get_platform() == dpg.mvPlatform_Windows
@@ -379,7 +396,12 @@ class CopyPlotAppearance:
         for uuid in self.settings.series_order:
             SeriesAfter(
                 self.settings.find_series(
-                    uuid, self.data_sets, self.tests, self.fits, self.simulations
+                    uuid,
+                    self.data_sets,
+                    self.tests,
+                    self.drts,
+                    self.fits,
+                    self.simulations,
                 ),
                 source
                 if uuid in source.themes and self.series_checkboxes[uuid]

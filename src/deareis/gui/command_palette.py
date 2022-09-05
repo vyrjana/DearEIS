@@ -102,7 +102,7 @@ class CommandPalette:
                     description,
                 )
             )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window)
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
         dpg.show_item(self.window)
         dpg.split_frame()
         x: int

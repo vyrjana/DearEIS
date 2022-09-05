@@ -27,17 +27,29 @@ from typing import (
     Tuple,
     Union,
 )
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 import dearpygui.dearpygui as dpg
 from numpy import (
+    all as array_all,
+    asarray,
+    float32,
     floating,
     floor,
     inf,
     integer,
+    isclose,
     issubdtype,
     log10 as log,
     nan,
+    ndarray,
     pad,
 )
+
+
+MATH_REGISTRY: int = dpg.add_texture_registry()
 
 
 def calculate_checksum(*args, **kwargs) -> str:
@@ -127,23 +139,21 @@ def format_number(
                 string = string[: string.find("e")]
                 exp += 3
             if exp >= 0:
-                string += "E+{:02d}".format(exp)
+                string += "e+{:02d}".format(exp)
             else:
-                string += "E-{:02d}".format(abs(exp))
+                string += "e-{:02d}".format(abs(exp))
     else:
         string = fmt.format(value)
-    if "e" in string:
-        string = string.replace("e", "E")
     if significants > 0:
-        i: int = string.find("E") if "E" in string else len(string)
+        i: int = string.find("e") if "e" in string else len(string)
         if "." not in string and i < significants:
             string = (string[:i] + ".").ljust(significants + 1, "0") + string[i:]
         elif "." in string and i < significants + 1:
             string = string[:i].ljust(significants + 1, "0") + string[i:]
     if width > 1:
         string = string.rjust(width)
-    if string.endswith("E+00"):
-        string = string.replace("E+00", "    ")
+    if string.endswith("e+00"):
+        string = string.replace("e+00", "    ")
     return string
 
 
@@ -213,3 +223,100 @@ def is_filtered_item_visible(item: int, filter_string: str) -> bool:
             if fragment in filter_key:
                 return True
     return visible
+
+
+def render_math(
+    math: str,
+    width: int,
+    height: int,
+    dpi: int = 100,
+    fontsize: int = 12,
+    alpha: float = 0.0,
+    print_dimensions: bool = False,
+) -> int:
+    fig: Figure = plt.figure(
+        figsize=(
+            width / dpi,
+            height / dpi,
+        ),
+        dpi=dpi,
+    )
+    canvas: FigureCanvasAgg = FigureCanvasAgg(fig)
+    fig.patch.set_alpha(alpha)
+    ax: Axes = fig.gca()
+    ax.text(
+        0.0,
+        0.5,
+        math,
+        va="center",
+        color="white",
+        fontsize=fontsize,
+    )
+    ax.set_axis_off()
+    fig.subplots_adjust(
+        left=0.0,
+        bottom=0.0,
+        right=1.0,
+        top=1.0,
+        wspace=0.0,
+        hspace=0.0,
+    )
+    canvas.draw()
+    buffer: ndarray = asarray(canvas.buffer_rgba()).astype(float32) / 255
+    if print_dimensions:
+        min_x: int = 0
+        max_x: int = buffer.shape[1] - 1
+        min_y: int = 0
+        max_y: int = buffer.shape[0] - 1
+        i: int
+        row: ndarray
+        col: ndarray
+        rgba_sums: ndarray
+        for i, row in enumerate(buffer):
+            rgba_sums = row.sum(1)
+            if isclose(rgba_sums[0], 3.0 + alpha, atol=1e-2) and array_all(
+                isclose(rgba_sums, rgba_sums[0])
+            ):
+                # All pixels in this row are just the background (1.0, 1.0, 1.0, alpha)
+                min_y = i
+            else:
+                break
+        for (i, row) in reversed(list(enumerate(buffer))):
+            rgba_sums = row.sum(1)
+            if isclose(rgba_sums[0], 3.0 + alpha, atol=1e-2) and array_all(
+                isclose(rgba_sums, rgba_sums[0])
+            ):
+                # All pixels in this row are just the background (1.0, 1.0, 1.0, alpha)
+                max_y = i + 1
+            else:
+                break
+        for i in range(buffer.shape[1]):
+            col = buffer[:, i]
+            rgba_sums = col.sum(1)
+            if isclose(rgba_sums[0], 3.0 + alpha, atol=1e-2) and array_all(
+                isclose(rgba_sums, rgba_sums[0])
+            ):
+                # All pixels in this column are just the background (1.0, 1.0, 1.0, alpha)
+                min_x = i
+            else:
+                break
+        for i in reversed(range(buffer.shape[1])):
+            col = buffer[:, i]
+            rgba_sums = col.sum(1)
+            if isclose(rgba_sums[0], 3.0 + alpha, atol=1e-2) and array_all(
+                isclose(rgba_sums, rgba_sums[0])
+            ):
+                # All pixels in this column are just the background (1.0, 1.0, 1.0, alpha)
+                max_x = i + 1
+            else:
+                break
+        print(f"{math}\n- width: {max_x - min_x}\n- height: {max_y - min_y}")
+    tag: int = dpg.add_raw_texture(
+        buffer.shape[1],
+        buffer.shape[0],
+        buffer,
+        format=dpg.mvFormat_Float_rgba,
+        parent=MATH_REGISTRY,
+    )
+    plt.close(fig)
+    return tag

@@ -18,23 +18,28 @@
 # the LICENSES folder.
 
 from pyimpspec.circuit import (
-    Capacitor,
+    # Circuits
     Circuit,
+    CircuitBuilder,
+    # Connections
     Connection,
-    ConstantPhaseElement,
+    Parallel,
+    Series,
+    # Elements
     Element,
+    Capacitor,
+    ConstantPhaseElement,
+    DeLevieFiniteLength,
     Gerischer,
     HavriliakNegami,
     Inductor,
-    Parallel,
     Resistor,
-    Series,
     Warburg,
     WarburgOpen,
     WarburgShort,
-    DeLevieFiniteLength,
+    # Functions
     get_elements,
-    string_to_circuit,
+    parse_cdc,
 )
 from pyimpspec.circuit.tokenizer import (
     UnexpectedCharacter,

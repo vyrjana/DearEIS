@@ -111,4 +111,4 @@ def show_license_window():
                 )
                 with dpg.child_window(border=False):
                     dpg.add_text(licenses[items[0]], wrap=w, tag=text_widget)
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)

@@ -37,6 +37,7 @@ DEBUG: bool = False
 
 class Signal(IntEnum):
     APPLY_DATA_SET_MASK = auto()
+    APPLY_DRT_SETTINGS = auto()
     APPLY_FIT_SETTINGS = auto()
     APPLY_SIMULATION_SETTINGS = auto()
     APPLY_TEST_SETTINGS = auto()
@@ -50,6 +51,7 @@ class Signal(IntEnum):
     COPY_PLOT_DATA = auto()
     CREATE_PROJECT_SNAPSHOT = auto()
     DELETE_DATA_SET = auto()
+    DELETE_DRT_RESULT = auto()
     DELETE_FIT_RESULT = auto()
     DELETE_PLOT_SETTINGS = auto()
     DELETE_SIMULATION_RESULT = auto()
@@ -63,6 +65,7 @@ class Signal(IntEnum):
     MODIFY_PROJECT_NOTES = auto()
     NEW_PLOT_SETTINGS = auto()
     NEW_PROJECT = auto()
+    PERFORM_DRT = auto()
     PERFORM_FIT = auto()
     PERFORM_SIMULATION = auto()
     PERFORM_TEST = auto()
@@ -81,6 +84,7 @@ class Signal(IntEnum):
     SELECT_DATA_SETS_TO_AVERAGE = auto()
     SELECT_DATA_SET_FILES = auto()
     SELECT_DATA_SET_MASK_TO_COPY = auto()
+    SELECT_DRT_RESULT = auto()
     SELECT_FIT_RESULT = auto()
     SELECT_HOME_TAB = auto()
     SELECT_IMPEDANCE_TO_SUBTRACT = auto()

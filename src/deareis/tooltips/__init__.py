@@ -27,6 +27,7 @@ from .plotting import plotting
 from .circuit_editor import circuit_editor
 from .recent_projects import recent_projects
 from .home import home
+from .drt import drt
 
 
 def update_tooltip(tag: int, msg: str, wrap: bool = True):

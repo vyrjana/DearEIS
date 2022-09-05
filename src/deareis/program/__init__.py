@@ -21,6 +21,10 @@ import dearpygui.dearpygui as dpg
 
 dpg.create_context()
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 from json import (
     dumps as dump_json,
     load as load_json,
@@ -47,6 +51,7 @@ from numpy import (
 from pyimpspec import (
     Circuit,
 )
+import pyimpspec
 from pandas import DataFrame
 from sympy import (
     Expr,
@@ -87,6 +92,12 @@ from .kramers_kronig import (
     perform_test,
     select_test_result,
 )
+from .drt import (
+    apply_drt_settings,
+    delete_drt_result,
+    perform_drt,
+    select_drt_result,
+)
 from .fitting import (
     apply_fit_settings,
     delete_fit_result,
@@ -119,10 +130,14 @@ from deareis.gui.plots import show_modal_plot_window
 from deareis.gui.changelog import show_changelog
 from deareis.enums import (
     Context,
-    Output,
-    output_to_label,
+    DRTOutput,
+    FitSimOutput,
+    drt_output_to_label,
+    label_to_drt_output,
+    fit_sim_output_to_label,
 )
 from deareis.data import (
+    DRTResult,
     DataSet,
     FitResult,
     Project,
@@ -146,6 +161,10 @@ from deareis.gui.plots import (
     Bode,
     BodeMagnitude,
     BodePhase,
+    DRT,
+    Impedance,
+    ImpedanceReal,
+    ImpedanceImaginary,
     Nyquist,
     Residuals,
 )
@@ -158,6 +177,10 @@ from deareis.gui.settings import (
 )
 import deareis.themes as themes
 from deareis.version import PACKAGE_VERSION
+
+
+# Hook into the progress callbacks implemented in pyimpspec
+pyimpspec.progress.register(lambda *a, **k: signals.emit(Signal.SHOW_BUSY_MESSAGE, *a, **k))
 
 
 def sympy_wrapper(expr: Expr, queue: Queue):
@@ -191,103 +214,151 @@ def copy_output(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    output: Optional[Output] = kwargs.get("output")
-    fit_or_sim: Optional[Union[FitResult, SimulationResult]] = kwargs.get("fit_or_sim")
-    data: Optional[DataSet] = kwargs.get("data")
-    if fit_or_sim is None or output is None:
+    output: Optional[Union[FitSimOutput, DRTOutput]] = kwargs.get("output")
+    if output is None:
         return
-    assert output in output_to_label, "Unsupported output!"
-    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Generating output")
     clipboard_content: str = ""
-    if output == Output.CDC_BASIC:
-        clipboard_content = fit_or_sim.circuit.to_string()
-    elif output == Output.CDC_EXTENDED:
-        clipboard_content = fit_or_sim.circuit.to_string(6)
-    elif output == Output.CSV_DATA_TABLE:
-        Z_fit_or_sim: ndarray = fit_or_sim.get_impedance()
-        dictionary: dict = {}
-        if type(fit_or_sim) is FitResult:
-            Z_exp: ndarray = data.get_impedance(masked=None)
-            indices: ndarray = array(
-                [
-                    _
-                    for _ in range(0, data.get_num_points(masked=None))
-                    if fit_or_sim.mask.get(_, False) is False
-                ]
-            )
-            dictionary = {
-                "f (Hz)": fit_or_sim.get_frequency(),
-                "Zre_exp (ohm)": Z_exp[indices].real,
-                "Zim_exp (ohm)": Z_exp[indices].imag,
-                "Zre_fit (ohm)": Z_fit_or_sim.real,
-                "Zim_fit (ohm)": Z_fit_or_sim.imag,
-            }
-        else:
-            dictionary = {
-                "f (Hz)": fit_or_sim.get_frequency(),
-                "Zre_sim (ohm)": Z_fit_or_sim.real,
-                "Zim_sim (ohm)": Z_fit_or_sim.imag,
-            }
-        if dictionary:
-            dataframe = DataFrame.from_dict(dictionary)
-            clipboard_content = dataframe.to_csv(index=False)
-    elif (
-        output == Output.CSV_PARAMETERS_TABLE
-        or output == Output.JSON_PARAMETERS_TABLE
-        or output == Output.LATEX_PARAMETERS_TABLE
-        or output == Output.MARKDOWN_PARAMETERS_TABLE
-    ):
-        dataframe = fit_or_sim.to_dataframe()
-        if output == Output.CSV_PARAMETERS_TABLE:
-            clipboard_content = dataframe.to_csv(index=False)
-        elif output == Output.JSON_PARAMETERS_TABLE:
-            clipboard_content = dataframe.to_json()
-        elif output == Output.LATEX_PARAMETERS_TABLE:
-            clipboard_content = dataframe.to_latex(index=False)
-        elif output == Output.MARKDOWN_PARAMETERS_TABLE:
-            clipboard_content = dataframe.to_markdown(index=False, floatfmt=".3g")
-    elif output == Output.LATEX_DIAGRAM:
-        clipboard_content = fit_or_sim.circuit.to_circuitikz()
-    elif output == Output.LATEX_EXPR:
-        clipboard_content = latex(get_sympy_expr(fit_or_sim.circuit))
-    elif output == Output.SYMPY_EXPR or output == Output.SYMPY_EXPR_VALUES:
-        expr = get_sympy_expr(fit_or_sim.circuit)
-        if output == Output.SYMPY_EXPR:
-            clipboard_content = str(expr)
-        else:
-            lines: List[str] = []
-            lines.append(f'expr = sympify("{str(expr)}")')
-            symbols: List[str] = list(sorted(map(str, expr.free_symbols)))
-            if len(symbols) == 0:
+    if type(output) is FitSimOutput:
+        fit_or_sim: Optional[Union[FitResult, SimulationResult]] = kwargs.get(
+            "fit_or_sim"
+        )
+        data: Optional[DataSet] = kwargs.get("data")
+        if fit_or_sim is None:
+            return
+        assert output in fit_sim_output_to_label, "Unsupported output!"
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Generating output")
+        if output == FitSimOutput.CDC_BASIC:
+            clipboard_content = fit_or_sim.circuit.to_string()
+        elif output == FitSimOutput.CDC_EXTENDED:
+            clipboard_content = fit_or_sim.circuit.to_string(6)
+        elif output == FitSimOutput.CSV_DATA_TABLE:
+            Z_fit_or_sim: ndarray = fit_or_sim.get_impedance()
+            dictionary: dict = {}
+            if type(fit_or_sim) is FitResult:
+                Z_exp: ndarray = data.get_impedance(masked=None)
+                indices: ndarray = array(
+                    [
+                        _
+                        for _ in range(0, data.get_num_points(masked=None))
+                        if fit_or_sim.mask.get(_, False) is False
+                    ]
+                )
+                dictionary = {
+                    "f (Hz)": fit_or_sim.get_frequency(),
+                    "Zre_exp (ohm)": Z_exp[indices].real,
+                    "Zim_exp (ohm)": Z_exp[indices].imag,
+                    "Zre_fit (ohm)": Z_fit_or_sim.real,
+                    "Zim_fit (ohm)": Z_fit_or_sim.imag,
+                }
+            else:
+                dictionary = {
+                    "f (Hz)": fit_or_sim.get_frequency(),
+                    "Zre_sim (ohm)": Z_fit_or_sim.real,
+                    "Zim_sim (ohm)": Z_fit_or_sim.imag,
+                }
+            if dictionary:
+                dataframe = DataFrame.from_dict(dictionary)
+                clipboard_content = dataframe.to_csv(index=False)
+        elif (
+            output == FitSimOutput.CSV_PARAMETERS_TABLE
+            or output == FitSimOutput.JSON_PARAMETERS_TABLE
+            or output == FitSimOutput.LATEX_PARAMETERS_TABLE
+            or output == FitSimOutput.MARKDOWN_PARAMETERS_TABLE
+        ):
+            dataframe = fit_or_sim.to_dataframe()
+            if output == FitSimOutput.CSV_PARAMETERS_TABLE:
+                clipboard_content = dataframe.to_csv(index=False)
+            elif output == FitSimOutput.JSON_PARAMETERS_TABLE:
+                clipboard_content = dataframe.to_json()
+            elif output == FitSimOutput.LATEX_PARAMETERS_TABLE:
+                clipboard_content = dataframe.to_latex(
+                    index=False,
+                    float_format="%.3g",
+                )
+            elif output == FitSimOutput.MARKDOWN_PARAMETERS_TABLE:
+                clipboard_content = dataframe.to_markdown(
+                    index=False,
+                    floatfmt=".3g",
+                )
+        elif output == FitSimOutput.LATEX_DIAGRAM:
+            clipboard_content = fit_or_sim.circuit.to_circuitikz()
+        elif output == FitSimOutput.LATEX_EXPR:
+            clipboard_content = latex(get_sympy_expr(fit_or_sim.circuit))
+        elif (
+            output == FitSimOutput.SYMPY_EXPR
+            or output == FitSimOutput.SYMPY_EXPR_VALUES
+        ):
+            expr = get_sympy_expr(fit_or_sim.circuit)
+            if output == FitSimOutput.SYMPY_EXPR:
                 clipboard_content = str(expr)
             else:
-                parameters = fit_or_sim.circuit.get_parameters()
-                lines.append(
-                    ", ".join(symbols) + " = sorted(expr.free_symbols, key=str)"
-                )
-                lines.append("parameters = {")
-                if "f" in symbols:
-                    symbols.remove("f")
-                sym: str
-                for sym in symbols:
-                    assert "_" in sym
-                    ident: Union[int, str]
-                    label, ident = sym.split("_")
-                    value: Optional[float] = None
-                    try:
-                        ident = int(label)
-                        assert ident in parameters
-                        value = parameters[ident][label]
-                    except ValueError:
-                        for element in fit_or_sim.circuit.get_elements():
-                            if not element.get_label().endswith(f"_{ident}"):
-                                continue
-                            value = element.get_parameters().get(label)
-                    assert value is not None
-                    lines.append(f"\t{sym}: {value:.6E},")
-                lines.append("}")
-                clipboard_content = "\n".join(lines)
-    dpg.set_clipboard_text(clipboard_content)
+                lines: List[str] = []
+                lines.append(f'expr = sympify("{str(expr)}")')
+                symbols: List[str] = list(sorted(map(str, expr.free_symbols)))
+                if len(symbols) == 0:
+                    clipboard_content = str(expr)
+                else:
+                    parameters = fit_or_sim.circuit.get_parameters()
+                    lines.append(
+                        ", ".join(symbols) + " = sorted(expr.free_symbols, key=str)"
+                    )
+                    lines.append("parameters = {")
+                    if "f" in symbols:
+                        symbols.remove("f")
+                    sym: str
+                    for sym in symbols:
+                        assert "_" in sym
+                        ident: Union[int, str]
+                        label, ident = sym.split("_")
+                        value: Optional[float] = None
+                        try:
+                            ident = int(label)
+                            assert ident in parameters
+                            value = parameters[ident][label]
+                        except ValueError:
+                            for element in fit_or_sim.circuit.get_elements():
+                                if not element.get_label().endswith(f"_{ident}"):
+                                    continue
+                                value = element.get_parameters().get(label)
+                        assert value is not None
+                        lines.append(f"\t{sym}: {value:.6E},")
+                    lines.append("}")
+                    clipboard_content = "\n".join(lines)
+    elif type(output) is DRTOutput:
+        assert output in drt_output_to_label, "Unsupported output!"
+        drt: Optional[DRTResult] = kwargs.get("drt")
+        if drt is None:
+            return
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Generating output")
+        if (
+            output == DRTOutput.CSV_SCORES
+            or output == DRTOutput.JSON_SCORES
+            or output == DRTOutput.LATEX_SCORES
+            or output == DRTOutput.MARKDOWN_SCORES
+        ):
+            score_dataframe: Optional[DataFrame] = drt.get_score_dataframe(
+                latex_labels=output == DRTOutput.LATEX_SCORES
+            )
+            if score_dataframe is not None:
+                if output == DRTOutput.CSV_SCORES:
+                    clipboard_content = score_dataframe.to_csv(index=False)
+                elif output == DRTOutput.JSON_SCORES:
+                    clipboard_content = score_dataframe.to_json()
+                elif output == DRTOutput.LATEX_SCORES:
+                    clipboard_content = score_dataframe.to_latex(
+                        index=False,
+                        escape=False,
+                        float_format="%.3g",
+                    )
+                elif output == DRTOutput.MARKDOWN_SCORES:
+                    clipboard_content = score_dataframe.to_markdown(
+                        index=False,
+                        floatfmt=".3g",
+                    )
+    else:
+        raise Exception(f"Unsupported output type: {type(output)}")
+    if clipboard_content != "":
+        dpg.set_clipboard_text(clipboard_content)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
@@ -409,12 +480,12 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
-            key = f"log f - {label}"
+            key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
-                key = f"log f - {label}"
+                key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
-            dictionary[f"log |Z| - {label}"] = series["magnitude"]
+            dictionary[f"|Z| (ohm) - {label}"] = series["magnitude"]
             dictionary[f"-phi (°) - {label}"] = series["phase"]
     elif type(plot) is Nyquist:
         for series in plot.get_series():
@@ -450,12 +521,12 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
-            key = f"log f - {label}"
+            key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
-                key = f"log f - {label}"
+                key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
-            dictionary[f"log |Z| - {label}"] = series["magnitude"]
+            dictionary[f"|Z| (ohm) - {label}"] = series["magnitude"]
     elif type(plot) is BodePhase:
         for series in plot.get_series():
             label = "Data"
@@ -470,17 +541,82 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
-            key = f"log f - {label}"
+            key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
-                key = f"log f - {label}"
+                key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
             dictionary[f"-phi (°) - {label}"] = series["phase"]
     elif type(plot) is Residuals:
         for series in plot.get_series():
-            dictionary["log f"] = series["frequency"]
+            dictionary["f (Hz)"] = series["frequency"]
             dictionary["real error (%)"] = series["real"]
             dictionary["imaginary error (%)"] = series["imaginary"]
+    elif type(plot) is DRT:
+        for series in plot.get_series():
+            label = "Data"
+            if context != Context.PLOTTING_TAB:
+                if series.get("simulation", False):
+                    label = "Sim."
+                elif series.get("fit", False):
+                    label = "Fit"
+            else:
+                label = series.get("label") or ""
+            key = f"tau (s) - {label}"
+            while key in dictionary:
+                label += " "
+                key = f"tau (s) - {label}"
+            dictionary[key] = series["tau"]
+            if "gamma" in series:
+                dictionary[f"gamma (ohm) - {label}"] = series["gamma"]
+            elif "imaginary" in series:
+                if f"gamma (ohm) - {label}" in dictionary:
+                    dictionary[f"gamma, real (ohm) - {label}"] = dictionary[
+                        "gamma (ohm) - {label}"
+                    ]
+                    del dictionary[f"gamma (ohm) - {label}"]
+                dictionary[f"gamma, imag. (ohm) - {label}"] = series["imaginary"]
+            elif "mean" in series:
+                dictionary[f"gamma, mean (ohm) - {label}"] = series["mean"]
+            elif "lower" in series and "upper" in series:
+                dictionary[f"gamma, lower bound (ohm) - {label}"] = series["lower"]
+                dictionary[f"gamma, upper bound (ohm) - {label}"] = series["lower"]
+    elif type(plot) is Impedance:
+        for series in plot.get_series():
+            label = "Data"
+            if context != Context.PLOTTING_TAB:
+                if series.get("simulation", False):
+                    label = "Sim."
+                elif series.get("fit", False):
+                    label = "Fit"
+            else:
+                label = series.get("label") or ""
+            key = f"f (Hz) - {label}"
+            while key in dictionary:
+                label += " "
+                key = f"f (Hz) - {label}"
+            dictionary[key] = series["frequency"]
+            dictionary["Zre (ohm)"] = series["real"]
+            dictionary["-Zim (ohm)"] = series["imaginary"]
+    elif type(plot) is ImpedanceReal or type(plot) is ImpedanceImaginary:
+        for series in plot.get_series():
+            label = "Data"
+            if context != Context.PLOTTING_TAB:
+                if series.get("simulation", False):
+                    label = "Sim."
+                elif series.get("fit", False):
+                    label = "Fit"
+            else:
+                label = series.get("label") or ""
+            key = f"f (Hz) - {label}"
+            while key in dictionary:
+                label += " "
+                key = f"f (Hz) - {label}"
+            dictionary[key] = series["x"]
+            if type(plot) is ImpedanceReal:
+                dictionary[f"Zre (ohm) - {label}"] = series["y"]
+            else:
+                dictionary[f"-Zim (ohm) - {label}"] = series["y"]
     padded_dictionary: Optional[dict] = pad_dataframe_dictionary(dictionary)
     if padded_dictionary is None:
         dpg.set_clipboard_text("")
@@ -542,7 +678,7 @@ def show_help_about(*args, **kwargs):
             ),
             themes.url_theme,
         )
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
 
 def restore_unsaved_project_snapshots():
@@ -608,16 +744,19 @@ def initialize_program(args: Namespace):
         lambda *a, **k: signals.emit(
             Signal.BLOCK_KEYBINDINGS,
             window=STATE.program_window.busy_message.window,
+            window_object=None,
         ),
     )
     signals.register(
-        Signal.HIDE_BUSY_MESSAGE, lambda: signals.emit(Signal.UNBLOCK_KEYBINDINGS)
+        Signal.HIDE_BUSY_MESSAGE,
+        lambda: signals.emit(Signal.UNBLOCK_KEYBINDINGS),
     )
     signals.register(
         Signal.SHOW_ERROR_MESSAGE,
         lambda *a, **k: signals.emit(
             Signal.BLOCK_KEYBINDINGS,
             window=STATE.program_window.error_message.window,
+            window_object=None,
         ),
     )
     # Signals for showing/hiding the modal windows for error messages and for indicating when the
@@ -679,6 +818,11 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_TEST_RESULT, select_test_result)
     signals.register(Signal.DELETE_TEST_RESULT, delete_test_result)
     signals.register(Signal.APPLY_TEST_SETTINGS, apply_test_settings)
+    # Signals for the DRT tab
+    signals.register(Signal.PERFORM_DRT, perform_drt)
+    signals.register(Signal.SELECT_DRT_RESULT, select_drt_result)
+    signals.register(Signal.DELETE_DRT_RESULT, delete_drt_result)
+    signals.register(Signal.APPLY_DRT_SETTINGS, apply_drt_settings)
     # Signals for the fitting tab
     signals.register(Signal.PERFORM_FIT, perform_fit)
     signals.register(Signal.SELECT_FIT_RESULT, select_fit_result)

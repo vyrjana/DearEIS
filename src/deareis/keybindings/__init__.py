@@ -238,6 +238,8 @@ class KeybindingHandler:
                 project_tab.select_data_sets_tab()
             elif action == Action.SELECT_KRAMERS_KRONIG_TAB:
                 project_tab.select_kramers_kronig_tab()
+            elif action == Action.SELECT_DRT_TAB:
+                project_tab.select_drt_tab()
             elif action == Action.SELECT_FITTING_TAB:
                 project_tab.select_fitting_tab()
             elif action == Action.SELECT_SIMULATION_TAB:
@@ -254,6 +256,12 @@ class KeybindingHandler:
                         data=project_tab.get_active_data_set(),
                         settings=project_tab.get_test_settings(),
                     ),
+                elif context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.PERFORM_DRT,
+                        data=project_tab.get_active_data_set(),
+                        settings=project_tab.get_drt_settings(),
+                    )
                 elif context == Context.FITTING_TAB:
                     signals.emit(
                         Signal.PERFORM_FIT,
@@ -281,6 +289,12 @@ class KeybindingHandler:
                         test=project_tab.get_active_test(),
                         data=project_tab.get_active_data_set(),
                     )
+                elif context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.DELETE_DRT_RESULT,
+                        drt=project_tab.get_active_drt(),
+                        data=project_tab.get_active_data_set(),
+                    )
                 elif context == Context.FITTING_TAB:
                     signals.emit(
                         Signal.DELETE_FIT_RESULT,
@@ -303,6 +317,7 @@ class KeybindingHandler:
                 if (
                     context == Context.DATA_SETS_TAB
                     or context == Context.KRAMERS_KRONIG_TAB
+                    or context == Context.DRT_TAB
                     or context == Context.FITTING_TAB
                 ):
                     signals.emit(
@@ -325,6 +340,7 @@ class KeybindingHandler:
                 if (
                     context == Context.DATA_SETS_TAB
                     or context == Context.KRAMERS_KRONIG_TAB
+                    or context == Context.DRT_TAB
                     or context == Context.FITTING_TAB
                 ):
                     signals.emit(
@@ -348,6 +364,12 @@ class KeybindingHandler:
                     signals.emit(
                         Signal.SELECT_TEST_RESULT,
                         test=project_tab.get_next_test_result(),
+                        data=project_tab.get_active_data_set(),
+                    )
+                elif context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.SELECT_DRT_RESULT,
+                        drt=project_tab.get_next_drt_result(),
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.FITTING_TAB:
@@ -376,6 +398,12 @@ class KeybindingHandler:
                         test=project_tab.get_previous_test_result(),
                         data=project_tab.get_active_data_set(),
                     )
+                elif context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.SELECT_DRT_RESULT,
+                        drt=project_tab.get_previous_drt_result(),
+                        data=project_tab.get_active_data_set(),
+                    )
                 elif context == Context.FITTING_TAB:
                     signals.emit(
                         Signal.SELECT_FIT_RESULT,
@@ -402,6 +430,12 @@ class KeybindingHandler:
                         Signal.APPLY_TEST_SETTINGS,
                         settings=test.settings if test is not None else None,
                     )
+                elif context == Context.DRT_TAB:
+                    drt = project_tab.get_active_drt()
+                    signals.emit(
+                        Signal.APPLY_DRT_SETTINGS,
+                        settings=drt.settings if drt is not None else None,
+                    )
                 elif context == Context.FITTING_TAB:
                     fit = project_tab.get_active_fit()
                     signals.emit(
@@ -427,6 +461,14 @@ class KeybindingHandler:
                         test=test,
                         data=project_tab.get_active_data_set(),
                     )
+                elif context == Context.DRT_TAB:
+                    drt = project_tab.get_active_drt()
+                    signals.emit(
+                        Signal.APPLY_DATA_SET_MASK,
+                        mask=drt.mask if drt is not None else None,
+                        drt=drt,
+                        data=project_tab.get_active_data_set(),
+                    )
                 elif context == Context.FITTING_TAB:
                     fit = project_tab.get_active_fit()
                     signals.emit(
@@ -435,6 +477,10 @@ class KeybindingHandler:
                         fit=fit,
                         data=project_tab.get_active_data_set(),
                     )
+            elif action == Action.SHOW_ENLARGED_DRT:
+                project_tab.show_enlarged_drt()
+            elif action == Action.SHOW_ENLARGED_IMPEDANCE:
+                project_tab.show_enlarged_impedance()
             elif action == Action.SHOW_ENLARGED_NYQUIST:
                 project_tab.show_enlarged_nyquist()
             elif action == Action.SHOW_ENLARGED_BODE:
@@ -446,6 +492,18 @@ class KeybindingHandler:
                     project_tab.fitting_tab.show_circuit_editor()
                 elif context == Context.SIMULATION_TAB:
                     project_tab.simulation_tab.show_circuit_editor()
+            elif action == Action.COPY_DRT_DATA:
+                signals.emit(
+                    Signal.COPY_PLOT_DATA,
+                    plot=project_tab.get_drt_plot(context),
+                    context=context,
+                )
+            elif action == Action.COPY_IMPEDANCE_DATA:
+                signals.emit(
+                    Signal.COPY_PLOT_DATA,
+                    plot=project_tab.get_impedance_plot(context),
+                    context=context,
+                )
             elif action == Action.COPY_NYQUIST_DATA:
                 signals.emit(
                     Signal.COPY_PLOT_DATA,

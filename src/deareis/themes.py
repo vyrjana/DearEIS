@@ -210,6 +210,12 @@ def create_plot_series_theme(
                 color,
                 category=dpg.mvThemeCat_Plots,
             )
+        with dpg.theme_component(dpg.mvShadeSeries):
+            dpg.add_theme_color(
+                dpg.mvPlotCol_Fill,
+                color,
+                category=dpg.mvThemeCat_Plots,
+            )
     return tag
 
 
@@ -255,10 +261,12 @@ def update_plot_series_theme_marker(parent: int, marker: int):
 nyquist: SimpleNamespace = SimpleNamespace(
     **{
         "data": create_plot_series_theme(
-            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
         ),
         "simulation": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Cross
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Cross,
         ),
     }
 )
@@ -266,16 +274,64 @@ nyquist: SimpleNamespace = SimpleNamespace(
 bode: SimpleNamespace = SimpleNamespace(
     **{
         "magnitude_data": create_plot_series_theme(
-            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
         ),
         "magnitude_simulation": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Cross
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Cross,
         ),
         "phase_data": create_plot_series_theme(
-            [238.0, 119.0, 51.0, 190.0], dpg.mvPlotMarker_Square
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Square,
         ),
         "phase_simulation": create_plot_series_theme(
-            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Plus
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Plus,
+        ),
+    }
+)
+
+
+drt: SimpleNamespace = SimpleNamespace(
+    **{
+        "real_gamma": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "mean_gamma": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "credible_intervals": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 48.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "imaginary_gamma": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+    }
+)
+
+
+impedance: SimpleNamespace = SimpleNamespace(
+    **{
+        "real_data": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "real_simulation": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Cross,
+        ),
+        "imaginary_data": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Square,
+        ),
+        "imaginary_simulation": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Plus,
         ),
     }
 )
@@ -283,10 +339,12 @@ bode: SimpleNamespace = SimpleNamespace(
 residuals: SimpleNamespace = SimpleNamespace(
     **{
         "real": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Circle
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Circle,
         ),
         "imaginary": create_plot_series_theme(
-            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Square
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Square,
         ),
     }
 )
@@ -294,19 +352,24 @@ residuals: SimpleNamespace = SimpleNamespace(
 mu_Xps: SimpleNamespace = SimpleNamespace(
     **{
         "mu": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0], dpg.mvPlotMarker_Circle
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Circle,
         ),
         "mu_highlight": create_plot_series_theme(
-            [51.0, 187.0, 238.0, 190.0], dpg.mvPlotMarker_Circle
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
         ),
         "Xps": create_plot_series_theme(
-            [0.0, 153.0, 136.0, 190.0], dpg.mvPlotMarker_Square
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Square,
         ),
         "Xps_highlight": create_plot_series_theme(
-            [238.0, 119.0, 51.0, 190.0], dpg.mvPlotMarker_Square
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Square,
         ),
         "mu_criterion": create_plot_series_theme(
-            [255.0, 255.0, 255.0, 128.0], dpg.mvPlotMarker_Circle
+            [255.0, 255.0, 255.0, 128.0],
+            dpg.mvPlotMarker_Circle,
         ),
     }
 )

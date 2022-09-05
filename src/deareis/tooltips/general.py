@@ -46,6 +46,12 @@ Automatically adjust the limits of the Bode plot to fit the data.
         "adjust_residuals_limits": """
 Automatically adjust the limits of the residuals plot to fit the data.
     """.strip(),
+        "adjust_drt_limits": """
+Automatically adjust the limits of the DRT plot to fit the data.
+    """.strip(),
+        "adjust_impedance_limits": """
+Automatically adjust the limits of the impedance plot to fit the data.
+    """.strip(),
         "adjust_limits": """
 Automatically adjust the limits of the plots to fit the data.
     """.strip(),

@@ -17,14 +17,29 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional
-from numpy import angle, array, ndarray
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
+from numpy import (
+    angle,
+    array,
+    ndarray,
+)
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.gui.plots import Bode, Nyquist
-from deareis.utility import align_numbers, format_number
-from deareis.tooltips import attach_tooltip, update_tooltip
+from deareis.utility import (
+    align_numbers,
+    format_number,
+)
+from deareis.tooltips import (
+    attach_tooltip,
+    update_tooltip,
+)
 import deareis.tooltips as tooltips
 import deareis.themes as themes
 from deareis.data import DataSet
@@ -130,11 +145,27 @@ class DataTable:
             )
         )
         Z: ndarray = data.get_impedance(masked=None)
-        reals: List[str] = list(map(lambda _: format_number(_.real, significants=4), Z))
+        reals: List[str] = list(
+            map(
+                lambda _: format_number(
+                    _.real,
+                    significants=4,
+                ),
+                Z,
+            )
+        )
         imags: List[str] = list(
             map(lambda _: format_number(-_.imag, significants=4), Z)
         )
-        mags: List[str] = list(map(lambda _: format_number(abs(_), significants=4), Z))
+        mags: List[str] = list(
+            map(
+                lambda _: format_number(
+                    abs(_),
+                    significants=4,
+                ),
+                Z,
+            )
+        )
         phis: List[str] = list(
             map(
                 lambda _: format_number(
@@ -511,6 +542,7 @@ class DataSetsTab:
             default_value=data.get_path(),
             user_data=data,
         )
+        # TODO: Could this be simplified so that data is stored in one place?
         dpg.set_item_user_data(self.delete_button, data)
         dpg.set_item_user_data(self.toggle_points_button, data)
         dpg.set_item_user_data(self.copy_mask_button, data)

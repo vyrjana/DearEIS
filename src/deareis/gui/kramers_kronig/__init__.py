@@ -25,14 +25,14 @@ from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.enums import (
     Context,
-    Method,
-    Mode,
+    CNLSMethod,
+    TestMode,
     Test,
-    label_to_method,
-    label_to_mode,
+    label_to_cnls_method,
+    label_to_test_mode,
     label_to_test,
-    method_to_label,
-    mode_to_label,
+    cnls_method_to_label,
+    test_mode_to_label,
     test_to_label,
 )
 from deareis.data import TestResult, TestSettings, DataSet
@@ -42,11 +42,188 @@ from deareis.tooltips import attach_tooltip, update_tooltip
 import deareis.themes as themes
 
 
-LABEL_PAD: int = 23
+class SettingsMenu:
+    def __init__(
+        self, default_settings: TestSettings, label_pad: int, limited: bool = False
+    ):
+        with dpg.group(horizontal=True):
+            dpg.add_text("Test".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.test)
+            self.test_combo: int = dpg.generate_uuid()
+            dpg.add_combo(
+                default_value=test_to_label[default_settings.test],
+                items=list(label_to_test.keys()),
+                callback=lambda s, a, u: self.update_settings(),
+                width=-1,
+                tag=self.test_combo,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Mode".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.mode)
+            self.mode_combo: int = dpg.generate_uuid()
+            dpg.add_combo(
+                default_value=test_mode_to_label[default_settings.mode],
+                items=list(label_to_test_mode.keys()),
+                callback=lambda s, a, u: self.update_settings(),
+                width=-1,
+                tag=self.mode_combo,
+            )
+        with dpg.group(horizontal=True, show=not limited):
+            self.num_RC_label: int = dpg.generate_uuid()
+            num_RC_labels: List[str] = [
+                "Max. num. RC elements".rjust(label_pad),
+                "Number of RC elements".rjust(label_pad),
+            ]
+            dpg.add_text(
+                num_RC_labels[0],
+                user_data=num_RC_labels,
+                tag=self.num_RC_label,
+            )
+            attach_tooltip(tooltips.kramers_kronig.max_num_RC)
+            self.num_RC_slider: int = dpg.generate_uuid()
+            dpg.add_slider_int(
+                clamped=True,
+                width=-1,
+                tag=self.num_RC_slider,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Add capacitor in series".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.add_capacitance)
+            self.add_cap_checkbox: int = dpg.generate_uuid()
+            dpg.add_checkbox(
+                default_value=default_settings.add_capacitance,
+                tag=self.add_cap_checkbox,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Add inductor in series".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.add_inductance)
+            self.add_ind_checkbox: int = dpg.generate_uuid()
+            dpg.add_checkbox(
+                default_value=default_settings.add_inductance,
+                tag=self.add_ind_checkbox,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("µ-criterion".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.mu_criterion)
+            self.mu_crit_slider: int = dpg.generate_uuid()
+            dpg.add_slider_float(
+                default_value=default_settings.mu_criterion,
+                min_value=0.01,
+                max_value=0.99,
+                clamped=True,
+                format="%.2f",
+                width=-1,
+                tag=self.mu_crit_slider,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Fitting method".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.method)
+            self.method_combo: int = dpg.generate_uuid()
+            dpg.add_combo(
+                default_value=cnls_method_to_label.get(
+                    default_settings.method,
+                    list(label_to_cnls_method.keys())[0],
+                ),
+                items=list(label_to_cnls_method.keys()),
+                width=-1,
+                tag=self.method_combo,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Max. num. of func. eval.".rjust(label_pad))
+            attach_tooltip(tooltips.kramers_kronig.nfev)
+            self.max_nfev_input: int = dpg.generate_uuid()
+            dpg.add_input_int(
+                default_value=default_settings.max_nfev,
+                min_value=0,
+                min_clamped=True,
+                step=0,
+                on_enter=True,
+                width=-1,
+                tag=self.max_nfev_input,
+            )
+        self.update_settings()
+
+    def get_settings(self) -> TestSettings:
+        return TestSettings(
+            test=label_to_test.get(dpg.get_value(self.test_combo), Test.COMPLEX),
+            mode=label_to_test_mode.get(
+                dpg.get_value(self.mode_combo), TestMode.EXPLORATORY
+            ),
+            num_RC=dpg.get_value(self.num_RC_slider),
+            mu_criterion=dpg.get_value(self.mu_crit_slider),
+            add_capacitance=dpg.get_value(self.add_cap_checkbox),
+            add_inductance=dpg.get_value(self.add_ind_checkbox),
+            method=label_to_cnls_method.get(
+                dpg.get_value(self.method_combo), CNLSMethod.LEASTSQ
+            ),
+            max_nfev=dpg.get_value(self.max_nfev_input),
+        )
+
+    def set_settings(self, settings: TestSettings):
+        assert type(settings) is TestSettings, settings
+        dpg.set_value(self.test_combo, test_to_label.get(settings.test))
+        dpg.set_value(self.mode_combo, test_mode_to_label.get(settings.mode))
+        num_RC: int = settings.num_RC
+        item_configuration: dict = dpg.get_item_configuration(self.num_RC_slider)
+        if num_RC >= 2:
+            if num_RC > item_configuration["max_value"]:
+                num_RC = item_configuration["max_value"]
+            dpg.set_value(self.num_RC_slider, num_RC)
+        dpg.set_value(self.add_cap_checkbox, settings.add_capacitance)
+        dpg.set_value(self.add_ind_checkbox, settings.add_inductance)
+        dpg.set_value(self.mu_crit_slider, settings.mu_criterion)
+        dpg.set_value(self.method_combo, cnls_method_to_label.get(settings.method))
+        dpg.set_value(self.max_nfev_input, settings.max_nfev)
+        self.update_settings()
+
+    def update_settings(self, settings: Optional[TestSettings] = None):
+        if settings is None:
+            settings = self.get_settings()
+        if settings.test == Test.CNLS:
+            dpg.enable_item(self.add_ind_checkbox)
+            dpg.enable_item(self.method_combo)
+            dpg.enable_item(self.max_nfev_input)
+        else:
+            dpg.disable_item(self.add_ind_checkbox)
+            dpg.set_value(self.add_ind_checkbox, True)
+            dpg.disable_item(self.method_combo)
+            dpg.disable_item(self.max_nfev_input)
+        if settings.mode == TestMode.MANUAL:
+            dpg.disable_item(self.mu_crit_slider)
+            dpg.set_value(
+                self.num_RC_label, dpg.get_item_user_data(self.num_RC_label)[1]
+            )
+        else:
+            dpg.enable_item(self.mu_crit_slider)
+            dpg.set_value(
+                self.num_RC_label, dpg.get_item_user_data(self.num_RC_label)[0]
+            )
+
+    def update_num_RC_slider(self, data: Optional[DataSet]):
+        min_num_RC: int = 0 if data is None else 2
+        max_num_RC: int = 9999 if data is None else data.get_num_points()
+        num_RC: int = dpg.get_value(self.num_RC_slider)
+        if num_RC > max_num_RC:
+            num_RC = max_num_RC
+        elif num_RC < min_num_RC:
+            num_RC = max_num_RC
+        dpg.configure_item(
+            self.num_RC_slider,
+            default_value=num_RC,
+            min_value=min_num_RC,
+            max_value=max_num_RC,
+        )
+
+    def get_num_RC_labels(self) -> List[str]:
+        return dpg.get_item_user_data(self.num_RC_label)
+
+    def has_active_input(self) -> bool:
+        return dpg.is_item_active(self.max_nfev_input)
 
 
 class StatisticsTable:
     def __init__(self):
+        label_pad: int = 23
         self._header: int = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Statistics", leaf=True, tag=self._header):
             self._table: int = dpg.generate_uuid()
@@ -61,7 +238,7 @@ class StatisticsTable:
                 tag=self._table,
             ):
                 dpg.add_table_column(
-                    label="Label".rjust(LABEL_PAD),
+                    label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
                 dpg.add_table_column(
@@ -76,7 +253,7 @@ class StatisticsTable:
                     ("Number of RC elements", tooltips.kramers_kronig.num_RC),
                 ]:
                     with dpg.table_row(parent=self._table):
-                        dpg.add_text(label.rjust(LABEL_PAD))
+                        dpg.add_text(label.rjust(label_pad))
                         attach_tooltip(tooltip)
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
@@ -121,6 +298,7 @@ class StatisticsTable:
 
 class SettingsTable:
     def __init__(self):
+        label_pad: int = 23
         self._header: int = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Settings", leaf=True, tag=self._header):
             self._table: int = dpg.generate_uuid()
@@ -135,7 +313,7 @@ class SettingsTable:
                 tag=self._table,
             ):
                 dpg.add_table_column(
-                    label="Label".rjust(LABEL_PAD),
+                    label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
                 dpg.add_table_column(
@@ -154,7 +332,7 @@ class SettingsTable:
                     "Max. num. func. eval.",
                 ]:
                     with dpg.table_row(parent=self._table):
-                        dpg.add_text(label.rjust(LABEL_PAD))
+                        dpg.add_text(label.rjust(label_pad))
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
@@ -201,7 +379,7 @@ class SettingsTable:
             rows,
             cells,
         )
-        if test.settings.mode == Mode.MANUAL:
+        if test.settings.mode == TestMode.MANUAL:
             dpg.set_value(
                 cells[1][0],
                 num_RC_labels[1],
@@ -225,7 +403,7 @@ class SettingsTable:
             (
                 rows[1],
                 cells[1][1],
-                mode_to_label.get(test.settings.mode, ""),
+                test_mode_to_label.get(test.settings.mode, ""),
                 True,
             ),
             (
@@ -250,12 +428,12 @@ class SettingsTable:
                 rows[5],
                 cells[5][1],
                 f"{test.settings.mu_criterion:.2f}",
-                test.settings.mode != Mode.MANUAL,
+                test.settings.mode != TestMode.MANUAL,
             ),
             (
                 rows[6],
                 cells[6][1],
-                method_to_label.get(test.settings.method, ""),
+                cnls_method_to_label.get(test.settings.method, ""),
                 test.settings.test == Test.CNLS,
             ),
             (
@@ -437,105 +615,15 @@ class KramersKronigTab:
                     ):
                         # TODO: Split into a separate class?
                         with dpg.child_window(width=-1, height=220):
+                            self.settings_menu: SettingsMenu = SettingsMenu(
+                                state.config.default_test_settings, label_pad
+                            )
                             with dpg.group(horizontal=True):
                                 self.visibility_item: int = dpg.generate_uuid()
                                 dpg.add_text(
-                                    "Test".rjust(label_pad), tag=self.visibility_item
+                                    "?".rjust(label_pad),
+                                    tag=self.visibility_item,
                                 )
-                                attach_tooltip(tooltips.kramers_kronig.test)
-                                self.test_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=list(label_to_test.keys()),
-                                    default_value=list(label_to_test.keys())[1],
-                                    callback=self.update_test_setting,
-                                    width=-1,
-                                    tag=self.test_combo,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Mode".rjust(label_pad))
-                                attach_tooltip(tooltips.kramers_kronig.mode)
-                                self.mode_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=list(label_to_mode.keys()),
-                                    default_value=list(label_to_mode.keys())[1],
-                                    callback=self.update_mode_setting,
-                                    width=-1,
-                                    tag=self.mode_combo,
-                                )
-                            with dpg.group(horizontal=True):
-                                self.num_RC_label: int = dpg.generate_uuid()
-                                num_RC_labels: List[str] = [
-                                    "Max. num. RC elements".rjust(label_pad),
-                                    "Number of RC elements".rjust(label_pad),
-                                ]
-                                dpg.add_text(
-                                    num_RC_labels[0],
-                                    user_data=num_RC_labels,
-                                    tag=self.num_RC_label,
-                                )
-                                attach_tooltip(tooltips.kramers_kronig.max_num_RC)
-                                self.num_RC_slider: int = dpg.generate_uuid()
-                                dpg.add_slider_int(
-                                    clamped=True,
-                                    width=-1,
-                                    tag=self.num_RC_slider,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Add capacitor in series".rjust(label_pad))
-                                attach_tooltip(tooltips.kramers_kronig.add_capacitance)
-                                self.add_cap_checkbox: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    tag=self.add_cap_checkbox,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Add inductor in series".rjust(label_pad))
-                                attach_tooltip(tooltips.kramers_kronig.add_inductance)
-                                self.add_ind_checkbox: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    tag=self.add_ind_checkbox,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("µ-criterion".rjust(label_pad))
-                                attach_tooltip(tooltips.kramers_kronig.mu_criterion)
-                                self.mu_crit_slider: int = dpg.generate_uuid()
-                                dpg.add_slider_float(
-                                    default_value=0.85,
-                                    min_value=0.01,
-                                    max_value=0.99,
-                                    clamped=True,
-                                    format="%.2f",
-                                    width=-1,
-                                    tag=self.mu_crit_slider,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Fitting method".rjust(label_pad))
-                                attach_tooltip(tooltips.kramers_kronig.method)
-                                self.method_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=list(label_to_method.keys()),
-                                    default_value=list(label_to_method.keys())[0],
-                                    width=-1,
-                                    tag=self.method_combo,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text(
-                                    "Max. num. of func. eval.".rjust(label_pad)
-                                )
-                                attach_tooltip(tooltips.kramers_kronig.nfev)
-                                self.max_nfev_input: int = dpg.generate_uuid()
-                                dpg.add_input_int(
-                                    default_value=1000,
-                                    min_value=0,
-                                    min_clamped=True,
-                                    step=0,
-                                    on_enter=True,
-                                    width=-1,
-                                    tag=self.max_nfev_input,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("?".rjust(label_pad))
                                 attach_tooltip(tooltips.kramers_kronig.perform)
                                 self.perform_test_button: int = dpg.generate_uuid()
                                 dpg.add_button(
@@ -891,58 +979,10 @@ class KramersKronigTab:
         self.bode_plot_vertical.clear(delete=False)
 
     def get_settings(self) -> TestSettings:
-        return TestSettings(
-            label_to_test.get(dpg.get_value(self.test_combo), Test.COMPLEX),
-            label_to_mode.get(dpg.get_value(self.mode_combo), Mode.EXPLORATORY),
-            dpg.get_value(self.num_RC_slider),
-            dpg.get_value(self.mu_crit_slider),
-            dpg.get_value(self.add_cap_checkbox),
-            dpg.get_value(self.add_ind_checkbox),
-            label_to_method.get(dpg.get_value(self.method_combo), Method.LEASTSQ),
-            dpg.get_value(self.max_nfev_input),
-        )
+        return self.settings_menu.get_settings()
 
     def set_settings(self, settings: TestSettings):
-        assert type(settings) is TestSettings, settings
-        dpg.set_value(self.test_combo, test_to_label.get(settings.test))
-        dpg.set_value(self.mode_combo, mode_to_label.get(settings.mode))
-        num_RC: int = settings.num_RC
-        item_configuration: dict = dpg.get_item_configuration(self.num_RC_slider)
-        if num_RC > item_configuration["max_value"]:
-            num_RC = item_configuration["max_value"]
-        dpg.set_value(self.num_RC_slider, num_RC)
-        dpg.set_value(self.add_cap_checkbox, settings.add_capacitance)
-        dpg.set_value(self.add_ind_checkbox, settings.add_inductance)
-        dpg.set_value(self.mu_crit_slider, settings.mu_criterion)
-        dpg.set_value(self.method_combo, method_to_label.get(settings.method))
-        dpg.set_value(self.max_nfev_input, settings.max_nfev)
-        self.update_test_setting()
-        self.update_mode_setting()
-
-    def update_test_setting(self):
-        settings: TestSettings = self.get_settings()
-        if settings.test == Test.CNLS:
-            dpg.enable_item(self.add_ind_checkbox)
-            dpg.enable_item(self.method_combo)
-            dpg.enable_item(self.max_nfev_input)
-        else:
-            dpg.disable_item(self.add_ind_checkbox)
-            dpg.set_value(self.add_ind_checkbox, True)
-            dpg.disable_item(self.method_combo)
-            dpg.disable_item(self.max_nfev_input)
-
-    def update_mode_setting(self):
-        settings: TestSettings = self.get_settings()
-        if settings.mode == Mode.MANUAL:
-            dpg.disable_item(self.mu_crit_slider)
-            dpg.set_value(
-                self.num_RC_label, dpg.get_item_user_data(self.num_RC_label)[1]
-            )
-        else:
-            dpg.enable_item(self.mu_crit_slider)
-            dpg.set_value(
-                self.num_RC_label, dpg.get_item_user_data(self.num_RC_label)[0]
-            )
+        self.settings_menu.set_settings(settings)
 
     def populate_data_sets(self, labels: List[str], lookup: Dict[str, DataSet]):
         assert type(labels) is list, labels
@@ -956,7 +996,9 @@ class KramersKronigTab:
         dpg.hide_item(dpg.get_item_parent(self.validity_text))
         if data is not None and self.results_combo.labels:
             signals.emit(
-                Signal.SELECT_TEST_RESULT, test=self.results_combo.get(), data=data
+                Signal.SELECT_TEST_RESULT,
+                test=self.results_combo.get(),
+                data=data,
             )
         else:
             self.statistics_table.clear(hide=True)
@@ -979,19 +1021,7 @@ class KramersKronigTab:
         assert type(data) is DataSet or data is None, data
         self.clear(hide=data is None)
         dpg.set_item_user_data(self.perform_test_button, data)
-        min_num_RC: int = 0 if data is None else 2
-        max_num_RC: int = 9999 if data is None else data.get_num_points()
-        num_RC: int = dpg.get_value(self.num_RC_slider)
-        if num_RC > max_num_RC:
-            num_RC = max_num_RC
-        elif num_RC < min_num_RC:
-            num_RC = max_num_RC
-        dpg.configure_item(
-            self.num_RC_slider,
-            default_value=num_RC,
-            min_value=min_num_RC,
-            max_value=max_num_RC,
-        )
+        self.settings_menu.update_num_RC_slider(data)
         if data is None:
             return
         self.data_sets_combo.set(data.get_label())
@@ -1032,7 +1062,7 @@ class KramersKronigTab:
         }
         num_masked_exp: int = list(data.get_mask().values()).count(True)
         num_masked_test: int = list(test.mask.values()).count(True)
-        assert num_masked_exp == num_masked_test, f"The masks are different sizes!"
+        assert num_masked_exp == num_masked_test, "The masks are different sizes!"
         i: int
         for i in mask_test.keys():
             assert (
@@ -1089,7 +1119,9 @@ class KramersKronigTab:
             dpg.show_item(dpg.get_item_parent(self.validity_text))
         self.statistics_table.populate(test)
         self.settings_table.populate(
-            test, data, dpg.get_item_user_data(self.num_RC_label)
+            test,
+            data,
+            self.settings_menu.get_num_RC_labels(),
         )
         freq: ndarray
         real: ndarray
@@ -1179,4 +1211,4 @@ class KramersKronigTab:
         )
 
     def has_active_input(self) -> bool:
-        return dpg.is_item_active(self.max_nfev_input)
+        return self.settings_menu.has_active_input()

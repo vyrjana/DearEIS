@@ -46,21 +46,25 @@ See the API reference for `pyimpspec` for information more information about cla
                 deareis.mpl,
             ],
             minimal_classes=[
-                deareis.FittingError,
-                deareis.ParsingError,
-                deareis.UnexpectedCharacter,
+                # Connections
+                deareis.Parallel,
+                deareis.Series,
+                # Elements
                 deareis.Capacitor,
                 deareis.ConstantPhaseElement,
                 deareis.Gerischer,
                 deareis.HavriliakNegami,
                 deareis.Inductor,
-                deareis.Parallel,
                 deareis.Resistor,
-                deareis.Series,
                 deareis.Warburg,
                 deareis.WarburgOpen,
                 deareis.WarburgShort,
                 deareis.DeLevieFiniteLength,
+                # Exceptions
+                deareis.DRTError,
+                deareis.FittingError,
+                deareis.ParsingError,
+                deareis.UnexpectedCharacter,
             ],
             objects_to_ignore=[
                 deareis.Project.parse,
@@ -90,6 +94,7 @@ Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/e
 - [Project]({root_url}/project)
 - [Data set]({root_url}/data-set)
 - [Kramers-Kronig testing]({root_url}/kramers-kronig)
+- [Distribution of relaxation times]({root_url}/drt)
 - [Circuit]({root_url}/circuit)
 - [Elements]({root_url}/elements)
 - [Fitting]({root_url}/fitting)
@@ -194,7 +199,7 @@ The `parse_data` function is a wrapper for the corresponding function in pyimpsp
                 deareis.Series,
                 deareis.ParsingError,
                 deareis.UnexpectedCharacter,
-                deareis.string_to_circuit,
+                deareis.parse_cdc,
             ],
             description="",
         ),
@@ -241,6 +246,24 @@ The `parse_data` function is a wrapper for the corresponding function in pyimpsp
             ],
             minimal_classes=[
                 deareis.PlotType,
+            ],
+            description="",
+        ),
+    )
+    # DRT results
+    write_file(
+        join(root_folder, "drt.md"),
+        jekyll_header("drt", "drt")
+        + process(
+            title="",
+            modules_to_document=[
+                deareis.api.drt,
+            ],
+            objects_to_ignore=[
+                deareis.DataSet,
+            ],
+            minimal_classes=[
+                deareis.DRTError,
             ],
             description="",
         ),

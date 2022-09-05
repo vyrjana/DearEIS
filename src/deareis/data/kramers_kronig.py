@@ -26,6 +26,7 @@ from typing import (
 from numpy import (
     angle,
     array,
+    inf,
     integer,
     issubdtype,
     log10 as log,
@@ -36,8 +37,8 @@ from pyimpspec import Circuit
 from deareis.data.data_sets import DataSet
 from pyimpspec.analysis.fitting import _interpolate
 from deareis.enums import (
-    Method,
-    Mode,
+    CNLSMethod,
+    TestMode,
     Test,
 )
 from deareis.utility import format_timestamp
@@ -50,12 +51,12 @@ def _parse_settings_v1(dictionary: dict) -> dict:
     assert type(dictionary) is dict
     return {
         "test": Test(dictionary["test"]),
-        "mode": Mode(dictionary["mode"]),
+        "mode": TestMode(dictionary["mode"]),
         "num_RC": dictionary["num_RC"],
         "mu_criterion": dictionary["mu_criterion"],
         "add_capacitance": dictionary["add_capacitance"],
         "add_inductance": dictionary["add_inductance"],
-        "method": Method(dictionary["method"]),
+        "method": CNLSMethod(dictionary["method"]),
         "max_nfev": dictionary["max_nfev"],
     }
 
@@ -71,7 +72,7 @@ class TestSettings:
         The type of test to perform: complex, real, imaginary, or CNLS.
         See pyimpspec and its documentation for details about the different types of tests.
 
-    mode: Mode
+    mode: TestMode
         How to perform the test: automatic, exploratory, or manual.
         The automatic mode uses the procedure described by Schönleber et al. (2014) to determine a suitable number of parallel RC circuits connected in series.
         The exploratory mode is similar to the automatic mode except the user is allowed to choose which of the results to accept and the initial suggestion has additional weighting applied to it in an effort to reduce false negatives that would lead to the conclusion that the data is invalid.
@@ -89,7 +90,7 @@ class TestSettings:
     add_inductance: bool
         Add an inductance in series to the Voigt circuit.
 
-    method: Method
+    method: CNLSMethod
         The iterative method to use if the CNLS test is chosen.
 
     max_nfev: int
@@ -97,12 +98,12 @@ class TestSettings:
     """
 
     test: Test
-    mode: Mode
+    mode: TestMode
     num_RC: int
     mu_criterion: float
     add_capacitance: bool
     add_inductance: bool
-    method: Method
+    method: CNLSMethod
     max_nfev: int
 
     def __repr__(self) -> str:
@@ -153,7 +154,7 @@ def _parse_result_v1(dictionary: dict) -> dict:
     return {
         "uuid": dictionary["uuid"],
         "timestamp": dictionary["timestamp"],
-        "circuit": pyimpspec.string_to_circuit(dictionary["circuit"]),
+        "circuit": pyimpspec.parse_cdc(dictionary["circuit"]),
         "num_RC": dictionary["num_RC"],
         "mu": dictionary["mu"],
         "pseudo_chisqr": dictionary["pseudo_chisqr"],
@@ -263,7 +264,7 @@ class TestResult:
             "real_impedance" not in dictionary
             or "imaginary_impedance" not in dictionary
         ):
-            Z: ndarray = pyimpspec.string_to_circuit(dictionary["circuit"]).impedances(
+            Z: ndarray = pyimpspec.parse_cdc(dictionary["circuit"]).impedances(
                 dictionary["frequency"]
             )
             dictionary["real_impedance"] = list(Z.real)
@@ -301,7 +302,13 @@ class TestResult:
         """
         Generate a label for the result.
         """
-        return format_timestamp(self.timestamp)
+        circuit: str = f"R(RC){self.num_RC}"
+        if self.settings.add_capacitance:
+            circuit += "C"
+        if self.settings.add_inductance:
+            circuit += "L"
+        timestamp: str = format_timestamp(self.timestamp)
+        return f"{circuit} ({timestamp})"
 
     def get_frequency(self, num_per_decade: int = -1) -> ndarray:
         """
@@ -366,7 +373,7 @@ class TestResult:
         self, num_per_decade: int = -1
     ) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+        Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
 
         Parameters
         ----------
@@ -378,22 +385,43 @@ class TestResult:
             freq: ndarray = self.get_frequency(num_per_decade)
             Z: ndarray = self.get_impedance(num_per_decade)
             return (
-                log(freq),
-                log(abs(Z)),
+                freq,
+                abs(Z),
                 -angle(Z, deg=True),
             )
         return (
-            log(self.frequency),
-            log(abs(self.impedance)),
+            self.frequency,
+            abs(self.impedance),
             -angle(self.impedance, deg=True),
         )
 
     def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
         """
-        Get the data required to plot the residuals (real and imaginary vs log f).
+        Get the data required to plot the residuals (real and imaginary vs f).
         """
         return (
-            log(self.frequency),
+            self.frequency,
             self.real_residual * 100,
             self.imaginary_residual * 100,
+        )
+
+    def calculate_score(self, mu_criterion: float) -> float:
+        """
+        Calculate a score based on the provided mu-criterion and the statistics of the result.
+        A result with a mu-value greater than or equal to the mu-criterion will get a score of -numpy.inf.
+
+        Parameters
+        ----------
+        mu_criterion: float
+            The mu-criterion to apply.
+            See perform_test for details.
+
+        Returns
+        -------
+        float
+        """
+        return (
+            -inf
+            if self.mu >= mu_criterion
+            else -log(self.pseudo_chisqr) / (abs(mu_criterion - self.mu) ** 0.75)
         )

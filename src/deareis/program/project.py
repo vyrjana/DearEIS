@@ -361,4 +361,4 @@ def close_project(*args, **kwargs):
             key=dpg.mvKey_Escape,
             callback=close,
         )
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)

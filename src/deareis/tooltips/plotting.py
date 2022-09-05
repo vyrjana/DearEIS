@@ -31,6 +31,9 @@ The label assigned to this data set in the 'Data sets' tab.
         "test_checkbox": """
 Whether or not this test result is included in the plot.
     """.strip(),
+        "drt_checkbox": """
+Whether or not this DRT analysis result is included in the plot.
+    """.strip(),
         "fit_checkbox": """
 Whether or not this fit result is included in the plot.
     """.strip(),
@@ -146,12 +149,12 @@ The number of points per decade in lines.
         "export_extension": """
 The default extension to use when exporting a plot.
     """.strip(),
-        "export_experimental_clear_registry": """
+        "clear_registry": """
 NOTE! Clearing the texture registry can cause DearEIS to crash on some systems. The cause is not known for certain at the moment but it may be a bug in the GUI framework and/or a certain GPU driver.
 
 If enabled, then the texture registry is cleared to free memory. Disabling will cause memory to not be freed until DearEIS is closed, which may be an issue if a lot of plot previews are generated during a single session.
     """.strip(),
-        "export_experimental_disable_previews": """
+        "disable_preview": """
 NOTE! If the texture registry is not allowed to be cleared, then DearEIS will not be able to free the memory used by the generated plot previews. The plot previews can be disabled completely with this setting to avoid such a memory leak.
     """.strip(),
     }

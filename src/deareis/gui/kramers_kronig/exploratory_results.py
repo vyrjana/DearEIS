@@ -29,10 +29,11 @@ from numpy import (
     log10 as log,
     ndarray,
 )
-from pyimpspec import KramersKronigResult
-import pyimpspec
 from deareis.data import DataSet
-from deareis.data.kramers_kronig import TestSettings
+from deareis.data.kramers_kronig import (
+    TestResult,
+    TestSettings,
+)
 from deareis.signals import Signal
 from deareis.tooltips import attach_tooltip
 from deareis.utility import calculate_window_position_dimensions
@@ -56,7 +57,7 @@ class ExploratoryResults:
     def __init__(
         self,
         data: DataSet,
-        results: List[KramersKronigResult],
+        results: List[TestResult],
         settings: TestSettings,
         num_RCs: ndarray,
         callback: Callable,
@@ -64,7 +65,7 @@ class ExploratoryResults:
     ):
         assert type(data) is DataSet
         assert type(results) is list and all(
-            map(lambda _: type(_) is KramersKronigResult, results)
+            map(lambda _: type(_) is TestResult, results)
         )
         assert type(settings) is TestSettings
         assert type(num_RCs) is ndarray
@@ -82,17 +83,15 @@ class ExploratoryResults:
         self._assemble()
         self._setup_keybindings()
         self.data: DataSet = data
-        results.sort(key=lambda _: _.num_RC)
-        self.results: List[KramersKronigResult] = results
+        self.results: List[TestResult] = results
         self.settings: TestSettings = settings
         self.num_RCs: ndarray = num_RCs
         self.mu_crit: float = settings.mu_criterion
-        default_result: KramersKronigResult = pyimpspec.score_test_results(
-            results, self.mu_crit
-        )[0][1]
+        default_result: TestResult = results[0]
+        results.sort(key=lambda _: _.num_RC)
         default_label: str = ""
-        self.label_to_result: Dict[str, KramersKronigResult] = {}
-        result: KramersKronigResult
+        self.label_to_result: Dict[str, TestResult] = {}
+        result: TestResult
         for result in results:
             label: str = (
                 f"{result.num_RC}: µ = {result.mu:.3f}, "
@@ -270,7 +269,7 @@ class ExploratoryResults:
         self.nyquist_plot.clear(delete=False)
         self.bode_plot.clear(delete=False)
         # Retrieve the chosen result
-        result: KramersKronigResult = self.label_to_result[label]
+        result: TestResult = self.label_to_result[label]
         dpg.set_item_user_data(self.accept_button, result)
         # Mu-Xps vs num RC
         self.mu_xps_plot.update(
@@ -378,7 +377,7 @@ class ExploratoryResults:
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         signals.unregister(Signal.VIEWPORT_RESIZED, self.resize)
 
-    def accept(self, result: KramersKronigResult, keybinding: bool = False):
+    def accept(self, result: TestResult, keybinding: bool = False):
         if keybinding is True and not (
             is_control_down()
             if dpg.get_platform() == dpg.mvPlatform_Windows

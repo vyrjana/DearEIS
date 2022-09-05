@@ -47,4 +47,5 @@ jobs:
 
     - name: Run API tests
       working-directory: ./tests
-      run: python -m unittest discover .
+      timeout-minutes: 30
+      run: python -m unittest discover . -v

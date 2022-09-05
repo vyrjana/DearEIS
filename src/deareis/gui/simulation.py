@@ -17,7 +17,14 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 from numpy import array, ndarray
 import pyimpspec
 from pyimpspec import (
@@ -39,8 +46,8 @@ import deareis.tooltips as tooltips
 from deareis.gui.plots import Bode, Nyquist
 from deareis.enums import (
     Context,
-    Output,
-    label_to_output,
+    FitSimOutput,
+    label_to_fit_sim_output,
 )
 from deareis.gui.circuit_editor import CircuitPreview, CircuitEditor
 from deareis.data import (
@@ -50,7 +57,165 @@ from deareis.data import (
 )
 
 
-LABEL_PAD: int = 23
+class SettingsMenu:
+    def __init__(
+        self,
+        default_settings: SimulationSettings,
+        label_pad: int,
+        circuit_editor: Optional[CircuitEditor] = None,
+    ):
+        self.circuit_editor: Optional[CircuitEditor] = circuit_editor
+        with dpg.group(horizontal=True):
+            dpg.add_text("Circuit".rjust(label_pad))
+            attach_tooltip(tooltips.simulation.cdc)
+            self.cdc_input: int = dpg.generate_uuid()
+            dpg.add_input_text(
+                width=-50 if circuit_editor is not None else -1,
+                tag=self.cdc_input,
+                on_enter=True,
+                callback=lambda s, a, u: self.parse_cdc(a, s),
+            )
+            self.cdc_tooltip: int = dpg.generate_uuid()
+            attach_tooltip("", tag=self.cdc_tooltip, parent=self.cdc_input)
+            dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
+            if circuit_editor is not None:
+                self.editor_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Edit",
+                    callback=self.show_circuit_editor,
+                    width=-1,
+                    tag=self.editor_button,
+                )
+                attach_tooltip(tooltips.general.open_circuit_editor)
+        with dpg.group(horizontal=True):
+            dpg.add_text("Maximum frequency".rjust(label_pad))
+            attach_tooltip(tooltips.simulation.max_freq)
+            self.max_freq_input: int = dpg.generate_uuid()
+            dpg.add_input_float(
+                label="Hz",
+                default_value=1e5,
+                min_value=1e-20,
+                max_value=1e20,
+                min_clamped=True,
+                max_clamped=True,
+                on_enter=True,
+                format="%.3g",
+                step=0.0,
+                width=-18,
+                tag=self.max_freq_input,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Minimum frequency".rjust(label_pad))
+            attach_tooltip(tooltips.simulation.min_freq)
+            self.min_freq_input: int = dpg.generate_uuid()
+            dpg.add_input_float(
+                label="Hz",
+                default_value=1e-2,
+                min_value=1e-20,
+                max_value=1e20,
+                min_clamped=True,
+                max_clamped=True,
+                on_enter=True,
+                format="%.3g",
+                step=0.0,
+                width=-18,
+                tag=self.min_freq_input,
+            )
+        with dpg.group(horizontal=True):
+            dpg.add_text("Num. points per decade".rjust(label_pad))
+            attach_tooltip(tooltips.simulation.per_decade)
+            self.per_decade_input: int = dpg.generate_uuid()
+            dpg.add_input_int(
+                default_value=10,
+                min_value=1,
+                min_clamped=True,
+                step=0,
+                on_enter=True,
+                tag=self.per_decade_input,
+                width=-1,
+            )
+        self.set_settings(default_settings)
+
+    def get_settings(self) -> SimulationSettings:
+        cdc: str = dpg.get_value(self.cdc_input) or ""
+        circuit: Optional[Circuit] = dpg.get_item_user_data(self.cdc_input)
+        if circuit is None or cdc != circuit.to_string():
+            circuit = self.parse_cdc(cdc, self.cdc_input)
+        min_f: float = dpg.get_value(self.min_freq_input)
+        max_f: float = dpg.get_value(self.max_freq_input)
+        if min_f > max_f:
+            max_f = min_f
+            min_f = dpg.get_value(self.max_freq_input)
+            dpg.set_value(self.min_freq_input, min_f)
+            dpg.set_value(self.max_freq_input, max_f)
+        return SimulationSettings(
+            cdc=circuit.to_string(12) if circuit is not None else "",
+            min_frequency=min_f,
+            max_frequency=max_f,
+            num_per_decade=dpg.get_value(self.per_decade_input),
+        )
+
+    def set_settings(self, settings: SimulationSettings):
+        assert type(settings) is SimulationSettings, settings
+        self.parse_cdc(settings.cdc)
+        dpg.set_value(self.min_freq_input, settings.min_frequency)
+        dpg.set_value(self.max_freq_input, settings.max_frequency)
+        dpg.set_value(self.per_decade_input, settings.num_per_decade)
+
+    def parse_cdc(self, cdc: str, sender: int = -1) -> Optional[Circuit]:
+        assert type(cdc) is str, cdc
+        assert type(sender) is int, sender
+        try:
+            circuit: Circuit = pyimpspec.parse_cdc(cdc)
+        except (pyimpspec.ParsingError, pyimpspec.UnexpectedCharacter) as err:
+            dpg.bind_item_theme(self.cdc_input, themes.cdc.invalid)
+            update_tooltip(self.cdc_tooltip, str(err))
+            dpg.show_item(dpg.get_item_parent(self.cdc_tooltip))
+            dpg.set_item_user_data(self.cdc_input, None)
+            return None
+        dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
+        dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
+        dpg.set_item_user_data(self.cdc_input, circuit)
+        if sender != self.cdc_input:
+            dpg.set_value(self.cdc_input, circuit.to_string())
+        return circuit
+
+    def show_circuit_editor(self):
+        if self.circuit_editor is None:
+            return
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions()
+        dpg.configure_item(
+            self.circuit_editor.window,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+        )
+        circuit: Optional[Circuit] = None
+        try:
+            circuit = pyimpspec.parse_cdc(self.get_settings().cdc)
+        except pyimpspec.ParsingError:
+            pass
+        signals.emit(
+            Signal.BLOCK_KEYBINDINGS,
+            window=self.circuit_editor.window,
+            window_object=self.circuit_editor,
+        )
+        self.circuit_editor.show(circuit)
+
+    def has_active_input(self) -> bool:
+        return (
+            dpg.is_item_active(self.cdc_input)
+            or dpg.is_item_active(self.max_freq_input)
+            or dpg.is_item_active(self.min_freq_input)
+            or dpg.is_item_active(self.per_decade_input)
+        )
 
 
 class ParametersTable:
@@ -102,7 +267,6 @@ class ParametersTable:
                 dpg.add_text("".ljust(column_pads[1]))
                 dpg.add_text("".ljust(column_pads[2]))
             return
-        element_classes: Dict[str, Type[Element]] = pyimpspec.get_elements()
         element_labels: List[str] = []
         element_tooltips: List[str] = []
         parameter_labels: List[str] = []
@@ -152,6 +316,7 @@ class ParametersTable:
 
 class SettingsTable:
     def __init__(self):
+        label_pad: int = 23
         self._header: int = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Settings", leaf=True, tag=self._header):
             self._table: int = dpg.generate_uuid()
@@ -166,7 +331,7 @@ class SettingsTable:
                 tag=self._table,
             ):
                 dpg.add_table_column(
-                    label="Label".rjust(LABEL_PAD),
+                    label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
                 dpg.add_table_column(
@@ -181,7 +346,7 @@ class SettingsTable:
                     "Points per decade",
                 ]:
                     with dpg.table_row():
-                        dpg.add_text(label.rjust(LABEL_PAD))
+                        dpg.add_text(label.rjust(label_pad))
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
@@ -217,7 +382,7 @@ class SettingsTable:
             rows,
             cells,
         )
-        circuit: Circuit = pyimpspec.string_to_circuit(settings.cdc)
+        circuit: Circuit = pyimpspec.parse_cdc(settings.cdc)
         tag: int
         value: str
         for (row, tag, value) in [
@@ -404,94 +569,27 @@ class SimulationTab:
                     width=self.sidebar_width,
                     tag=self.sidebar_window,
                 ):
-                    # TODO: Separate class for settings?
                     # Settings
                     with dpg.child_window(
                         border=True, width=-1, height=settings_height
                     ):
+                        self.circuit_editor: CircuitEditor = CircuitEditor(
+                            window=dpg.add_window(
+                                label="Circuit editor",
+                                show=False,
+                                modal=True,
+                                on_close=lambda s, a, u: self.accept_circuit(None),
+                            ),
+                            callback=self.accept_circuit,
+                        )
+                        self.settings_menu: SettingsMenu = SettingsMenu(
+                            state.config.default_simulation_settings,
+                            label_pad,
+                            circuit_editor=self.circuit_editor,
+                        )
                         with dpg.group(horizontal=True):
                             self.visibility_item: int = dpg.generate_uuid()
-                            dpg.add_text(
-                                "Circuit".rjust(label_pad), tag=self.visibility_item
-                            )
-                            attach_tooltip(tooltips.simulation.cdc)
-                            self.cdc_input: int = dpg.generate_uuid()
-                            dpg.add_input_text(
-                                width=-50,
-                                tag=self.cdc_input,
-                                on_enter=True,
-                            )
-                            self.cdc_tooltip: int = dpg.generate_uuid()
-                            attach_tooltip(
-                                "", tag=self.cdc_tooltip, parent=self.cdc_input
-                            )
-                            dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
-                            self.circuit_editor: CircuitEditor = CircuitEditor(
-                                window=dpg.add_window(
-                                    label="Circuit editor",
-                                    show=False,
-                                    modal=True,
-                                    on_close=lambda s, a, u: self.accept_circuit(None),
-                                ),
-                                callback=self.accept_circuit,
-                            )
-                            self.editor_button: int = dpg.generate_uuid()
-                            dpg.add_button(
-                                label="Edit",
-                                callback=self.show_circuit_editor,
-                                width=-1,
-                                tag=self.editor_button,
-                            )
-                            attach_tooltip(tooltips.general.open_circuit_editor)
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Maximum frequency".rjust(label_pad))
-                            attach_tooltip(tooltips.simulation.max_freq)
-                            self.max_freq_input: int = dpg.generate_uuid()
-                            dpg.add_input_float(
-                                label="Hz",
-                                default_value=1e5,
-                                min_value=1e-20,
-                                max_value=1e20,
-                                min_clamped=True,
-                                max_clamped=True,
-                                on_enter=True,
-                                format="%.3E",
-                                step=0.0,
-                                width=-18,
-                                tag=self.max_freq_input,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Minimum frequency".rjust(label_pad))
-                            attach_tooltip(tooltips.simulation.min_freq)
-                            self.min_freq_input: int = dpg.generate_uuid()
-                            dpg.add_input_float(
-                                label="Hz",
-                                default_value=1e-2,
-                                min_value=1e-20,
-                                max_value=1e20,
-                                min_clamped=True,
-                                max_clamped=True,
-                                on_enter=True,
-                                format="%.3E",
-                                step=0.0,
-                                width=-18,
-                                tag=self.min_freq_input,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Num. points per decade".rjust(label_pad))
-                            attach_tooltip(tooltips.simulation.per_decade)
-                            self.per_decade_input: int = dpg.generate_uuid()
-                            dpg.add_input_int(
-                                default_value=10,
-                                min_value=1,
-                                min_clamped=True,
-                                step=0,
-                                on_enter=True,
-                                tag=self.per_decade_input,
-                                width=-1,
-                            )
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("".rjust(label_pad))
+                            dpg.add_text("".rjust(label_pad), tag=self.visibility_item)
                             self.perform_sim_button: int = dpg.generate_uuid()
                             dpg.add_button(
                                 label="Perform simulation",
@@ -541,8 +639,8 @@ class SimulationTab:
                             # TODO: Split into combo class?
                             self.output_combo: int = dpg.generate_uuid()
                             dpg.add_combo(
-                                items=list(label_to_output.keys()),
-                                default_value=list(label_to_output.keys())[0],
+                                items=list(label_to_fit_sim_output.keys()),
+                                default_value=list(label_to_fit_sim_output.keys())[0],
                                 tag=self.output_combo,
                                 width=-60,
                             )
@@ -799,30 +897,10 @@ class SimulationTab:
         return dpg.is_item_visible(self.visibility_item)
 
     def get_settings(self) -> SimulationSettings:
-        cdc: str = dpg.get_value(self.cdc_input) or ""
-        circuit: Optional[Circuit] = dpg.get_item_user_data(self.cdc_input)
-        if circuit is None or cdc != circuit.to_string():
-            circuit = self.parse_cdc(cdc, self.cdc_input)
-        min_f: float = dpg.get_value(self.min_freq_input)
-        max_f: float = dpg.get_value(self.max_freq_input)
-        if min_f > max_f:
-            max_f = min_f
-            min_f = dpg.get_value(self.max_freq_input)
-            dpg.set_value(self.min_freq_input, min_f)
-            dpg.set_value(self.max_freq_input, max_f)
-        return SimulationSettings(
-            circuit.to_string(12) if circuit is not None else "",
-            min_f,
-            max_f,
-            dpg.get_value(self.per_decade_input),
-        )
+        return self.settings_menu.get_settings()
 
     def set_settings(self, settings: SimulationSettings):
-        assert type(settings) is SimulationSettings, settings
-        self.parse_cdc(settings.cdc)
-        dpg.set_value(self.min_freq_input, settings.min_frequency)
-        dpg.set_value(self.max_freq_input, settings.max_frequency)
-        dpg.set_value(self.per_decade_input, settings.num_per_decade)
+        self.settings_menu.set_settings(settings)
 
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0
@@ -866,6 +944,15 @@ class SimulationTab:
         if not lookup:
             self.clear()
         self.results_combo.populate(lookup)
+        data: Optional[DataSet] = dpg.get_item_user_data(self.perform_sim_button)
+        if not self.results_combo.labels:
+            self.select_simulation_result(None, data)
+            return
+        signals.emit(
+            Signal.SELECT_SIMULATION_RESULT,
+            simulation=self.results_combo.get(),
+            data=data,
+        )
 
     def get_next_data_set(self) -> Optional[DataSet]:
         return self.data_sets_combo.get_next()
@@ -942,10 +1029,7 @@ class SimulationTab:
         self.results_combo.set(simulation.get_label())
         self.parameters_table.populate(simulation)
         self.settings_table.populate(simulation.settings)
-        window: int = dpg.add_window(show=False)
-        self.circuit_preview.update(
-            pyimpspec.string_to_circuit(simulation.settings.cdc)
-        )
+        self.circuit_preview.update(pyimpspec.parse_cdc(simulation.settings.cdc))
         real: ndarray
         imag: ndarray
         real, imag = simulation.get_nyquist_data()
@@ -1003,53 +1087,15 @@ class SimulationTab:
             self.bode_plot_horizontal.queue_limits_adjustment()
             self.bode_plot_vertical.queue_limits_adjustment()
 
-    def parse_cdc(self, cdc: str, sender: int = -1) -> Optional[Circuit]:
-        assert type(cdc) is str, cdc
-        assert type(sender) is int, sender
-        try:
-            circuit: Circuit = pyimpspec.string_to_circuit(cdc)
-        except (pyimpspec.ParsingError, pyimpspec.UnexpectedCharacter) as err:
-            dpg.bind_item_theme(self.cdc_input, themes.cdc.invalid)
-            update_tooltip(self.cdc_tooltip, str(err))
-            dpg.show_item(dpg.get_item_parent(self.cdc_tooltip))
-            dpg.set_item_user_data(self.cdc_input, None)
-            return None
-        dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
-        dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
-        dpg.set_item_user_data(self.cdc_input, circuit)
-        if sender != self.cdc_input:
-            dpg.set_value(self.cdc_input, circuit.to_string())
-        return circuit
-
     def show_circuit_editor(self):
-        x: int
-        y: int
-        w: int
-        h: int
-        x, y, w, h = calculate_window_position_dimensions()
-        dpg.configure_item(
-            self.circuit_editor.window,
-            pos=(
-                x,
-                y,
-            ),
-            width=w,
-            height=h,
-        )
-        circuit: Optional[Circuit] = None
-        try:
-            circuit = pyimpspec.string_to_circuit(self.get_settings().cdc)
-        except pyimpspec.ParsingError:
-            pass
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.circuit_editor.window)
-        self.circuit_editor.show(circuit)
+        self.settings_menu.show_circuit_editor()
 
     def accept_circuit(self, circuit: Optional[Circuit]):
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         self.circuit_editor.hide()
         if circuit is None:
             return
-        self.parse_cdc(circuit.to_string(12))
+        self.settings_menu.parse_cdc(circuit.to_string(12))
 
     def show_enlarged_nyquist(self):
         signals.emit(
@@ -1065,13 +1111,8 @@ class SimulationTab:
             adjust_limits=dpg.get_value(self.adjust_bode_limits_horizontal_checkbox),
         )
 
-    def get_active_output(self) -> Optional[Output]:
-        return label_to_output.get(dpg.get_value(self.output_combo))
+    def get_active_output(self) -> Optional[FitSimOutput]:
+        return label_to_fit_sim_output.get(dpg.get_value(self.output_combo))
 
     def has_active_input(self) -> bool:
-        return (
-            dpg.is_item_active(self.cdc_input)
-            or dpg.is_item_active(self.max_freq_input)
-            or dpg.is_item_active(self.min_freq_input)
-            or dpg.is_item_active(self.per_decade_input)
-        )
+        return self.settings_menu.has_active_input()

@@ -25,6 +25,8 @@ import dearpygui.dearpygui as dpg
 from numpy import (
     array,
     ceil,
+    floor,
+    log10 as log,
     ndarray,
 )
 import deareis.themes as themes
@@ -48,15 +50,26 @@ class Residuals(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(dpg.mvXAxis, label="log f")
-            self._y_axis_1: int = dpg.add_plot_axis(dpg.mvYAxis, label="Z' error (%)")
-            self._y_axis_2: int = dpg.add_plot_axis(dpg.mvYAxis, label='Z" error (%)')
+            self._x_axis: int = dpg.add_plot_axis(
+                dpg.mvXAxis,
+                label="f (Hz)",
+                log_scale=True,
+                no_gridlines=True,
+            )
+            self._y_axis_1: int = dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label="Z' error (%)",
+            )
+            self._y_axis_2: int = dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label='Z" error (%)',
+            )
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
     @classmethod
-    def duplicate(Class, original: "Residuals", *args, **kwargs) -> "Residuals":
-        copy: "Residuals" = Class(*args, **kwargs)
+    def duplicate(Class, original, *args, **kwargs) -> Plot:
+        copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
         return copy
@@ -214,10 +227,19 @@ class Residuals(Plot):
             n: int = 5
             error_lim = ceil(error_lim / n) * n + n
         dpg.split_frame()
+        min_x: float = min(freq) if freq.any() else 0.5
+        max_x: float = max(freq) if freq.any() else 1.0
+        if min_x == 0.0:
+            min_x = 1e-1
+        dx: float = 0.1
         dpg.set_axis_limits(
             self._x_axis,
-            ymin=min(freq) - 0.1 if (freq is not None and freq.any()) else 0,
-            ymax=max(freq) + 0.1 if (freq is not None and freq.any()) else 1,
+            ymin=10 ** (floor(log(min_x) / dx) * dx - dx)
+            if (freq is not None and freq.any())
+            else 0,
+            ymax=10 ** (ceil(log(max_x) / dx) * dx + dx)
+            if (freq is not None and freq.any())
+            else 1,
         )
         dpg.set_axis_limits(self._y_axis_1, ymin=-error_lim, ymax=error_lim)
         dpg.set_axis_limits(self._y_axis_2, ymin=-error_lim, ymax=error_lim)
@@ -225,7 +247,7 @@ class Residuals(Plot):
         dpg.set_axis_limits_auto(self._y_axis_1)
         dpg.set_axis_limits_auto(self._y_axis_2)
 
-    def copy_limits(self, other: "Residuals"):
+    def copy_limits(self, other: Plot):
         src: int
         dst: int
         for src, dst in zip(

@@ -27,9 +27,12 @@ from typing import (
 )
 from uuid import uuid4
 import dearpygui.dearpygui as dpg
-from deareis.enums import PlotType
+from deareis.enums import (
+    PlotType,
+)
 from deareis.data import (
     DataSet,
+    DRTResult,
     FitResult,
     PlotSettings,
     Project,
@@ -39,7 +42,6 @@ from deareis.data import (
 from deareis.gui import ProjectTab
 from deareis.gui.file_dialog import FileDialog
 from deareis.gui.plotting.copy_appearance import CopyPlotAppearance
-from deareis.gui.plotting.export import EXTENSIONS
 from deareis.signals import Signal
 from deareis.state import STATE
 from deareis.themes import get_random_color_marker
@@ -206,6 +208,7 @@ def modify_plot_series_theme(*args, **kwargs):
             settings,
             project.get_data_sets(),
             project.get_all_tests(),
+            project.get_all_drts(),
             project.get_all_fits(),
             project.get_simulations(),
         )
@@ -223,6 +226,7 @@ def modify_plot_series_theme(*args, **kwargs):
             settings,
             project.get_data_sets(),
             project.get_all_tests(),
+            project.get_all_drts(),
             project.get_all_fits(),
             project.get_simulations(),
         )
@@ -284,7 +288,7 @@ def modify_plot_series_theme(*args, **kwargs):
             key=dpg.mvKey_Escape,
             callback=accept_plot_series_theme,
         )
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window)
+    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
 
 def export_plot(*args, **kwargs):
@@ -316,8 +320,8 @@ def save_plot(*args, **kwargs):
         cwd=STATE.latest_plot_directory,
         label="Select file path",
         callback=lambda *a, **k: save(*a, **k),
-        default_extension=EXTENSIONS[STATE.config.export_extension],
-        extensions=EXTENSIONS,
+        default_extension=kwargs["default_extension"],
+        extensions=kwargs["extensions"],
         save=True,
     )
 
@@ -383,6 +387,7 @@ def select_plot_settings(*args, **kwargs):
         settings,
         project.get_data_sets(),
         project.get_all_tests(),
+        project.get_all_drts(),
         project.get_all_fits(),
         project.get_simulations(),
         adjust_limits=kwargs.get("adjust_limits", True),
@@ -422,6 +427,7 @@ def toggle_plot_series(*args, **kwargs):
     enabled: bool = kwargs.get("enabled", False)
     data_sets: Optional[List[DataSet]] = kwargs.get("data_sets")
     tests: Optional[List[TestResult]] = kwargs.get("tests")
+    drts: Optional[List[DRTResult]] = kwargs.get("drts")
     fits: Optional[List[FitResult]] = kwargs.get("fits")
     simulations: Optional[List[SimulationResult]] = kwargs.get("simulations")
     if data_sets is not None:
@@ -434,6 +440,11 @@ def toggle_plot_series(*args, **kwargs):
             list(map(settings.add_series, tests))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), tests))
+    if drts is not None:
+        if enabled:
+            list(map(settings.add_series, drts))
+        else:
+            list(map(lambda _: settings.remove_series(_.uuid), drts))
     if fits is not None:
         if enabled:
             list(map(settings.add_series, fits))
@@ -457,6 +468,7 @@ def delete_plot_settings(*args, **kwargs):
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting plot")
     project.delete_plot(settings)
     plots: List[PlotSettings] = project.get_plots()
     if not plots:
@@ -465,3 +477,4 @@ def delete_plot_settings(*args, **kwargs):
         project_tab.populate_plots(project)
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=plots[0])
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)

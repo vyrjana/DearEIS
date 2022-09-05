@@ -105,6 +105,7 @@ class SubtractImpedance:
                                     label="ohm,",
                                     default_value=0.0,
                                     step=0.0,
+                                    format="%.3g",
                                     on_enter=True,
                                     width=100,
                                     tag=self.constant_real,
@@ -116,6 +117,7 @@ class SubtractImpedance:
                                     label="ohm",
                                     default_value=0.0,
                                     step=0.0,
+                                    format="%.3g",
                                     on_enter=True,
                                     width=100,
                                     tag=self.constant_imag,
@@ -268,14 +270,13 @@ class SubtractImpedance:
         Z: ndarray = self.data.get_impedance(masked=None)
         if index == 0:
             Z_const: complex = complex(
-                dpg.get_value(self.constant_real), -dpg.get_value(self.constant_imag)
+                dpg.get_value(self.constant_real),
+                -dpg.get_value(self.constant_imag),
             )
             Z = Z - Z_const
         elif index == 1:
             try:
-                circuit: Circuit = pyimpspec.string_to_circuit(
-                    dpg.get_value(self.circuit_cdc)
-                )
+                circuit: Circuit = pyimpspec.parse_cdc(dpg.get_value(self.circuit_cdc))
             except Exception as e:
                 # print(e)
                 return
@@ -329,9 +330,7 @@ class SubtractImpedance:
         dpg.hide_item(self.preview_window)
         circuit: Optional[Circuit] = None
         try:
-            circuit = pyimpspec.string_to_circuit(
-                dpg.get_value(self.circuit_cdc) or "[]"
-            )
+            circuit = pyimpspec.parse_cdc(dpg.get_value(self.circuit_cdc) or "[]")
         except ParsingError:
             pass
         self.circuit_editor.show(circuit)

@@ -3,10 +3,20 @@
 - License: GPL
 - Dependency via *pyimpspec*
 
+# cvxopt
+- https://github.com/cvxopt/cvxopt
+- License: GPLv3 or later
+- Dependency via *pyimpspec*.
+
 # Dear PyGui
 - https://github.com/hoffstadt/DearPyGui
 - License: MIT
 - Dependency.
+
+# DRT-python-code
+- https://github.com/akulikovsky/DRT-python-code
+- License: GPLv3 or later
+- *pyimpspec* copied/ported code to implement calculation of the distribution of relaxation times (DRT).
 
 # Elchemea Analytical
 - https://www.elchemea.com/
@@ -53,12 +63,22 @@
 - License: GPLv3 or later
 - Dependency.
 
+# pyDRTtools
+- https://github.com/ciuccislab/pyDRTtools
+- License: MIT
+- *pyimpspec* copied/ported code to implement calculation of the distribution of relaxation times (DRT).
+
 # requests
 - https://github.com/psf/requests
 - License: Apache License v2.0
 - Dependency.
 
-# sympy
+# SciPy
+- https://github.com/scipy/scipy
+- License: BSD 3-clause
+- Dependency via *pyimpspec*.
+
+# SymPy
 - https://github.com/sympy/sympy
 - License: BSD 3-clause
 - Dependency.

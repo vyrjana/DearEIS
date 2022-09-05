@@ -44,6 +44,7 @@ TEST_PROJECT_PATHS: List[str] = list(
             "example-project-v1.json",
             "example-project-v2.json",
             "example-project-v3.json",
+            "example-project-v4.json",
         ],
     )
 )
@@ -58,6 +59,9 @@ TEST_DATA_PATHS: List[str] = list(
         ],
     )
 )
+
+
+# TODO: Refactor tests
 
 
 class TestUtility(TestCase):
@@ -81,7 +85,7 @@ class TestUtility(TestCase):
     def test_03_label(self):
         project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
         old_label: str = project.get_label()
-        self.assertEqual(old_label, "Example project - Version 3")
+        self.assertEqual(old_label, "Example project - Version 4")
         new_label: str = "Test label"
         project.set_label(new_label)
         self.assertEqual(project.get_label(), new_label)
@@ -91,7 +95,7 @@ class TestUtility(TestCase):
     def test_04_path(self):
         project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
         old_path: str = project.get_path()
-        self.assertTrue(old_path.endswith("example-project-v3.json"))
+        self.assertTrue(old_path.endswith("example-project-v4.json"))
         new_path: str = "Testing"
         project.set_path(new_path)
         self.assertEqual(project.get_path(), new_path)
@@ -216,24 +220,24 @@ class TestUtility(TestCase):
         project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
         plots: List[PlotSettings] = project.get_plots()
         self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 3)
+        self.assertEqual(len(plots), 5)
         self.assertTrue(all(map(lambda _: type(_) is PlotSettings, plots)))
         new_label: str = "Test"
         project.edit_plot_label(plots[0], new_label)
         plots = project.get_plots()
-        plot: PlotSettings = plots[2]
+        plot: PlotSettings = plots[4]
         self.assertEqual(plot.get_label(), new_label)
         project.delete_plot(plot)
         plots = project.get_plots()
-        self.assertEqual(len(plots), 2)
+        self.assertEqual(len(plots), 4)
         self.assertTrue(not any(map(lambda _: _.get_label() == new_label, plots)))
         project.add_plot(plot)
         plots = project.get_plots()
-        self.assertEqual(len(plots), 3)
-        self.assertEqual(plots[2].get_label(), new_label)
+        self.assertEqual(len(plots), 5)
+        self.assertEqual(plots[4].get_label(), new_label)
         series: List[PlotSeries] = project.get_plot_series(plot)
         self.assertEqual(type(series), list)
-        self.assertEqual(len(series), 8)
+        self.assertEqual(len(series), 16)
         self.assertTrue(all(map(lambda _: type(_) is PlotSeries, series)))
 
     def test_11_version_1(self):
@@ -320,48 +324,21 @@ class TestUtility(TestCase):
         plot_series: List[PlotSeries] = project.get_plot_series(plot)
         series: PlotSeries = plot_series[0]
         self.assertEqual(series.get_label(), "Ideal data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[1]
         self.assertEqual(series.get_label(), "Noisy data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[2]
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), True)
@@ -375,50 +352,25 @@ class TestUtility(TestCase):
         self.assertEqual(plot.get_type(), PlotType.NYQUIST)
         plot_series = project.get_plot_series(plot)
         series = plot_series[0]
-        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        label: str = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), False)
         self.assertEqual(series.has_line(), True)
         series = plot_series[1]
-        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        label = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), True)
         series = plot_series[2]
         self.assertEqual(series.get_label(), "Noisy data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
@@ -468,48 +420,21 @@ class TestUtility(TestCase):
         plot_series: List[PlotSeries] = project.get_plot_series(plot)
         series: PlotSeries = plot_series[0]
         self.assertEqual(series.get_label(), "Ideal data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[1]
         self.assertEqual(series.get_label(), "Noisy data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)
         series = plot_series[2]
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), True)
@@ -523,50 +448,121 @@ class TestUtility(TestCase):
         self.assertEqual(plot.get_type(), PlotType.NYQUIST)
         plot_series = project.get_plot_series(plot)
         series = plot_series[0]
-        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        label: str = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), False)
         self.assertEqual(series.has_line(), True)
         series = plot_series[1]
-        self.assertTrue(series.get_label().startswith("[R(RC)(RW)] ("))
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        label = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), True)
         series = plot_series[2]
         self.assertEqual(series.get_label(), "Noisy data")
-        self.assertEqual(type(series.get_scatter_data()), list)
-        self.assertEqual(len(series.get_scatter_data()), 2)
-        self.assertTrue(
-            all(
-                map(
-                    lambda _: type(_) is ndarray and len(_.shape) == 1,
-                    series.get_scatter_data(),
-                )
-            )
-        )
-        self.assertEqual(type(series.get_color()), list)
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), True)
+        self.assertEqual(series.has_line(), False)
+
+    def test_14_version_4(self):
+        # TODO: Add more detailed tests
+        path: str = TEST_PROJECT_PATHS[3]
+        project: Project = Project.from_file(path)
+        self.assertEqual(project.get_path(), path)
+        self.assertEqual(project.get_label(), "Example project - Version 4")
+        # - data sets
+        datasets: List[DataSet] = project.get_data_sets()
+        self.assertEqual(type(datasets), list)
+        self.assertEqual(len(datasets), 2)
+        self.assertTrue(all(map(lambda _: type(_) is DataSet, datasets)))
+        # - tests
+        tests: List[TestResult] = project.get_tests(datasets[0])
+        self.assertEqual(type(tests), list)
+        self.assertEqual(len(tests), 1)
+        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
+        tests = project.get_tests(datasets[1])
+        self.assertEqual(type(tests), list)
+        self.assertEqual(len(tests), 1)
+        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
+        # - fits
+        fits: List[FitResult] = project.get_fits(datasets[0])
+        self.assertEqual(type(fits), list)
+        self.assertEqual(len(fits), 1)
+        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
+        fits = project.get_fits(datasets[1])
+        self.assertEqual(type(fits), list)
+        self.assertEqual(len(fits), 1)
+        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
+        # - simulations
+        simulations: List[SimulationResult] = project.get_simulations()
+        self.assertEqual(type(simulations), list)
+        self.assertEqual(len(simulations), 2)
+        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, simulations)))
+        # - plots
+        plots: List[PlotSettings] = project.get_plots()
+        self.assertEqual(type(plots), list)
+        self.assertEqual(len(plots), 5)
+        #
+        plot: PlotSettings = plots[0]
+        self.assertEqual(plot.get_label(), "Appearance template")
+        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
+        plot_series: List[PlotSeries] = project.get_plot_series(plot)
+        series: PlotSeries = plot_series[0]
+        self.assertEqual(series.get_label(), "Ideal")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), True)
+        self.assertEqual(series.has_line(), False)
+        series = plot_series[1]
+        self.assertEqual(series.get_label(), "Noisy")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), True)
+        self.assertEqual(series.has_line(), False)
+        series = plot_series[2]
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), True)
+        self.assertEqual(series.has_line(), True)
+        #
+        plot = plots[1]
+        self.assertEqual(plot.get_label(), "Ideal")
+        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
+        #
+        plot = plots[3]
+        self.assertEqual(plot.get_label(), "Noisy")
+        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
+        plot_series = project.get_plot_series(plot)
+        series = plot_series[0]
+        label: str = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), False)
+        self.assertEqual(series.has_line(), True)
+        series = plot_series[1]
+        label = series.get_label()
+        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
+        self.assertEqual(len(series.get_color()), 4)
+        self.assertEqual(series.has_markers(), True)
+        self.assertEqual(series.has_line(), True)
+        series = plot_series[2]
+        self.assertEqual(series.get_label(), "Noisy data")
+        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
+        self.assertEqual(type(series.get_color()), tuple)
         self.assertEqual(len(series.get_color()), 4)
         self.assertEqual(series.has_markers(), True)
         self.assertEqual(series.has_line(), False)

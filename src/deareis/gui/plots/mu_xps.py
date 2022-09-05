@@ -17,9 +17,16 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import List, Optional
+from typing import (
+    List,
+    Optional,
+)
 import dearpygui.dearpygui as dpg
-from numpy import ceil, floor, ndarray
+from numpy import (
+    ceil,
+    floor,
+    ndarray,
+)
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 
@@ -42,18 +49,25 @@ class MuXps(Plot):
                 outside=kwargs.get("legend_outside", True),
             )
             self._x_axis: int = dpg.add_plot_axis(
-                dpg.mvXAxis, label="number of RC elements"
+                dpg.mvXAxis,
+                label="number of RC elements",
             )
-            self._y_axis_1: int = dpg.add_plot_axis(dpg.mvYAxis, label="µ")
+            self._y_axis_1: int = dpg.add_plot_axis(
+                dpg.mvYAxis,
+                label="µ",
+                no_gridlines=True,
+            )
             self._y_axis_2: int = dpg.add_plot_axis(
-                dpg.mvYAxis, label="log X² (pseudo)"
+                dpg.mvYAxis,
+                label="log X² (pseudo)",
+                no_gridlines=True,
             )
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
     @classmethod
-    def duplicate(Class, original: "MuXps", *args, **kwargs) -> "MuXps":
-        copy: "MuXps" = Class(*args, **kwargs)
+    def duplicate(Class, original: Plot, *args, **kwargs) -> Plot:
+        copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
         return copy
@@ -201,7 +215,7 @@ class MuXps(Plot):
         dpg.set_axis_limits(self._y_axis_1, ymin=-0.1, ymax=1.1)
         dpg.set_axis_limits(self._y_axis_2, ymin=min_Xps - 0.1, ymax=max_Xps + 0.1)
 
-    def copy_limits(self, other: "MuXps"):
+    def copy_limits(self, other: Plot):
         src: int
         dst: int
         for src, dst in zip(

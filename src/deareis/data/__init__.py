@@ -19,7 +19,23 @@
 
 from .data_sets import DataSet
 from .project import Project
-from .kramers_kronig import TestResult, TestSettings
-from .fitting import FitResult, FitSettings
-from .simulation import SimulationResult, SimulationSettings
-from .plotting import PlotSettings, PlotSeries
+from .kramers_kronig import (
+    TestResult,
+    TestSettings,
+)
+from .fitting import (
+    FitResult,
+    FitSettings,
+)
+from .simulation import (
+    SimulationResult,
+    SimulationSettings,
+)
+from .plotting import (
+    PlotSettings,
+    PlotSeries,
+)
+from .drt import (
+    DRTResult,
+    DRTSettings,
+)

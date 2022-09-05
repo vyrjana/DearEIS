@@ -19,15 +19,12 @@
 
 from math import floor
 from typing import (
-    Dict,
+    Callable,
     List,
     Optional,
     Tuple,
 )
 import dearpygui.dearpygui as dpg
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -36,6 +33,7 @@ from deareis.data import (
     PlotSettings,
     Project,
 )
+from deareis.data.plotting import PlotExportSettings
 from deareis.gui.plots import Image
 from deareis.signals import Signal
 from deareis.tooltips import (
@@ -52,49 +50,385 @@ from deareis.keybindings import (
     is_control_down,
 )
 from deareis.config import Config
+from deareis.enums import (
+    PLOT_EXTENSIONS,
+    PlotPreviewLimit,
+    plot_legend_location_to_label,
+    label_to_plot_legend_location,
+    plot_units_to_label,
+    plot_units_per_inch,
+    plot_preview_limit_to_label,
+    label_to_plot_preview_limit,
+    label_to_plot_units,
+)
 
 
-PREVIEW_LIMITS: Dict[str, int] = {
-    "No limit": -1,
-    "256 px": 2**8,
-    "512 px": 2**9,
-    "1024 px": 2**10,
-    "2048 px": 2**11,
-    "4096 px": 2**12,
-    "8192 px": 2**13,
-}
+class SettingsMenu:
+    def __init__(
+        self,
+        default_settings: PlotExportSettings,
+        label_pad: int,
+        refresh_callback: Optional[Callable] = None,
+    ):
+        callback_kwarg: dict = {}
+        if refresh_callback is not None:
+            callback_kwarg.update(
+                {"callback": lambda s, a, u: refresh_callback(self.get_settings())}
+            )
+        with dpg.collapsing_header(label=" Dimensions", leaf=True):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Units".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_units)
+                self.unit_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    width=-1,
+                    default_value=plot_units_to_label[default_settings.units],
+                    items=list(label_to_plot_units.keys()),
+                    **callback_kwarg,
+                    tag=self.unit_combo,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Width".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_width)
+                self.width_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    default_value=default_settings.width,
+                    min_value=0.01,
+                    min_clamped=True,
+                    step=0.0,
+                    format="%.2f",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.width_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Height".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_height)
+                self.height_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    default_value=default_settings.height,
+                    min_value=0.01,
+                    min_clamped=True,
+                    step=0.0,
+                    format="%.2f",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.height_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("DPI".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_dpi)
+                self.dpi_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    width=-1,
+                    default_value=default_settings.dpi,
+                    min_value=1,
+                    min_clamped=True,
+                    step=0,
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.dpi_input,
+                )
+            if refresh_callback is not None:
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Result".rjust(label_pad))
+                    attach_tooltip(tooltips.plotting.export_result)
+                    tooltip_tag: int = dpg.generate_uuid()
+                    self.dimensions_output: int = dpg.add_text(
+                        "", user_data=tooltip_tag
+                    )
+                    attach_tooltip("", tag=tooltip_tag)
+            with dpg.group(horizontal=True):
+                dpg.add_text("Preview".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_preview)
+                self.preview_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    width=-1,
+                    default_value=plot_preview_limit_to_label[
+                        default_settings.preview_limit
+                    ],
+                    items=list(label_to_plot_preview_limit.keys()),
+                    **callback_kwarg,
+                    tag=self.preview_combo,
+                )
+        with dpg.collapsing_header(
+            label=" Limits",
+            leaf=True,
+            show=refresh_callback is not None,
+        ):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Min. X".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_min_x)
+                self.x_min_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=False,
+                    **callback_kwarg,
+                    tag=self.x_min_checkbox,
+                )
+                self.x_min_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    step=0.0,
+                    format="%.2e",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.x_min_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Max. X".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_max_x)
+                self.x_max_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=False,
+                    **callback_kwarg,
+                    tag=self.x_max_checkbox,
+                )
+                self.x_max_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    step=0.0,
+                    format="%.2e",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.x_max_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Min. Y".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_min_y)
+                self.y_min_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=False,
+                    **callback_kwarg,
+                    tag=self.y_min_checkbox,
+                )
+                self.y_min_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    step=0.0,
+                    format="%.2e",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.y_min_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Max. Y".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_max_y)
+                self.y_max_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=False,
+                    **callback_kwarg,
+                    tag=self.y_max_checkbox,
+                )
+                self.y_max_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    width=-1,
+                    step=0.0,
+                    format="%.2e",
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.y_max_input,
+                )
+        with dpg.collapsing_header(label=" Layout", leaf=True):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Title".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_title)
+                self.show_title_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.show_title,
+                    **callback_kwarg,
+                    tag=self.show_title_checkbox,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Legend".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_legend)
+                self.show_legend_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.show_legend,
+                    **callback_kwarg,
+                    tag=self.show_legend_checkbox,
+                )
+                self.legend_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=plot_legend_location_to_label[
+                        default_settings.legend_location
+                    ],
+                    items=list(label_to_plot_legend_location.keys()),
+                    **callback_kwarg,
+                    width=-1,
+                    tag=self.legend_combo,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Grid".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_grid)
+                self.show_grid_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.show_grid,
+                    **callback_kwarg,
+                    tag=self.show_grid_checkbox,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Tight".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_tight)
+                self.has_tight_layout_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.has_tight_layout,
+                    **callback_kwarg,
+                    tag=self.has_tight_layout_checkbox,
+                )
+        with dpg.collapsing_header(label=" Miscellaneous", leaf=True):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Points per decade".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.export_num_per_decade)
+                self.num_per_decade_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    width=-1,
+                    default_value=default_settings.num_per_decade,
+                    min_value=1,
+                    min_clamped=True,
+                    step=0,
+                    on_enter=True,
+                    **callback_kwarg,
+                    tag=self.num_per_decade_input,
+                )
+            with dpg.group(horizontal=True, show=refresh_callback is None):
+                dpg.add_text("Default extension".rjust(label_pad))
+                self.extension_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    width=-1,
+                    default_value=default_settings.extension
+                    if default_settings.extension in PLOT_EXTENSIONS
+                    else ".png",
+                    items=PLOT_EXTENSIONS,
+                    tag=self.extension_combo,
+                )
+            with dpg.group(horizontal=True, show=refresh_callback is None):
+                dpg.add_text("Clear texture registry".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.clear_registry)
+                self.clear_registry_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.clear_registry,
+                    tag=self.clear_registry_checkbox,
+                )
+            with dpg.group(horizontal=True, show=refresh_callback is None):
+                dpg.add_text("Disable plot preview".rjust(label_pad))
+                attach_tooltip(tooltips.plotting.disable_preview)
+                self.disable_preview_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.disable_preview,
+                    tag=self.disable_preview_checkbox,
+                )
 
+    def get_settings(self) -> PlotExportSettings:
+        return PlotExportSettings(
+            units=label_to_plot_units[dpg.get_value(self.unit_combo)],
+            width=dpg.get_value(self.width_input),
+            height=dpg.get_value(self.height_input),
+            dpi=dpg.get_value(self.dpi_input),
+            preview_limit=label_to_plot_preview_limit[
+                dpg.get_value(self.preview_combo)
+            ],
+            show_title=dpg.get_value(self.show_title_checkbox),
+            show_legend=dpg.get_value(self.show_legend_checkbox),
+            legend_location=label_to_plot_legend_location[
+                dpg.get_value(self.legend_combo)
+            ],
+            show_grid=dpg.get_value(self.show_grid_checkbox),
+            has_tight_layout=dpg.get_value(self.has_tight_layout_checkbox),
+            num_per_decade=dpg.get_value(self.num_per_decade_input),
+            extension=dpg.get_value(self.extension_combo),
+            clear_registry=dpg.get_value(self.clear_registry_checkbox),
+            disable_preview=dpg.get_value(self.disable_preview_checkbox),
+        )
 
-UNITS_PER_INCH: Dict[str, float] = {
-    "Centimeters": 2.54,
-    "Inches": 1.0,
-}
+    def set_settings(self, settings: PlotExportSettings):
+        dpg.set_value(self.unit_combo, plot_units_to_label[settings.units])
+        dpg.set_value(self.width_input, settings.width)
+        dpg.set_value(self.height_input, settings.height)
+        dpg.set_value(self.dpi_input, settings.dpi)
+        dpg.set_value(
+            self.preview_combo,
+            plot_preview_limit_to_label[settings.preview_limit],
+        )
+        dpg.set_value(self.show_title_checkbox, settings.show_title)
+        dpg.set_value(self.show_legend_checkbox, settings.show_legend)
+        if dpg.get_value(self.show_legend_checkbox):
+            dpg.enable_item(self.legend_combo)
+        else:
+            dpg.disable_item(self.legend_combo)
+        dpg.set_value(
+            self.legend_combo,
+            plot_legend_location_to_label[settings.legend_location],
+        )
+        dpg.set_value(self.show_grid_checkbox, settings.show_grid)
+        dpg.set_value(self.has_tight_layout_checkbox, settings.has_tight_layout)
+        dpg.set_value(self.num_per_decade_input, settings.num_per_decade)
+        dpg.set_value(self.extension_combo, settings.extension)
+        dpg.set_value(self.clear_registry_checkbox, settings.clear_registry)
+        dpg.set_value(self.disable_preview_checkbox, settings.disable_preview)
+        if dpg.get_value(self.x_min_checkbox):
+            dpg.enable_item(self.x_min_input)
+        else:
+            dpg.disable_item(self.x_min_input)
+        if dpg.get_value(self.x_max_checkbox):
+            dpg.enable_item(self.x_max_input)
+        else:
+            dpg.disable_item(self.x_max_input)
+        if dpg.get_value(self.y_min_checkbox):
+            dpg.enable_item(self.y_min_input)
+        else:
+            dpg.disable_item(self.y_min_input)
+        if dpg.get_value(self.y_max_checkbox):
+            dpg.enable_item(self.y_max_input)
+        else:
+            dpg.disable_item(self.y_max_input)
 
+    def update_plot_limits(
+        self, x_min: float, x_max: float, y_min: float, y_max: float
+    ):
+        if not dpg.get_value(self.x_min_checkbox):
+            dpg.set_value(self.x_min_input, x_min)
+        if not dpg.get_value(self.x_max_checkbox):
+            dpg.set_value(self.x_max_input, x_max)
+        if not dpg.get_value(self.y_min_checkbox):
+            dpg.set_value(self.y_min_input, y_min)
+        if not dpg.get_value(self.y_max_checkbox):
+            dpg.set_value(self.y_max_input, y_max)
 
-LEGEND_LOCATIONS: Dict[str, int] = {
-    "Automatic": 0,
-    "Upper right": 1,
-    "Upper left": 2,
-    "Lower left": 3,
-    "Lower right": 4,
-    "Right": 5,
-    "Center left": 6,
-    "Center right": 7,
-    "Lower center": 8,
-    "Upper center": 9,
-    "Center": 10,
-}
+    def get_x_limits(self) -> Optional[Tuple[Optional[float], Optional[float]]]:
+        if dpg.get_value(self.x_min_checkbox) or dpg.get_value(self.x_max_checkbox):
+            return (
+                dpg.get_value(self.x_min_input)
+                if dpg.get_value(self.x_min_checkbox)
+                else None,
+                dpg.get_value(self.x_max_input)
+                if dpg.get_value(self.x_max_checkbox)
+                else None,
+            )
+        return None
 
+    def get_y_limits(self) -> Optional[Tuple[Optional[float], Optional[float]]]:
+        if dpg.get_value(self.y_min_checkbox) or dpg.get_value(self.y_max_checkbox):
+            return (
+                dpg.get_value(self.y_min_input)
+                if dpg.get_value(self.y_min_checkbox)
+                else None,
+                dpg.get_value(self.y_max_input)
+                if dpg.get_value(self.y_max_checkbox)
+                else None,
+            )
+        return None
 
-EXTENSIONS: List[str] = [
-    ".eps",
-    ".jpg",
-    ".pdf",
-    ".pgf",
-    ".png",
-    ".ps",
-    ".svg",
-]
+    def update_dimensions_output(self, pixel_dimensions: List[str]):
+        dpg.set_value(
+            self.dimensions_output,
+            f"{pixel_dimensions[0]} px * {pixel_dimensions[1]} px",
+        )
+        update_tooltip(
+            dpg.get_item_user_data(self.dimensions_output),
+            f"{pixel_dimensions[0]} px * {pixel_dimensions[1]} px",
+        )
 
 
 class PlotExporter:
@@ -103,8 +437,6 @@ class PlotExporter:
         self.settings: Optional[PlotSettings] = None
         self.project: Optional[Project] = None
         self.texture_registry: int = dpg.generate_uuid()
-        self.experimental_clear_registry: bool = True
-        self.experimental_disable_previews: bool = False
         dpg.add_texture_registry(tag=self.texture_registry)
         self.window: int = dpg.generate_uuid()
         with dpg.window(
@@ -128,236 +460,34 @@ class PlotExporter:
                         border=False,
                         height=-32,
                     ):
-                        self.unit_combo: int = dpg.generate_uuid()
-                        self.width_input: int = dpg.generate_uuid()
-                        self.height_input: int = dpg.generate_uuid()
-                        self.dpi_input: int = dpg.generate_uuid()
-                        self.label_padding: int = 10
-                        with dpg.collapsing_header(label=" Dimensions", leaf=True):
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Units".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_units)
-                                dpg.add_combo(
-                                    width=-1,
-                                    items=list(UNITS_PER_INCH.keys()),
-                                    default_value="",
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.unit_combo,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Width".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_width)
-                                dpg.add_input_float(
-                                    width=-1,
-                                    default_value=0.0,
-                                    min_value=0.01,
-                                    min_clamped=True,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.width_input,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Height".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_height)
-                                dpg.add_input_float(
-                                    width=-1,
-                                    default_value=0.0,
-                                    min_value=0.01,
-                                    min_clamped=True,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.height_input,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("DPI".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_dpi)
-                                dpg.add_input_int(
-                                    width=-1,
-                                    default_value=0,
-                                    min_value=1,
-                                    min_clamped=True,
-                                    step=0,
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.dpi_input,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Result".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_result)
-                                tooltip_tag: int = dpg.generate_uuid()
-                                self.dimensions_output: int = dpg.add_text(
-                                    "", user_data=tooltip_tag
-                                )
-                                attach_tooltip("", tag=tooltip_tag)
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Preview".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_preview)
-                                self.preview_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=list(PREVIEW_LIMITS.keys()),
-                                    default_value="",
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.preview_combo,
-                                )
-                        with dpg.collapsing_header(label=" Limits", leaf=True):
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Min. X".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_min_x)
-                                self.x_min_enabled: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.x_min_enabled,
-                                )
-                                self.x_min: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    width=-1,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.x_min,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Max. X".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_max_x)
-                                self.x_max_enabled: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.x_max_enabled,
-                                )
-                                self.x_max: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    width=-1,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.x_max,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Min. Y".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_min_y)
-                                self.y_min_enabled: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.y_min_enabled,
-                                )
-                                self.y_min: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    width=-1,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.y_min,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Max. Y".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_max_y)
-                                self.y_max_enabled: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.y_max_enabled,
-                                )
-                                self.y_max: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    width=-1,
-                                    step=0.0,
-                                    format="%.2f",
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.y_max,
-                                )
-                        with dpg.collapsing_header(label=" Layout", leaf=True):
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Title".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_title)
-                                self.show_title: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.show_title,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Legend".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_legend)
-                                self.show_legend: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.show_legend,
-                                )
-                                self.legend_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=list(LEGEND_LOCATIONS.keys()),
-                                    default_value=list(LEGEND_LOCATIONS.keys())[0],
-                                    callback=lambda s, a, u: self.refresh(),
-                                    width=-1,
-                                    tag=self.legend_combo,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Grid".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_grid)
-                                self.grid: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.grid,
-                                )
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Tight".rjust(self.label_padding))
-                                attach_tooltip(tooltips.plotting.export_tight)
-                                self.tight_layout: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=False,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.tight_layout,
-                                )
-                        with dpg.collapsing_header(label=" Miscellaneous", leaf=True):
-                            with dpg.group(horizontal=True):
-                                dpg.add_text(
-                                    "Points per decade".rjust(self.label_padding)
-                                )
-                                attach_tooltip(tooltips.plotting.export_num_per_decade)
-                                self.num_per_decade: int = dpg.generate_uuid()
-                                dpg.add_input_int(
-                                    width=-1,
-                                    default_value=0,
-                                    min_value=1,
-                                    min_clamped=True,
-                                    step=0,
-                                    on_enter=True,
-                                    callback=lambda s, a, u: self.refresh(),
-                                    tag=self.num_per_decade,
-                                )
+                        self.settings_menu: SettingsMenu = SettingsMenu(
+                            config.default_plot_export_settings,
+                            label_pad=10,
+                            refresh_callback=self.refresh,
+                        )
                     with dpg.child_window(border=False):
                         self.save_button: int = dpg.add_button(
                             label="Save as",
-                            callback=lambda s, a, u: self.save(u),
+                            callback=lambda s, a, u: self.save(fig=u),
                             user_data=None,
                             width=-1,
                         )
                         attach_tooltip(tooltips.plotting.export_file)
                 self.image_plot: Image = Image()
-        self.update_settings(config)
 
     def clear(self):
+        settings: PlotExportSettings = self.settings_menu.get_settings()
         fig: Optional[Figure] = dpg.get_item_user_data(self.save_button)
         if fig is not None:
             plt.close(fig)
             dpg.set_item_user_data(self.save_button, None)
-        if not self.experimental_disable_previews:
+        if not settings.disable_preview:
             self.image_plot.clear()
-            if self.experimental_clear_registry:
+            if settings.clear_registry:
                 dpg.delete_item(self.texture_registry, children_only=True)
+
+    def set_settings(self, settings: PlotExportSettings):
+        self.settings_menu.set_settings(settings)
 
     def close(self):
         if dpg.does_item_exist(self.key_handler):
@@ -365,27 +495,6 @@ class PlotExporter:
         dpg.hide_item(self.window)
         self.clear()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
-        # dpg.delete_item(self.key_handler)
-
-    def update_settings(self, config: Config):
-        dpg.set_value(self.unit_combo, list(UNITS_PER_INCH.keys())[config.export_units])
-        dpg.set_value(self.width_input, config.export_width)
-        dpg.set_value(self.height_input, config.export_height)
-        dpg.set_value(self.dpi_input, config.export_dpi)
-        dpg.set_value(
-            self.preview_combo, list(PREVIEW_LIMITS.keys())[config.export_preview]
-        )
-        dpg.set_value(self.show_title, config.export_title)
-        dpg.set_value(self.show_legend, config.export_legend)
-        dpg.set_value(
-            self.legend_combo,
-            list(LEGEND_LOCATIONS.keys())[config.export_legend_location],
-        )
-        dpg.set_value(self.grid, config.export_grid)
-        dpg.set_value(self.tight_layout, config.export_tight)
-        dpg.set_value(self.num_per_decade, config.export_num_per_decade)
-        self.experimental_clear_registry = config.export_experimental_clear_registry
-        self.experimental_disable_previews = config.export_experimental_disable_previews
 
     def initialize_keybindings(self):
         self.key_handler = dpg.generate_uuid()
@@ -421,18 +530,21 @@ class PlotExporter:
             width=w,
             height=h,
         )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window)
-        self.refresh()
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
+        self.refresh(self.settings_menu.get_settings())
 
     def create_preview_figure(
-        self, width: float, height: float, dpi: int
+        self,
+        width: float,
+        height: float,
+        dpi: int,
+        preview_limit: int,
     ) -> Tuple[Figure, int, int]:
         assert type(width) is float and width > 0.0, width
         assert type(height) is float and height > 0.0, height
         assert type(dpi) is int and dpi > 0, dpi
         pixel_width: int = floor(width * dpi)
         pixel_height: int = floor(height * dpi)
-        preview_limit: int = PREVIEW_LIMITS.get(dpg.get_value(self.preview_combo), -1)
         if preview_limit > 0 and (
             pixel_width > preview_limit or pixel_height > preview_limit
         ):
@@ -467,14 +579,7 @@ class PlotExporter:
             format_number(float(pixel_width), decimals=0, exponent=False),
             format_number(float(pixel_height), decimals=0, exponent=False),
         ]
-        dpg.set_value(
-            self.dimensions_output,
-            f"{pixel_dimensions[0]} px * {pixel_dimensions[1]} px",
-        )
-        update_tooltip(
-            dpg.get_item_user_data(self.dimensions_output),
-            f"{pixel_dimensions[0]} px * {pixel_dimensions[1]} px",
-        )
+        self.settings_menu.update_dimensions_output(pixel_dimensions)
         fig: Figure = plt.figure(
             figsize=(
                 width,
@@ -484,50 +589,38 @@ class PlotExporter:
         )
         return fig
 
-    def plot(self, fig: Figure):
+    def plot(self, fig: Figure, export_settings: PlotExportSettings):
         assert type(fig) is Figure, type(fig)
+        assert type(export_settings) is PlotExportSettings, type(export_settings)
         assert self.settings is not None
         assert self.project is not None
-        x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
-        if dpg.get_value(self.x_min_enabled) or dpg.get_value(self.x_max_enabled):
-            x_limits = (
-                dpg.get_value(self.x_min)
-                if dpg.get_value(self.x_min_enabled)
-                else None,
-                dpg.get_value(self.x_max)
-                if dpg.get_value(self.x_max_enabled)
-                else None,
-            )
-        y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
-        if dpg.get_value(self.y_min_enabled) or dpg.get_value(self.y_max_enabled):
-            y_limits = (
-                dpg.get_value(self.y_min)
-                if dpg.get_value(self.y_min_enabled)
-                else None,
-                dpg.get_value(self.y_max)
-                if dpg.get_value(self.y_max_enabled)
-                else None,
-            )
+        x_limits: Optional[
+            Tuple[Optional[float], Optional[float]]
+        ] = self.settings_menu.get_x_limits()
+        y_limits: Optional[
+            Tuple[Optional[float], Optional[float]]
+        ] = self.settings_menu.get_y_limits()
         mpl.plot(
             self.settings,
             self.project,
             x_limits=x_limits,
             y_limits=y_limits,
-            show_title=dpg.get_value(self.show_title),
-            show_legend=dpg.get_value(self.show_legend),
-            legend_loc=LEGEND_LOCATIONS.get(dpg.get_value(self.legend_combo), 0),
-            tight_layout=dpg.get_value(self.tight_layout),
-            show_grid=dpg.get_value(self.grid),
+            show_title=export_settings.show_title,
+            show_legend=export_settings.show_legend,
+            legend_loc=int(export_settings.legend_location),
+            tight_layout=export_settings.has_tight_layout,
+            show_grid=export_settings.show_grid,
             fig=fig,
             axis=fig.gca(),
-            num_per_decade=dpg.get_value(self.num_per_decade),
+            num_per_decade=export_settings.num_per_decade,
         )
 
-    def refresh(self):
-        width: float = dpg.get_value(self.width_input)
-        height: float = dpg.get_value(self.height_input)
-        dpi: int = dpg.get_value(self.dpi_input)
-        upi: float = UNITS_PER_INCH.get(dpg.get_value(self.unit_combo))
+    def refresh(self, settings: PlotExportSettings):
+        self.settings_menu.set_settings(settings)
+        width: float = settings.width
+        height: float = settings.height
+        dpi: int = settings.dpi
+        upi: float = plot_units_per_inch[settings.units]
         assert type(width) is float and width > 0.0, width
         assert type(height) is float and height > 0.0, height
         assert type(dpi) is int and dpi > 0, dpi
@@ -537,17 +630,22 @@ class PlotExporter:
         height = height / upi
         final_fig: Figure = self.create_final_figure(width, height, dpi)
         dpg.set_item_user_data(self.save_button, final_fig)
-        self.plot(final_fig)
+        self.plot(final_fig, settings)
         # Preview
-        if not self.experimental_disable_previews:
+        if not settings.disable_preview:
             preview_fig: Figure
             pixel_width: int
             pixel_height: int
             preview_fig, pixel_width, pixel_height = self.create_preview_figure(
-                width, height, dpi
+                width,
+                height,
+                dpi,
+                2 ** int(settings.preview_limit)
+                if settings.preview_limit != PlotPreviewLimit.NONE
+                else 0,
             )
             canvas: FigureCanvasAgg = FigureCanvasAgg(preview_fig)
-            self.plot(preview_fig)
+            self.plot(preview_fig, settings)
             canvas.draw()
             tag: int = dpg.add_raw_texture(
                 pixel_width,
@@ -575,30 +673,7 @@ class PlotExporter:
         y_max: float
         x_min, x_max = final_fig.gca().get_xlim()
         y_min, y_max = final_fig.gca().get_ylim()
-        if dpg.get_value(self.x_min_enabled):
-            dpg.enable_item(self.x_min)
-        else:
-            dpg.disable_item(self.x_min)
-            dpg.set_value(self.x_min, x_min)
-        if dpg.get_value(self.x_max_enabled):
-            dpg.enable_item(self.x_max)
-        else:
-            dpg.disable_item(self.x_max)
-            dpg.set_value(self.x_max, x_max)
-        if dpg.get_value(self.y_min_enabled):
-            dpg.enable_item(self.y_min)
-        else:
-            dpg.disable_item(self.y_min)
-            dpg.set_value(self.y_min, y_min)
-        if dpg.get_value(self.y_max_enabled):
-            dpg.enable_item(self.y_max)
-        else:
-            dpg.disable_item(self.y_max)
-            dpg.set_value(self.y_max, y_max)
-        if dpg.get_value(self.show_legend):
-            dpg.enable_item(self.legend_combo)
-        else:
-            dpg.disable_item(self.legend_combo)
+        self.settings_menu.update_plot_limits(x_min, x_max, y_min, y_max)
 
     def save(self, fig: Optional[Figure], keybinding: bool = False):
         if fig is None:
@@ -609,6 +684,12 @@ class PlotExporter:
             else is_alt_down()
         ):
             return
+        extension: str = self.settings_menu.get_settings().extension
         self.close()
         dpg.split_frame()
-        signals.emit(Signal.SAVE_PLOT, figure=fig)
+        signals.emit(
+            Signal.SAVE_PLOT,
+            figure=fig,
+            default_extension=extension if extension in PLOT_EXTENSIONS else ".png",
+            extensions=PLOT_EXTENSIONS,
+        )

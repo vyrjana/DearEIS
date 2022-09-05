@@ -20,14 +20,8 @@
 from types import SimpleNamespace
 
 
-boukamp1995: str = """
-Bernard A. Boukamp, 'A Linear Kronig-Kramers Transform Test for Immittance Data Validation', Journal of the Electrochemical Society, 1995, vol. 142, no. 6, pp. 1885-1894.
-""".strip()
-
-schonleber2014: str = """
-M. Schönleber, D. Klotz, and E. Ivers-Tiffée, 'A Method for Improving the Robustness of linear Kramers-Kronig Validity Tests', Electrochimica Acta, 2014, vol. 131, pp. 20-27.
-""".strip()
-
+boukamp1995: str = "DOI:10.1149/1.2044210"
+schonleber2014: str = "DOI:10.1016/j.electacta.2014.01.034"
 
 kramers_kronig = SimpleNamespace(
     **{
@@ -42,7 +36,7 @@ Imaginary: Use a set of linear equations to fit to the imaginary part of the com
 
 Real: Use a set of linear equations to fit to the real part of the complex impedance (eqs. 8 and 10).
 
-{boukamp1995}
+Reference: {boukamp1995}
     """.strip(),
         "mode": f"""
 Auto: Increment the number of RC elements, calculate the µ-value (eq. 21), and use the µ-criterion to determine when to stop.
@@ -51,7 +45,7 @@ Exploratory: Test multiple numbers of RC elements similarly to the 'Auto' settin
 
 Manual: Choose a specific number of RC elements to use.
 
-{schonleber2014}
+Reference: {schonleber2014}
     """.strip(),
         "max_num_RC": """
 The (maximum) number of RC elements connected in series in the equivalent circuit.
@@ -73,7 +67,7 @@ The 'Exploratory' mode is recommended since you can inspect the µ-value produce
 
 This setting is only used when the mode setting is set to either 'Auto' or 'Exploratory'.
 
-{schonleber2014}
+Reference: {schonleber2014}
     """.strip(),
         "method": """
 The iterative method used to perform the fitting.
@@ -104,7 +98,7 @@ See the following references for more information about the linear Kramers-Kroni
 
 - {schonleber2014}
 
-Analysing the contributionas of higher-order harmonics to the response signal is another way of checking for non-linearity. Potentiostat/galvanostat manufacturers may implement this in different ways and use different terminology in their documentation. For example, Ivium's software has the "SigView" window while Gamry's software has a setting called "Total Harmonic Distortion" (THD).
+Analysing the contributions of higher-order harmonics to the response signal is another way of checking for non-linearity. Potentiostat/galvanostat manufacturers may implement this in different ways and use different terminology may be used in their documentation. For example, "total harmonic distortion" (THD) may be available as a setting in the measurement method. Alternatively, it may be possible to record the response signal for processing and analysis (e.g., Fourier transform).
     """.strip(),
         "delete": """
 Delete the current test result.
@@ -112,7 +106,7 @@ Delete the current test result.
         "pseudo_chisqr": f"""
 Pseudo chi-squared value calculated according to eq. 14.
 
-{boukamp1995}
+Reference: {boukamp1995}
     """.strip(),
         "exploratory_result": """
 The result to highlight and ultimately save.
@@ -120,7 +114,7 @@ The result to highlight and ultimately save.
         "mu": f"""
 The µ-value represents how the equivalent circuit fits the data (eq. 21). µ-values range from zero to one with the extremes representing over-fitting and under-fitting, respectively.
 
-{schonleber2014}
+Reference: {schonleber2014}
     """.strip(),
         "num_RC": """
 The number of RC elements connected in series in the equivalent circuit.

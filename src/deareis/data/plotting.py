@@ -23,19 +23,28 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 import dearpygui.dearpygui as dpg
 from numpy import (
+    array,
     integer,
     issubdtype,
     ndarray,
 )
 from deareis.data import DataSet
 from deareis.data.kramers_kronig import TestResult
+from deareis.data.drt import DRTResult
 from deareis.data.fitting import FitResult
 from deareis.data.simulation import SimulationResult
-from deareis.enums import PlotType
+from deareis.enums import (
+    PLOT_EXTENSIONS,
+    PlotLegendLocation,
+    PlotPreviewLimit,
+    PlotType,
+    PlotUnits,
+)
 from deareis.themes import (
     create_plot_series_theme,
     get_random_color_marker,
@@ -50,10 +59,9 @@ class PlotSeries:
     A class that represents the data used to plot an item/series.
     """
 
+    data: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
     label: str
-    scatter_data: List[ndarray]
-    line_data: List[ndarray]
-    color: List[float]
+    color: Tuple[float, float, float, float]
     marker: int
     line: bool
     legend: bool
@@ -64,13 +72,58 @@ class PlotSeries:
     def get_label(self) -> str:
         return self.label
 
-    def get_scatter_data(self) -> List[ndarray]:
-        return self.scatter_data
+    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        if type(self.data) is DataSet or type(self.data) is DRTResult:
+            return self.data.get_frequency()
+        return self.data.get_frequency(num_per_decade=num_per_decade)
 
-    def get_line_data(self) -> List[ndarray]:
-        return self.line_data
+    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+        if type(self.data) is DataSet or type(self.data) is DRTResult:
+            return self.data.get_impedance()
+        return self.data.get_impedance(num_per_decade=num_per_decade)
 
-    def get_color(self) -> List[float]:
+    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+        if type(self.data) is DataSet or type(self.data) is DRTResult:
+            return self.data.get_nyquist_data()
+        return self.data.get_nyquist_data(num_per_decade=num_per_decade)
+
+    def get_bode_data(
+        self,
+        num_per_decade: int = -1,
+    ) -> Tuple[ndarray, ndarray, ndarray]:
+        if type(self.data) is DataSet or type(self.data) is DRTResult:
+            return self.data.get_bode_data()
+        return self.data.get_bode_data(num_per_decade=num_per_decade)
+
+    def get_tau(self) -> ndarray:
+        if type(self.data) is not DRTResult:
+            return array([])
+        return self.data.get_tau()
+
+    def get_gamma(self, imaginary: bool = False) -> ndarray:
+        if type(self.data) is not DRTResult:
+            return array([])
+        return self.data.get_gamma(imaginary=imaginary)
+
+    def get_drt_data(self, imaginary: bool = False) -> Tuple[ndarray, ndarray]:
+        if type(self.data) is not DRTResult:
+            return (
+                array([]),
+                array([]),
+            )
+        return self.data.get_drt_data(imaginary=imaginary)
+
+    def get_drt_credible_intervals(self) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
+        if type(self.data) is not DRTResult:
+            return (
+                array([]),
+                array([]),
+                array([]),
+                array([]),
+            )
+        return self.data.get_drt_credible_intervals()
+
+    def get_color(self) -> Tuple[float, float, float, float]:
         return self.color
 
     def get_marker(self) -> int:
@@ -89,11 +142,79 @@ class PlotSeries:
 VERSION: int = 1
 
 
+def _parse_export_settings_v1(dictionary: dict) -> dict:
+    # TODO: Updated implementation when VERSION is incremented
+    return dictionary
+
+
+@dataclass(frozen=True)
+class PlotExportSettings:
+    units: PlotUnits
+    width: float
+    height: float
+    dpi: int
+    preview_limit: PlotPreviewLimit
+    show_title: bool
+    show_legend: bool
+    legend_location: PlotLegendLocation
+    show_grid: bool
+    has_tight_layout: bool
+    num_per_decade: int
+    extension: str
+    clear_registry: bool
+    disable_preview: bool
+
+    @classmethod
+    def from_dict(Class, dictionary: dict) -> "PlotExportSettings":
+        assert type(dictionary) is dict
+        assert "version" in dictionary
+        version: int = dictionary["version"]
+        assert version <= VERSION, f"{version=} > {VERSION=}"
+        parsers: Dict[int, Callable] = {
+            1: _parse_export_settings_v1,
+        }
+        assert version in parsers, f"{version=} not in {parsers.keys()=}"
+        del dictionary["version"]
+        dictionary = parsers[version](dictionary)
+        dictionary["units"] = PlotUnits(dictionary["units"])
+        dictionary["preview_limit"] = PlotPreviewLimit(dictionary["preview_limit"])
+        dictionary["legend_location"] = PlotLegendLocation(
+            dictionary["legend_location"]
+        )
+        if dictionary["extension"] not in PLOT_EXTENSIONS:
+            dictionary["extension"] = ".png"
+        return Class(**dictionary)
+
+    def to_dict(self) -> dict:
+        return {
+            "version": VERSION,
+            "units": int(self.units),
+            "width": self.width,
+            "height": self.height,
+            "dpi": self.dpi,
+            "preview_limit": int(self.preview_limit),
+            "show_title": self.show_title,
+            "show_legend": self.show_legend,
+            "legend_location": int(self.legend_location),
+            "show_grid": self.show_grid,
+            "has_tight_layout": self.has_tight_layout,
+            "num_per_decade": self.num_per_decade,
+            "extension": self.extension,
+            "clear_registry": self.clear_registry,
+            "disable_preview": self.disable_preview,
+        }
+
+
+def _parse_settings_v1(dictionary: dict) -> dict:
+    # TODO: Implement when VERSION has been incremented
+    return dictionary
+
+
 # TODO: Make it possible to (re)store the limits of plots (e.g. from session to session)?
 @dataclass
 class PlotSettings:
     """
-    A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
+    A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, DRT analysis results, equivalent circuit fitting results, and simulation results.
     """
 
     plot_label: str
@@ -149,21 +270,6 @@ class PlotSettings:
     def __repr__(self) -> str:
         return f"PlotSettings ({self.get_label()}, {hex(id(self))})"
 
-    @staticmethod
-    def _parse_v1(dictionary: dict) -> dict:
-        assert type(dictionary) is dict, dictionary
-        return {
-            "uuid": dictionary["uuid"],
-            "plot_label": dictionary["plot_label"],
-            "plot_type": PlotType(dictionary["plot_type"]),
-            "series_order": dictionary["series_order"],
-            "labels": dictionary["labels"],
-            "colors": dictionary["colors"],
-            "markers": dictionary["markers"],
-            "show_lines": dictionary["show_lines"],
-            "themes": dictionary["themes"],
-        }
-
     def recreate_themes(self):
         uuid: str
         for uuid in list(self.themes.keys()):
@@ -195,10 +301,13 @@ class PlotSettings:
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
-            1: Class._parse_v1,
+            1: _parse_settings_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        settings = Class(**parsers[version](dictionary))
+        del dictionary["version"]
+        dictionary = parsers[version](dictionary)
+        dictionary["plot_type"] = PlotType(dictionary["plot_type"])
+        settings = Class(**dictionary)
         settings.recreate_themes()
         return settings
 
@@ -282,13 +391,14 @@ class PlotSettings:
 
     def add_series(
         self,
-        series: Union[DataSet, TestResult, FitResult, SimulationResult],
+        series: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult],
     ):
         # TODO: Refactor so that series is replaced by uuid?
         # Include the type as another argument to determine whether or not a line should be drawn?
         assert (
             type(series) is DataSet
             or type(series) is TestResult
+            or type(series) is DRTResult
             or type(series) is FitResult
             or type(series) is SimulationResult
         ), series
@@ -322,9 +432,10 @@ class PlotSettings:
         uuid: str,
         datasets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
-    ) -> Optional[Union[DataSet, TestResult, FitResult, SimulationResult]]:
+    ) -> Optional[Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]]:
         def find_dataset() -> Optional[DataSet]:
             data: DataSet
             for data in datasets:
@@ -337,6 +448,13 @@ class PlotSettings:
             for test in [test for _ in tests.values() for test in _]:
                 if test.uuid == uuid:
                     return test
+            return None
+
+        def find_drt() -> Optional[DRTResult]:
+            drt: DRTResult
+            for drt in [drt for _ in drts.values() for drt in _]:
+                if drt.uuid == uuid:
+                    return drt
             return None
 
         def find_fit() -> Optional[FitResult]:
@@ -359,6 +477,9 @@ class PlotSettings:
         test: Optional[TestResult] = find_test()
         if test is not None:
             return test
+        drt: Optional[DRTResult] = find_drt()
+        if drt is not None:
+            return drt
         fit: Optional[FitResult] = find_fit()
         if fit is not None:
             return fit
