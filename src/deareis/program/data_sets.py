@@ -28,6 +28,7 @@ from pyimpspec.data.formats import UnsupportedFileFormat
 from pyimpspec.data import get_parsers
 import pyimpspec
 from deareis.data import (
+    DRTResult,
     DataSet,
     FitResult,
     Project,
