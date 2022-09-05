@@ -8,10 +8,11 @@ permalink: /api/kramers-kronig/
 **Table of Contents**
 
 - [deareis.api.kramers_kronig](#deareisapikramers_kronig)
-	- [Method](#deareisapikramers_kronigmethod)
-	- [Mode](#deareisapikramers_kronigmode)
+	- [CNLSMethod](#deareisapikramers_kronigcnlsmethod)
 	- [Test](#deareisapikramers_kronigtest)
+	- [TestMode](#deareisapikramers_kronigtestmode)
 	- [TestResult](#deareisapikramers_kronigtestresult)
+		- [calculate_score](#deareisapikramers_kronigtestresultcalculate_score)
 		- [from_dict](#deareisapikramers_kronigtestresultfrom_dict)
 		- [get_bode_data](#deareisapikramers_kronigtestresultget_bode_data)
 		- [get_frequency](#deareisapikramers_kronigtestresultget_frequency)
@@ -23,13 +24,14 @@ permalink: /api/kramers-kronig/
 	- [TestSettings](#deareisapikramers_kronigtestsettings)
 		- [from_dict](#deareisapikramers_kronigtestsettingsfrom_dict)
 		- [to_dict](#deareisapikramers_kronigtestsettingsto_dict)
+	- [perform_exploratory_tests](#deareisapikramers_kronigperform_exploratory_tests)
 	- [perform_test](#deareisapikramers_kronigperform_test)
 
 
 
 ## **deareis.api.kramers_kronig**
 
-### **deareis.api.kramers_kronig.Method**
+### **deareis.api.kramers_kronig.CNLSMethod**
 
 Iterative methods used during complex non-linear least-squares fitting:
 
@@ -59,29 +61,7 @@ Iterative methods used during complex non-linear least-squares fitting:
 - TRUST_NCG
 
 ```python
-class Method(IntEnum):
-	args
-	kwargs
-```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
-
-
-
-### **deareis.api.kramers_kronig.Mode**
-
-Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
-
-- AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)
-- EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion
-- MANUAL: manually choose the number
-
-```python
-class Mode(IntEnum):
+class CNLSMethod(IntEnum):
 	args
 	kwargs
 ```
@@ -105,6 +85,28 @@ Types of tests:
 
 ```python
 class Test(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
+
+### **deareis.api.kramers_kronig.TestMode**
+
+Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
+
+- AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)
+- EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion
+- MANUAL: manually choose the number
+
+```python
+class TestMode(IntEnum):
 	args
 	kwargs
 ```
@@ -155,6 +157,27 @@ _Constructor parameters_
 
 _Functions and methods_
 
+#### **deareis.api.kramers_kronig.TestResult.calculate_score**
+
+Calculate a score based on the provided mu-criterion and the statistics of the result.
+A result with a mu-value greater than or equal to the mu-criterion will get a score of -numpy.inf.
+
+```python
+def calculate_score(self, mu_criterion: float) -> float:
+```
+
+
+_Parameters_
+
+- `mu_criterion`: The mu-criterion to apply.
+See perform_test for details.
+
+
+_Returns_
+```python
+float
+```
+
 #### **deareis.api.kramers_kronig.TestResult.from_dict**
 
 Create an instance from a dictionary.
@@ -176,7 +199,7 @@ TestResult
 
 #### **deareis.api.kramers_kronig.TestResult.get_bode_data**
 
-Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
 
 ```python
 def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
@@ -266,7 +289,7 @@ Tuple[ndarray, ndarray]
 
 #### **deareis.api.kramers_kronig.TestResult.get_residual_data**
 
-Get the data required to plot the residuals (real and imaginary vs log f).
+Get the data required to plot the residuals (real and imaginary vs f).
 
 ```python
 def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
@@ -307,12 +330,12 @@ A class to store the settings used to perform a Kramers-Kronig test.
 ```python
 class TestSettings(object):
 	test: Test
-	mode: Mode
+	mode: TestMode
 	num_RC: int
 	mu_criterion: float
 	add_capacitance: bool
 	add_inductance: bool
-	method: Method
+	method: CNLSMethod
 	max_nfev: int
 ```
 
@@ -370,9 +393,33 @@ dict
 
 
 
+### **deareis.api.kramers_kronig.perform_exploratory_tests**
+
+Wrapper for the `pyimpspec.perform_exploratory_tests` function.
+
+Performs a batch of linear Kramers-Kronig tests, which are then scored and sorted from best to worst before they are returned.
+
+```python
+def perform_exploratory_tests(data: DataSet, settings: TestSettings, num_procs: int = -1) -> List[TestResult]:
+```
+
+
+_Parameters_
+
+- `data`: The data set to be tested.
+- `settings`: The settings that determine how the test is performed.
+Note that only `Test.EXPLORATORY` is supported by this function.
+- `num_procs`: See perform_test for details.
+
+
+_Returns_
+
+```python
+List[TestResult]
+```
 ### **deareis.api.kramers_kronig.perform_test**
 
-Wrapper for `pyimpspec.perform_test` function.
+Wrapper for the `pyimpspec.perform_test` function.
 
 Performs a linear Kramers-Kronig test as described by Boukamp (1995).
 The results can be used to check the validity of an impedance spectrum before performing equivalent circuit fitting.
@@ -396,7 +443,7 @@ _Parameters_
 Note that `Test.EXPLORATORY` is not supported by this function.
 - `num_procs`: The maximum number of parallel processes to use when performing a test.
 A value less than one results in using the number of cores returned by multiprocessing.cpu_count.
-Applies only to the `Mode.CNLS` test.
+Applies only to the `TestMode.CNLS` test.
 
 
 _Returns_

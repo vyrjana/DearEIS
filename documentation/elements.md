@@ -507,8 +507,8 @@ def to_string(self, decimals: int = -1) -> str:
 
 _Parameters_
 
-- `decimals`: The number of decimals used when formatting the current value and the limits for the
-element's parameters. -1 corresponds to no values being included in the output.
+- `decimals`: The number of decimals used when formatting the current value and the limits for the element's parameters.
+-1 corresponds to no values being included in the output.
 
 
 _Returns_
@@ -719,12 +719,12 @@ _Constructor parameters_
 Returns a mapping of element symbols to the element class.
 
 ```python
-def get_elements() -> Dict[str, Element]:
+def get_elements() -> Dict[str, Type[Element]]:
 ```
 
 
 _Returns_
 
 ```python
-Dict[str, Element]
+Dict[str, Type[Element]]
 ```

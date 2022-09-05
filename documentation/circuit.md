@@ -9,6 +9,7 @@ permalink: /api/circuit/
 
 - [deareis.api.circuit](#deareisapicircuit)
 	- [Circuit](#deareisapicircuitcircuit)
+		- [get_connections](#deareisapicircuitcircuitget_connections)
 		- [get_element](#deareisapicircuitcircuitget_element)
 		- [get_elements](#deareisapicircuitcircuitget_elements)
 		- [get_label](#deareisapicircuitcircuitget_label)
@@ -17,13 +18,21 @@ permalink: /api/circuit/
 		- [impedances](#deareisapicircuitcircuitimpedances)
 		- [set_label](#deareisapicircuitcircuitset_label)
 		- [set_parameters](#deareisapicircuitcircuitset_parameters)
+		- [substitute_element](#deareisapicircuitcircuitsubstitute_element)
 		- [to_circuitikz](#deareisapicircuitcircuitto_circuitikz)
 		- [to_latex](#deareisapicircuitcircuitto_latex)
 		- [to_stack](#deareisapicircuitcircuitto_stack)
 		- [to_string](#deareisapicircuitcircuitto_string)
 		- [to_sympy](#deareisapicircuitcircuitto_sympy)
+	- [CircuitBuilder](#deareisapicircuitcircuitbuilder)
+		- [add](#deareisapicircuitcircuitbuilderadd)
+		- [parallel](#deareisapicircuitcircuitbuilderparallel)
+		- [series](#deareisapicircuitcircuitbuilderseries)
+		- [to_circuit](#deareisapicircuitcircuitbuilderto_circuit)
+		- [to_string](#deareisapicircuitcircuitbuilderto_string)
 	- [Connection](#deareisapicircuitconnection)
 		- [contains](#deareisapicircuitconnectioncontains)
+		- [get_connections](#deareisapicircuitconnectionget_connections)
 		- [get_element](#deareisapicircuitconnectionget_element)
 		- [get_elements](#deareisapicircuitconnectionget_elements)
 		- [get_label](#deareisapicircuitconnectionget_label)
@@ -31,6 +40,7 @@ permalink: /api/circuit/
 		- [impedance](#deareisapicircuitconnectionimpedance)
 		- [impedances](#deareisapicircuitconnectionimpedances)
 		- [set_parameters](#deareisapicircuitconnectionset_parameters)
+		- [substitute_element](#deareisapicircuitconnectionsubstitute_element)
 		- [to_latex](#deareisapicircuitconnectionto_latex)
 		- [to_stack](#deareisapicircuitconnectionto_stack)
 		- [to_string](#deareisapicircuitconnectionto_string)
@@ -39,7 +49,7 @@ permalink: /api/circuit/
 	- [ParsingError](#deareisapicircuitparsingerror)
 	- [Series](#deareisapicircuitseries)
 	- [UnexpectedCharacter](#deareisapicircuitunexpectedcharacter)
-	- [string_to_circuit](#deareisapicircuitstring_to_circuit)
+	- [parse_cdc](#deareisapicircuitparse_cdc)
 
 
 
@@ -62,6 +72,25 @@ _Constructor parameters_
 
 
 _Functions and methods_
+
+#### **deareis.api.circuit.Circuit.get_connections**
+
+Get the connections in this circuit.
+
+```python
+def get_connections(self, flattened: bool = True) -> List[Connection]:
+```
+
+
+_Parameters_
+
+- `flattened`: Whether or not the connections should be returned as a list of all connections or as a list connections that may also contain more connections.
+
+
+_Returns_
+```python
+List[Connection]
+```
 
 #### **deareis.api.circuit.Circuit.get_element**
 
@@ -93,7 +122,7 @@ def get_elements(self, flattened: bool = True) -> List[Union[Element, Connection
 
 _Parameters_
 
-- `flattened`: Whether or not the elements should be returned as a list of only elements or as a list of elements and connections.
+- `flattened`: Whether or not the elements should be returned as a list of only elements or as a list of connections containing elements.
 
 
 _Returns_
@@ -193,6 +222,20 @@ _Parameters_
 
 - `parameters`: A mapping of circuit element integer identifiers to an OrderedDict mapping the parameter symbol to the new value.
 
+#### **deareis.api.circuit.Circuit.substitute_element**
+
+Substitute the element with the given integer identifier in the circuit with another element.
+
+```python
+def substitute_element(self, ident: int, element: Element):
+```
+
+
+_Parameters_
+
+- `ident`: The integer identifier corresponding to an element in the circuit.
+- `element`: The new element that will substitute the old element.
+
 #### **deareis.api.circuit.Circuit.to_circuitikz**
 
 Get the LaTeX source needed to draw a circuit diagram for this circuit using the circuitikz package.
@@ -285,6 +328,101 @@ Expr
 
 
 
+### **deareis.api.circuit.CircuitBuilder**
+
+A class for building circuits using context managers:
+
+with CircuitBuilder() as builder:
+    builder.add(Resistor())
+
+```python
+class CircuitBuilder(object):
+	parallel: bool = False
+```
+
+_Constructor parameters_
+
+- `parallel`
+
+
+_Functions and methods_
+
+#### **deareis.api.circuit.CircuitBuilder.add**
+
+Add an element to the current context (i.e., connection).
+
+```python
+def add(self, element: Element):
+```
+
+
+_Parameters_
+
+- `element`: The element to add to the current series or parallel connection.
+
+#### **deareis.api.circuit.CircuitBuilder.parallel**
+
+Create a parallel connection:
+
+with CircuitBuilder() as builder:
+    with builder.parallel() as parallel:
+        builder.add(Resistor())
+        builder.add(Capacitor())
+
+```python
+def parallel(self):
+```
+
+#### **deareis.api.circuit.CircuitBuilder.series**
+
+Create a series connection:
+
+with CircuitBuilder() as builder:
+    with builder.series() as series:
+        builder.add(Resistor())
+        builder.add(Capacitor())
+
+```python
+def series(self):
+```
+
+#### **deareis.api.circuit.CircuitBuilder.to_circuit**
+
+Generate a circuit.
+
+```python
+def to_circuit(self) -> Circuit:
+```
+
+
+_Returns_
+```python
+Circuit
+```
+
+#### **deareis.api.circuit.CircuitBuilder.to_string**
+
+Generate a circuit description code.
+
+```python
+def to_string(self, decimals: int = -1) -> str:
+```
+
+
+_Parameters_
+
+- `decimals`: The number of decimals to include for the current element parameter values and limits.
+-1 means that the CDC is generated using the basic syntax, which omits element labels, parameter values, and parameter limits.
+
+
+_Returns_
+```python
+str
+```
+
+
+
+
 ### **deareis.api.circuit.Connection**
 
 ```python
@@ -319,6 +457,25 @@ _Returns_
 bool
 ```
 
+#### **deareis.api.circuit.Connection.get_connections**
+
+Get the connections in this circuit.
+
+```python
+def get_connections(self, flattened: bool = True) -> List[Connection]:
+```
+
+
+_Parameters_
+
+- `flattened`: Whether or not the connections should be returned as a list of all connections or as a list connections that may also contain more connections.
+
+
+_Returns_
+```python
+List[Connection]
+```
+
 #### **deareis.api.circuit.Connection.get_element**
 
 Get a specific element based on its unique identifier.
@@ -340,7 +497,7 @@ Optional[Element]
 
 #### **deareis.api.circuit.Connection.get_elements**
 
-Get a list of elements and connections nested inside this connection.
+Get the elements in this circuit.
 
 ```python
 def get_elements(self, flattened: bool = True) -> List[Union[Element, Connection]]:
@@ -349,7 +506,7 @@ def get_elements(self, flattened: bool = True) -> List[Union[Element, Connection
 
 _Parameters_
 
-- `flattened`: Whether the returned list should only contain elements or a combination of elements and connections.
+- `flattened`: Whether or not the elements should be returned as a list of only elements or as a list of connections containing elements.
 
 
 _Returns_
@@ -437,6 +594,25 @@ _Parameters_
 
 - `parameters`: The outer key is the unique identifier assigned to an element.
 The inner key is the symbol corresponding to an element parameter.
+
+#### **deareis.api.circuit.Connection.substitute_element**
+
+
+```python
+def substitute_element(self, ident: int, element: Element) -> bool:
+```
+
+
+_Parameters_
+
+- `ident`
+- `element`
+
+
+_Returns_
+```python
+bool
+```
 
 #### **deareis.api.circuit.Connection.to_latex**
 
@@ -564,12 +740,12 @@ _Constructor parameters_
 
 
 
-### **deareis.api.circuit.string_to_circuit**
+### **deareis.api.circuit.parse_cdc**
 
 Generate a Circuit instance from a string that contains a circuit description code (CDC).
 
 ```python
-def string_to_circuit(cdc: str) -> Circuit:
+def parse_cdc(cdc: str) -> Circuit:
 ```
 
 

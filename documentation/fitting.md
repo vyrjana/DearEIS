@@ -8,6 +8,7 @@ permalink: /api/fitting/
 **Table of Contents**
 
 - [deareis.api.fitting](#deareisapifitting)
+	- [CNLSMethod](#deareisapifittingcnlsmethod)
 	- [FitResult](#deareisapifittingfitresult)
 		- [from_dict](#deareisapifittingfitresultfrom_dict)
 		- [get_bode_data](#deareisapifittingfitresultget_bode_data)
@@ -23,15 +24,58 @@ permalink: /api/fitting/
 		- [to_dict](#deareisapifittingfitsettingsto_dict)
 	- [FittedParameter](#deareisapifittingfittedparameter)
 		- [from_dict](#deareisapifittingfittedparameterfrom_dict)
+		- [get_relative_error](#deareisapifittingfittedparameterget_relative_error)
 		- [to_dict](#deareisapifittingfittedparameterto_dict)
 	- [FittingError](#deareisapifittingfittingerror)
-	- [Method](#deareisapifittingmethod)
 	- [Weight](#deareisapifittingweight)
-	- [fit_circuit_to_data](#deareisapifittingfit_circuit_to_data)
+	- [fit_circuit](#deareisapifittingfit_circuit)
 
 
 
 ## **deareis.api.fitting**
+
+### **deareis.api.fitting.CNLSMethod**
+
+Iterative methods used during complex non-linear least-squares fitting:
+
+- AUTO: try each method
+- AMPGO
+- BASINHOPPING
+- BFGS
+- BRUTE
+- CG
+- COBYLA
+- DIFFERENTIAL_EVOLUTION
+- DOGLEG
+- DUAL_ANNEALING
+- EMCEE
+- LBFGSB
+- LEASTSQ
+- LEAST_SQUARES
+- NELDER
+- NEWTON
+- POWELL
+- SHGO
+- SLSQP
+- TNC
+- TRUST_CONSTR
+- TRUST_EXACT
+- TRUST_KRYLOV
+- TRUST_NCG
+
+```python
+class CNLSMethod(IntEnum):
+	args
+	kwargs
+```
+
+_Constructor parameters_
+
+- `args`
+- `kwargs`
+
+
+
 
 ### **deareis.api.fitting.FitResult**
 
@@ -55,7 +99,7 @@ class FitResult(object):
 	ndata: int
 	nfree: int
 	nfev: int
-	method: Method
+	method: CNLSMethod
 	weight: Weight
 	settings: FitSettings
 ```
@@ -106,7 +150,7 @@ FitResult
 
 #### **deareis.api.fitting.FitResult.get_bode_data**
 
-Get the data required to plot the results as a Bode plot (log |Z| and phi vs log f).
+Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
 
 ```python
 def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
@@ -196,7 +240,7 @@ Tuple[ndarray, ndarray]
 
 #### **deareis.api.fitting.FitResult.get_residual_data**
 
-Get the data required to plot the residuals (real and imaginary vs log f).
+Get the data required to plot the residuals (real and imaginary vs f).
 
 ```python
 def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
@@ -251,7 +295,7 @@ A class to store the settings used to perform a circuit fit.
 ```python
 class FitSettings(object):
 	cdc: str
-	method: Method
+	method: CNLSMethod
 	weight: Weight
 	max_nfev: int
 ```
@@ -340,6 +384,19 @@ _Returns_
 FittedParameter
 ```
 
+#### **deareis.api.fitting.FittedParameter.get_relative_error**
+
+
+```python
+def get_relative_error(self) -> float:
+```
+
+
+_Returns_
+```python
+float
+```
+
 #### **deareis.api.fitting.FittedParameter.to_dict**
 
 
@@ -360,49 +417,6 @@ dict
 
 ```python
 class FittingError(Exception):
-	args
-	kwargs
-```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
-
-
-
-### **deareis.api.fitting.Method**
-
-Iterative methods used during complex non-linear least-squares fitting:
-
-- AUTO: try each method
-- AMPGO
-- BASINHOPPING
-- BFGS
-- BRUTE
-- CG
-- COBYLA
-- DIFFERENTIAL_EVOLUTION
-- DOGLEG
-- DUAL_ANNEALING
-- EMCEE
-- LBFGSB
-- LEASTSQ
-- LEAST_SQUARES
-- NELDER
-- NEWTON
-- POWELL
-- SHGO
-- SLSQP
-- TNC
-- TRUST_CONSTR
-- TRUST_EXACT
-- TRUST_KRYLOV
-- TRUST_NCG
-
-```python
-class Method(IntEnum):
 	args
 	kwargs
 ```
@@ -439,14 +453,14 @@ _Constructor parameters_
 
 
 
-### **deareis.api.fitting.fit_circuit_to_data**
+### **deareis.api.fitting.fit_circuit**
 
-Wrapper for `pyimpspec.fit_circuit_to_data` function.
+Wrapper for the `pyimpspec.fit_circuit` function.
 
 Fit a circuit to a data set.
 
 ```python
-def fit_circuit_to_data(data: DataSet, settings: FitSettings, num_procs: int = -1) -> FitResult:
+def fit_circuit(data: DataSet, settings: FitSettings, num_procs: int = -1) -> FitResult:
 ```
 
 
@@ -454,7 +468,7 @@ _Parameters_
 
 - `data`: The data set that the circuit will be fitted to.
 - `settings`: The settings that determine the circuit and how the fit is performed.
-- `num_procs`: The maximum number of parallel processes to use when method is `Method.AUTO` and/or weight is `Weight.AUTO`.
+- `num_procs`: The maximum number of parallel processes to use when method is `CNLSMethod.AUTO` and/or weight is `Weight.AUTO`.
 
 
 _Returns_

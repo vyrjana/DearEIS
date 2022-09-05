@@ -9,11 +9,17 @@ permalink: /api/plotting/
 
 - [deareis.api.plotting](#deareisapiplotting)
 	- [PlotSeries](#deareisapiplottingplotseries)
+		- [get_bode_data](#deareisapiplottingplotseriesget_bode_data)
 		- [get_color](#deareisapiplottingplotseriesget_color)
+		- [get_drt_credible_intervals](#deareisapiplottingplotseriesget_drt_credible_intervals)
+		- [get_drt_data](#deareisapiplottingplotseriesget_drt_data)
+		- [get_frequency](#deareisapiplottingplotseriesget_frequency)
+		- [get_gamma](#deareisapiplottingplotseriesget_gamma)
+		- [get_impedance](#deareisapiplottingplotseriesget_impedance)
 		- [get_label](#deareisapiplottingplotseriesget_label)
-		- [get_line_data](#deareisapiplottingplotseriesget_line_data)
 		- [get_marker](#deareisapiplottingplotseriesget_marker)
-		- [get_scatter_data](#deareisapiplottingplotseriesget_scatter_data)
+		- [get_nyquist_data](#deareisapiplottingplotseriesget_nyquist_data)
+		- [get_tau](#deareisapiplottingplotseriesget_tau)
 		- [has_legend](#deareisapiplottingplotserieshas_legend)
 		- [has_line](#deareisapiplottingplotserieshas_line)
 		- [has_markers](#deareisapiplottingplotserieshas_markers)
@@ -49,10 +55,9 @@ A class that represents the data used to plot an item/series.
 
 ```python
 class PlotSeries(object):
+	data: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
 	label: str
-	scatter_data: List[ndarray]
-	line_data: List[ndarray]
-	color: List[float]
+	color: Tuple[float, float, float, float]
 	marker: int
 	line: bool
 	legend: bool
@@ -60,9 +65,8 @@ class PlotSeries(object):
 
 _Constructor parameters_
 
+- `data`
 - `label`
-- `scatter_data`
-- `line_data`
 - `color`
 - `marker`
 - `line`
@@ -71,17 +75,120 @@ _Constructor parameters_
 
 _Functions and methods_
 
+#### **deareis.api.plotting.PlotSeries.get_bode_data**
+
+
+```python
+def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
+```
+
+
+_Parameters_
+
+- `num_per_decade`
+
+
+_Returns_
+```python
+Tuple[ndarray, ndarray, ndarray]
+```
+
 #### **deareis.api.plotting.PlotSeries.get_color**
 
 
 ```python
-def get_color(self) -> List[float]:
+def get_color(self) -> Tuple[float, float, float, float]:
 ```
 
 
 _Returns_
 ```python
-List[float]
+Tuple[float, float, float, float]
+```
+
+#### **deareis.api.plotting.PlotSeries.get_drt_credible_intervals**
+
+
+```python
+def get_drt_credible_intervals(self) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
+```
+
+
+_Returns_
+```python
+Tuple[ndarray, ndarray, ndarray, ndarray]
+```
+
+#### **deareis.api.plotting.PlotSeries.get_drt_data**
+
+
+```python
+def get_drt_data(self, imaginary: bool = False) -> Tuple[ndarray, ndarray]:
+```
+
+
+_Parameters_
+
+- `imaginary`
+
+
+_Returns_
+```python
+Tuple[ndarray, ndarray]
+```
+
+#### **deareis.api.plotting.PlotSeries.get_frequency**
+
+
+```python
+def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+```
+
+
+_Parameters_
+
+- `num_per_decade`
+
+
+_Returns_
+```python
+ndarray
+```
+
+#### **deareis.api.plotting.PlotSeries.get_gamma**
+
+
+```python
+def get_gamma(self, imaginary: bool = False) -> ndarray:
+```
+
+
+_Parameters_
+
+- `imaginary`
+
+
+_Returns_
+```python
+ndarray
+```
+
+#### **deareis.api.plotting.PlotSeries.get_impedance**
+
+
+```python
+def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+```
+
+
+_Parameters_
+
+- `num_per_decade`
+
+
+_Returns_
+```python
+ndarray
 ```
 
 #### **deareis.api.plotting.PlotSeries.get_label**
@@ -97,19 +204,6 @@ _Returns_
 str
 ```
 
-#### **deareis.api.plotting.PlotSeries.get_line_data**
-
-
-```python
-def get_line_data(self) -> List[ndarray]:
-```
-
-
-_Returns_
-```python
-List[ndarray]
-```
-
 #### **deareis.api.plotting.PlotSeries.get_marker**
 
 
@@ -123,17 +217,35 @@ _Returns_
 int
 ```
 
-#### **deareis.api.plotting.PlotSeries.get_scatter_data**
+#### **deareis.api.plotting.PlotSeries.get_nyquist_data**
 
 
 ```python
-def get_scatter_data(self) -> List[ndarray]:
+def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+```
+
+
+_Parameters_
+
+- `num_per_decade`
+
+
+_Returns_
+```python
+Tuple[ndarray, ndarray]
+```
+
+#### **deareis.api.plotting.PlotSeries.get_tau**
+
+
+```python
+def get_tau(self) -> ndarray:
 ```
 
 
 _Returns_
 ```python
-List[ndarray]
+ndarray
 ```
 
 #### **deareis.api.plotting.PlotSeries.has_legend**
@@ -180,7 +292,7 @@ bool
 
 ### **deareis.api.plotting.PlotSettings**
 
-A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, equivalent circuit fitting results, and simulation results.
+A class representing a complex plot that can contain one or more data sets, Kramers-Kronig test results, DRT analysis results, equivalent circuit fitting results, and simulation results.
 
 ```python
 class PlotSettings(object):
@@ -214,7 +326,7 @@ _Functions and methods_
 
 
 ```python
-def add_series(self, series: Union[DataSet, TestResult, FitResult, SimulationResult]):
+def add_series(self, series: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]):
 ```
 
 
@@ -226,7 +338,7 @@ _Parameters_
 
 
 ```python
-def find_series(self, uuid: str, datasets: List[DataSet], tests: Dict[str, List[TestResult]], fits: Dict[str, List[FitResult]], simulations: List[SimulationResult]) -> Union[DataSet, TestResult, FitResult, SimulationResult, NoneType]:
+def find_series(self, uuid: str, datasets: List[DataSet], tests: Dict[str, List[TestResult]], drts: Dict[str, List[DRTResult]], fits: Dict[str, List[FitResult]], simulations: List[SimulationResult]) -> Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult, NoneType]:
 ```
 
 
@@ -235,13 +347,14 @@ _Parameters_
 - `uuid`
 - `datasets`
 - `tests`
+- `drts`
 - `fits`
 - `simulations`
 
 
 _Returns_
 ```python
-Union[DataSet, TestResult, FitResult, SimulationResult, NoneType]
+Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult, NoneType]
 ```
 
 #### **deareis.api.plotting.PlotSettings.from_dict**
@@ -499,8 +612,11 @@ dict
 Types of plots:
 
 - NYQUIST: -Zim vs Zre
-- BODE_MAGNITUDE: |Z| vs log f
-- BODE_PHASE: phi vs log f
+- BODE_MAGNITUDE: |Z| vs f
+- BODE_PHASE: phi vs f
+- DRT: gamma vs tau
+- IMPEDANCE_REAL: Zre vs f
+- IMPEDANCE_IMAGINARY: Zim vs f
 
 ```python
 class PlotType(IntEnum):

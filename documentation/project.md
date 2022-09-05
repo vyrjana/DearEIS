@@ -11,11 +11,13 @@ permalink: /api/project/
 
 - [Project](#deareisproject)
 	- [add_data_set](#deareisprojectadd_data_set)
+	- [add_drt](#deareisprojectadd_drt)
 	- [add_fit](#deareisprojectadd_fit)
 	- [add_plot](#deareisprojectadd_plot)
 	- [add_simulation](#deareisprojectadd_simulation)
 	- [add_test](#deareisprojectadd_test)
 	- [delete_data_set](#deareisprojectdelete_data_set)
+	- [delete_drt](#deareisprojectdelete_drt)
 	- [delete_fit](#deareisprojectdelete_fit)
 	- [delete_plot](#deareisprojectdelete_plot)
 	- [delete_simulation](#deareisprojectdelete_simulation)
@@ -26,9 +28,11 @@ permalink: /api/project/
 	- [from_dict](#deareisprojectfrom_dict)
 	- [from_file](#deareisprojectfrom_file)
 	- [from_json](#deareisprojectfrom_json)
+	- [get_all_drts](#deareisprojectget_all_drts)
 	- [get_all_fits](#deareisprojectget_all_fits)
 	- [get_all_tests](#deareisprojectget_all_tests)
 	- [get_data_sets](#deareisprojectget_data_sets)
+	- [get_drts](#deareisprojectget_drts)
 	- [get_fits](#deareisprojectget_fits)
 	- [get_label](#deareisprojectget_label)
 	- [get_notes](#deareisprojectget_notes)
@@ -76,6 +80,20 @@ def add_data_set(self, data: DataSet):
 _Parameters_
 
 - `data`: The data set to add.
+
+#### **deareis.Project.add_drt**
+
+Add the provided DRT analysis result to the provided data set's list of DRT analysis results.
+
+```python
+def add_drt(self, data: DataSet, drt: DRTResult):
+```
+
+
+_Parameters_
+
+- `data`: The data set that was analyzed.
+- `drt`: The result of the analysis.
 
 #### **deareis.Project.add_fit**
 
@@ -143,6 +161,20 @@ def delete_data_set(self, data: DataSet):
 _Parameters_
 
 - `data`: The data set to remove.
+
+#### **deareis.Project.delete_drt**
+
+Delete the provided DRT analysis result from the provided data set's list of DRT analysis results.
+
+```python
+def delete_drt(self, data: DataSet, drt: DRTResult):
+```
+
+
+_Parameters_
+
+- `data`: The data set associated with the analysis result.
+- `drt`: The analysis result to delete.
 
 #### **deareis.Project.delete_fit**
 
@@ -299,6 +331,20 @@ _Returns_
 Project
 ```
 
+#### **deareis.Project.get_all_drts**
+
+Get a mapping of data set UUIDs to the corresponding DRT analysis results of those data sets.
+
+```python
+def get_all_drts(self) -> Dict[str, List[DRTResult]]:
+```
+
+
+_Returns_
+```python
+Dict[str, List[DRTResult]]
+```
+
 #### **deareis.Project.get_all_fits**
 
 Get a mapping of data set UUIDs to the corresponding list of fit results of those data sets.
@@ -339,6 +385,25 @@ def get_data_sets(self) -> List[DataSet]:
 _Returns_
 ```python
 List[DataSet]
+```
+
+#### **deareis.Project.get_drts**
+
+Get the DRT analysis results associated with a specific data set.
+
+```python
+def get_drts(self, data: DataSet) -> List[DRTResult]:
+```
+
+
+_Parameters_
+
+- `data`: The data set whose analyses to get.
+
+
+_Returns_
+```python
+List[DRTResult]
 ```
 
 #### **deareis.Project.get_fits**
@@ -408,15 +473,13 @@ str
 Get PlotSeries instances of each of the plotted items/series in a specific plot.
 
 ```python
-def get_plot_series(self, plot: PlotSettings, num_per_decade: int = 100) -> List[PlotSeries]:
+def get_plot_series(self, plot: PlotSettings) -> List[PlotSeries]:
 ```
 
 
 _Parameters_
 
 - `plot`: The plot whose items/series to get.
-- `num_per_decade`: The number of data points in fitted/simulated spectra.
-Can be used to adjust how smooth an item/series looks.
 
 
 _Returns_
