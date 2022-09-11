@@ -416,7 +416,7 @@ Set whether or not an element parameter should have a fixed value when fitting a
 to a data set.
 
 ```python
-def set_fixed(self, key: str, value: bool):
+def set_fixed(self, key: str, value: bool) -> Element:
 ```
 
 
@@ -425,12 +425,18 @@ _Parameters_
 - `key`: A key corresponding to an element parameter.
 - `value`: True if the value should be fixed.
 
+
+_Returns_
+```python
+Element
+```
+
 #### **deareis.api.circuit.Element.set_label**
 
 Set the label assigned to a specific instance of the element.
 
 ```python
-def set_label(self, label: str):
+def set_label(self, label: str) -> Element:
 ```
 
 
@@ -438,13 +444,19 @@ _Parameters_
 
 - `label`: The new label.
 
+
+_Returns_
+```python
+Element
+```
+
 #### **deareis.api.circuit.Element.set_lower_limit**
 
 Set the upper limit for the value of an element parameter when fitting a circuit to a data
 set.
 
 ```python
-def set_lower_limit(self, key: str, value: float):
+def set_lower_limit(self, key: str, value: float) -> Element:
 ```
 
 
@@ -453,6 +465,12 @@ _Parameters_
 - `key`: A key corresponding to an element parameter.
 - `value`: The new limit for the element parameter. The limit can be removed by setting the limit
 to be -numpy.inf.
+
+
+_Returns_
+```python
+Element
+```
 
 #### **deareis.api.circuit.Element.set_parameters**
 
@@ -473,7 +491,7 @@ Set the upper limit for the value of an element parameter when fitting a circuit
 set.
 
 ```python
-def set_upper_limit(self, key: str, value: float):
+def set_upper_limit(self, key: str, value: float) -> Element:
 ```
 
 
@@ -482,6 +500,12 @@ _Parameters_
 - `key`: A key corresponding to an element parameter.
 - `value`: The new limit for the element parameter. The limit can be removed by setting the limit
 to be numpy.inf.
+
+
+_Returns_
+```python
+Element
+```
 
 #### **deareis.api.circuit.Element.to_latex**
 

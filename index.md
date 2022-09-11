@@ -40,6 +40,9 @@ The program includes features such as:
 
 - [Python (version 3.8 or later)](https://www.python.org/)
 
+Check the GitHub repository for more information about the required and optional dependencies.
+
+
 ### Supported platforms
 
 - Linux
