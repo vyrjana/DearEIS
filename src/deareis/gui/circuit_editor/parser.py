@@ -138,7 +138,7 @@ class Parser:
             delink_callback=self.delink,
         )
         self.node_handler: int = node_handler
-        self.wes_node: Node = None  # type: ignore
+        self.we_node: Node = None  # type: ignore
         self.cere_node: Node = None  # type: ignore
         self.nodes: List[Node] = []
         self.element_counter: int = -1
@@ -198,8 +198,8 @@ class Parser:
         for node in self.nodes:
             if func(node):
                 return node
-        if func(self.wes_node):
-            return self.wes_node
+        if func(self.we_node):
+            return self.we_node
         elif func(self.cere_node):
             return self.cere_node
         raise Exception("Node does not exist!")
@@ -232,7 +232,7 @@ class Parser:
         assert type(src) is Node
         assert type(dst) is Node
         src_attr = dpg.get_item_children(src.tag, slot=1)[
-            1 if src != self.wes_node else 0
+            1 if src != self.we_node else 0
         ]
         dst_attr = dpg.get_item_children(dst.tag, slot=1)[0]
         self.link(self.node_editor, (src_attr, dst_attr))
@@ -307,10 +307,10 @@ class Parser:
         self.reset_element_counter()
         self.reset_dummy_counter()
         dpg.delete_item(self.node_editor, children_only=True)
-        self.wes_node = Node(
+        self.we_node = Node(
             self.node_editor,
             -999999,
-            "WE+WS",
+            "WE",
             (
                 self.x_offset,
                 self.y_offset,
@@ -318,7 +318,7 @@ class Parser:
             input_attribute=False,
         )
         if self.node_handler > 0:
-            dpg.bind_item_handler_registry(self.wes_node.tag, self.node_handler)
+            dpg.bind_item_handler_registry(self.we_node.tag, self.node_handler)
         self.cere_node = Node(
             self.node_editor,
             999999,
@@ -346,7 +346,7 @@ class Parser:
 
     def next_dummy(self) -> int:
         self.dummy_counter -= 1
-        assert self.dummy_counter > self.wes_node.id
+        assert self.dummy_counter > self.we_node.id
         return self.dummy_counter
 
     def walk_nodes(
@@ -365,14 +365,14 @@ class Parser:
         num_links_out: int = len(node.output_links)
         num_links_in: int
         stack_len: int
-        if node == self.wes_node:  # WE+WS node (i.e. the starting point)
-            assert num_links_out > 0, self.wes_node.set_invalid(
-                "WE+WS is not connected to anything!"
+        if node == self.we_node:  # WE node (i.e. the starting point)
+            assert num_links_out > 0, self.we_node.set_invalid(
+                "WE is not connected to anything!"
             )
             assert (
                 self.cere_node.id not in node.output_links
-            ), self.wes_node.set_invalid(
-                self.cere_node.set_invalid("WE+WS is shorted to CE+RE!")
+            ), self.we_node.set_invalid(
+                self.cere_node.set_invalid("WE is shorted to CE+RE!")
             )
             stack.append("[")
             if num_links_out > 1:  # Start of parallel connection
@@ -516,13 +516,13 @@ class Parser:
         stack: List[str] = []
         visited_nodes: Set[int] = set({})
         pending_nodes: Set[int] = set({})
-        if self.wes_node is not None:
-            self.wes_node.set_valid()
+        if self.we_node is not None:
+            self.we_node.set_valid()
         if self.cere_node is not None:
             self.cere_node.set_valid()
         list(map(lambda _: _.set_valid(), self.nodes))
         try:
-            self.walk_nodes(self.wes_node, stack, visited_nodes, pending_nodes)
+            self.walk_nodes(self.we_node, stack, visited_nodes, pending_nodes)
             circuit = pyimpspec.parse_cdc("".join(stack))
         except AssertionError as e:
             msg = str(e)
@@ -537,7 +537,7 @@ class Parser:
     def generate_nodes(self, input_stack):
         element_stack: List[Union[Connection, Element]] = []
         symbol_stack: List[str] = []
-        node_stack: List[Union[Node, List[Node]]] = [self.wes_node]
+        node_stack: List[Union[Node, List[Node]]] = [self.we_node]
 
         symbol: str
         element: Union[Connection, Element]
@@ -551,7 +551,7 @@ class Parser:
 
         def is_dummy_node(item) -> bool:
             if type(item) is Node:
-                return item.id < -1 and item.id > self.wes_node.id
+                return item.id < -1 and item.id > self.we_node.id
             return False
 
         def pop_input() -> Tuple[str, Union[Element, Series, Parallel]]:
@@ -583,7 +583,7 @@ class Parser:
                     else:
                         assert type(node_stack[-2]) is Node
                         if (
-                            node_stack[-2] == self.wes_node
+                            node_stack[-2] == self.we_node
                             or is_dummy_node(node_stack[-2])
                         ) or (
                             type(node_stack[-2]) is Node
@@ -598,7 +598,7 @@ class Parser:
                     for other in others:  # type: ignore
                         self.link_nodes(other, node)
             else:
-                if node_stack[-1] == self.wes_node:
+                if node_stack[-1] == self.we_node:
                     other = node_stack[-1]
                 else:
                     other = node_stack.pop()
@@ -785,7 +785,7 @@ class Parser:
             if (
                 len(node_stack) > 1
                 and type(node_stack[-2]) is Node
-                and node_stack[-2] != self.wes_node
+                and node_stack[-2] != self.we_node
             ):
                 node_stack.pop(-2)
             return (
@@ -799,7 +799,7 @@ class Parser:
         width, height = process_series(element, 1, 0)
         assert len(element_stack) == 0, element_stack
         assert len(symbol_stack) == input_length
-        assert node_stack.pop(0) == self.wes_node
+        assert node_stack.pop(0) == self.we_node
         assert len(node_stack) == 1
         if type(node_stack[-1]) is list:
             for node in node_stack[-1]:

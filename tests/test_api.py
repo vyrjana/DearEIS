@@ -146,7 +146,6 @@ class TestCDC(TestCase):
         )
 
     def test_03_circuit_builder(self):
-        cdc: str = "R{R=53.2:sol}([R{R=325.162:ct}W]C{C=1.68E-11:dl})"
         with deareis.CircuitBuilder() as builder:
             R: deareis.Resistor = deareis.Resistor(R=53.2)
             R.set_label("sol")
@@ -160,6 +159,23 @@ class TestCDC(TestCase):
                 C: deareis.Capacitor = deareis.Capacitor(C=1.68e-11)
                 C.set_label("dl")
                 parallel.add(C)
+        self.assertEqual(builder.to_string(), self.circuit.to_string())
+        with deareis.CircuitBuilder() as builder:
+            builder += (
+                deareis.Resistor(R=53.2)
+                .set_label("sol")
+            )
+            with builder.parallel() as parallel:
+                with parallel.series() as series:
+                    series += (
+                        deareis.Resistor(R=325.162)
+                        .set_label("ct")
+                    )
+                    series += deareis.Warburg()
+                parallel += (
+                    deareis.Capacitor(C=1.68e-11)
+                    .set_label("dl")
+                )
         self.assertEqual(builder.to_string(), self.circuit.to_string())
 
 

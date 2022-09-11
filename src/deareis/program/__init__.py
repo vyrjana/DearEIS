@@ -180,7 +180,9 @@ from deareis.version import PACKAGE_VERSION
 
 
 # Hook into the progress callbacks implemented in pyimpspec
-pyimpspec.progress.register(lambda *a, **k: signals.emit(Signal.SHOW_BUSY_MESSAGE, *a, **k))
+pyimpspec.progress.register(
+    lambda *a, **k: signals.emit(Signal.SHOW_BUSY_MESSAGE, *a, **k)
+)
 
 
 def sympy_wrapper(expr: Expr, queue: Queue):
@@ -282,6 +284,10 @@ def copy_output(*args, **kwargs):
                 )
         elif output == FitSimOutput.LATEX_DIAGRAM:
             clipboard_content = fit_or_sim.circuit.to_circuitikz()
+        elif output == FitSimOutput.SVG_DIAGRAM:
+            clipboard_content = (
+                fit_or_sim.circuit.to_drawing().get_imagedata(fmt="svg").decode()
+            )
         elif output == FitSimOutput.LATEX_EXPR:
             clipboard_content = latex(get_sympy_expr(fit_or_sim.circuit))
         elif (
@@ -324,6 +330,8 @@ def copy_output(*args, **kwargs):
                         lines.append(f"\t{sym}: {value:.6E},")
                     lines.append("}")
                     clipboard_content = "\n".join(lines)
+        else:
+            raise Exception(f"Unsupported FitSimOutput: {output=}")
     elif type(output) is DRTOutput:
         assert output in drt_output_to_label, "Unsupported output!"
         drt: Optional[DRTResult] = kwargs.get("drt")

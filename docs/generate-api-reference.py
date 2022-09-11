@@ -179,7 +179,48 @@ The `parse_data` function is a wrapper for the corresponding function in pyimpsp
                 deareis.Element,
             ]
             + list(deareis.get_elements().values()),
-            description="",
+            description="""
+Circuits can be generated in one of two ways:
+- by parsing a circuit description code (CDC)
+- by using the `CircuitBuilder` class
+
+The basic syntax for CDCs is fairly straighforward:
+
+```python
+# A resistor connected in series with a resistor and a capacitor connected in parallel
+circuit: deareis.Circuit = deareis.parse_cdc("[R(RC)]")
+```
+
+An extended syntax, which allows for defining initial values, lower/upper limits, and labels, is also supported:
+
+```python
+circuit: deareis.Circuit = deareis.parse_cdc("[R{R=50:sol}(R{R=250f:ct}C{C=1.5e-6/1e-6/2e-6:dl})]")
+```
+
+Alternatively, the `CircuitBuilder` class can be used:
+
+```python
+with deareis.CircuitBuilder() as builder:
+    builder += (
+        deareis.Resistor(R=50)
+        .set_label("sol")
+    )
+    with builder.parallel() as parallel:
+        parallel += (
+            deareis.Resistor(R=250)
+            .set_fixed("R", True)
+        )
+        parallel += (
+            deareis.Capacitor(C=1.5e-6)
+            .set_label("dl")
+            .set_lower_limit("C", 1e-6)
+            .set_upper_limit("C", 2e-6)
+        )
+circuit: deareis.Circuit = builder.to_circuit()
+```
+
+"""
+            + f"Information about the supported circuit elements can be found [here]({root_url}/elements).\n\n",
         ),
     )
     # Elements

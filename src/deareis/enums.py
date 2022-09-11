@@ -727,6 +727,7 @@ class FitSimOutput(IntEnum):
     LATEX_EXPR = auto()
     LATEX_PARAMETERS_TABLE = auto()
     MARKDOWN_PARAMETERS_TABLE = auto()
+    SVG_DIAGRAM = auto()
     SYMPY_EXPR = auto()
     SYMPY_EXPR_VALUES = auto()
 
@@ -741,6 +742,7 @@ fit_sim_output_to_label: Dict[FitSimOutput, str] = {
     FitSimOutput.LATEX_EXPR: "LaTeX - expression",
     FitSimOutput.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
     FitSimOutput.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
+    FitSimOutput.SVG_DIAGRAM: "SVG - circuit diagram",
     FitSimOutput.SYMPY_EXPR: "SymPy - expression",
     FitSimOutput.SYMPY_EXPR_VALUES: "SymPy - expression and values",
 }

@@ -75,7 +75,19 @@ The package **may** also work on other platforms depending on whether or not tho
 	- [requests](https://github.com/psf/requests): checking the latest version of DearEIS available on PyPI
 	- [xdg](https://github.com/srstevenson/xdg): XDG Base Directory Specification compliant paths
 
-The Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).
+These Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).
+
+The following Python packages can be installed as optional dependencies for additional functionality:
+
+- [cvxpy](https://github.com/cvxpy/cvxpy): convex optimization
+	- **IMPORTANT!** Windows and MacOS users must follow the steps described in [the CVXPY documentation](https://www.cvxpy.org/install/index.html) before installing this optional dependency!
+
+
+If you wish to make use of these, then they must be specified explicitly when installing pyimpspec:
+
+```
+pip install pyimpspec[cvxpy]
+```
 
 
 ### Installing

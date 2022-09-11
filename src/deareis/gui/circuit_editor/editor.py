@@ -197,7 +197,7 @@ class CircuitEditor:
             if node_tags:
                 for tag in node_tags:
                     node: Node = self.parser.find_node(tag=tag)
-                    if node == self.parser.wes_node or node == self.parser.cere_node:
+                    if node == self.parser.we_node or node == self.parser.cere_node:
                         continue
                     self.delete_node(node)
 
@@ -288,7 +288,7 @@ Nodes can be connected by left-clicking on the input/output of one node, draggin
 
 The parameters of the element represented by a node can be altered by left-clicking on the label of the node. The parameters that can be modified will then show up in the sidebar to the left. An element's label can also be modified.
 
-Nodes can be deleted by left-clicking on the label of a node and then left-clicking on the 'Delete' button that shows up in the sidebar to the left. Alternatively, you can select a node and press the Delete key. Note that the 'WE+WS' and 'CE+RE' nodes, which represent the terminals of the circuit, cannot be deleted.
+Nodes can be deleted by left-clicking on the label of a node and then left-clicking on the 'Delete' button that shows up in the sidebar to the left. Alternatively, you can select a node and press the Delete key. Note that the 'WE' and 'CE+RE' nodes, which represent the terminals of the circuit, cannot be deleted.
 
 You can pan the node editor by holding down the middle mouse button and moving the cursor.
             """.strip(),
@@ -301,22 +301,22 @@ You can pan the node editor by holding down the middle mouse button and moving t
         self.clear_parameter_window()
         node: Node = self.parser.find_node(tag=app_data[1])
         tooltip_text: str
-        if node.id == self.parser.wes_node.id or node.id == self.parser.cere_node.id:
+        if node.id == self.parser.we_node.id or node.id == self.parser.cere_node.id:
             with dpg.group(parent=self.parameter_window):
-                dpg.add_text("Electrodes")
+                dpg.add_text("Electrode(s)")
                 with dpg.group(horizontal=True):
                     attach_tooltip(
                         """
-The working and sense electrodes.
+The working electrode.
                         """.strip()
-                        if node.id == self.parser.wes_node.id
+                        if node.id == self.parser.we_node.id
                         else """
 The counter and reference electrodes.
                         """.strip(),
                         parent=dpg.add_text("?"),
                     )
                     dpg.add_text(
-                        "WE+WS" if node.id == self.parser.wes_node.id else "CE+RE"
+                        "WE" if node.id == self.parser.we_node.id else "CE+RE"
                     )
             return
         elif node.id < 0:

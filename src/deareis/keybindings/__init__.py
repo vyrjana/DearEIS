@@ -523,7 +523,13 @@ class KeybindingHandler:
                     context=context,
                 )
             elif action == Action.COPY_OUTPUT:
-                if context == Context.FITTING_TAB:
+                if context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.COPY_OUTPUT,
+                        output=project_tab.drt_tab.get_active_output(),
+                        drt=project_tab.get_active_drt(),
+                    )
+                elif context == Context.FITTING_TAB:
                     signals.emit(
                         Signal.COPY_OUTPUT,
                         output=project_tab.get_active_output(context),
@@ -535,6 +541,8 @@ class KeybindingHandler:
                         output=project_tab.get_active_output(context),
                         fit_or_sim=project_tab.get_active_simulation(),
                     )
+                else:
+                    raise Exception(f"Unsupported context: {context=}")
             elif context == Context.DATA_SETS_TAB:
                 data: Optional[DataSet] = project_tab.get_active_data_set()
                 # Project-level: data sets tab

@@ -20,18 +20,22 @@ entry_points = {
 }
 
 dependencies = [
-    "dearpygui>=1.6.2",  # Used to implement the GUI.
-    "pyimpspec>=3.0.0",  # Used for parsing, fitting, and analyzing impedance spectra.
-    "requests>=2.27.1",  # Used to check package status on PyPI.
+    "dearpygui==1.6.2",  # Used to implement the GUI.
+    "pyimpspec>=3.1.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "requests>=2.28.1",  # Used to check package status on PyPI.
     "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
 ]
+
+optional_dependencies = {
+    "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
+}
 
 with open("requirements.txt", "w") as fp:
     fp.write("\n".join(dependencies))
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "3.0.0"
+version = "3.1.0"
 
 licenses = []
 for _, _, files in walk("LICENSES"):
@@ -87,6 +91,12 @@ list(
     )
 )
 
+data_files = [
+    "COPYRIGHT",
+    "CONTRIBUTORS",
+    "LICENSES/README.md",
+    "src/deareis/gui/changelog/CHANGELOG.md",
+] + licenses
 
 setup(
     name="deareis",
@@ -95,13 +105,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     include_package_data=True,
-    data_files=[
-        "COPYRIGHT",
-        "CONTRIBUTORS",
-        "LICENSES/README.md",
-        "src/deareis/gui/changelog/CHANGELOG.md",
-    ]
-    + licenses,
+    data_files=data_files,
     url="https://vyrjana.github.io/DearEIS",
     project_urls={
         "Documentation": "https://vyrjana.github.io/DearEIS/api/",
@@ -114,9 +118,9 @@ setup(
     long_description_content_type="text/markdown",
     entry_points=entry_points,
     install_requires=dependencies,
+    extras_require=optional_dependencies,
     python_requires=">=3.8",
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: MacOS",

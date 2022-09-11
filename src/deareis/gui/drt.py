@@ -495,11 +495,10 @@ class SettingsMenu:
             dpg.disable_item(self.lambda_input)
         else:
             dpg.enable_item(self.lambda_checkbox)
-            dpg.enable_item(self.lambda_input)
-        if dpg.get_value(self.lambda_checkbox):
-            dpg.disable_item(self.lambda_input)
-        else:
-            dpg.enable_item(self.lambda_input)
+            if dpg.get_value(self.lambda_checkbox):
+                dpg.disable_item(self.lambda_input)
+            else:
+                dpg.enable_item(self.lambda_input)
         if settings.method == DRTMethod.TR_NNLS:
             dpg.disable_item(self.rbf_type_combo)
             dpg.disable_item(self.derivative_order_combo)
