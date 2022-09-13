@@ -76,7 +76,7 @@ _Constructor parameters_
 
 ### **deareis.api.kramers_kronig.Test**
 
-Types of tests:
+Types of Kramers-Kronig tests:
 
 - CNLS: complex non-linear least-squares fit of circuit (fig. 1, Boukamp, 1995) with a distribution of fixed time constants
 - COMPLEX: eqs. 11 and 12, Boukamp, 1995
@@ -199,7 +199,7 @@ TestResult
 
 #### **deareis.api.kramers_kronig.TestResult.get_bode_data**
 
-Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
+Get the data required to plot the results as a Bode plot (\|Z\| and phi vs f).
 
 ```python
 def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:

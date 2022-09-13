@@ -57,7 +57,11 @@ _Constructor parameters_
 
 ### **deareis.api.drt.DRTMethod**
 
-An enumeration.
+The method to use for calculating the DRT:
+
+- TR_NNLS
+- TR_RBF
+- BHT
 
 ```python
 class DRTMethod(IntEnum):
@@ -75,7 +79,11 @@ _Constructor parameters_
 
 ### **deareis.api.drt.DRTMode**
 
-An enumeration.
+The parts of the impedance data to use:
+
+- COMPLEX
+- REAL
+- IMAGINARY
 
 ```python
 class DRTMode(IntEnum):
@@ -484,7 +492,10 @@ dict
 
 ### **deareis.api.drt.RBFShape**
 
-An enumeration.
+The shape coefficient to use with the radial basis function discretization:
+
+- FWHM
+- FACTOR
 
 ```python
 class RBFShape(IntEnum):
@@ -502,7 +513,17 @@ _Constructor parameters_
 
 ### **deareis.api.drt.RBFType**
 
-An enumeration.
+The radial basis function to use for discretization (or piecewise linear discretization):
+
+- C0_MATERN
+- C2_MATERN
+- C4_MATERN
+- C6_MATERN
+- CAUCHY
+- GAUSSIAN
+- INVERSE_QUADRATIC
+- INVERSE_QUADRIC
+- PIECEWISE_LINEAR
 
 ```python
 class RBFType(IntEnum):

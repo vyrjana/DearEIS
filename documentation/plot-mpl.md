@@ -63,7 +63,7 @@ Tuple[Figure, Axes]
 ```
 ### **deareis.api.plot.mpl.plot_bode**
 
-Plot some data as a Bode plot (|Z| and phi vs f).
+Plot some data as a Bode plot (\|Z\| and phi vs f).
 
 ```python
 def plot_bode(data: Union[DataSet, TestResult, FitResult, DRTResult], color_magnitude: str = "black", color_phase: str = "black", marker_magnitude: str = "o", marker_phase: str = "s", line: bool = False, label: Optional[str] = None, legend: bool = True, fig: Optional[Figure] = None, axes: List[Axes] = [], num_per_decade: int = 100, adjust_axes: bool = True) -> Tuple[Figure, List[Axes]]:
@@ -324,7 +324,7 @@ Tuple[Figure, Axes]
 ```
 ### **deareis.api.plot.mpl.plot_impedance_magnitude**
 
-Plot the absolute magnitude of the impedance of some data (|Z| vs f).
+Plot the absolute magnitude of the impedance of some data (\|Z\| vs f).
 
 ```python
 def plot_impedance_magnitude(data: Union[DataSet, TestResult, FitResult, DRTResult], color: Any = "black", marker: str = "o", line: bool = False, label: Optional[str] = None, legend: bool = True, fig: Optional[Figure] = None, axis: Optional[Axes] = None, num_per_decade: int = 100, adjust_axes: bool = True) -> Tuple[Figure, Axes]:

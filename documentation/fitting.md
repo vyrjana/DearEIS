@@ -150,7 +150,7 @@ FitResult
 
 #### **deareis.api.fitting.FitResult.get_bode_data**
 
-Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
+Get the data required to plot the results as a Bode plot (\|Z\| and phi vs f).
 
 ```python
 def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
@@ -431,11 +431,11 @@ _Constructor parameters_
 
 ### **deareis.api.fitting.Weight**
 
-Types of weights:
+Types of weights to use during complex non-linear least squares fitting:
 
 - AUTO: try each weight
 - BOUKAMP: 1 / (Zre^2 + Zim^2) (eq. 13, Boukamp, 1995)
-- MODULUS: 1 / |Z|
+- MODULUS: 1 / \|Z\|
 - PROPORTIONAL: 1 / Zre^2, 1 / Zim^2
 - UNITY: 1
 

@@ -612,7 +612,7 @@ dict
 Types of plots:
 
 - NYQUIST: -Zim vs Zre
-- BODE_MAGNITUDE: |Z| vs f
+- BODE_MAGNITUDE: \|Z\| vs f
 - BODE_PHASE: phi vs f
 - DRT: gamma vs tau
 - IMPEDANCE_REAL: Zre vs f

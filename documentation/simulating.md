@@ -69,7 +69,7 @@ SimulationResult
 
 #### **deareis.api.simulation.SimulationResult.get_bode_data**
 
-Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
+Get the data required to plot the results as a Bode plot (\|Z\| and phi vs f).
 
 ```python
 def get_bode_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray, ndarray]:
