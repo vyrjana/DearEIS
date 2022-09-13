@@ -65,15 +65,7 @@ The method to use for calculating the DRT:
 
 ```python
 class DRTMethod(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -87,15 +79,7 @@ The parts of the impedance data to use:
 
 ```python
 class DRTMode(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -499,15 +483,7 @@ The shape coefficient to use with the radial basis function discretization:
 
 ```python
 class RBFShape(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -527,15 +503,7 @@ The radial basis function to use for discretization (or piecewise linear discret
 
 ```python
 class RBFType(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 

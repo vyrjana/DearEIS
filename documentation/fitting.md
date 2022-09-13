@@ -65,15 +65,7 @@ Iterative methods used during complex non-linear least-squares fitting:
 
 ```python
 class CNLSMethod(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -441,15 +433,7 @@ Types of weights to use during complex non-linear least squares fitting:
 
 ```python
 class Weight(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 

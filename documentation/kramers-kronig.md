@@ -62,15 +62,7 @@ Iterative methods used during complex non-linear least-squares fitting:
 
 ```python
 class CNLSMethod(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -85,15 +77,7 @@ Types of Kramers-Kronig tests:
 
 ```python
 class Test(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
@@ -107,15 +91,7 @@ Types of modes that determine how the number of Voigt elements (capacitor connec
 
 ```python
 class TestMode(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 

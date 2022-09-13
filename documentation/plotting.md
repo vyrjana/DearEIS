@@ -620,14 +620,6 @@ Types of plots:
 
 ```python
 class PlotType(IntEnum):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
