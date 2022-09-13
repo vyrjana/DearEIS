@@ -1,3 +1,8 @@
+# 3.1.1
+
+- Updated API documentation.
+
+
 # 3.1.0
 
 - Added the ability to copy circuit diagrams to the clipboard as SVG from the `Fitting` and `Simulation` tabs.

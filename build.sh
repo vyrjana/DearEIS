@@ -42,7 +42,14 @@ dist="$(unzip -Z1 ./dist/*.whl | grep "deareis/gui/licenses/LICENSE-.*\.txt" | s
 repo="$(ls LICENSES | grep "LICENSE-.*.txt" | sort)"
 python -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
 
+# Update documentation
+echo
+echo "Generating API documentation..."
+# The package at https://github.com/vyrjana/python-api-documenter is required for
+# generating the API documentation.
+# The "documentation" folder should be copied to the gh-pages branch in the end.
+python3 ./docs/generate-api-reference.py
+
 # Everything should be okay
 echo
 echo "Finished!!!"
-

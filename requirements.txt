@@ -1,4 +1,4 @@
 dearpygui==1.6.2
-pyimpspec>=3.1.0
+pyimpspec>=3.1.1
 requests>=2.28.1
 xdg>=5.1.1

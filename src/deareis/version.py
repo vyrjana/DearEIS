@@ -17,4 +17,4 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-PACKAGE_VERSION: str = "3.1.0"
+PACKAGE_VERSION: str = "3.1.1"
