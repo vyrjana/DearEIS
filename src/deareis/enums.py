@@ -994,7 +994,7 @@ assert set(rbf_type_to_label.keys()) == set(
 
 class RBFShape(IntEnum):
     """
-    The shape coefficient to use with the radial basis function discretization:
+    The shape to use with the radial basis function discretization:
 
     - FWHM
     - FACTOR

@@ -60,6 +60,62 @@ def _parse_settings_v1(dictionary: dict) -> dict:
 
 @dataclass(frozen=True)
 class DRTSettings:
+    """
+    The settings to use when performing a DRT analysis.
+
+    Parameters
+    ----------
+    method: DRTMethod
+        The method to use to perform the analysis.
+
+    mode: DRTMode
+        The mode or type of data  (i.e., complex, real, or imaginary) to use.
+        TR-NNLS and TR-RBF methods only.
+
+    lambda_value: float
+        The Tikhonov regularization parameter to use.
+        TR-NNLS and TR-RBF methods only.
+
+    rbf_type: RBFType
+        The radial basis function to use for discretization.
+        BHT and TR-RBF methods only.
+
+    derivative_order: int
+        The derivative order to use when calculating the penalty in the Tikhonov regularization.
+        BHT and TR-RBF methods only.
+        
+    rbf_shape: RBFShape
+        The shape to use with the radial basis function discretization.
+        BHT and TR-RBF methods only.
+
+    shape_coeff: float
+        The shape coefficient.
+        BHT and TR-RBF methods only.
+
+    inductance: bool
+        Whether or not to include an inductive term in the calculations.
+        TR-RBF methods only.
+
+    credible_intervals: bool
+        Whether or not to calculate Bayesian credible intervals.
+        TR-RBF methods only.
+
+    num_samples: int
+        The number of samples to use when calculating:
+        - the Bayesian credible intervals (TR-RBF method)
+        - the Jensen-Shannon distance (BHT method)
+
+    num_attempts: int
+        The number of attempts to make to find a solution.
+        BHT method only.
+
+    maximum_symmetry: float
+        The maximum vertical peak-to-peak symmetry allowed.
+        Used to discard results with strong oscillations.
+        Smaller values provide stricter conditions.
+        BHT and TR-RBF methods only.
+    """
+
     method: DRTMethod
     mode: DRTMode
     lambda_value: float
