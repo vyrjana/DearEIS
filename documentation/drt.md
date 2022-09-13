@@ -396,7 +396,7 @@ dict
 
 ### **deareis.api.drt.DRTSettings**
 
-DRTSettings(method: deareis.enums.DRTMethod, mode: deareis.enums.DRTMode, lambda_value: float, rbf_type: deareis.enums.RBFType, derivative_order: int, rbf_shape: deareis.enums.RBFShape, shape_coeff: float, inductance: bool, credible_intervals: bool, num_samples: int, num_attempts: int, maximum_symmetry: float)
+The settings to use when performing a DRT analysis.
 
 ```python
 class DRTSettings(object):
@@ -416,18 +416,32 @@ class DRTSettings(object):
 
 _Constructor parameters_
 
-- `method`
-- `mode`
-- `lambda_value`
-- `rbf_type`
-- `derivative_order`
-- `rbf_shape`
-- `shape_coeff`
-- `inductance`
-- `credible_intervals`
-- `num_samples`
-- `num_attempts`
-- `maximum_symmetry`
+- `method`: The method to use to perform the analysis.
+- `mode`: The mode or type of data  (i.e., complex, real, or imaginary) to use.
+TR-NNLS and TR-RBF methods only.
+- `lambda_value`: The Tikhonov regularization parameter to use.
+TR-NNLS and TR-RBF methods only.
+- `rbf_type`: The radial basis function to use for discretization.
+BHT and TR-RBF methods only.
+- `derivative_order`: The derivative order to use when calculating the penalty in the Tikhonov regularization.
+BHT and TR-RBF methods only.
+- `rbf_shape`: The shape to use with the radial basis function discretization.
+BHT and TR-RBF methods only.
+- `shape_coeff`: The shape coefficient.
+BHT and TR-RBF methods only.
+- `inductance`: Whether or not to include an inductive term in the calculations.
+TR-RBF methods only.
+- `credible_intervals`: Whether or not to calculate Bayesian credible intervals.
+TR-RBF methods only.
+- `num_samples`: The number of samples to use when calculating:
+- the Bayesian credible intervals (TR-RBF method)
+- the Jensen-Shannon distance (BHT method)
+- `num_attempts`: The number of attempts to make to find a solution.
+BHT method only.
+- `maximum_symmetry`: The maximum vertical peak-to-peak symmetry allowed.
+Used to discard results with strong oscillations.
+Smaller values provide stricter conditions.
+BHT and TR-RBF methods only.
 
 
 _Functions and methods_
@@ -468,7 +482,7 @@ dict
 
 ### **deareis.api.drt.RBFShape**
 
-The shape coefficient to use with the radial basis function discretization:
+The shape to use with the radial basis function discretization:
 
 - FWHM
 - FACTOR
