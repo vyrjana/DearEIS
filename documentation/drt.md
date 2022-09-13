@@ -434,8 +434,8 @@ TR-RBF methods only.
 - `credible_intervals`: Whether or not to calculate Bayesian credible intervals.
 TR-RBF methods only.
 - `num_samples`: The number of samples to use when calculating:
-- the Bayesian credible intervals (TR-RBF method)
-- the Jensen-Shannon distance (BHT method)
+    - the Bayesian credible intervals (TR-RBF method)
+    - the Jensen-Shannon distance (BHT method)
 - `num_attempts`: The number of attempts to make to find a solution.
 BHT method only.
 - `maximum_symmetry`: The maximum vertical peak-to-peak symmetry allowed.
