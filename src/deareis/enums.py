@@ -790,7 +790,7 @@ assert set(plot_type_to_label.keys()) == set(
 
 class Test(IntEnum):
     """
-    Types of tests:
+    Types of Kramers-Kronig tests:
 
     - CNLS: complex non-linear least-squares fit of circuit (fig. 1, Boukamp, 1995) with a distribution of fixed time constants
     - COMPLEX: eqs. 11 and 12, Boukamp, 1995
@@ -827,7 +827,7 @@ assert set(test_to_label.keys()) == set(
 
 class Weight(IntEnum):
     """
-    Types of weights:
+    Types of weights to use during complex non-linear least squares fitting:
 
     - AUTO: try each weight
     - BOUKAMP: 1 / (Zre^2 + Zim^2) (eq. 13, Boukamp, 1995)
@@ -871,6 +871,13 @@ assert set(weight_to_value.keys()) == set(
 
 
 class DRTMethod(IntEnum):
+    """
+    The method to use for calculating the DRT:
+
+    - TR_NNLS
+    - TR_RBF
+    - BHT
+    """
     TR_NNLS = 1
     TR_RBF = 2
     BHT = 3
@@ -898,6 +905,13 @@ assert set(drt_method_to_label.keys()) == set(
 
 
 class DRTMode(IntEnum):
+    """
+    The parts of the impedance data to use:
+
+    - COMPLEX
+    - REAL
+    - IMAGINARY
+    """
     COMPLEX = 1
     REAL = 2
     IMAGINARY = 3
@@ -923,6 +937,19 @@ assert set(drt_mode_to_label.keys()) == set(
 
 
 class RBFType(IntEnum):
+    """
+    The radial basis function to use for discretization (or piecewise linear discretization):
+
+    - C0_MATERN
+    - C2_MATERN
+    - C4_MATERN
+    - C6_MATERN
+    - CAUCHY
+    - GAUSSIAN
+    - INVERSE_QUADRATIC
+    - INVERSE_QUADRIC
+    - PIECEWISE_LINEAR
+    """
     C0_MATERN = 1
     C2_MATERN = 2
     C4_MATERN = 3
@@ -966,6 +993,12 @@ assert set(rbf_type_to_label.keys()) == set(
 
 
 class RBFShape(IntEnum):
+    """
+    The shape coefficient to use with the radial basis function discretization:
+
+    - FWHM
+    - FACTOR
+    """
     FWHM = 1
     FACTOR = 2
 
@@ -1018,6 +1051,12 @@ assert set(drt_output_to_label.keys()) == set(
 
 
 class PlotUnits(IntEnum):
+    """
+    The units of the plot dimensions:
+    
+    - INCHES
+    - CENTIMETERS
+    """
     INCHES = 1
     CENTIMETERS = 2
 
@@ -1042,6 +1081,18 @@ assert set(plot_units_to_label.keys()) == set(
 
 
 class PlotPreviewLimit(IntEnum):
+    """
+    The limits of the plot preview:
+
+    - NONE
+    - PX256
+    - PX512
+    - PX1024
+    - PX2048
+    - PX4096
+    - PX8192
+    - PX16384
+    """
     NONE = 0
     PX256 = 8
     PX512 = 9
@@ -1071,6 +1122,21 @@ assert set(plot_preview_limit_to_label.keys()) == set(
 
 
 class PlotLegendLocation(IntEnum):
+    """
+    The position of the plot legend:
+
+    - AUTO
+    - UPPER_RIGHT
+    - UPPER_LEFT
+    - LOWER_LEFT
+    - LOWER_RIGHT
+    - RIGHT
+    - CENTER_LEFT
+    - CENTER_RIGHT
+    - LOWER_CENTER
+    - UPPER_CENTER
+    - CENTER
+    """
     AUTO = 0
     UPPER_RIGHT = 1
     UPPER_LEFT = 2
