@@ -762,13 +762,7 @@ _Constructor parameters_
 
 ```python
 class ParsingError(Exception):
-	msg: str
 ```
-
-_Constructor parameters_
-
-- `msg`
-
 
 
 
@@ -792,15 +786,7 @@ _Constructor parameters_
 
 ```python
 class UnexpectedCharacter(Exception):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 

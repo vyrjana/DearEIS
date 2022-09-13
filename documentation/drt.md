@@ -43,15 +43,7 @@ permalink: /api/drt/
 
 ```python
 class DRTError(Exception):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 

@@ -409,15 +409,7 @@ dict
 
 ```python
 class FittingError(Exception):
-	args
-	kwargs
 ```
-
-_Constructor parameters_
-
-- `args`
-- `kwargs`
-
 
 
 
