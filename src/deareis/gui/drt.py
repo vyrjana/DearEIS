@@ -1541,7 +1541,7 @@ class DRTTab:
             index=0,
             tau=tau,
             gamma=gamma,
-            label="gamma (real)" if drt.settings.method == DRTMethod.BHT else "gamma",
+            label="real" if drt.settings.method == DRTMethod.BHT else "gamma",
         )
         if (
             drt.settings.method == DRTMethod.TR_RBF
@@ -1553,22 +1553,23 @@ class DRTTab:
             tau, gamma, lower, upper = drt.get_drt_credible_intervals()
             self.drt_plot.plot(
                 tau=tau,
-                lower=lower,
-                upper=upper,
-                theme=themes.drt.credible_intervals,
+                mean=gamma,
+                label="mean",
+                theme=themes.drt.mean_gamma,
             )
             self.drt_plot.plot(
                 tau=tau,
-                mean=gamma,
-                label="gamma (mean)",
-                theme=themes.drt.mean_gamma,
+                lower=lower,
+                upper=upper,
+                label="3-sigma CI",
+                theme=themes.drt.credible_intervals,
             )
         if drt.settings.method == DRTMethod.BHT:
             tau, gamma = drt.get_drt_data(imaginary=True)
             self.drt_plot.plot(
                 tau=tau,
                 imaginary=gamma,
-                label="gamma (imag.)",
+                label="imag.",
                 theme=themes.drt.imaginary_gamma,
             )
         f: ndarray = drt.get_frequency()

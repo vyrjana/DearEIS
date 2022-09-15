@@ -244,7 +244,7 @@ This affects how smooth the lines will look but it may also affect performance w
                 self.drt_mean_gamma_color: int = dpg.generate_uuid()
                 self.drt_credible_intervals_color: int = dpg.generate_uuid()
                 with dpg.group(horizontal=True):
-                    dpg.add_text("gamma (real)".rjust(self.label_pad))
+                    dpg.add_text("Gamma/real".rjust(self.label_pad))
                     dpg.add_color_edit(
                         default_value=STATE.config.colors["drt_real_gamma"],
                         alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
@@ -255,7 +255,7 @@ This affects how smooth the lines will look but it may also affect performance w
                         tag=self.drt_real_gamma_color,
                     )
                 with dpg.group(horizontal=True):
-                    dpg.add_text("gamma (imaginary)".rjust(self.label_pad))
+                    dpg.add_text("Imaginary".rjust(self.label_pad))
                     dpg.add_color_edit(
                         default_value=STATE.config.colors["drt_imaginary_gamma"],
                         alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
@@ -266,9 +266,7 @@ This affects how smooth the lines will look but it may also affect performance w
                         tag=self.drt_imaginary_gamma_color,
                     )
                 with dpg.group(horizontal=True):
-                    dpg.add_text(
-                        "gamma (mean) and credible intervals".rjust(self.label_pad)
-                    )
+                    dpg.add_text("Mean and 3-sigma CI".rjust(self.label_pad))
                     dpg.add_color_edit(
                         default_value=STATE.config.colors["drt_mean_gamma"],
                         alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
@@ -937,21 +935,20 @@ This affects how smooth the lines will look but it may also affect performance w
 
     def update_drt_plot(self, adjust_limits: bool = False):
         self.drt_plot.clear()
-        # TODO: Plot
         tau: ndarray
         gamma: ndarray
         tau, gamma = self.drt.get_drt_data()
         self.drt_plot.plot(
             tau=tau,
             gamma=gamma,
-            label="gamma (real)",
+            label="gamma/real",
             theme=themes.drt.real_gamma,
         )
         tau, gamma = self.drt.get_drt_data(imaginary=True)
         self.drt_plot.plot(
             tau=tau,
             gamma=gamma,
-            label="gamma (imag.",
+            label="imag.",
             theme=themes.drt.imaginary_gamma,
         )
         lower: ndarray
@@ -959,15 +956,16 @@ This affects how smooth the lines will look but it may also affect performance w
         tau, gamma, lower, upper = self.drt.get_drt_credible_intervals()
         self.drt_plot.plot(
             tau=tau,
-            lower=lower,
-            upper=upper,
-            theme=themes.drt.credible_intervals,
+            gamma=gamma,
+            label="mean",
+            theme=themes.drt.mean_gamma,
         )
         self.drt_plot.plot(
             tau=tau,
-            gamma=gamma,
-            label="gamma (mean)",
-            theme=themes.drt.mean_gamma,
+            lower=lower,
+            upper=upper,
+            label="3-sigma CI",
+            theme=themes.drt.credible_intervals,
         )
         if adjust_limits:
             self.drt_plot.adjust_limits()

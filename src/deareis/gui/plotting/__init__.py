@@ -163,7 +163,10 @@ class DataSetsGroup:
         return True
 
     def update(
-        self, active_hash: str, data_sets: List[DataSet], settings: PlotSettings,
+        self,
+        active_hash: str,
+        data_sets: List[DataSet],
+        settings: PlotSettings,
     ):
         assert type(active_hash) is str, active_hash
         assert type(data_sets) is list, data_sets
@@ -1969,16 +1972,22 @@ class PlottingTab:
                     series.settings.method == DRTMethod.TR_RBF
                     and series.settings.credible_intervals is True
                 ):
-                    tau, gamma = series.get_drt_data()
-                    self.series_tags[series.uuid] = plot.plot(
-                        tau=tau,
-                        gamma=gamma,
-                        label=label,
-                        line=True,
-                        theme=theme,
-                        show_label=show_label,
-                    )
                     tau, mean, lower, upper = series.get_drt_credible_intervals()
+                    alt_color: List[float] = settings.get_series_color(uuid).copy()
+                    alt_color[-1] = themes.get_plot_series_theme_color(
+                        themes.drt.credible_intervals
+                    )[-1]
+                    self.series_tags[f"{series.uuid}_bounds"] = plot.plot(
+                        tau=tau,
+                        lower=lower,
+                        upper=upper,
+                        label=f"{label}, 3-sigma CI" if label is not None else label,
+                        theme=themes.create_plot_series_theme(
+                            alt_color,
+                            dpg.mvPlotMarker_Circle,
+                        ),
+                        show_label=True,
+                    )
                     self.series_tags[f"{series.uuid}_mean"] = plot.plot(
                         tau=tau,
                         gamma=mean,
@@ -1987,18 +1996,14 @@ class PlottingTab:
                         theme=theme,
                         show_label=show_label,
                     )
-                    alt_color: List[float] = settings.get_series_color(uuid).copy()
-                    alt_color[-1] = 48.0
-                    self.series_tags[f"{series.uuid}_bounds"] = plot.plot(
+                    tau, gamma = series.get_drt_data()
+                    self.series_tags[series.uuid] = plot.plot(
                         tau=tau,
-                        lower=lower,
-                        upper=upper,
-                        label=f"{label}, cred. int." if label is not None else label,
-                        theme=themes.create_plot_series_theme(
-                            alt_color,
-                            dpg.mvPlotMarker_Circle,
-                        ),
-                        show_label=False,
+                        gamma=gamma,
+                        label=label,
+                        line=True,
+                        theme=theme,
+                        show_label=show_label,
                     )
                 else:
                     tau, gamma = series.get_drt_data()

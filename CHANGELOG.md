@@ -1,3 +1,13 @@
+# 3.1.2
+
+- Added the 3-sigma CI series to the legends of DRT plots.
+- Updated the order that the mean and 3-sigma CI series are plotted in DRT plots.
+- Updated labels of plotted series in the DRT plots.
+- Updated the 3-sigma CI series to use the same alpha value in the `Plotting` tab as in the `DRT analysis` tab.
+  A manual refresh of the plot is required for changes to take effect.
+- Updated labels in the `DRT plots` section of the appearance settings window.
+
+
 # 3.1.1
 
 - Updated API documentation.
