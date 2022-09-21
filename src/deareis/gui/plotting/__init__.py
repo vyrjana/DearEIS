@@ -443,7 +443,7 @@ class TestsGroup:
         if data_hash != self.data_hash:
             self.clear()
             self.data_hash = data_hash
-        active_hash: str = ",".join(sorted(settings.series_order))
+        active_hash: str = ",".join(sorted(settings.series_order)) + f",{settings.uuid}"
         all_tests: List[TestResult] = []
         data: DataSet
         for data in data_sets:
@@ -561,7 +561,10 @@ class DRTResultGroup:
         self.active_hash = ""
 
     def populate(
-        self, drts: List[DRTResult], data: DataSet, settings: PlotSettings
+        self,
+        drts: List[DRTResult],
+        data: DataSet,
+        settings: PlotSettings,
     ) -> bool:
         assert type(drts) is list, drts
         assert type(data) is DataSet, data
@@ -731,7 +734,7 @@ class DRTsGroup:
         if data_hash != self.data_hash:
             self.clear()
             self.data_hash = data_hash
-        active_hash: str = ",".join(sorted(settings.series_order))
+        active_hash: str = ",".join(sorted(settings.series_order)) + f",{settings.uuid}"
         all_drts: List[DRTResult] = []
         data: DataSet
         for data in data_sets:
@@ -1023,7 +1026,7 @@ class FitsGroup:
         if data_hash != self.data_hash:
             self.clear()
             self.data_hash = data_hash
-        active_hash: str = ",".join(sorted(settings.series_order))
+        active_hash: str = ",".join(sorted(settings.series_order)) + f",{settings.uuid}"
         all_fits: List[FitResult] = []
         data: DataSet
         for data in data_sets:
@@ -1143,7 +1146,9 @@ class SimulationsGroup:
         self.active_hash = ""
 
     def populate(
-        self, simulations: List[SimulationResult], settings: PlotSettings
+        self,
+        simulations: List[SimulationResult],
+        settings: PlotSettings,
     ) -> bool:
         assert type(simulations) is list, simulations
         assert type(settings) is PlotSettings, settings
@@ -2257,7 +2262,13 @@ class PlottingTab:
         self.select_plot_type(settings.get_type())
         dpg.split_frame()
         self.plot_series(
-            data_sets, tests, drts, fits, simulations, settings, adjust_limits
+            data_sets,
+            tests,
+            drts,
+            fits,
+            simulations,
+            settings,
+            adjust_limits,
         )
 
     def populate_possible_series(
@@ -2291,7 +2302,7 @@ class PlottingTab:
         assert type(settings) is PlotSettings, settings
         if not self.possible_data_sets.populate(data_sets, settings):
             self.possible_data_sets.update(
-                ",".join(sorted(settings.series_order)),
+                ",".join(sorted(settings.series_order)) + f",{settings.uuid}",
                 data_sets,
                 settings,
             )
@@ -2409,7 +2420,7 @@ class PlottingTab:
         assert type(settings) is PlotSettings, settings
         if not self.possible_simulations.populate(simulations, settings):
             self.possible_simulations.update(
-                ",".join(sorted(settings.series_order)),
+                ",".join(sorted(settings.series_order)) + f",{settings.uuid}",
                 simulations,
                 settings,
             )

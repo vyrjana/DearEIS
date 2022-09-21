@@ -1,3 +1,9 @@
+# 3.1.3
+
+- Fixed bugs that caused the toggling of a plottable series (e.g., a data set or a Kramers-Kronig test result) in the `Plotting` tab to apply the change to the wrong plot under certain circumstances.
+- Fixed bugs that caused a failure to properly adjust the axis limits in cases where the difference between the maximum and minimum values being plotted was zero or all values were zero.
+
+
 # 3.1.2
 
 - Added the 3-sigma CI series to the legends of DRT plots.

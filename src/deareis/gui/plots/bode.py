@@ -197,17 +197,17 @@ class Bode(Plot):
             freq: ndarray = kwargs["frequency"]
             mag: ndarray = kwargs["magnitude"]
             phase: ndarray = kwargs["phase"]
-            if freq.any():
+            if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
-            if mag.any():
+            if mag.size > 0:
                 if y1_min is None or min(mag) < y1_min:
                     y1_min = min(mag)
                 if y1_max is None or max(mag) > y1_max:
                     y1_max = max(mag)
-            if phase.any():
+            if phase.size > 0:
                 if y2_min is None or min(phase) < y2_min:
                     y2_min = min(phase)
                 if y2_max is None or max(phase) > y2_max:
@@ -355,12 +355,12 @@ class BodeMagnitude(Plot):
         for kwargs in self._series:
             freq: ndarray = kwargs["frequency"]
             mag: ndarray = kwargs["magnitude"]
-            if freq.any():
+            if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
-            if mag.any():
+            if mag.size > 0:
                 if y_min is None or min(mag) < y_min:
                     y_min = min(mag)
                 if y_max is None or max(mag) > y_max:
@@ -497,12 +497,12 @@ class BodePhase(Plot):
         for kwargs in self._series:
             freq: ndarray = kwargs["frequency"]
             phase: ndarray = kwargs["phase"]
-            if freq.any():
+            if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
-            if phase.any():
+            if phase.size > 0:
                 if y_min is None or min(phase) < y_min:
                     y_min = min(phase)
                 if y_max is None or max(phase) > y_max:

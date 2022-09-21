@@ -28,6 +28,7 @@ from numpy import (
     array,
     ceil,
     floor,
+    isclose,
     log10 as log,
     ndarray,
 )
@@ -196,17 +197,17 @@ class Impedance(Plot):
             freq: ndarray = kwargs["frequency"]
             real: ndarray = kwargs["real"]
             imag: ndarray = kwargs["imaginary"]
-            if freq.any():
+            if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
-            if real.any():
+            if real.size > 0:
                 if y1_min is None or min(real) < y1_min:
                     y1_min = min(real)
                 if y1_max is None or max(real) > y1_max:
                     y1_max = max(real)
-            if imag.any():
+            if imag.size > 0:
                 if y2_min is None or min(imag) < y2_min:
                     y2_min = min(imag)
                 if y2_max is None or max(imag) > y2_max:
@@ -223,9 +224,13 @@ class Impedance(Plot):
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
             dy: float = abs(y1_max - y1_min) * 0.05
+            if isclose(dy, 0):
+                dy = 0.05 * y1_max if not isclose(abs(y1_max), 0) else 5
             y1_min = y1_min - dy
             y1_max = y1_max + dy
             dy = abs(y2_max - y2_min) * 0.05
+            if isclose(dy, 0):
+                dy = 0.05 * y2_max if not isclose(abs(y2_max), 0) else 5
             y2_min = y2_min - dy
             y2_max = y2_max + dy
         dpg.split_frame()
@@ -390,12 +395,12 @@ class ImpedanceSingleAxis(Plot):
         for kwargs in self._series:
             x: ndarray = kwargs["x"]
             y: ndarray = kwargs["y"]
-            if x.any():
+            if x.size > 0:
                 if x_min is None or min(x) < x_min:
                     x_min = min(x)
                 if x_max is None or max(x) > x_max:
                     x_max = max(x)
-            if y.any():
+            if y.size > 0:
                 if y_min is None or min(y) < y_min:
                     y_min = min(y)
                 if y_max is None or max(y) > y_max:

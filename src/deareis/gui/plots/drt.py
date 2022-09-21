@@ -199,7 +199,7 @@ class DRT(Plot):
         y_max: Optional[float] = None
         for kwargs in self._series:
             tau: ndarray = kwargs["tau"]
-            if tau.any():
+            if tau.size > 0:
                 if x_min is None or min(tau) < x_min:
                     x_min = min(tau)
                 if x_max is None or max(tau) > x_max:
@@ -212,7 +212,7 @@ class DRT(Plot):
                 ),
             )
             if gamma is not None:
-                if gamma.any():
+                if gamma.size > 0:
                     if y_min is None or min(gamma) < y_min:
                         y_min = min(gamma)
                     if y_max is None or max(gamma) > y_max:
@@ -220,7 +220,7 @@ class DRT(Plot):
             else:
                 lower: ndarray = kwargs["lower"]
                 upper: ndarray = kwargs["upper"]
-                if lower.any() and upper.any():
+                if lower.size > 0 and upper.size > 0:
                     if y_min is None or min(lower) < y_min:
                         y_min = min(lower)
                     if y_max is None or max(upper) > y_max:

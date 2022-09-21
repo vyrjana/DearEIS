@@ -201,7 +201,7 @@ class Residuals(Plot):
         freq: Optional[ndarray] = None
         for kwargs in self._series:
             freq = kwargs["frequency"]
-            if not freq.any():
+            if not freq.size > 0:
                 continue
             real: ndarray = kwargs["real"]
             imag: ndarray = kwargs["imaginary"]
@@ -227,18 +227,18 @@ class Residuals(Plot):
             n: int = 5
             error_lim = ceil(error_lim / n) * n + n
         dpg.split_frame()
-        min_x: float = min(freq) if freq.any() else 0.5
-        max_x: float = max(freq) if freq.any() else 1.0
+        min_x: float = min(freq) if freq.size > 0 else 0.5
+        max_x: float = max(freq) if freq.size > 0 else 1.0
         if min_x == 0.0:
             min_x = 1e-1
         dx: float = 0.1
         dpg.set_axis_limits(
             self._x_axis,
             ymin=10 ** (floor(log(min_x) / dx) * dx - dx)
-            if (freq is not None and freq.any())
+            if (freq is not None and freq.size > 0)
             else 0,
             ymax=10 ** (ceil(log(max_x) / dx) * dx + dx)
-            if (freq is not None and freq.any())
+            if (freq is not None and freq.size > 0)
             else 1,
         )
         dpg.set_axis_limits(self._y_axis_1, ymin=-error_lim, ymax=error_lim)
