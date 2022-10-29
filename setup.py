@@ -28,6 +28,10 @@ dependencies = [
 
 optional_dependencies = {
     "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
+    "dev": [
+        "flake8",
+        "setuptools",
+    ],
 }
 
 with open("requirements.txt", "w") as fp:

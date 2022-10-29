@@ -207,8 +207,14 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 If you wish to contribute to the further development of pyimpspec, then there are several options available to you depending on your ability and the amount of time that you can spare.
 If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
+
 If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
+The development dependencies (e.g., `setuptools`, `flake8`) can be installed with the following command:
+
+`pip install deareis[dev]`
+
 Note that some of the core functionality of DearEIS is based on [pyimpspec](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g., parsers for data formats) should be contributed to that project instead.
+
 Code contributions should, if it is applicable, also include unit tests, which should be implemented in files placed in the `tests` folder found in the root of the repository along with any assets required by the tests.
 It should be possible to run the tests by executing the `run_tests.sh` script, which uses the test discovery built into the `unittest` module that is included with Python.
 
