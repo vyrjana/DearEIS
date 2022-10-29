@@ -27,7 +27,7 @@ tar --list -f ./dist/*.tar.gz | grep "LICENSE$"
 tar --list -f ./dist/*.tar.gz | grep "deareis/gui/licenses/LICENSE-DearEIS.txt"
 dist="$(tar --list -f ./dist/*.tar.gz | grep "deareis/gui/licenses/LICENSE-.*\.txt" | sort)"
 repo="$(ls LICENSES | grep "LICENSE-.*.txt" | sort)"
-python -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
+python3 -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
 
 # Validate the source and wheel distributions
 echo
@@ -40,7 +40,7 @@ unzip -Z1 ./dist/*.whl | grep "LICENSE$"
 unzip -Z1 ./dist/*.whl | grep "deareis/gui/licenses/LICENSE-DearEIS.txt"
 dist="$(unzip -Z1 ./dist/*.whl | grep "deareis/gui/licenses/LICENSE-.*\.txt" | sort)"
 repo="$(ls LICENSES | grep "LICENSE-.*.txt" | sort)"
-python -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
+python3 -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
 
 # Update documentation
 echo
