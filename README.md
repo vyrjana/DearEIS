@@ -206,12 +206,18 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 ## Contributing
 
 If you wish to contribute to the further development of DearEIS, then there are several options available to you depending on your ability and the amount of time that you can spare.
+
 If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
 
-If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
-The development dependencies (e.g., `setuptools`, `flake8`) can be installed with the following command:
+If you wish to contribute code, then start by cloning the repository:
 
-`pip install deareis[dev]`
+`git clone https://github.com/vyrjana/DearEIS.git`
+
+The development dependencies can be installed from within the repository directory:
+
+`pip install -r ./dev-requirements.txt`
+
+Create a new branch based on either the `main` branch or the most recent development branch (e.g., `dev-*`), and submit your changes as a pull request.
 
 Note that some of the core functionality of DearEIS is based on [pyimpspec](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g., parsers for data formats) should be contributed to that project instead.
 

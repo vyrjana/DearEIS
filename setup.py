@@ -26,16 +26,21 @@ dependencies = [
     "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
 ]
 
-optional_dependencies = {
-    "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
-    "dev": [
-        "flake8",
-        "setuptools",
-    ],
-}
-
 with open("requirements.txt", "w") as fp:
     fp.write("\n".join(dependencies))
+
+dev_dependencies = [
+    "flake8",
+    "setuptools",
+]
+
+with open("dev-requirements.txt", "w") as fp:
+    fp.write("\n".join(dev_dependencies))
+
+optional_dependencies = {
+    "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
+    "dev": dev_dependencies,
+}
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
