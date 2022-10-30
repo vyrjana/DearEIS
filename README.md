@@ -205,7 +205,7 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## Contributing
 
-If you wish to contribute to the further development of pyimpspec, then there are several options available to you depending on your ability and the amount of time that you can spare.
+If you wish to contribute to the further development of DearEIS, then there are several options available to you depending on your ability and the amount of time that you can spare.
 If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
 
 If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
