@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 from os import makedirs
-from os.path import dirname, exists, join
+from os.path import (
+    dirname,
+    exists,
+    join,
+)
 from typing import IO
+import deareis
+
+# Import github.com/vyrjana/python-api-documenter, which has been added as a submodule
+import sys
+
+submodule_path: str = join(dirname(__file__), "api_documenter", "src")
+assert exists(submodule_path), submodule_path
+sys.path.append(submodule_path)
 from api_documenter import (
     process,
     process_classes,
     process_functions,
-)  # github.com/vyrjana/python-api-documenter
-import deareis
+)
 
 
 def write_file(path: str, content: str):
