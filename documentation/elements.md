@@ -39,7 +39,9 @@ permalink: /api/elements/
 		- [to_sympy](#deareisapicircuitelementto_sympy)
 	- [Gerischer](#deareisapicircuitgerischer)
 	- [HavriliakNegami](#deareisapicircuithavriliaknegami)
+	- [HavriliakNegamiAlternative](#deareisapicircuithavriliaknegamialternative)
 	- [Inductor](#deareisapicircuitinductor)
+	- [ModifiedInductor](#deareisapicircuitmodifiedinductor)
 	- [Resistor](#deareisapicircuitresistor)
 	- [Warburg](#deareisapicircuitwarburg)
 	- [WarburgOpen](#deareisapicircuitwarburgopen)
@@ -614,6 +616,33 @@ _Constructor parameters_
 
 
 
+### **deareis.api.circuit.HavriliakNegamiAlternative**
+
+Havriliak-Negami relaxation (alternative form)
+
+    Symbol: Ha
+
+    Z = R / ((1 + (I*2*pi*f*t)^b)^g)
+
+    Variables
+    ---------
+    R: float = 1 (ohm)
+    t: float = 1.0 (s)
+    b: float = 0.7
+    g: float = 0.8
+
+```python
+class HavriliakNegamiAlternative(Element):
+	kwargs
+```
+
+_Constructor parameters_
+
+- `kwargs`
+
+
+
+
 ### **deareis.api.circuit.Inductor**
 
 Inductor
@@ -628,6 +657,31 @@ Inductor
 
 ```python
 class Inductor(Element):
+	kwargs
+```
+
+_Constructor parameters_
+
+- `kwargs`
+
+
+
+
+### **deareis.api.circuit.ModifiedInductor**
+
+Modified inductor
+
+    Symbol: La
+
+    Z = L*(j*2*pi*f)^n
+
+    Variables
+    ---------
+    L: float = 1E-6 (H*s^(n-1))
+    n: float = 0.95
+
+```python
+class ModifiedInductor(Element):
 	kwargs
 ```
 

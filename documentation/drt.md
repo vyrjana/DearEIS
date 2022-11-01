@@ -54,6 +54,7 @@ The method to use for calculating the DRT:
 - TR_NNLS
 - TR_RBF
 - BHT
+- M_RQ_FIT
 
 ```python
 class DRTMethod(IntEnum):
@@ -412,6 +413,9 @@ class DRTSettings(object):
 	num_samples: int
 	num_attempts: int
 	maximum_symmetry: float
+	circuit: Optional[Circuit]
+	W: float
+	num_per_decade: int
 ```
 
 _Constructor parameters_
@@ -442,6 +446,16 @@ BHT method only.
 Used to discard results with strong oscillations.
 Smaller values provide stricter conditions.
 BHT and TR-RBF methods only.
+- `circuit`: A circuit that contains one or more "(RQ)" or "(RC)" elements connected in series.
+An optional series resistance may also be included.
+For example, a circuit with a CDC representation of "R(RQ)(RQ)(RC)" would be a valid circuit.
+It is highly recommended that the provided circuit has already been fitted.
+However, if all of the various parameters of the provided circuit are at their default values, then an attempt will be made to fit the circuit to the data.
+m(RQ)fit method only.
+- `W`: The width of the Gaussian curve that is used to approximate the DRT of an "(RC)" element.
+m(RQ)fit method only.
+- `num_per_decade`: The number of points per decade to use when calculating a DRT.
+m(RQ)fit method only.
 
 
 _Functions and methods_
@@ -526,6 +540,8 @@ References:
 - Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 (https://doi.org/10.1016/j.electacta.2015.03.123)
 - Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 (https://doi.org/10.1016/j.electacta.2017.07.050)
 - Liu, J., Wan, T. H., and Ciucci, F., 2020, Electrochim. Acta, 357, 136864 (https://doi.org/10.1016/j.electacta.2020.136864)
+- Boukamp, B.A., 2015, Electrochim. Acta, 154, 35-46, (https://doi.org/10.1016/j.electacta.2014.12.059)
+- Boukamp, B.A. and Rolle, A, 2017, Solid State Ionics, 302, 12-18 (https://doi.org/10.1016/j.ssi.2016.10.009)
 
 ```python
 def calculate_drt(data: DataSet, settings: DRTSettings, num_procs: int = -1) -> DRTResult:
