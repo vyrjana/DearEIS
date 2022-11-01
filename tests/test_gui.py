@@ -636,6 +636,9 @@ def test_drt_analysis():
             num_samples=3000,
             num_attempts=12,
             maximum_symmetry=0.4,
+            circuit=None,
+            W=0.15,
+            num_per_decade=100,
         )
         signals.emit(Signal.PERFORM_DRT, data=data, settings=settings)
 

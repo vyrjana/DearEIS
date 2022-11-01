@@ -24,31 +24,32 @@ wan2015: str = "DOI:10.1016/j.electacta.2015.09.097"
 ciucci2015: str = "DOI:10.1016/j.electacta.2015.03.123"
 effat2017: str = "DOI:10.1016/j.electacta.2017.07.050"
 liu2020: str = "DOI:10.1016/j.electacta.2020.136864"
+boukamp2015: str = "DOI:10.1016/j.electacta.2014.12.059"
+boukamp2017: str = "DOI:10.1016/j.ssi.2016.10.009"
 
 drt = SimpleNamespace(
     **{
         "method": f"""
 The method to use when calculating the distribution of relaxation times.
 
+BHT: Bayesian Hilbert transform method.
+
 TR-NNLS: Tikhonov regularization combined with non-negative least squares fitting.
 
 TR-RBF: Tikhonov regularization combined with radial basis function (or piecewise linear) discretization and convex optimization.
 
-BHT: Bayesian Hilbert transform method.
+m(RQ)fit: multi-(RQ) complex non-linear least squares fit.
 
-The TR-NNLS method is very fast while the slower TR-RBF method provides the ability to optionally also calculate Bayesian credible intervals. The BHT method, while temperamental due to randomization of initial values, is able to provide numerical scores that can be used to assess the quality of an impedance spectrum.
+The TR-NNLS method is very fast while the slower TR-RBF method provides the ability to optionally also calculate Bayesian credible intervals. The BHT method, while temperamental due to randomization of initial values, is able to provide numerical scores that can be used to assess the quality of an impedance spectrum. The m(RQ)fit method requires a suitable fitted circuit but may be able to distinguish peaks that are in close proximity and would only show up as broad peaks in some other methods.
 
 References:
-
 - {kulikovsky2020}
-
 - {wan2015}
-
 - {ciucci2015}
-
 - {effat2017}
-
 - {liu2020}
+- {boukamp2015}
+- {boukamp2017}
     """.strip(),
         "mode": """
 The data to use when performing the calculations:
@@ -87,6 +88,8 @@ Poor results with significant oscillation can be discarded automatically by defi
 This is only used when the method setting is set to BHT or TR-RBF.
     """.strip(),
         "perform": f"""
+DRT analyses work best with data sets where the imaginary part of the impedance approaches zero at both the low- and high-frequency ends of the recorded frequency range. Thus, some data sets may require some processing if they exhibit, e.g., inductive behavior at high frequencies and/or increasing impedance at low frequencies due to diffusion.
+
 If the BHT or TR-RBF methods are used for the first time, then keeping the number of samples and attempts modest at first is recommended. It may take quite a long time depending on the computer's performance.
 
 If the BHT method is used, then scores for the consistency of the data will be included. The scores range from 0 to 100 %.
@@ -107,6 +110,28 @@ The Hellinger distance between the Hilbert transformed impedances and the DRT im
     """.strip(),
         "score_jsd": """
 The Jensen-Shannon distance between the Hilbert transformed impedances and the DRT impedances (i.e., without the high-frequency resistance and inductance).
+    """.strip(),
+        "circuit": """
+The fitted circuit to use to calculate the distribution of relaxation times.
+
+Valid circuits consist of one or more parallel RQ (or RC) circuits in series. An optional series resistance may also be included. For example, the following circuits would be valid:
+- (RC)
+- (RQ)
+- (RQ)(RQ)
+- R(RQ)
+- R(RQ)(RQ)(RC)
+
+This is only used when the method is set to m(RQ)fit.
+    """.strip(),
+        "W": """
+The width of the Gauss function used to calculate the distribution of relaxation times for (RC) circuits (or (RQ) circuits where n ~ 1).
+
+This is only used when the method is set to m(RQ)fit.
+    """.strip(),
+        "num_per_decade": """
+The number of points per decade to use when calculating the distribution of relaxation times. This only affects the final step where the distribution of relaxation times are calculated using the analytical solutions (or approximations in the case of (RC) circuits).
+
+This is only used when the method is set to m(RQ)fit.
     """.strip(),
     }
 )

@@ -120,7 +120,7 @@ class AppearanceSettings:
                     )
                     attach_tooltip(
                         """
-This affects how smooth the lines will look but it may also affect performance when rendering the graphical user interface. This setting also affects how many points are included when copying plot data as character-separated values (CSV). Changes made to this setting will take effect the next time a plot is redrawn.
+This affects how smooth the lines will look when plotting the impedance response of, e.g., fitted circuits, but it may also affect performance when rendering the graphical user interface. This setting also affects how many points are included when copying plot data as character-separated values (CSV). Changes made to this setting will take effect the next time a plot is redrawn.
                         """.strip()
                     )
                     dpg.add_slider_int(
@@ -740,18 +740,21 @@ This affects how smooth the lines will look but it may also affect performance w
             0.0,
             {},
             DRTSettings(
-                DRTMethod.BHT,
-                DRTMode.COMPLEX,
-                0.0,
-                RBFType.GAUSSIAN,
-                1,
-                RBFShape.FWHM,
-                0.5,
-                False,
-                True,
-                2000,
-                50,
-                0.5,
+                method=DRTMethod.BHT,
+                mode=DRTMode.COMPLEX,
+                lambda_value=0.0,
+                rbf_type=RBFType.GAUSSIAN,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=True,
+                num_samples=2000,
+                num_attempts=50,
+                maximum_symmetry=0.5,
+                circuit=None,
+                W=0.15,
+                num_per_decade=100,
             ),
         )
         return (
@@ -1491,3 +1494,6 @@ This affects how smooth the lines will look but it may also affect performance w
             dpg.get_value(self.muxps_xps_marker),
             themes.mu_Xps.Xps,
         )
+
+# TODO: Settings for circuit diagrams
+# - WE and CE+RE labels

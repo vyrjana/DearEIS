@@ -76,6 +76,7 @@ from .data_sets import (
     apply_data_set_mask,
     delete_data_set,
     load_data_set_files,
+    load_simulation_as_data_set,
     modify_data_set_path,
     rename_data_set,
     select_data_points_to_toggle,
@@ -287,6 +288,18 @@ def copy_output(*args, **kwargs):
         elif output == FitSimOutput.SVG_DIAGRAM:
             clipboard_content = (
                 fit_or_sim.circuit.to_drawing().get_imagedata(fmt="svg").decode()
+            )
+        elif output == FitSimOutput.SVG_DIAGRAM_NO_TERMINAL_LABELS:
+            clipboard_content = (
+                fit_or_sim.circuit.to_drawing(working_label="", counter_label="")
+                .get_imagedata(fmt="svg")
+                .decode()
+            )
+        elif output == FitSimOutput.SVG_DIAGRAM_NO_LABELS:
+            clipboard_content = (
+                fit_or_sim.circuit.to_drawing(hide_labels=True)
+                .get_imagedata(fmt="svg")
+                .decode()
             )
         elif output == FitSimOutput.LATEX_EXPR:
             clipboard_content = latex(get_sympy_expr(fit_or_sim.circuit))
@@ -821,6 +834,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_IMPEDANCE_TO_SUBTRACT, select_impedance_to_subtract)
     signals.register(Signal.TOGGLE_DATA_POINT, toggle_data_point)
     signals.register(Signal.APPLY_DATA_SET_MASK, apply_data_set_mask)
+    signals.register(Signal.LOAD_SIMULATION_AS_DATA_SET, load_simulation_as_data_set)
     # Signals for the Kramers-Kronig tab
     signals.register(Signal.PERFORM_TEST, perform_test)
     signals.register(Signal.SELECT_TEST_RESULT, select_test_result)

@@ -235,8 +235,12 @@ class DRT(Plot):
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
             dy: float = abs(y_max - y_min) * 0.05
-            y_min = y_min - dy
-            y_max = y_max + dy
+            if dy < 1e-3:
+                y_min = -0.5
+                y_max = 0.5
+            else:
+                y_min = y_min - dy
+                y_max = y_max + dy
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis, ymin=y_min, ymax=y_max)

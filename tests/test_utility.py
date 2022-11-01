@@ -24,7 +24,11 @@ from deareis.utility import (
     format_number,
     format_timestamp,
 )
-from numpy import array, nan, inf
+from numpy import (
+    array,
+    nan,
+    inf,
+)
 from datetime import datetime
 
 
@@ -78,7 +82,7 @@ class TestUtility(TestCase):
             align_numbers(["6", "as", 1, True])
 
     def test_04_format_number(self):
-        self.assertEqual(format_number(nan), "-")
+        self.assertEqual(format_number(nan), "NaN")
         self.assertEqual(format_number(inf), "INF")
         self.assertEqual(format_number(-inf), "-INF")
         self.assertEqual(format_number(5.6230364), "5.6    ")

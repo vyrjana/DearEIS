@@ -81,6 +81,8 @@ The following Python packages can be installed as optional dependencies for addi
 
 - [cvxpy](https://github.com/cvxpy/cvxpy): convex optimization
 	- **IMPORTANT!** Windows and MacOS users must follow the steps described in [the CVXPY documentation](https://www.cvxpy.org/install/index.html) before installing this optional dependency!
+- [kvxopt](https://github.com/sanurielf/kvxopt): convex optimization
+	- This fork of cvxopt may support additional platforms (e.g., Apple Silicon hardware like M1).
 
 
 If you wish to make use of these, then they must be specified explicitly when installing pyimpspec:
@@ -144,7 +146,7 @@ Each project can contain multiple data sets.
 Multiple noisy data sets can be averaged to produce a single data set.
 Individual data points can be masked to exclude outliers or to focus on a part of the spectrum.
 Corrections can be made by subtracting either a constant complex value, the impedance of an equivalent circuit, or another spectrum.
-See pyimpspec's documentation for information about which data formats are currently supported.
+See [pyimpspec's](https://github.com/vyrjana/pyimpspec/) documentation for information about which data formats are currently supported.
 
 
 ### Data validation
@@ -205,10 +207,22 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ## Contributing
 
-If you wish to contribute to the further development of pyimpspec, then there are several options available to you depending on your ability and the amount of time that you can spare.
+If you wish to contribute to the further development of DearEIS, then there are several options available to you depending on your ability and the amount of time that you can spare.
+
 If you find bugs, wish some feature was added, or find the documentation to be lacking, then please open an issue on [GitHub](https://github.com/vyrjana/DearEIS/issues).
-If you wish to contribute code, then clone the repository, create a new branch based on either the main branch or the most recent development branch, and submit your changes as a pull request.
+
+If you wish to contribute code, then start by cloning the repository:
+
+`git clone --recurse-submodules https://github.com/vyrjana/DearEIS.git`
+
+The development dependencies can be installed from within the repository directory:
+
+`pip install -r ./dev-requirements.txt`
+
+Create a new branch based on either the `main` branch or the most recent development branch (e.g., `dev-*`), and submit your changes as a pull request.
+
 Note that some of the core functionality of DearEIS is based on [pyimpspec](https://github.com/vyrjana/pyimpspec) and thus certain changes (e.g., parsers for data formats) should be contributed to that project instead.
+
 Code contributions should, if it is applicable, also include unit tests, which should be implemented in files placed in the `tests` folder found in the root of the repository along with any assets required by the tests.
 It should be possible to run the tests by executing the `run_tests.sh` script, which uses the test discovery built into the `unittest` module that is included with Python.
 

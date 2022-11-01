@@ -588,6 +588,9 @@ class TestDRT(TestCase):
             num_samples=2000,
             num_attempts=10,
             maximum_symmetry=0.5,
+            circuit=None,
+            W=0.15,
+            num_per_decade=100,
         )
         cls.drt: deareis.DRTResult = deareis.calculate_drt(data, settings)
 

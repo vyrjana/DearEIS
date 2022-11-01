@@ -424,6 +424,13 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         False,
         Action.EXPORT_PLOT,
     ),
+    Keybinding(
+        dpg.mvKey_L,
+        True,
+        False,
+        False,
+        Action.LOAD_SIMULATION_AS_DATA_SET,
+    ),
 ]
 
 # TODO: Replace string keys with int keys (e.g. themes.nyquist.data) and use strings only in the
@@ -612,6 +619,9 @@ DEFAULT_DRT_SETTINGS: DRTSettings = DRTSettings(
     num_samples=2000,
     num_attempts=10,
     maximum_symmetry=0.5,
+    circuit=None,
+    W=0.15,
+    num_per_decade=100,
 )
 
 DEFAULT_PLOT_EXPORT_SETTINGS: PlotExportSettings = PlotExportSettings(

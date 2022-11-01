@@ -350,16 +350,27 @@ class SettingsTable:
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
-            self._apply_button: int = dpg.generate_uuid()
-            dpg.add_button(
-                label="Apply settings",
-                callback=lambda s, a, u: signals.emit(
-                    Signal.APPLY_SIMULATION_SETTINGS,
-                    **u,
-                ),
-                tag=self._apply_button,
-            )
-            attach_tooltip(tooltips.general.apply_settings)
+            with dpg.group(horizontal=True):
+                self._apply_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Apply settings",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.APPLY_SIMULATION_SETTINGS,
+                        **u,
+                    ),
+                    tag=self._apply_button,
+                )
+                attach_tooltip(tooltips.general.apply_settings)
+                self._load_as_data_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Load as data set",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.LOAD_SIMULATION_AS_DATA_SET,
+                        **u,
+                    ),
+                    tag=self._load_as_data_button,
+                )
+                attach_tooltip(tooltips.simulation.load_as_data_set)
 
     def clear(self, hide: bool):
         if hide:
@@ -370,7 +381,8 @@ class SettingsTable:
             dpg.set_value(tag, "")
             dpg.hide_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
 
-    def populate(self, settings: SimulationSettings):
+    def populate(self, simulation: SimulationResult):
+        settings: SimulationSettings = simulation.settings
         dpg.show_item(self._header)
         rows: List[int] = []
         cells: List[Tuple[int, int]] = []
@@ -414,6 +426,10 @@ class SettingsTable:
         dpg.set_item_user_data(
             self._apply_button,
             {"settings": settings},
+        )
+        dpg.set_item_user_data(
+            self._load_as_data_button,
+            {"simulation": simulation},
         )
 
 
@@ -1028,7 +1044,7 @@ class SimulationTab:
             return
         self.results_combo.set(simulation.get_label())
         self.parameters_table.populate(simulation)
-        self.settings_table.populate(simulation.settings)
+        self.settings_table.populate(simulation)
         self.circuit_preview.update(pyimpspec.parse_cdc(simulation.settings.cdc))
         real: ndarray
         imag: ndarray

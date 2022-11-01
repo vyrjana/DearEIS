@@ -46,5 +46,8 @@ The value of the parameter.
         "remove": """
 Remove the current simulation result.
     """.strip(),
-    }
+        "load_as_data_set": """
+Load the current simulation as a data set.
+    """.strip(),
+    },
 )

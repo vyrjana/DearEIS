@@ -282,12 +282,17 @@ class ProjectTab:
     def populate_fits(self, project: Project, data: Optional[DataSet]):
         assert type(project) is Project, project
         assert type(data) is DataSet or data is None, data
-        self.fitting_tab.populate_fits(
+        lookup: Dict[str, FitResult] = (
             {_.get_label(): _ for _ in project.get_fits(data)}
             if data is not None
-            else {},
-            data,
+            else {}
         )
+        self.fitting_tab.populate_fits(lookup, data)
+        # NOTE: 'lookup' is modified in-place by the fitting tab!
+        # The labels are formatted so that the timestamp starts at the same point
+        # in the various labels, which should improve readability as it concerns
+        # the CDC of each result.
+        self.drt_tab.populate_fits(lookup)
 
     def populate_simulations(self, project: Project):
         assert type(project) is Project, project

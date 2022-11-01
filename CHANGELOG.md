@@ -1,3 +1,17 @@
+# 3.2.0
+
+- Added support for calculating the distribution of relaxation times using the `m(RQ)fit` method.
+- Added support (including a keybinding) for loading a simulated spectrum as a data set.
+- Added alternative forms of outputting circuit diagrams as SVG without terminal labels or any labels at all.
+- Updated DearPyGui version requirement to 1.7.3.
+- Updated `DRT analysis` tab to only show settings relevant to the currently chosen method.
+- Updated how the `utility.format_number` function handles the `numpy.nan` value.
+- Updated how the y-axis limits of DRT plots are automatically adjusted.
+- Updated tooltips.
+- Fixed a bug that prevented choosing to use anything but the complex data when performing a DRT analysis using the TR-RBF method.
+- Fixed a bug that was triggered by having too few unmasked data points when performing Kramers-Kronig tests.
+
+
 # 3.1.3
 
 - Fixed bugs that caused the toggling of a plottable series (e.g., a data set or a Kramers-Kronig test result) in the `Plotting` tab to apply the change to the wrong plot under certain circumstances.

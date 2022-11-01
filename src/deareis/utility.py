@@ -122,8 +122,8 @@ def format_number(
     if significants > 0:
         fmt = "{:." + str(significants) + "g}"
     string: str
-    if value is nan:
-        string = "-"
+    if value == nan or value is nan:
+        string = "NaN"
     elif value == inf:
         string = "INF"
     elif value == -inf:

@@ -20,22 +20,32 @@ entry_points = {
 }
 
 dependencies = [
-    "dearpygui==1.6.2",  # Used to implement the GUI.
-    "pyimpspec>=3.1.2",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "dearpygui==1.7.3",  # Used to implement the GUI.
+    "pyimpspec>=3.2.0",  # Used for parsing, fitting, and analyzing impedance spectra.
     "requests>=2.28.1",  # Used to check package status on PyPI.
     "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
 ]
 
-optional_dependencies = {
-    "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
-}
-
 with open("requirements.txt", "w") as fp:
     fp.write("\n".join(dependencies))
 
+dev_dependencies = [
+    "flake8",
+    "setuptools",
+]
+
+with open("dev-requirements.txt", "w") as fp:
+    fp.write("\n".join(dev_dependencies))
+
+optional_dependencies = {
+    "cvxpy": "cvxpy>=1.2.1",  # Used in the DRT calculations (TR-RBF method)
+    "kvxopt": "kvxopt>=1.3.0",  # Fork of cvxopt that may provide wheels for additional platforms
+    "dev": dev_dependencies,
+}
+
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "3.1.3"
+version = "3.2.0"
 
 licenses = []
 for _, _, files in walk("LICENSES"):

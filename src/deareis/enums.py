@@ -114,6 +114,7 @@ class Action(IntEnum):
     COPY_OUTPUT = auto()
     # - Fit output
     # - Simulation output
+    LOAD_SIMULATION_AS_DATA_SET = auto()
 
     # Project-level: data sets tab
     AVERAGE_DATA_SETS = auto()
@@ -269,6 +270,7 @@ action_contexts: Dict[Action, List[Context]] = {
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
+    Action.LOAD_SIMULATION_AS_DATA_SET: [Context.SIMULATION_TAB],
     Action.AVERAGE_DATA_SETS: [Context.DATA_SETS_TAB],
     Action.TOGGLE_DATA_POINTS: [Context.DATA_SETS_TAB],
     Action.COPY_DATA_SET_MASK: [Context.DATA_SETS_TAB],
@@ -302,6 +304,7 @@ action_to_string: Dict[Action, str] = {
     Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
     Action.EXPORT_PLOT: "export-plot",
     Action.LOAD_PROJECT: "load-project",
+    Action.LOAD_SIMULATION_AS_DATA_SET: "load-simulation-as-data-set",
     Action.NEW_PROJECT: "new-project",
     Action.NEXT_PRIMARY_RESULT: "next-primary-result",
     Action.NEXT_PROGRAM_TAB: "next-program-tab",
@@ -565,6 +568,9 @@ Collapse/expand the sidebar while in the 'Plotting' tab.
     Action.EXPORT_PLOT: """
 Export the current plot using matplotlib.
 """.strip(),
+    Action.LOAD_SIMULATION_AS_DATA_SET: """
+Load the current simulation as a data set.
+""".strip(),
 }
 # Check that every action has a description
 assert set(action_to_string.keys()) == set(
@@ -728,6 +734,8 @@ class FitSimOutput(IntEnum):
     LATEX_PARAMETERS_TABLE = auto()
     MARKDOWN_PARAMETERS_TABLE = auto()
     SVG_DIAGRAM = auto()
+    SVG_DIAGRAM_NO_TERMINAL_LABELS = auto()
+    SVG_DIAGRAM_NO_LABELS = auto()
     SYMPY_EXPR = auto()
     SYMPY_EXPR_VALUES = auto()
 
@@ -743,6 +751,8 @@ fit_sim_output_to_label: Dict[FitSimOutput, str] = {
     FitSimOutput.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
     FitSimOutput.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
     FitSimOutput.SVG_DIAGRAM: "SVG - circuit diagram",
+    FitSimOutput.SVG_DIAGRAM_NO_TERMINAL_LABELS: "SVG - circuit diagram without terminal labels",
+    FitSimOutput.SVG_DIAGRAM_NO_LABELS: "SVG - circuit diagram without any labels",
     FitSimOutput.SYMPY_EXPR: "SymPy - expression",
     FitSimOutput.SYMPY_EXPR_VALUES: "SymPy - expression and values",
 }
@@ -877,22 +887,26 @@ class DRTMethod(IntEnum):
     - TR_NNLS
     - TR_RBF
     - BHT
+    - M_RQ_FIT
     """
     TR_NNLS = 1
     TR_RBF = 2
     BHT = 3
+    M_RQ_FIT = 4
 
 
 drt_method_to_label: Dict[DRTMethod, str] = {
     DRTMethod.BHT: "BHT",
     DRTMethod.TR_NNLS: "TR-NNLS",
     DRTMethod.TR_RBF: "TR-RBF",
+    DRTMethod.M_RQ_FIT: "m(RQ)fit",
 }
 label_to_drt_method: Dict[str, DRTMethod] = {
     v: k for k, v in drt_method_to_label.items()
 }
 drt_method_to_value: Dict[DRTMethod, str] = {
     DRTMethod.BHT: "bht",
+    DRTMethod.M_RQ_FIT: "m(RQ)fit",
     DRTMethod.TR_NNLS: "tr-nnls",
     DRTMethod.TR_RBF: "tr-rbf",
 }

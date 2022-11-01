@@ -25,6 +25,8 @@ import dearpygui.dearpygui as dpg
 from numpy import (
     ceil,
     floor,
+    integer,
+    issubdtype,
     ndarray,
 )
 import deareis.themes as themes
@@ -112,9 +114,9 @@ class MuXps(Plot):
         assert type(mu) is ndarray, mu
         assert type(Xps) is ndarray, Xps
         assert type(mu_criterion) is float, mu_criterion
-        assert (
-            type(num_RC) is int and num_RC >= min(num_RCs) and num_RC <= max(num_RCs)
-        ), num_RC
+        assert issubdtype(type(num_RC), integer), (type(num_RC), num_RC)
+        assert num_RC >= min(num_RCs), (num_RC, num_RCs)
+        assert num_RC <= max(num_RCs), (num_RC, num_RCs)
         self._series.append(kwargs)
         x: list = list(num_RCs)
         y: list = list(mu)

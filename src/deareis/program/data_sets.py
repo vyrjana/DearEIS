@@ -32,6 +32,7 @@ from deareis.data import (
     DataSet,
     FitResult,
     Project,
+    SimulationResult,
     TestResult,
 )
 from deareis.enums import Context
@@ -62,6 +63,35 @@ def select_data_set(*args, **kwargs):
     project_tab.populate_simulations(project)
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
+
+def load_simulation_as_data_set(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    simulation: SimulationResult = kwargs.get("simulation")
+    if simulation is None:
+        return
+    signals.emit(
+        Signal.SHOW_BUSY_MESSAGE,
+        message="Loading simulation result as data set",
+    )
+    data: DataSet = DataSet(
+        simulation.get_frequency(),
+        simulation.get_impedance(),
+        mask={},
+        label=simulation.get_label(),
+    )
+    project.add_data_set(data)
+    project_tab.populate_data_sets(project)
+    signals.emit(Signal.SELECT_DATA_SET, data=data)
+    signals.emit(
+        Signal.SELECT_PLOT_SETTINGS,
+        settings=project_tab.get_active_plot(),
+    )
+    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def load_data_set_files(*args, **kwargs):

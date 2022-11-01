@@ -423,6 +423,12 @@ class KeybindingHandler:
                         plot_type=project_tab.get_previous_plot_type(),
                     )
                 # - Plot type
+            elif action == Action.LOAD_SIMULATION_AS_DATA_SET:
+                if context == Context.SIMULATION_TAB:
+                    signals.emit(
+                        Signal.LOAD_SIMULATION_AS_DATA_SET,
+                        simulation=project_tab.get_active_simulation(),
+                    )
             elif action == Action.APPLY_SETTINGS:
                 if context == Context.KRAMERS_KRONIG_TAB:
                     test = project_tab.get_active_test()

@@ -29,6 +29,12 @@ from numpy import (
     log10 as log,
     ndarray,
 )
+from pyimpspec import (
+    Circuit,
+    DRTError,
+    parse_cdc,
+)
+from pyimpspec.analysis.drt.mRQfit import _validate_circuit
 from pyimpspec.analysis.fitting import _calculate_residuals
 import dearpygui.dearpygui as dpg
 from deareis.utility import (
@@ -41,6 +47,7 @@ from deareis.data.drt import (
     DRTSettings,
     DRTResult,
 )
+from deareis.data.fitting import FitResult
 from deareis.enums import (
     DRTMethod,
     DRTMode,
@@ -158,273 +165,352 @@ MATH_SHAPE: int = render_math(r"$\mu = k$", 200, 40)
 
 class SettingsMenu:
     def __init__(self, default_settings: DRTSettings, label_pad: int):
-        with dpg.group(horizontal=True):
-            dpg.add_text("Method".rjust(label_pad))
-            attach_tooltip(tooltips.drt.method)
-            self.method_combo: int = dpg.generate_uuid()
-            dpg.add_combo(
-                default_value=drt_method_to_label[default_settings.method],
-                items=list(label_to_drt_method.keys()),
-                width=-1,
-                callback=lambda s, a, u: self.update_settings(),
-                tag=self.method_combo,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Mode".rjust(label_pad))
-            attach_tooltip(tooltips.drt.mode)
-            self.mode_combo: int = dpg.generate_uuid()
-            dpg.add_combo(
-                default_value=drt_mode_to_label[default_settings.mode],
-                items=list(label_to_drt_mode.keys()),
-                width=-1,
-                callback=lambda s, a, u: self.update_settings(),
-                tag=self.mode_combo,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Lambda".rjust(label_pad))
-            attach_tooltip(tooltips.drt.lambda_value)
-            self.lambda_checkbox: int = dpg.generate_uuid()
-            dpg.add_checkbox(
-                default_value=default_settings.lambda_value <= 0.0,
-                callback=lambda s, a, u: self.update_settings(),
-                tag=self.lambda_checkbox,
-            )
-            self.lambda_input: int = dpg.generate_uuid()
-            dpg.add_input_float(
-                default_value=default_settings.lambda_value,
-                width=-1,
-                min_value=1e-16,
-                min_clamped=True,
-                step=0.0,
-                format="%.3g",
-                on_enter=True,
-                tag=self.lambda_input,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Derivative order".rjust(label_pad))
-            with dpg.tooltip(dpg.last_item()):
-                with dpg.group(horizontal=True):
-                    dpg.add_text("The derivative order of")
-                    dpg.add_image(MATH_GAMMA_LN_TAU)
-                    dpg.add_text("to use as the penalty in the Tikhonov regularization.")
-                dpg.add_text("\nThis is only used when the method setting is set to BHT or TR-RBF.")
-            self.derivative_order_combo: int = dpg.generate_uuid()
-            dpg.add_combo(
-                default_value=derivative_order_to_label[
-                    default_settings.derivative_order
-                ],
-                items=list(label_to_derivative_order.keys()),
-                width=-1,
-                tag=self.derivative_order_combo,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("RBF type".rjust(label_pad))
-            with dpg.tooltip(dpg.last_item()):
-                dpg.add_text(
-                    "The type of radial basis function to use with the BHT and TR-RBF methods."
+        self.main_group: int = dpg.generate_uuid()
+        with dpg.child_window(border=False, height=250):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Method".rjust(label_pad))
+                attach_tooltip(tooltips.drt.method)
+                self.method_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=drt_method_to_label[default_settings.method],
+                    items=list(label_to_drt_method.keys()),
+                    width=-1,
+                    callback=lambda s, a, u: self.update_settings(),
+                    tag=self.method_combo,
                 )
-                with dpg.table(
-                    borders_outerV=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_innerH=True,
-                    scrollY=True,
-                    freeze_rows=1,
-                    height=18 + 8 * (MATH_RBF_HEIGHT + 4),
-                ):
-                    dpg.add_table_column(
-                        label="Label",
-                        width_fixed=True,
-                    )
-                    dpg.add_table_column(
-                        label="Equation",
-                        width_fixed=False,
-                    )
-                    with dpg.table_row():
-                        dpg.add_text("C^0 Matérn")
-                        dpg.add_image(MATH_C0_MATERN)
-                    with dpg.table_row():
-                        dpg.add_text("C^2 Matérn")
-                        dpg.add_image(MATH_C2_MATERN)
-                    with dpg.table_row():
-                        dpg.add_text("C^4 Matérn")
-                        dpg.add_image(MATH_C4_MATERN)
-                    with dpg.table_row():
-                        dpg.add_text("C^6 Matérn")
-                        dpg.add_image(MATH_C6_MATERN)
-                    with dpg.table_row():
-                        dpg.add_text("Cauchy")
-                        dpg.add_image(MATH_CAUCHY)
-                    with dpg.table_row():
-                        dpg.add_text("Gaussian")
-                        dpg.add_image(MATH_GAUSSIAN)
-                    with dpg.table_row():
-                        dpg.add_text("Inverse quadratic")
-                        dpg.add_image(MATH_INVERSE_QUADRATIC)
-                    with dpg.table_row():
-                        dpg.add_text("Inverse quadric")
-                        dpg.add_image(MATH_INVERSE_QUADRIC)
-                with dpg.group(horizontal=True):
-                    dpg.add_text("µ is the shape coefficient and")
-                    dpg.add_image(MATH_X)
-                    dpg.add_text("where")
-                    dpg.add_image(MATH_TAU_M)
-                    dpg.add_text("is the mth collocation point.")
-                dpg.add_text(
-                    "Alternatively, piecewise linear discretization can also be used:"
+            with dpg.group(horizontal=True):
+                dpg.add_text("Mode".rjust(label_pad))
+                attach_tooltip(tooltips.drt.mode)
+                self.mode_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=drt_mode_to_label[default_settings.mode],
+                    items=list(label_to_drt_mode.keys()),
+                    width=-1,
+                    callback=lambda s, a, u: self.update_settings(),
+                    tag=self.mode_combo,
                 )
-                dpg.add_image(MATH_PIECEWISE_1)
-                dpg.add_image(MATH_PIECEWISE_2)
-                dpg.add_image(MATH_PIECEWISE_3)
-            self.rbf_type_combo: int = dpg.generate_uuid()
-            dpg.add_combo(
-                default_value=rbf_type_to_label[default_settings.rbf_type],
-                items=list(label_to_rbf_type.keys()),
-                width=-1,
-                tag=self.rbf_type_combo,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Shape type".rjust(label_pad))
-            with dpg.tooltip(dpg.last_item()):
-                dpg.add_text(
-                    "This is only used when the method setting is set to BHT or TR-RBF."
+            with dpg.group(horizontal=True):
+                dpg.add_text("Lambda".rjust(label_pad))
+                attach_tooltip(tooltips.drt.lambda_value)
+                self.lambda_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.lambda_value <= 0.0,
+                    callback=lambda s, a, u: self.update_settings(),
+                    tag=self.lambda_checkbox,
                 )
-                with dpg.table(
-                    borders_outerV=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_innerH=True,
-                    scrollY=True,
-                    freeze_rows=1,
-                    height=18 + 2 * (40 + 4),
-                ):
-                    dpg.add_table_column(
-                        label="Label",
-                        width_fixed=True,
-                    )
-                    dpg.add_table_column(
-                        label="Equation",
-                        width_fixed=False,
-                    )
-                    with dpg.table_row():
-                        dpg.add_text("FWHM")
-                        dpg.add_image(MATH_FWHM)
-                    with dpg.table_row():
-                        dpg.add_text("Factor")
-                        dpg.add_image(MATH_SHAPE)
-                dpg.add_text(
-                    "µ is used in the setting above, k is the input value, and FWHM stands for full width half maximum."
+                self.lambda_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    default_value=default_settings.lambda_value,
+                    width=-1,
+                    min_value=1e-16,
+                    min_clamped=True,
+                    step=0.0,
+                    format="%.3g",
+                    on_enter=True,
+                    tag=self.lambda_input,
                 )
-            self.rbf_shape_combo: int = dpg.generate_uuid()
-            dpg.add_combo(
-                default_value=rbf_shape_to_label[default_settings.rbf_shape],
-                items=list(label_to_rbf_shape.keys()),
-                width=-1,
-                tag=self.rbf_shape_combo,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Shape coefficient".rjust(label_pad))
-            attach_tooltip(tooltips.drt.shape_coeff)
-            self.shape_coeff_input: int = dpg.generate_uuid()
-            dpg.add_input_float(
-                default_value=default_settings.shape_coeff,
-                width=-1,
-                min_value=1e-12,
-                min_clamped=True,
-                step=0.0,
-                format="%.3g",
-                on_enter=True,
-                tag=self.shape_coeff_input,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Include inductance".rjust(label_pad))
-            with dpg.tooltip(dpg.last_item()):
-                dpg.add_text(
-                    "Whether or not to include an inductive term in the calculations."
-                )
-                with dpg.table(
-                    borders_outerV=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_innerH=True,
-                    scrollY=True,
-                    freeze_rows=1,
-                    height=18 + 2 * (MATH_DRT_HEIGHT + 4),
-                ):
-                    dpg.add_table_column(
-                        label="State",
-                        width_fixed=True,
+            with dpg.group(horizontal=True):
+                dpg.add_text("Derivative order".rjust(label_pad))
+                with dpg.tooltip(dpg.last_item()):
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("The derivative order of")
+                        dpg.add_image(MATH_GAMMA_LN_TAU)
+                        dpg.add_text(
+                            "to use as the penalty in the Tikhonov regularization."
+                        )
+                    dpg.add_text(
+                        "\nThis is only used when the method setting is set to BHT or TR-RBF."
                     )
-                    dpg.add_table_column(
-                        label="Equation",
-                        width_fixed=False,
-                    )
-                    with dpg.table_row():
-                        dpg.add_text("True")
-                        dpg.add_image(MATH_DRT_WITH_INDUCTANCE)
-                    with dpg.table_row():
-                        dpg.add_text("False")
-                        dpg.add_image(MATH_DRT_WITHOUT_INDUCTANCE)
-                dpg.add_text(
-                    "This is only used when the method setting is set to TR-RBF."
+                self.derivative_order_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=derivative_order_to_label[
+                        default_settings.derivative_order
+                    ],
+                    items=list(label_to_derivative_order.keys()),
+                    width=-1,
+                    tag=self.derivative_order_combo,
                 )
-            self.inductance_checkbox: int = dpg.generate_uuid()
-            dpg.add_checkbox(
-                default_value=default_settings.inductance,
-                tag=self.inductance_checkbox,
+            with dpg.group(horizontal=True):
+                dpg.add_text("RBF type".rjust(label_pad))
+                with dpg.tooltip(dpg.last_item()):
+                    dpg.add_text(
+                        "The type of radial basis function to use with the BHT and TR-RBF methods."
+                    )
+                    with dpg.table(
+                        borders_outerV=True,
+                        borders_outerH=True,
+                        borders_innerV=True,
+                        borders_innerH=True,
+                        scrollY=True,
+                        freeze_rows=1,
+                        height=18 + 8 * (MATH_RBF_HEIGHT + 4),
+                    ):
+                        dpg.add_table_column(
+                            label="Label",
+                            width_fixed=True,
+                        )
+                        dpg.add_table_column(
+                            label="Equation",
+                            width_fixed=False,
+                        )
+                        with dpg.table_row():
+                            dpg.add_text("C^0 Matérn")
+                            dpg.add_image(MATH_C0_MATERN)
+                        with dpg.table_row():
+                            dpg.add_text("C^2 Matérn")
+                            dpg.add_image(MATH_C2_MATERN)
+                        with dpg.table_row():
+                            dpg.add_text("C^4 Matérn")
+                            dpg.add_image(MATH_C4_MATERN)
+                        with dpg.table_row():
+                            dpg.add_text("C^6 Matérn")
+                            dpg.add_image(MATH_C6_MATERN)
+                        with dpg.table_row():
+                            dpg.add_text("Cauchy")
+                            dpg.add_image(MATH_CAUCHY)
+                        with dpg.table_row():
+                            dpg.add_text("Gaussian")
+                            dpg.add_image(MATH_GAUSSIAN)
+                        with dpg.table_row():
+                            dpg.add_text("Inverse quadratic")
+                            dpg.add_image(MATH_INVERSE_QUADRATIC)
+                        with dpg.table_row():
+                            dpg.add_text("Inverse quadric")
+                            dpg.add_image(MATH_INVERSE_QUADRIC)
+                    with dpg.group(horizontal=True):
+                        dpg.add_text("µ is the shape coefficient and")
+                        dpg.add_image(MATH_X)
+                        dpg.add_text("where")
+                        dpg.add_image(MATH_TAU_M)
+                        dpg.add_text("is the mth collocation point.")
+                    dpg.add_text(
+                        "Alternatively, piecewise linear discretization can also be used:"
+                    )
+                    dpg.add_image(MATH_PIECEWISE_1)
+                    dpg.add_image(MATH_PIECEWISE_2)
+                    dpg.add_image(MATH_PIECEWISE_3)
+                self.rbf_type_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=rbf_type_to_label[default_settings.rbf_type],
+                    items=list(label_to_rbf_type.keys()),
+                    width=-1,
+                    tag=self.rbf_type_combo,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Shape type".rjust(label_pad))
+                with dpg.tooltip(dpg.last_item()):
+                    dpg.add_text(
+                        "This is only used when the method setting is set to BHT or TR-RBF."
+                    )
+                    with dpg.table(
+                        borders_outerV=True,
+                        borders_outerH=True,
+                        borders_innerV=True,
+                        borders_innerH=True,
+                        scrollY=True,
+                        freeze_rows=1,
+                        height=18 + 2 * (40 + 4),
+                    ):
+                        dpg.add_table_column(
+                            label="Label",
+                            width_fixed=True,
+                        )
+                        dpg.add_table_column(
+                            label="Equation",
+                            width_fixed=False,
+                        )
+                        with dpg.table_row():
+                            dpg.add_text("FWHM")
+                            dpg.add_image(MATH_FWHM)
+                        with dpg.table_row():
+                            dpg.add_text("Factor")
+                            dpg.add_image(MATH_SHAPE)
+                    dpg.add_text(
+                        "µ is used in the setting above, k is the input value, and FWHM stands for full width half maximum."
+                    )
+                self.rbf_shape_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=rbf_shape_to_label[default_settings.rbf_shape],
+                    items=list(label_to_rbf_shape.keys()),
+                    width=-1,
+                    tag=self.rbf_shape_combo,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Shape coefficient".rjust(label_pad))
+                attach_tooltip(tooltips.drt.shape_coeff)
+                self.shape_coeff_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    default_value=default_settings.shape_coeff,
+                    width=-1,
+                    min_value=1e-12,
+                    min_clamped=True,
+                    step=0.0,
+                    format="%.3g",
+                    on_enter=True,
+                    tag=self.shape_coeff_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Include inductance".rjust(label_pad))
+                with dpg.tooltip(dpg.last_item()):
+                    dpg.add_text(
+                        "Whether or not to include an inductive term in the calculations."
+                    )
+                    with dpg.table(
+                        borders_outerV=True,
+                        borders_outerH=True,
+                        borders_innerV=True,
+                        borders_innerH=True,
+                        scrollY=True,
+                        freeze_rows=1,
+                        height=18 + 2 * (MATH_DRT_HEIGHT + 4),
+                    ):
+                        dpg.add_table_column(
+                            label="State",
+                            width_fixed=True,
+                        )
+                        dpg.add_table_column(
+                            label="Equation",
+                            width_fixed=False,
+                        )
+                        with dpg.table_row():
+                            dpg.add_text("True")
+                            dpg.add_image(MATH_DRT_WITH_INDUCTANCE)
+                        with dpg.table_row():
+                            dpg.add_text("False")
+                            dpg.add_image(MATH_DRT_WITHOUT_INDUCTANCE)
+                    dpg.add_text(
+                        "This is only used when the method setting is set to TR-RBF."
+                    )
+                self.inductance_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.inductance,
+                    tag=self.inductance_checkbox,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Credible intervals".rjust(label_pad))
+                attach_tooltip(tooltips.drt.credible_intervals)
+                self.credible_intervals_checkbox: int = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    default_value=default_settings.credible_intervals,
+                    callback=lambda s, a, u: self.update_settings(),
+                    tag=self.credible_intervals_checkbox,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Number of samples".rjust(label_pad))
+                attach_tooltip(tooltips.drt.num_samples)
+                self.num_samples_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    default_value=default_settings.num_samples,
+                    width=-1,
+                    min_value=1000,
+                    min_clamped=True,
+                    step=0,
+                    on_enter=True,
+                    tag=self.num_samples_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Number of attempts".rjust(label_pad))
+                attach_tooltip(tooltips.drt.num_attempts)
+                self.num_attempts_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    default_value=default_settings.num_attempts,
+                    width=-1,
+                    min_value=0,
+                    min_clamped=True,
+                    step=0,
+                    on_enter=True,
+                    tag=self.num_attempts_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Maximum symmetry".rjust(label_pad))
+                attach_tooltip(tooltips.drt.maximum_symmetry)
+                self.maximum_symmetry_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    default_value=default_settings.maximum_symmetry,
+                    width=-1,
+                    min_value=0.0,
+                    max_value=1.0,
+                    step=0.0,
+                    format="%.3g",
+                    on_enter=True,
+                    tag=self.maximum_symmetry_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Circuit".rjust(label_pad))
+                attach_tooltip(tooltips.drt.circuit)
+                self.circuit_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value="",
+                    items=[],
+                    user_data={},
+                    width=-1,
+                    callback=lambda s, a, u: self.update_settings(),
+                    tag=self.circuit_combo,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("W".rjust(label_pad))
+                attach_tooltip(tooltips.drt.W)
+                self.W_input: int = dpg.generate_uuid()
+                dpg.add_input_float(
+                    default_value=default_settings.W,
+                    width=-1,
+                    min_value=0.0,
+                    max_value=1.0,
+                    step=0.0,
+                    format="%.3g",
+                    on_enter=True,
+                    tag=self.W_input,
+                )
+            with dpg.group(horizontal=True):
+                dpg.add_text("Num. points per decade".rjust(label_pad))
+                attach_tooltip(tooltips.drt.num_per_decade)
+                self.num_per_decade_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    default_value=default_settings.num_per_decade,
+                    width=-1,
+                    min_value=1,
+                    step=0,
+                    on_enter=True,
+                    tag=self.num_per_decade_input,
+                )
+        self.update_settings()
+
+    def update_valid_circuits(self, fits: Dict[str, FitResult]):
+        lookup: Dict[str, str] = {}
+        label: str
+        fit: FitResult
+        for label, fit in fits.items():
+            try:
+                _validate_circuit(fit.circuit)
+            except DRTError:
+                continue
+            lookup[label] = fit.circuit.to_string(12)
+        if len(lookup) > 0:
+            longest_cdc: int = max(
+                map(
+                    lambda _: len(_[: _.find(" (") + 1].strip()),
+                    lookup.keys(),
+                )
             )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Credible intervals".rjust(label_pad))
-            attach_tooltip(tooltips.drt.credible_intervals)
-            self.credible_intervals_checkbox: int = dpg.generate_uuid()
-            dpg.add_checkbox(
-                default_value=default_settings.credible_intervals,
-                callback=lambda s, a, u: self.update_settings(),
-                tag=self.credible_intervals_checkbox,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Number of samples".rjust(label_pad))
-            attach_tooltip(tooltips.drt.num_samples)
-            self.num_samples_input: int = dpg.generate_uuid()
-            dpg.add_input_int(
-                default_value=default_settings.num_samples,
-                width=-1,
-                min_value=1000,
-                min_clamped=True,
-                step=0,
-                on_enter=True,
-                tag=self.num_samples_input,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Number of attempts".rjust(label_pad))
-            attach_tooltip(tooltips.drt.num_attempts)
-            self.num_attempts_input: int = dpg.generate_uuid()
-            dpg.add_input_int(
-                default_value=default_settings.num_attempts,
-                width=-1,
-                min_value=0,
-                min_clamped=True,
-                step=0,
-                on_enter=True,
-                tag=self.num_attempts_input,
-            )
-        with dpg.group(horizontal=True):
-            dpg.add_text("Maximum symmetry".rjust(label_pad))
-            attach_tooltip(tooltips.drt.maximum_symmetry)
-            self.maximum_symmetry_input: int = dpg.generate_uuid()
-            dpg.add_input_float(
-                default_value=default_settings.maximum_symmetry,
-                width=-1,
-                min_value=0.0,
-                max_value=1.0,
-                step=0.0,
-                format="%.3g",
-                on_enter=True,
-                tag=self.maximum_symmetry_input,
-            )
+            for label in list(lookup.keys()):
+                new_label: str = f"{label[:label.find(' (') + 1].strip().ljust(longest_cdc + 1)}{label[label.find(' (') + 1:]}"
+                lookup[new_label] = lookup[label]
+                if new_label != label:
+                    del lookup[label]
+        labels: List[str] = list(lookup.keys())
+        dpg.configure_item(
+            self.circuit_combo,
+            default_value=labels[0] if len(labels) > 0 else "",
+            items=labels,
+            user_data=lookup,
+        )
         self.update_settings()
 
     def get_settings(self) -> DRTSettings:
+        cdc: str = dpg.get_item_user_data(self.circuit_combo).get(
+            dpg.get_value(self.circuit_combo),
+            "",
+        )
         return DRTSettings(
             method=label_to_drt_method[dpg.get_value(self.method_combo)],
             mode=label_to_drt_mode[dpg.get_value(self.mode_combo)],
@@ -442,6 +528,9 @@ class SettingsMenu:
             num_samples=dpg.get_value(self.num_samples_input),
             num_attempts=dpg.get_value(self.num_attempts_input),
             maximum_symmetry=dpg.get_value(self.maximum_symmetry_input),
+            circuit=parse_cdc(cdc) if cdc != "" else None,
+            W=dpg.get_value(self.W_input),
+            num_per_decade=dpg.get_value(self.num_per_decade_input),
         )
 
     def set_settings(self, settings: DRTSettings):
@@ -463,7 +552,35 @@ class SettingsMenu:
         dpg.set_value(self.num_samples_input, settings.num_samples)
         dpg.set_value(self.num_attempts_input, settings.num_attempts)
         dpg.set_value(self.maximum_symmetry_input, settings.maximum_symmetry)
+        labels: List[str] = list(dpg.get_item_user_data(self.circuit_combo).keys())
+        default_value: str = ""
+        if settings.circuit is not None:
+            cdc: str = settings.circuit.to_string(12)
+            label: str
+            circuit: Circuit
+            for label, circuit in dpg.get_item_user_data(self.circuit_combo).items():
+                if circuit == cdc:
+                    default_value = label
+                    break
+            if default_value == "" and len(labels) > 0:
+                default_value = labels[0]
+        dpg.configure_item(
+            self.circuit_combo,
+            default_value=default_value,
+        )
+        dpg.set_value(self.W_input, settings.W)
+        dpg.set_value(self.num_per_decade_input, settings.num_per_decade)
         self.update_settings(settings)
+
+    def show_setting(self, widget: int):
+        assert type(widget) is int and widget > 0, widget
+        dpg.enable_item(widget)
+        dpg.show_item(dpg.get_item_parent(widget))
+
+    def hide_setting(self, widget: int):
+        assert type(widget) is int and widget > 0, widget
+        dpg.disable_item(widget)
+        dpg.hide_item(dpg.get_item_parent(widget))
 
     def update_settings(self, settings: Optional[DRTSettings] = None):
         if settings is None:
@@ -480,57 +597,67 @@ class SettingsMenu:
                     if k == DRTMode.REAL or k == DRTMode.IMAGINARY
                 ],
             )
-            dpg.enable_item(self.mode_combo)
+            self.show_setting(self.mode_combo)
         elif settings.method == DRTMethod.TR_RBF:
             dpg.configure_item(
                 self.mode_combo,
-                default_value=drt_mode_to_label[DRTMode.COMPLEX],
+                default_value=drt_mode_to_label[settings.mode],
                 items=list(label_to_drt_mode.keys()),
             )
-            dpg.enable_item(self.mode_combo)
-        elif settings.method == DRTMethod.BHT:
-            dpg.disable_item(self.mode_combo)
-        if settings.method == DRTMethod.BHT:
-            dpg.disable_item(self.lambda_checkbox)
-            dpg.disable_item(self.lambda_input)
-        else:
-            dpg.enable_item(self.lambda_checkbox)
+            self.show_setting(self.mode_combo)
+        elif settings.method == DRTMethod.BHT or settings.method == DRTMethod.M_RQ_FIT:
+            self.hide_setting(self.mode_combo)
+        if settings.method == DRTMethod.TR_RBF or settings.method == DRTMethod.TR_NNLS:
+            self.show_setting(self.lambda_checkbox)
             if dpg.get_value(self.lambda_checkbox):
                 dpg.disable_item(self.lambda_input)
             else:
                 dpg.enable_item(self.lambda_input)
-        if settings.method == DRTMethod.TR_NNLS:
-            dpg.disable_item(self.rbf_type_combo)
-            dpg.disable_item(self.derivative_order_combo)
-            dpg.disable_item(self.rbf_shape_combo)
-            dpg.disable_item(self.shape_coeff_input)
         else:
-            dpg.enable_item(self.rbf_type_combo)
-            dpg.enable_item(self.derivative_order_combo)
-            dpg.enable_item(self.rbf_shape_combo)
-            dpg.enable_item(self.shape_coeff_input)
+            self.hide_setting(self.lambda_checkbox)
+            dpg.disable_item(self.lambda_input)
+        if settings.method == DRTMethod.TR_RBF or settings.method == DRTMethod.BHT:
+            self.show_setting(self.rbf_type_combo)
+            self.show_setting(self.derivative_order_combo)
+            self.show_setting(self.rbf_shape_combo)
+            self.show_setting(self.shape_coeff_input)
+        else:
+            self.hide_setting(self.rbf_type_combo)
+            self.hide_setting(self.derivative_order_combo)
+            self.hide_setting(self.rbf_shape_combo)
+            self.hide_setting(self.shape_coeff_input)
         if settings.method == DRTMethod.TR_RBF:
-            dpg.enable_item(self.inductance_checkbox)
+            self.show_setting(self.inductance_checkbox)
         else:
-            dpg.disable_item(self.inductance_checkbox)
+            self.hide_setting(self.inductance_checkbox)
         if settings.method == DRTMethod.TR_RBF:
-            dpg.enable_item(self.credible_intervals_checkbox)
+            self.show_setting(self.credible_intervals_checkbox)
         else:
-            dpg.disable_item(self.credible_intervals_checkbox)
-        if settings.method == DRTMethod.BHT or (
-            settings.method == DRTMethod.TR_RBF and settings.credible_intervals is True
-        ):
-            dpg.enable_item(self.num_samples_input)
-        else:
-            dpg.disable_item(self.num_samples_input)
+            self.hide_setting(self.credible_intervals_checkbox)
         if settings.method == DRTMethod.BHT:
-            dpg.enable_item(self.num_attempts_input)
+            self.show_setting(self.num_samples_input)
+        elif settings.method == DRTMethod.TR_RBF:
+            self.show_setting(self.num_samples_input)
+            if settings.credible_intervals is False:
+                dpg.disable_item(self.num_samples_input)
         else:
-            dpg.disable_item(self.num_attempts_input)
-        if settings.method == DRTMethod.TR_NNLS:
-            dpg.disable_item(self.maximum_symmetry_input)
+            self.hide_setting(self.num_samples_input)
+        if settings.method == DRTMethod.BHT:
+            self.show_setting(self.num_attempts_input)
         else:
-            dpg.enable_item(self.maximum_symmetry_input)
+            self.hide_setting(self.num_attempts_input)
+        if settings.method == DRTMethod.TR_RBF or settings.method == DRTMethod.BHT:
+            self.show_setting(self.maximum_symmetry_input)
+        else:
+            self.hide_setting(self.maximum_symmetry_input)
+        if settings.method == DRTMethod.M_RQ_FIT:
+            self.show_setting(self.circuit_combo)
+            self.show_setting(self.W_input)
+            self.show_setting(self.num_per_decade_input)
+        else:
+            self.hide_setting(self.circuit_combo)
+            self.hide_setting(self.W_input)
+            self.hide_setting(self.num_per_decade_input)
 
     def has_active_input(self) -> bool:
         inputs: List[int] = [
@@ -917,7 +1044,9 @@ class SettingsTable:
         values: List[str] = [
             drt_method_to_label[drt.settings.method],
             drt_mode_to_label[drt.settings.mode],
-            f"{drt.settings.lambda_value:.3e}" if drt.settings.lambda_value > 0.0 else "Automatic",
+            f"{drt.settings.lambda_value:.3e}"
+            if drt.settings.lambda_value > 0.0
+            else "Automatic",
             rbf_type_to_label[drt.settings.rbf_type],
             derivative_order_to_label[drt.settings.derivative_order],
             rbf_shape_to_label[drt.settings.rbf_shape],
@@ -1103,7 +1232,7 @@ class DRTTab:
                     with dpg.child_window(
                         border=True,
                         width=-1,
-                        height=312,
+                        height=290,
                     ):
                         self.settings_menu: SettingsMenu = SettingsMenu(
                             state.config.default_drt_settings, label_pad
@@ -1442,6 +1571,10 @@ class DRTTab:
     def get_previous_result(self) -> Optional[DRTResult]:
         return self.results_combo.get_previous_result()
 
+    def populate_fits(self, fits: List[FitResult]):
+        assert type(fits) is dict, fits
+        self.settings_menu.update_valid_circuits(fits)
+
     def select_data_set(self, data: Optional[DataSet]):
         assert type(data) is DataSet or data is None, data
         self.clear(hide=data is None)
@@ -1490,7 +1623,11 @@ class DRTTab:
             drt.imaginary_residual, imaginary_residual
         ), "The data set's impedances differ from what they were when the DRT analysis was performed!"
 
-    def select_drt_result(self, drt: Optional[DRTResult], data: Optional[DataSet]):
+    def select_drt_result(
+        self,
+        drt: Optional[DRTResult],
+        data: Optional[DataSet],
+    ):
         assert type(drt) is DRTResult or drt is None, drt
         assert type(data) is DataSet or data is None, data
         dpg.set_item_user_data(

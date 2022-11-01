@@ -33,6 +33,10 @@ from numpy import (
 )
 from scipy.signal import find_peaks
 from pandas import DataFrame
+from pyimpspec import (
+    Circuit,
+    parse_cdc,
+)
 from deareis.enums import (
     DRTMethod,
     DRTMode,
@@ -50,12 +54,19 @@ from deareis.enums import (
 from deareis.utility import format_timestamp
 
 
-VERSION: int = 1
+VERSION: int = 2
+
+
+def _parse_settings_v2(dictionary: dict) -> dict:
+    # TODO: Update implementation once VERSION is incremented
+    return dictionary
 
 
 def _parse_settings_v1(dictionary: dict) -> dict:
-    # TODO: Update implementation once VERSION is incremented
-    return dictionary
+    dictionary["circuit"] = ""
+    dictionary["W"] = 0.15
+    dictionary["num_per_decade"] = 100
+    return _parse_settings_v2(dictionary)
 
 
 @dataclass(frozen=True)
@@ -83,7 +94,7 @@ class DRTSettings:
     derivative_order: int
         The derivative order to use when calculating the penalty in the Tikhonov regularization.
         BHT and TR-RBF methods only.
-        
+
     rbf_shape: RBFShape
         The shape to use with the radial basis function discretization.
         BHT and TR-RBF methods only.
@@ -114,6 +125,22 @@ class DRTSettings:
         Used to discard results with strong oscillations.
         Smaller values provide stricter conditions.
         BHT and TR-RBF methods only.
+
+    circuit: Optional[Circuit]
+        A circuit that contains one or more "(RQ)" or "(RC)" elements connected in series.
+        An optional series resistance may also be included.
+        For example, a circuit with a CDC representation of "R(RQ)(RQ)(RC)" would be a valid circuit.
+        It is highly recommended that the provided circuit has already been fitted.
+        However, if all of the various parameters of the provided circuit are at their default values, then an attempt will be made to fit the circuit to the data.
+        m(RQ)fit method only.
+
+    W: float
+        The width of the Gaussian curve that is used to approximate the DRT of an "(RC)" element.
+        m(RQ)fit method only.
+
+    num_per_decade: int
+        The number of points per decade to use when calculating a DRT.
+        m(RQ)fit method only.
     """
 
     method: DRTMethod
@@ -128,6 +155,9 @@ class DRTSettings:
     num_samples: int
     num_attempts: int
     maximum_symmetry: float
+    circuit: Optional[Circuit]
+    W: float
+    num_per_decade: int
 
     def __repr__(self) -> str:
         return f"DRTSettings ({hex(id(self))})"
@@ -147,6 +177,9 @@ class DRTSettings:
             "num_samples": self.num_samples,
             "num_attempts": self.num_attempts,
             "maximum_symmetry": self.maximum_symmetry,
+            "circuit": self.circuit.to_string(12) if self.circuit is not None else "",
+            "W": self.W,
+            "num_per_decade": self.num_per_decade,
         }
 
     @classmethod
@@ -157,6 +190,7 @@ class DRTSettings:
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
+            2: _parse_settings_v2,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         del dictionary["version"]
@@ -165,11 +199,19 @@ class DRTSettings:
         dictionary["mode"] = DRTMode(dictionary["mode"])
         dictionary["rbf_type"] = RBFType(dictionary["rbf_type"])
         dictionary["rbf_shape"] = RBFShape(dictionary["rbf_shape"])
+        dictionary["circuit"] = (
+            parse_cdc(dictionary["circuit"]) if dictionary["circuit"] != "" else None
+        )
         return Class(**dictionary)
 
 
-def _parse_result_v1(dictionary: dict) -> dict:
+def _parse_result_v2(dictionary: dict) -> dict:
+    # TODO: Update implementation once VERSION is incremented
     return dictionary
+
+
+def _parse_result_v1(dictionary: dict) -> dict:
+    return _parse_result_v2(dictionary)
 
 
 @dataclass
@@ -270,6 +312,7 @@ class DRTResult:
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
+            2: _parse_result_v2,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         dictionary = parsers[version](dictionary)

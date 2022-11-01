@@ -60,6 +60,7 @@ class Signal(IntEnum):
     HIDE_BUSY_MESSAGE = auto()
     LOAD_DATA_SET_FILES = auto()
     LOAD_PROJECT_FILES = auto()
+    LOAD_SIMULATION_AS_DATA_SET = auto()
     MODIFY_DATA_SET_PATH = auto()
     MODIFY_PLOT_SERIES_THEME = auto()
     MODIFY_PROJECT_NOTES = auto()

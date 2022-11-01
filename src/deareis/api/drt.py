@@ -57,6 +57,9 @@ def calculate_drt(
     - Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 (https://doi.org/10.1016/j.electacta.2015.03.123)
     - Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 (https://doi.org/10.1016/j.electacta.2017.07.050)
     - Liu, J., Wan, T. H., and Ciucci, F., 2020, Electrochim. Acta, 357, 136864 (https://doi.org/10.1016/j.electacta.2020.136864)
+    - Boukamp, B.A., 2015, Electrochim. Acta, 154, 35-46, (https://doi.org/10.1016/j.electacta.2014.12.059)
+    - Boukamp, B.A. and Rolle, A, 2017, Solid State Ionics, 302, 12-18 (https://doi.org/10.1016/j.ssi.2016.10.009)
+
 
     Parameters
     ----------
@@ -70,6 +73,8 @@ def calculate_drt(
         The maximum number of processes to use.
         A value below one results in using the total number of CPU cores present.
     """
+    if settings.method == DRTMethod.M_RQ_FIT:
+        assert settings.circuit is not None, "A (fitted) circuit has not been provided!"
     result: _pyimpspec.DRTResult = _pyimpspec.calculate_drt(
         data=data,
         method=_drt_method_to_value[settings.method],
@@ -84,6 +89,9 @@ def calculate_drt(
         num_samples=settings.num_samples,
         num_attempts=settings.num_attempts,
         maximum_symmetry=settings.maximum_symmetry,
+        circuit=settings.circuit,
+        W=settings.W,
+        num_per_decade=settings.num_per_decade,
         num_procs=num_procs,
     )
     return DRTResult(

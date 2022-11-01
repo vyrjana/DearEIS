@@ -117,7 +117,7 @@ class ExploratoryResults:
             mu=self.mu,
             Xps=self.Xps,
             mu_criterion=self.mu_crit,
-            num_RC=5,
+            num_RC=min(self.num_RCs),
         )
         self.plot(default_label)
         signals.register(Signal.VIEWPORT_RESIZED, self.resize)
