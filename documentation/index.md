@@ -7,6 +7,7 @@ permalink: /api/
 ## API documentation
 
 Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the API.
+A single Markdown file of the API reference is available [here](https://raw.githubusercontent.com/vyrjana/DearEIS/gh-pages/documentation/API.md).
 
 - [Project](https://vyrjana.github.io/DearEIS/api/project)
 - [Data set](https://vyrjana.github.io/DearEIS/api/data-set)
