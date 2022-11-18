@@ -37,18 +37,19 @@ permalink: /api/{link}/
 
 
 if __name__ == "__main__":
+    version: str = ""
+    with open(join(dirname(dirname(__file__)), "version.txt"), "r") as fp:
+        version = fp.read().strip()
+    assert version.strip() != ""
     output_dir: str = dirname(__file__)
-    # PDF
+    root_folder: str = join(output_dir, "documentation")
+    if not exists(root_folder):
+        makedirs(root_folder)
+    # Markdown
     write_file(
-        join(output_dir, "API.md"),
-        r"""---
-header-includes:
-    \usepackage{geometry}
-    \geometry{a4paper, margin=2.5cm}
----
-"""
-        + process(
-            title="DearEIS - API reference",
+        join(root_folder, "API.md"),
+        process(
+            title=f"DearEIS - API reference ({version})",
             description="""
 _DearEIS_ is built on top of the `pyimpspec` package.
 See the API reference for `pyimpspec` for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
@@ -84,13 +85,10 @@ See the API reference for `pyimpspec` for information more information about cla
                 deareis.Project.parse,
                 deareis.Project.update,
             ],
-            latex_pagebreak=True,
+            latex_pagebreak=False,
         ),
     )
     # Jekyll
-    root_folder: str = join(output_dir, "documentation")
-    if not exists(root_folder):
-        makedirs(root_folder)
     root_url: str = "https://vyrjana.github.io/DearEIS/api"
     # - index
     write_file(
@@ -104,6 +102,7 @@ permalink: /api/
 ## API documentation
 
 Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the API.
+A single Markdown file of the API reference is available [here](https://raw.githubusercontent.com/vyrjana/DearEIS/gh-pages/documentation/API.md).
 
 - [Project]({root_url}/project)
 - [Data set]({root_url}/data-set)
