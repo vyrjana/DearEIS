@@ -23,7 +23,7 @@ header-includes:
 # Summary
 
 Electrochemical impedance spectroscopy (EIS) is a technique that is widely used to characterize the properties of materials used in, e.g., batteries and ion-selective electrodes.
-Analyses of the recorded impedance spectra typically involve a data validation step followed by fitting a suitable model to extract quantitative data.
+Analyses of the recorded impedance spectra typically involve some preprocessing, data validation, and fitting of a suitable model to extract quantitative data.
 Analyses of the distribution of relaxation times may also be relevant and can help with choosing an appropriate model.
 DearEIS is a free, open-source, cross-platform program developed for performing such analysis work.
 The primary audience for DearEIS is researchers and engineers.
@@ -61,19 +61,21 @@ However, the program may also prove useful in the context of, e.g., teaching uni
 			\draw[arrow] (validation) |- (fitting);
 			\draw[arrow] (validation) |- (drt);
 			\draw[dashedarrow] (drt) -- (fitting);
+			\draw[dashedarrow] (fitting.north) |- ++(-.75, .45) -| (preprocessing.north);
 			\draw[arrow] (fitting) -| (results);
 			\draw[arrow] (drt) -| (results);
 
 			\draw[draw=black, line width=0.3mm, dotted]
-				(12.0cm, 0.0cm) --
-				(1.5cm, 0.0cm) --
-				(1.5cm, 3.0cm) --
-				(0.55cm, -0.76cm);
+				(12.00cm,  0.00cm) --
+				( 1.50cm,  0.00cm) --
+				( 1.50cm,  3.55cm) --
+				( 0.57cm, -0.76cm);
+			\draw[draw=none, fill=white] (1.4cm, 3.56cm) rectangle ++(0.2cm, 0.14cm);
 			\draw[draw=black, line width=0.3mm, dotted]
-				(1.5cm, 3.0cm) --
-				(12.0cm, 3.0cm) --
-				(12.0cm, 0.0cm) --
-				(9.44cm, -5.74cm);
+				( 1.5cm,   3.55cm) --
+				(12.00cm,  3.55cm) --
+				(12.00cm,  0.00cm) --
+				( 9.44cm, -5.74cm);
 		\end{scope}
 		\node (screenshot) at (6.25cm, 2.75cm) {\includegraphics[height=5cm, keepaspectratio]{figure-abstract.png}};
 	\end{tikzpicture}
@@ -157,7 +159,7 @@ ZView                  Scribner Associates, Inc.
 
 
 Some of the other software listed in \autoref{tbl:alternatives} are available for free though they are not necessarily also open source (\autoref{tbl:license_comparison}).
-For example, the source code is not available for EIS Spectrum Analyzer, Kramers-Kronig Test, and Lin-KK Tool.
+For example, the source code is not publicly available for EIS Spectrum Analyzer, Kramers-Kronig Test, and Lin-KK Tool.
 The source code for LEVM/LEVMW is included with the binaries, but the source code is not distributed under an open-source license.
 DRTtools requires the user to have licenses for MATLAB and its Optimization Toolbox package, which adds a financial barrier to its use.
 Fortunately, a Python-based port called pyDRTtools is available.
@@ -223,17 +225,17 @@ Most instrument manufacturers bundle their instruments with software that can be
 These two types of software are typically closed source and not publicly available for download (e.g., requiring the purchase of a license or registration of an instrument when making an account).
 Trial versions with some limitations (e.g., an inability to save results) may be publicly available in some cases.
 Restrictive licenses and/or digital rights management technologies (e.g., the USB dongle or the online verification required by RelaxIS) may limit or even prevent distribution of the software to, e.g., colleagues or students.
-Windows is mostly the only supported platform though Zahner Analysis is a notable exception.
+The commercial software in \autoref{tbl:license_comparison} only support Windows, with the exception of Zahner Analysis
 
 In terms of key functionality, RelaxIS is the most similar alternative to DearEIS with LEVM/LEVMW as a close second (\autoref{tbl:feature_comparison}).
 However, RelaxIS is a closed-source, commercial product, which introduces a financial barrier to entry, and it officially only supports Windows.
 LEVM/LEVMW is, as was mentioned earlier, a free though not truly open-source alternative.
 The software officially supports MS-DOS/Windows but may also work natively on other platforms provided that a compatible Fortran compiler is available.
-LEVM/LEVMW has a rather steep learning curve and some may find it unintuitive to use despite the rather comprehensive manual.
+LEVM/LEVMW has a rather steep learning curve and some may find it unintuitive to use despite its rather comprehensive manual.
 Much of the information that is required for basic use of the software is not presented in, e.g., the GUI itself.
 For example, the LEVMRUN binary, which provides a GUI for preparing input files, makes use of abbreviations that are not explained in the GUI using, e.g., tooltips.
-There are several pre-made circuits (`A`, `B`, `C`, etc.) to choose from but the corresponding circuit diagrams and other relevant information are not presented in the window where the selection is performed.
-These circuits can be customized to some extent by adjusting various parameters (`p[1]`, `p[2]`, `p[3]`, etc.) but the meaning of these parameters varies from circuit to circuit and this information is also not presented in the same window where the parameters can be changed.
+There are several pre-made circuits (`A`, `B`, `C`, etc.) to choose from but the corresponding circuit diagrams and other relevant information are only presented in the manual.
+These circuits can be customized to some extent by adjusting various parameters (`p[1]`, `p[2]`, `p[3]`, etc.) but the meaning of these parameters varies from circuit to circuit and this information is also only presented in the manual.
 Completely custom circuits require modification of the source code and recompilation of the program.
 
 
@@ -298,7 +300,7 @@ ZView                  Yes                  Yes
 
 Some of the software listed in \autoref{tbl:feature_comparison} focus on a single aspect of data analysis while most can do both KK and ECF.
 DearEIS includes implementations of the linear Kramers-Kronig tests [@boukamp1995linear] and an algorithm for automatically choosing the number of parallel RC circuits [@schonleber2014method].
-An alternative implementation of the latter is also included to help with avoiding or identifying false negatives.
+An alternative implementation of the latter is also included to help with identifying false negatives.
 DearEIS uses lmfit [@lmfit] to perform complex non-linear least-squares fitting, which enables the use of different fitting methods (Levenberg-Marquardt, Nelder-Mead, etc.).
 A few different weighting options are also available (modulus, proportional, etc.).
 A specific combination of fitting method and weighting can be chosen or multiple combinations can be tried in parallel to find a combination that provides the best fit.
@@ -311,7 +313,7 @@ DearEIS supports a basic CDC syntax as described by Boukamp [@cdc] and an extend
 
 Support for DRT analysis is not very common as can be seen in \autoref{tbl:feature_comparison} even though DRT results can be useful in the development of an appropriate equivalent circuit by revealing the number of time constants present in an impedance spectrum.
 The shapes of the peaks in the DRT plots can also provide some information about the type of circuit element that could be appropriate to include in an equivalent circuit (e.g., a sharp, symmetrical peak is typical for the type of slightly non-ideal capacitance that a constant phase element is often used for).
-Calculating the DRT from an impedance spectrum is an ill-posed problem, which means that some care must be taken when interpreting the results.
+However, calculating the DRT from an impedance spectrum is an ill-posed problem, which means that some care must be taken when interpreting the results.
 The wrong combination of impedance spectrum, method, and method parameters can result in, e.g., peaks that are actually just artifacts, or broad peaks that should actually be two or more separate peaks.
 DearEIS currently includes support for a few methods for performing DRT analyses:
 
@@ -320,8 +322,7 @@ DearEIS currently includes support for a few methods for performing DRT analyses
 - Tikhonov regularization and non-negative least-squares fitting, which was implemented in DRT-python-code as an alternative to the original approach that used projected gradient descent and was described by @kulikovsky2020pem
 - multi-(RQ)-fit, which was described by @boukamp2015fourier and @boukamp2017analysis
 
-Software that is bundled with instruments often does not support loading measurement data from many file formats, which may limit its use for analysis of results obtained with other manufacturer's instruments.
-Support for importing data in the form of character-separate values is available in some of these software (e.g., IviumSoft).
+Software that is bundled with instruments often does not support loading measurement data from many file formats, which may limit its use for the analysis of results obtained with other manufacturer's instruments unless plain-text files with character-separated values are supported such as in the case of IviumSoft.
 On the other hand, third-party software like RelaxIS and ZView do support loading measurement data from many different file formats including the formats used by many well-known instrument manufacturers.
 DearEIS currently supports importing experimental data from file formats used by some instrument manufacturers (e.g., BioLogic, Gamry, and Ivium).
 Experimental data that is stored as character-separated values in spreadsheets (`.xlsx` and `.ods`) or plain-text files can also be imported into DearEIS.
