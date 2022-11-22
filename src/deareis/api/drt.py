@@ -23,6 +23,7 @@ import pyimpspec as _pyimpspec
 from pyimpspec import (
     DRTError,
 )
+from pyimpspec.analysis.drt.bht import _get_default_num_procs
 from deareis.data import DataSet
 from deareis.data.drt import (
     DRTResult,
@@ -75,6 +76,8 @@ def calculate_drt(
     """
     if settings.method == DRTMethod.M_RQ_FIT:
         assert settings.circuit is not None, "A (fitted) circuit has not been provided!"
+    if num_procs < 1:
+        num_procs = _get_default_num_procs()
     result: _pyimpspec.DRTResult = _pyimpspec.calculate_drt(
         data=data,
         method=_drt_method_to_value[settings.method],

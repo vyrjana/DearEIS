@@ -21,6 +21,7 @@ from multiprocessing import cpu_count
 from typing import (
     Optional,
 )
+from pyimpspec.analysis.drt.bht import _get_default_num_procs
 import deareis.api.drt as api
 from deareis.data import (
     DRTResult,
@@ -103,7 +104,9 @@ def perform_drt(*args, **kwargs):
     assert (
         data.get_num_points() > 0
     ), "There are no data points to use to calculate the distribution of relaxation times!"
-    num_procs: int = max(2, cpu_count() - 1)
+    num_procs: int = _get_default_num_procs()
+    if num_procs > 1 and num_procs == cpu_count():
+        num_procs -= 1
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing analysis")
     drt: DRTResult = api.calculate_drt(
         data=data,

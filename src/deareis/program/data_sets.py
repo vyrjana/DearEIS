@@ -392,6 +392,7 @@ def select_impedance_to_subtract(*args, **kwargs):
     subtract_impedance_window: SubtractImpedance = SubtractImpedance(
         data=data,
         data_sets=project.get_data_sets(),
+        fits=project.get_fits(data),
         callback=replace_data,
     )
     signals.emit(

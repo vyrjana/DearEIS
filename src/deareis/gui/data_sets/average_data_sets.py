@@ -17,12 +17,23 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, List, Optional
-from numpy import ndarray
+from typing import (
+    Callable,
+    List,
+    Optional,
+)
+from numpy import (
+    allclose,
+    ndarray,
+)
 import dearpygui.dearpygui as dpg
 from deareis.gui.plots import Nyquist
 from deareis.tooltips import attach_tooltip
-from deareis.themes import PLOT_MARKERS, VIBRANT_COLORS, create_plot_series_theme
+from deareis.themes import (
+    PLOT_MARKERS,
+    VIBRANT_COLORS,
+    create_plot_series_theme,
+)
 import deareis.themes as themes
 from deareis.utility import calculate_window_position_dimensions
 from deareis.signals import Signal
@@ -146,6 +157,7 @@ class AverageDataSets:
         self.close()
 
     def get_selection(self) -> List[DataSet]:
+        indices: List[int] = []
         data_sets: List[DataSet] = []
         i: int
         row: int
@@ -155,7 +167,22 @@ class AverageDataSets:
                 assert dpg.get_item_type(column).endswith("Checkbox")
                 if dpg.get_value(column) is True:
                     data_sets.append(self.data_sets[i])
+                    indices.append(i)
                 break
+        if data_sets:
+            frequency: ndarray = data_sets[0].get_frequency()
+            for i, row in enumerate(dpg.get_item_children(self.dataset_table, slot=1)):
+                if i in indices:
+                    continue
+                data: DataSet = self.data_sets[i]
+                if not (
+                    data.get_num_points() == frequency.size
+                    and allclose(data.get_frequency(), frequency)
+                ):
+                    dpg.hide_item(dpg.get_item_children(row, slot=1)[0])
+        else:
+            for i, row in enumerate(dpg.get_item_children(self.dataset_table, slot=1)):
+                dpg.show_item(dpg.get_item_children(row, slot=1)[0])
         return data_sets
 
     def get_plot_theme(self, index: int) -> int:

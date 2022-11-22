@@ -48,6 +48,7 @@ from numpy import (
     array,
     ndarray,
 )
+import webbrowser
 from pyimpspec import (
     Circuit,
 )
@@ -274,9 +275,16 @@ def copy_output(*args, **kwargs):
             elif output == FitSimOutput.JSON_PARAMETERS_TABLE:
                 clipboard_content = dataframe.to_json()
             elif output == FitSimOutput.LATEX_PARAMETERS_TABLE:
-                clipboard_content = dataframe.to_latex(
-                    index=False,
-                    float_format="%.3g",
+                clipboard_content = (
+                    dataframe.style.format(
+                        {
+                            "Value": "{:.3g}",
+                            "Std. err. (%)": "{:.3g}",
+                        }
+                    )
+                    .format_index(axis="columns", escape="latex")
+                    .hide(axis="index")
+                    .to_latex(hrules=True)
                 )
             elif output == FitSimOutput.MARKDOWN_PARAMETERS_TABLE:
                 clipboard_content = dataframe.to_markdown(
@@ -366,10 +374,15 @@ def copy_output(*args, **kwargs):
                 elif output == DRTOutput.JSON_SCORES:
                     clipboard_content = score_dataframe.to_json()
                 elif output == DRTOutput.LATEX_SCORES:
-                    clipboard_content = score_dataframe.to_latex(
-                        index=False,
-                        escape=False,
-                        float_format="%.3g",
+                    clipboard_content = (
+                        score_dataframe.style.format(
+                            {
+                                "Real (\%)": "{:.3g}",
+                                "Imaginary (\%)": "{:.3g}",
+                            }
+                        )
+                        .hide(axis="index")
+                        .to_latex(hrules=True)
                     )
                 elif output == DRTOutput.MARKDOWN_SCORES:
                     clipboard_content = score_dataframe.to_markdown(
@@ -683,22 +696,22 @@ def show_help_about(*args, **kwargs):
         tag=window,
     ):
         dpg.add_text(f"DearEIS ({PACKAGE_VERSION})")
-        dpg.bind_item_theme(
-            dpg.add_input_text(
-                default_value="https://vyrjana.github.io/DearEIS",
-                enabled=False,
-                width=-1,
-            ),
-            themes.url_theme,
-        )
-        dpg.bind_item_theme(
-            dpg.add_input_text(
-                default_value="https://github.com/vyrjana/DearEIS",
-                enabled=False,
-                width=-1,
-            ),
-            themes.url_theme,
-        )
+        url: str
+        for url in [
+            "https://vyrjana.github.io/DearEIS",
+            "https://github.com/vyrjana/DearEIS",
+            # TODO: Link to quickstart/tutorials
+            # TODO: Link to API documentation?
+        ]:
+            dpg.bind_item_theme(
+                dpg.add_button(
+                    label=url,
+                    callback=lambda s, a, u: webbrowser.open(u),
+                    user_data=url,
+                    width=-1,
+                ),
+                themes.url_theme,
+            )
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
 

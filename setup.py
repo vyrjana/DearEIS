@@ -35,7 +35,7 @@ entry_points = {
 
 dependencies = [
     "dearpygui==1.7.3",  # Used to implement the GUI.
-    "pyimpspec>=3.2.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "pyimpspec>=3.2.1",  # Used for parsing, fitting, and analyzing impedance spectra.
     "requests>=2.28.1",  # Used to check package status on PyPI.
     "xdg>=5.1.1",  # Used to figure out where to place config, state, etc. files.
 ]
@@ -71,7 +71,7 @@ data_files = [
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "3.2.0"
+version = "3.3.0"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:

@@ -1,3 +1,13 @@
+# 3.3.0
+
+- Added clickable hyperlinks to the `About` window.
+- Added the ability to subtract the impedance of a fitted circuit in the `Subtract impedance` window by choosing an existing fit result.
+- Updated the `Spectrum` combo in the `Subtract impedance` window to only show other data sets with the same number of points and matching frequencies as the active data set.
+- Updated the `Average of multiple data sets` window to only show data sets with the same number of points and matching frequencies as the first data set that is chosen.
+- Updated how LaTeX tables are generated when copying, e.g., fitted parameter tables.
+- Fixed the BHT method (DRT analysis) so that it works properly when `num_procs` is set to greater than one and NumPy is using OpenBLAS.
+
+
 # 3.2.0
 
 - Added support for calculating the distribution of relaxation times using the `m(RQ)fit` method.

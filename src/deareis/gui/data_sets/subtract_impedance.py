@@ -27,6 +27,7 @@ from typing import (
     Optional,
 )
 from numpy import (
+    allclose,
     array,
     ndarray,
 )
@@ -40,29 +41,61 @@ import deareis.tooltips as tooltips
 from deareis.gui.circuit_editor import CircuitEditor
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.data import DataSet
+from deareis.data import (
+    DataSet,
+    FitResult,
+)
 from deareis.keybindings import (
     is_alt_down,
     is_control_down,
 )
 
 
+def format_fit_labels(fits: List[FitResult]) -> List[str]:
+    old_labels: List[str] = list(map(lambda _: _.get_label(), fits))
+    longest_cdc: int = max(list(map(lambda _: len(_[: _.find(" ")]), old_labels)) + [1])
+    new_labels: List[str] = []
+    old_key: str
+    for old_key in old_labels:
+        cdc, timestamp = (
+            old_key[: old_key.find(" ")],
+            old_key[old_key.find(" ") + 1 :],
+        )
+        new_labels.append(f"{cdc.ljust(longest_cdc)} {timestamp}")
+    return new_labels
+
+
 class SubtractImpedance:
-    def __init__(self, data: DataSet, data_sets: List[DataSet], callback: Callable):
+    def __init__(
+        self,
+        data: DataSet,
+        data_sets: List[DataSet],
+        fits: List[FitResult],
+        callback: Callable,
+    ):
         assert type(data) is DataSet, data
         assert type(data_sets) is list and all(
             map(lambda _: type(_) is DataSet, data_sets)
         ), data_sets
         self.data: DataSet = data
         self.data_sets: List[DataSet] = [
-            _ for _ in sorted(data_sets, key=lambda _: _.get_label()) if _ != data
+            _
+            for _ in sorted(data_sets, key=lambda _: _.get_label())
+            if _ != data
+            and data.get_num_points() == _.get_num_points()
+            and allclose(data.get_frequency(), _.get_frequency())
         ]
-        self.labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
+        self.data_labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
+        self.fits: List[FitResult] = fits
+        self.fit_labels: List[str] = format_fit_labels(fits)
         self.preview_data: DataSet = DataSet.from_dict(data.to_dict())
         self.callback: Callable = callback
-        self.options: List[str] = ["Constant:", " Circuit:"]
-        if len(data_sets) > 0:
-            self.options.append("Spectrum:")
+        self.options: List[str] = [
+            "Constant:",
+            " Circuit:",
+            "     Fit:",
+            "Spectrum:",
+        ]
         self.circuit_editor_window: int = -1
         x: int
         y: int
@@ -86,7 +119,7 @@ class SubtractImpedance:
             with dpg.child_window(border=False, tag=self.preview_window):
                 with dpg.child_window(
                     width=-1,
-                    height=82,
+                    height=104,
                 ):
                     self.radio_buttons: int = dpg.generate_uuid()
                     with dpg.group(horizontal=True):
@@ -138,12 +171,26 @@ class SubtractImpedance:
                                     callback=self.edit_circuit,
                                 )
                                 attach_tooltip(tooltips.general.open_circuit_editor)
+                            self.fit_group: int = dpg.generate_uuid()
+                            with dpg.group(horizontal=True, tag=self.fit_group):
+                                self.fit_combo: int = dpg.generate_uuid()
+                                dpg.add_combo(
+                                    items=self.fit_labels,
+                                    default_value=self.fit_labels[0]
+                                    if self.fit_labels
+                                    else "",
+                                    width=358,
+                                    tag=self.fit_combo,
+                                    callback=self.update_preview,
+                                )
                             self.spectrum_group: int = dpg.generate_uuid()
                             with dpg.group(horizontal=True, tag=self.spectrum_group):
                                 self.spectrum_combo: int = dpg.generate_uuid()
                                 dpg.add_combo(
-                                    items=self.labels,
-                                    default_value=self.labels[0] if self.labels else "",
+                                    items=self.data_labels,
+                                    default_value=self.data_labels[0]
+                                    if self.data_labels
+                                    else "",
                                     width=358,
                                     tag=self.spectrum_combo,
                                     callback=self.update_preview,
@@ -251,14 +298,22 @@ class SubtractImpedance:
         if index == 0:
             enable_group(self.constant_group)
             disable_group(self.circuit_group)
+            disable_group(self.fit_group)
             disable_group(self.spectrum_group)
         elif index == 1:
             disable_group(self.constant_group)
             enable_group(self.circuit_group)
+            disable_group(self.fit_group)
             disable_group(self.spectrum_group)
         elif index == 2:
             disable_group(self.constant_group)
             disable_group(self.circuit_group)
+            enable_group(self.fit_group)
+            disable_group(self.spectrum_group)
+        elif index == 3:
+            disable_group(self.constant_group)
+            disable_group(self.circuit_group)
+            disable_group(self.fit_group)
             enable_group(self.spectrum_group)
         else:
             raise Exception(f"Unsupported option: {value}")
@@ -277,16 +332,21 @@ class SubtractImpedance:
         elif index == 1:
             try:
                 circuit: Circuit = pyimpspec.parse_cdc(dpg.get_value(self.circuit_cdc))
-            except Exception as e:
-                # print(e)
+            except Exception:
                 return
             Z = Z - circuit.impedances(f)
         elif index == 2:
-            spectrum: DataSet
-            spectrum = self.data_sets[
-                self.labels.index(dpg.get_value(self.spectrum_combo))
-            ]
-            Z = Z - spectrum.get_impedance(masked=None)
+            if len(self.fits) > 0:
+                fit: FitResult
+                fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
+                Z = Z - fit.circuit.impedances(f)
+        elif index == 3:
+            if len(self.data_sets) > 0:
+                spectrum: DataSet
+                spectrum = self.data_sets[
+                    self.data_labels.index(dpg.get_value(self.spectrum_combo))
+                ]
+                Z = Z - spectrum.get_impedance(masked=None)
         else:
             raise Exception("Unsupported option!")
         dictionary: dict = self.preview_data.to_dict()
@@ -348,7 +408,8 @@ class SubtractImpedance:
                     element.set_fixed(param, True)
         assert dpg.does_item_exist(self.circuit_cdc)
         dpg.set_value(
-            self.circuit_cdc, circuit.to_string(6) if circuit is not None else ""
+            self.circuit_cdc,
+            circuit.to_string(6) if circuit is not None else "",
         )
         dpg.show_item(self.preview_window)
         dpg.split_frame(delay=33)

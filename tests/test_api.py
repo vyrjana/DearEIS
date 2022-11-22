@@ -161,21 +161,12 @@ class TestCDC(TestCase):
                 parallel.add(C)
         self.assertEqual(builder.to_string(), self.circuit.to_string())
         with deareis.CircuitBuilder() as builder:
-            builder += (
-                deareis.Resistor(R=53.2)
-                .set_label("sol")
-            )
+            builder += deareis.Resistor(R=53.2).set_label("sol")
             with builder.parallel() as parallel:
                 with parallel.series() as series:
-                    series += (
-                        deareis.Resistor(R=325.162)
-                        .set_label("ct")
-                    )
+                    series += deareis.Resistor(R=325.162).set_label("ct")
                     series += deareis.Warburg()
-                parallel += (
-                    deareis.Capacitor(C=1.68e-11)
-                    .set_label("dl")
-                )
+                parallel += deareis.Capacitor(C=1.68e-11).set_label("dl")
         self.assertEqual(builder.to_string(), self.circuit.to_string())
 
 
@@ -391,7 +382,13 @@ class TestFitting(TestCase):
             i += 1
 
     def test_07_latex(self):
-        lines = self.result.to_dataframe().to_latex().split("\n")
+        lines = (
+            self.result.to_dataframe()
+            .style.format(precision=8)
+            .format_index(axis=1, escape="latex")
+            .to_latex(hrules=True)
+            .split("\n")
+        )
         self.assertEqual(lines.pop(0), r"\begin{tabular}{lllrrl}")
         self.assertEqual(lines.pop(0), r"\toprule")
         line = lines.pop(0)
@@ -534,7 +531,13 @@ class TestSimulation(TestCase):
             i += 1
 
     def test_07_latex(self):
-        lines = self.simulation.to_dataframe().to_latex().split("\n")
+        lines = (
+            self.simulation.to_dataframe()
+            .style.format(precision=8)
+            .format_index(axis=1, escape="latex")
+            .to_latex(hrules=True)
+            .split("\n")
+        )
         self.assertEqual(lines.pop(0), r"\begin{tabular}{lllr}")
         self.assertEqual(lines.pop(0), r"\toprule")
         line = lines.pop(0)
