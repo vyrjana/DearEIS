@@ -13,10 +13,10 @@ affiliations:
   index: 1
 bibliography: paper.bib
 header-includes:
-	\usepackage{tikz}
-	\usepackage{graphicx}
-	\usepackage{xcolor}
-	\newcommand{\su}[1]{$\rm ^#1$}
+ \usepackage{tikz}
+ \usepackage{graphicx}
+ \usepackage{xcolor}
+ \newcommand{\su}[1]{$\rm ^#1$}
 ---
 
 
