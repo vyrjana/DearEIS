@@ -21,6 +21,11 @@ The program includes features such as:
 - [Python API for scripting (e.g., batch processing)](https://vyrjana.github.io/DearEIS/api/)
 
 
+![Screenshot of the Fitting tab](assets/images/screenshot.png)
+
+Figure: Screenshot of the Fitting tab showing the result of an equivalent circuit fit. The impedance spectrum corresponds to test circuit 1 from [this article](https://doi.org/10.1149/1.2044210).
+
+
 ## Recent news
 
 <ul>
