@@ -68,5 +68,8 @@ This output is unlikely to be accepted by another program that accepts a CDC as 
         "status": """
 Potential issues with the circuit, which is defined using nodes and connections in the window above, are presented here.
     """.strip(),
+        "dummy_node": """
+A dummy node that can be used as a junction when required to construct a circuit.
+    """.strip(),
     }
 )

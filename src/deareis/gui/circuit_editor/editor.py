@@ -86,6 +86,7 @@ class CircuitEditor:
                         width=80,
                         callback=lambda s, a, u: self.add_dummy_node(),
                     )
+                    attach_tooltip(tooltips.circuit_editor.dummy_node)
                 self.node_editor: int = dpg.generate_uuid()
                 dpg.add_node_editor(
                     width=-1,
@@ -323,9 +324,7 @@ The counter and reference electrodes.
             with dpg.group(parent=self.parameter_window):
                 with dpg.group(horizontal=True):
                     attach_tooltip(
-                        """
-A dummy node that can be used as a junction when required to construct a circuit.
-                    """.strip(),
+                        tooltips.circuit_editor.dummy_node,
                         parent=dpg.add_text("?"),
                     )
                     dpg.add_text("Dummy node")

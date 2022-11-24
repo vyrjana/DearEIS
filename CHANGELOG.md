@@ -1,5 +1,6 @@
 # 3.3.1
 
+- Updated tooltips.
 - Fixed a bug that caused data sets to be incorrectly prevented from being selected in the `Average of multiple data sets` and `Subtract impedance` windows.
 
 
