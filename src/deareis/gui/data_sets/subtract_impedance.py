@@ -82,8 +82,8 @@ class SubtractImpedance:
             _
             for _ in sorted(data_sets, key=lambda _: _.get_label())
             if _ != data
-            and data.get_num_points() == _.get_num_points()
-            and allclose(data.get_frequency(), _.get_frequency())
+            and data.get_num_points(masked=None) == _.get_num_points(masked=None)
+            and allclose(data.get_frequency(masked=None), _.get_frequency(masked=None))
         ]
         self.data_labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
         self.fits: List[FitResult] = fits

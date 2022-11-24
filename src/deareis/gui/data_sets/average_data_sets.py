@@ -170,14 +170,14 @@ class AverageDataSets:
                     indices.append(i)
                 break
         if data_sets:
-            frequency: ndarray = data_sets[0].get_frequency()
+            frequency: ndarray = data_sets[0].get_frequency(masked=None)
             for i, row in enumerate(dpg.get_item_children(self.dataset_table, slot=1)):
                 if i in indices:
                     continue
                 data: DataSet = self.data_sets[i]
                 if not (
-                    data.get_num_points() == frequency.size
-                    and allclose(data.get_frequency(), frequency)
+                    data.get_num_points(masked=None) == frequency.size
+                    and allclose(data.get_frequency(masked=None), frequency)
                 ):
                     dpg.hide_item(dpg.get_item_children(row, slot=1)[0])
         else:

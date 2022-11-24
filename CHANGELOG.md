@@ -1,3 +1,8 @@
+# 3.3.1
+
+- Fixed a bug that caused data sets to be incorrectly prevented from being selected in the `Average of multiple data sets` and `Subtract impedance` windows.
+
+
 # 3.3.0
 
 - Added clickable hyperlinks to the `About` window.
