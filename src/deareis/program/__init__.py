@@ -889,6 +889,14 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SAVE_PLOT, save_plot)
     signals.register(Signal.CHECK_UPDATES, perform_update_check)
     signals.register(Signal.SHOW_CHANGELOG, show_changelog)
+    dpg.split_frame(delay=100)
+    STATE.program_window.busy_message.resize(
+        dpg.get_viewport_width(),
+        dpg.get_viewport_height(),
+    )
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Rendering assets...")
+    signals.emit(Signal.RENDER_MATH)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
     # signals.register(Signal., )
     if args.data_files:
         signals.emit(Signal.NEW_PROJECT, data=args.data_files)

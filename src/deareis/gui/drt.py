@@ -89,78 +89,118 @@ MATH_DRT_WIDTH: int = 350
 MATH_DRT_HEIGHT: int = 40
 MATH_RBF_WIDTH: int = 380
 MATH_RBF_HEIGHT: int = 40
+MATH_DRT_WITHOUT_INDUCTANCE: int = -1
+MATH_DRT_WITH_INDUCTANCE: int = -1
+MATH_PIECEWISE_1: int = -1
+MATH_PIECEWISE_2: int = -1
+MATH_PIECEWISE_3: int = -1
+MATH_C0_MATERN: int = -1
+MATH_C2_MATERN: int = -1
+MATH_C4_MATERN: int = -1
+MATH_C6_MATERN: int = -1
+MATH_CAUCHY: int = -1
+MATH_GAUSSIAN: int = -1
+MATH_INVERSE_QUADRATIC: int = -1
+MATH_INVERSE_QUADRIC: int = -1
+MATH_GAMMA_LN_TAU: int = -1
+MATH_X: int = -1
+MATH_TAU_M: int = -1
+MATH_FWHM: int = -1
+MATH_SHAPE: int = -1
 
-MATH_DRT_WITHOUT_INDUCTANCE: int = render_math(
-    r"$Z_{\rm DRT} = R_{\infty} + \int_{-\infty}^{\infty}\ \frac{\gamma \ln{\tau}}{1 + i 2 \pi f \tau}d\ln{\tau}$",
-    MATH_DRT_WIDTH,
-    MATH_DRT_HEIGHT,
-)
-MATH_DRT_WITH_INDUCTANCE: int = render_math(
-    r"$Z_{\rm DRT} = R_{\infty} + i 2 \pi f L + \int_{-\infty}^{\infty}\ \frac{\gamma \ln{\tau}}{1 + i 2 \pi f \tau}d\ln{\tau}$",
-    MATH_DRT_WIDTH,
-    MATH_DRT_HEIGHT,
-)
 
-MATH_PIECEWISE_1: int = render_math(
-    r"$\Phi_m(\tau) = 1-\frac{\ln{\tau} - \ln{\tau_m}}{\ln{\tau_{m-1} - \ln{\tau}}},\ \tau_{m-1} < \tau \leq \tau_m$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_PIECEWISE_2: int = render_math(
-    r"$\Phi_m(\tau) = 1-\frac{\ln{\tau} - \ln{\tau_m}}{\ln{\tau_{m+1} - \ln{\tau_m}}},\ \tau_m < \tau \leq \tau_{m+1}$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_PIECEWISE_3: int = render_math(
-    r"$\Phi_m(\tau) = 0,\ \tau_{m-1} < \tau\ {\rm or}\ \tau_{m+1} > \tau$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_C0_MATERN: int = render_math(
-    r"$\Phi_\mu(x) = \exp(-|\mu x|)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_C2_MATERN: int = render_math(
-    r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_C4_MATERN: int = render_math(
-    r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|+\frac{1}{3}|\mu x|^2)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_C6_MATERN: int = render_math(
-    r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|+\frac{2}{5}|\mu x|^2+\frac{1}{15}|\mu x|^3)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_CAUCHY: int = render_math(
-    r"$\Phi_\mu(x) = 1/(1+|\mu x|)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_GAUSSIAN: int = render_math(
-    r"$\Phi_\mu(x) = \exp(-(\mu x)^2)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_INVERSE_QUADRATIC: int = render_math(
-    r"$\Phi_\mu(x) = 1/(1+(\mu x)^2)$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_INVERSE_QUADRIC: int = render_math(
-    r"$\Phi_\mu(x) = 1/\sqrt{1+(\mu x)^2}$",
-    MATH_RBF_WIDTH,
-    MATH_RBF_HEIGHT,
-)
-MATH_GAMMA_LN_TAU: int = render_math(r"$\gamma(\ln{\tau})$", 44, 20, fontsize=10)
-MATH_X: int = render_math(r"$x = |\ln{\tau} - \ln{\tau_m}|$", 96, 20, fontsize=10)
-MATH_TAU_M: int = render_math(r"$\tau_m$", 18, 20, fontsize=10)
-MATH_FWHM: int = render_math(r"$\mu = \frac{\Delta \ln{\tau}}{k}$", 200, 40)
-MATH_SHAPE: int = render_math(r"$\mu = k$", 200, 40)
+def process_math():
+    global MATH_DRT_WITHOUT_INDUCTANCE
+    global MATH_DRT_WITH_INDUCTANCE
+    global MATH_PIECEWISE_1
+    global MATH_PIECEWISE_2
+    global MATH_PIECEWISE_3
+    global MATH_C0_MATERN
+    global MATH_C2_MATERN
+    global MATH_C4_MATERN
+    global MATH_C6_MATERN
+    global MATH_CAUCHY
+    global MATH_GAUSSIAN
+    global MATH_INVERSE_QUADRATIC
+    global MATH_INVERSE_QUADRIC
+    global MATH_GAMMA_LN_TAU
+    global MATH_X
+    global MATH_TAU_M
+    global MATH_FWHM
+    global MATH_SHAPE
+    MATH_DRT_WITHOUT_INDUCTANCE = render_math(
+        r"$Z_{\rm DRT} = R_{\infty} + \int_{-\infty}^{\infty}\ \frac{\gamma \ln{\tau}}{1 + i 2 \pi f \tau}d\ln{\tau}$",
+        MATH_DRT_WIDTH,
+        MATH_DRT_HEIGHT,
+    )
+    MATH_DRT_WITH_INDUCTANCE = render_math(
+        r"$Z_{\rm DRT} = R_{\infty} + i 2 \pi f L + \int_{-\infty}^{\infty}\ \frac{\gamma \ln{\tau}}{1 + i 2 \pi f \tau}d\ln{\tau}$",
+        MATH_DRT_WIDTH,
+        MATH_DRT_HEIGHT,
+    )
+    MATH_PIECEWISE_1 = render_math(
+        r"$\Phi_m(\tau) = 1-\frac{\ln{\tau} - \ln{\tau_m}}{\ln{\tau_{m-1} - \ln{\tau}}},\ \tau_{m-1} < \tau \leq \tau_m$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_PIECEWISE_2 = render_math(
+        r"$\Phi_m(\tau) = 1-\frac{\ln{\tau} - \ln{\tau_m}}{\ln{\tau_{m+1} - \ln{\tau_m}}},\ \tau_m < \tau \leq \tau_{m+1}$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_PIECEWISE_3 = render_math(
+        r"$\Phi_m(\tau) = 0,\ \tau_{m-1} < \tau\ {\rm or}\ \tau_{m+1} > \tau$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_C0_MATERN = render_math(
+        r"$\Phi_\mu(x) = \exp(-|\mu x|)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_C2_MATERN = render_math(
+        r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_C4_MATERN = render_math(
+        r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|+\frac{1}{3}|\mu x|^2)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_C6_MATERN = render_math(
+        r"$\Phi_\mu(x) = \exp(-|\mu x|)(1+|\mu x|+\frac{2}{5}|\mu x|^2+\frac{1}{15}|\mu x|^3)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_CAUCHY = render_math(
+        r"$\Phi_\mu(x) = 1/(1+|\mu x|)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_GAUSSIAN = render_math(
+        r"$\Phi_\mu(x) = \exp(-(\mu x)^2)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_INVERSE_QUADRATIC = render_math(
+        r"$\Phi_\mu(x) = 1/(1+(\mu x)^2)$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_INVERSE_QUADRIC = render_math(
+        r"$\Phi_\mu(x) = 1/\sqrt{1+(\mu x)^2}$",
+        MATH_RBF_WIDTH,
+        MATH_RBF_HEIGHT,
+    )
+    MATH_GAMMA_LN_TAU = render_math(r"$\gamma(\ln{\tau})$", 44, 20, fontsize=10)
+    MATH_X = render_math(r"$x = |\ln{\tau} - \ln{\tau_m}|$", 96, 20, fontsize=10)
+    MATH_TAU_M = render_math(r"$\tau_m$", 18, 20, fontsize=10)
+    MATH_FWHM = render_math(r"$\mu = \frac{\Delta \ln{\tau}}{k}$", 200, 40)
+    MATH_SHAPE = render_math(r"$\mu = k$", 200, 40)
+
+
+signals.register(Signal.RENDER_MATH, process_math)
 
 
 class SettingsMenu:

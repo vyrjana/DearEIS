@@ -75,6 +75,7 @@ class Signal(IntEnum):
     RENAME_PLOT_SERIES = auto()
     RENAME_PLOT_SETTINGS = auto()
     RENAME_PROJECT = auto()
+    RENDER_MATH = auto()
     REORDER_PLOT_SERIES = auto()
     RESTORE_PROJECT_STATE = auto()
     SAVE_PLOT = auto()

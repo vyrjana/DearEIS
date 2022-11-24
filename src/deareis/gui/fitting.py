@@ -82,38 +82,56 @@ from deareis.gui.circuit_editor import (
 
 MATH_WEIGHT_WIDTH: int = 300
 MATH_WEIGHT_HEIGHT: int = 40
-MATH_WEIGHT_MODULUS: int = render_math(
-    r"$w_i = [|Z_{\rm re}(f_i)|, |Z_{\rm im}(f_i)|]^{-1}$",
-    width=MATH_WEIGHT_WIDTH,
-    height=MATH_WEIGHT_HEIGHT,
-)
-MATH_WEIGHT_PROPORTIONAL: int = render_math(
-    r"$w_i = [Z_{\rm re}(f_i)^2, Z_{\rm im}(f_i)^2]^{-1}$",
-    width=MATH_WEIGHT_WIDTH,
-    height=MATH_WEIGHT_HEIGHT,
-)
-MATH_WEIGHT_UNITY: int = render_math(
-    r"$w_i = [1]$",
-    width=MATH_WEIGHT_WIDTH,
-    height=MATH_WEIGHT_HEIGHT,
-)
-MATH_WEIGHT_BOUKAMP: int = render_math(
-    r"$w_i = [(Z_{{\rm re},i})^2 + (Z_{{\rm im},i})^2]^{-1}$",
-    width=MATH_WEIGHT_WIDTH,
-    height=MATH_WEIGHT_HEIGHT,
-)
-MATH_Z_FIT: int = render_math(
-    r"$Z_{\rm re/im}(f_i)$",
-    width=54,
-    height=20,
-    fontsize=10,
-)
-MATH_Z_EXP: int = render_math(
-    r"$Z_{{\rm re/im},i}$",
-    width=44,
-    height=20,
-    fontsize=10,
-)
+MATH_WEIGHT_MODULUS: int = -1
+MATH_WEIGHT_PROPORTIONAL: int = -1
+MATH_WEIGHT_UNITY: int = -1
+MATH_WEIGHT_BOUKAMP: int = -1
+MATH_Z_FIT: int = -1
+MATH_Z_EXP: int = -1
+
+
+def process_math():
+    global MATH_WEIGHT_MODULUS
+    global MATH_WEIGHT_PROPORTIONAL
+    global MATH_WEIGHT_UNITY
+    global MATH_WEIGHT_BOUKAMP
+    global MATH_Z_FIT
+    global MATH_Z_EXP
+    MATH_WEIGHT_MODULUS = render_math(
+        r"$w_i = [|Z_{\rm re}(f_i)|, |Z_{\rm im}(f_i)|]^{-1}$",
+        width=MATH_WEIGHT_WIDTH,
+        height=MATH_WEIGHT_HEIGHT,
+    )
+    MATH_WEIGHT_PROPORTIONAL = render_math(
+        r"$w_i = [Z_{\rm re}(f_i)^2, Z_{\rm im}(f_i)^2]^{-1}$",
+        width=MATH_WEIGHT_WIDTH,
+        height=MATH_WEIGHT_HEIGHT,
+    )
+    MATH_WEIGHT_UNITY = render_math(
+        r"$w_i = [1]$",
+        width=MATH_WEIGHT_WIDTH,
+        height=MATH_WEIGHT_HEIGHT,
+    )
+    MATH_WEIGHT_BOUKAMP = render_math(
+        r"$w_i = [(Z_{{\rm re},i})^2 + (Z_{{\rm im},i})^2]^{-1}$",
+        width=MATH_WEIGHT_WIDTH,
+        height=MATH_WEIGHT_HEIGHT,
+    )
+    MATH_Z_FIT = render_math(
+        r"$Z_{\rm re/im}(f_i)$",
+        width=54,
+        height=20,
+        fontsize=10,
+    )
+    MATH_Z_EXP = render_math(
+        r"$Z_{{\rm re/im},i}$",
+        width=44,
+        height=20,
+        fontsize=10,
+    )
+
+
+signals.register(Signal.RENDER_MATH, process_math)
 
 
 class SettingsMenu:
