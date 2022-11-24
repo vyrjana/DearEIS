@@ -1,5 +1,6 @@
 # 3.3.1
 
+- Added labels above the circuit previes in the `Fitting` and `Simulation` tabs to clarify that those correspond to the circuits used in the chosen result rather than what is specified in the settings on the left-hand side.
 - Updated tooltips.
 - Fixed a bug that caused data sets to be incorrectly prevented from being selected in the `Average of multiple data sets` and `Subtract impedance` windows.
 

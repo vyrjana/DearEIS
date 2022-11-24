@@ -960,6 +960,7 @@ class FittingTab:
                         width=-1,
                         height=self.circuit_preview_height,
                     ):
+                        dpg.add_text("Fitted circuit")
                         self.circuit_preview: CircuitPreview = CircuitPreview()
                     self.minimum_plot_side: int = 400
                     with dpg.group(horizontal=True):

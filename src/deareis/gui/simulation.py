@@ -25,7 +25,10 @@ from typing import (
     Tuple,
     Type,
 )
-from numpy import array, ndarray
+from numpy import (
+    array,
+    ndarray,
+)
 import pyimpspec
 from pyimpspec import (
     Circuit,
@@ -41,15 +44,24 @@ from deareis.utility import (
     calculate_window_position_dimensions,
     format_number,
 )
-from deareis.tooltips import attach_tooltip, update_tooltip
+from deareis.tooltips import (
+    attach_tooltip,
+    update_tooltip,
+)
 import deareis.tooltips as tooltips
-from deareis.gui.plots import Bode, Nyquist
+from deareis.gui.plots import (
+    Bode,
+    Nyquist,
+)
 from deareis.enums import (
     Context,
     FitSimOutput,
     label_to_fit_sim_output,
 )
-from deareis.gui.circuit_editor import CircuitPreview, CircuitEditor
+from deareis.gui.circuit_editor import (
+    CircuitPreview,
+    CircuitEditor,
+)
 from deareis.data import (
     DataSet,
     SimulationResult,
@@ -694,6 +706,7 @@ class SimulationTab:
                             width=-1,
                             height=self.circuit_preview_height,
                         ):
+                            dpg.add_text("Simulated circuit")
                             self.circuit_preview: CircuitPreview = CircuitPreview()
                     with dpg.group(horizontal=True):
                         with dpg.group():
