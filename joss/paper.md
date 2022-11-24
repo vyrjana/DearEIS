@@ -231,12 +231,8 @@ In terms of key functionality, RelaxIS is the most similar alternative to DearEI
 However, RelaxIS is a closed-source, commercial product, which introduces a financial barrier to entry, and it officially only supports Windows.
 LEVM/LEVMW is, as was mentioned earlier, a free though not truly open-source alternative.
 The software officially supports MS-DOS/Windows but may also work natively on other platforms provided that a compatible Fortran compiler is available.
-LEVM/LEVMW has a rather steep learning curve and some may find it unintuitive to use despite its rather comprehensive manual.
-Much of the information that is required for basic use of the software is not presented in, e.g., the GUI itself.
-For example, the LEVMRUN binary, which provides a GUI for preparing input files, makes use of abbreviations that are not explained in the GUI using, e.g., tooltips.
-There are several pre-made circuits (`A`, `B`, `C`, etc.) to choose from but the corresponding circuit diagrams and other relevant information are only presented in the manual.
-These circuits can be customized to some extent by adjusting various parameters (`p[1]`, `p[2]`, `p[3]`, etc.) but the meaning of these parameters varies from circuit to circuit and this information is also only presented in the manual.
-Completely custom circuits require modification of the source code and recompilation of the program.
+There is a rather steep learning curve associated with using LEVM and its CLI directly, particularly regarding the process of preparing the input files, despite the rather comprehensive manual that is included.
+LEVMW greatly simplifies this process, though some may find its GUI unintuitive to use by modern standards.
 
 
 Table: Comparison of some key features currently available in the software included in \autoref{tbl:alternatives}.
