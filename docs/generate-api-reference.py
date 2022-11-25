@@ -56,10 +56,10 @@ If NumPy is linked against a multithreaded linear algebra library like OpenBLAS 
         process(
             title=f"DearEIS - API reference ({version})",
             description=f"""
-_DearEIS_ is built on top of the `pyimpspec` package.
-See the [API reference for `pyimpspec`](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
+DearEIS is built on top of the pyimpspec package.
+See the [API reference for pyimpspec](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
 The API of DearEIS can be used for automatic some tasks (e.g., batch importing data or batch exporting plots).
-However, the `pyimpspec` API may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
+However, the pyimpspec API may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
 Primarily because the DearEIS API uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
 
 {multiprocessing_disclaimer}
@@ -113,7 +113,7 @@ permalink: /api/
 
 Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the API.
 A single Markdown file of the API reference is available [here](https://raw.githubusercontent.com/vyrjana/DearEIS/gh-pages/documentation/API.md).
-The [`pyimpspec` API](https://vyrjana.github.io/pyimpspec/api/) may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
+The [pyimpspec API](https://vyrjana.github.io/pyimpspec/api/) may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
 Primarily because the DearEIS API uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
 
 - [Project]({root_url}/project)
