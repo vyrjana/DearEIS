@@ -8,6 +8,8 @@ permalink: /api/
 
 Check out [this Jupyter notebook](https://github.com/vyrjana/DearEIS/blob/main/examples/examples.ipynb) for examples of how to use the API.
 A single Markdown file of the API reference is available [here](https://raw.githubusercontent.com/vyrjana/DearEIS/gh-pages/documentation/API.md).
+The [`pyimpspec` API](https://vyrjana.github.io/pyimpspec/api/) may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
+Primarily because the DearEIS API uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
 
 - [Project](https://vyrjana.github.io/DearEIS/api/project)
 - [Data set](https://vyrjana.github.io/DearEIS/api/data-set)

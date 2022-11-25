@@ -4,7 +4,7 @@ _DearEIS_ is built on top of the `pyimpspec` package.
 See the [API reference for `pyimpspec`](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
 The API of DearEIS can be used for automatic some tasks (e.g., batch importing data or batch exporting plots).
 However, the `pyimpspec` API may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
-Primarily because the DearEIS uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
+Primarily because the DearEIS API uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
 
 
 **NOTE!** The API makes use of multiple processes where possible to perform tasks in parallel. Functions that implement this parallelization have a `num_procs` keyword argument that can be used to override the maximum number of processes allowed. Using this keyword argument should not be necessary for most users under most circumstances.
