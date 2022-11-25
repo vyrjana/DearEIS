@@ -12,6 +12,10 @@ p {
   nav {
     ul {
       li {
+        &.tutorials {
+          float: left;
+          margin-left: 10px;
+        }
         &.apidoc {
           float: left;
           margin-left: 10px;

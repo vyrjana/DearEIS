@@ -1,4 +1,4 @@
 theme: jekyll-theme-midnight
 baseurl: /DearEIS
-include: ['documentation']
+include: ['documentation', 'tutorials']
 
