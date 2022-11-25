@@ -96,6 +96,11 @@ Alternatively, the program can also be executed on via the start menu by searchi
 **Note that the full name needs to be typed in for the command to be found!**
 
 
+## How to use
+
+[There are several tutorials](https://vyrjana.github.io/DearEIS/tutorials/) that cover the basics of how to get started with using various parts of DearEIS.
+
+
 ## API documentation
 
 [The API documentation can be found here](https://vyrjana.github.io/DearEIS/api).
