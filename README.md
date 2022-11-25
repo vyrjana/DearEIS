@@ -115,6 +115,7 @@ pip install --upgrade deareis
 Once installed, DearEIS can be started, e.g., from a terminal or the Windows start menu by searching for the command `deareis`.
 If the Windows installer was used, then there should be shortcuts in the start menu.
 The program may also show up in some application launchers.
+Check out [these tutorials](https://vyrjana.github.io/DearEIS/tutorials/) to find out how to use the program.
 
 There is also a `deareis-debug` command that prints additional information to the terminal and can be useful when troubleshooting issues.
 
