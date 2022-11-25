@@ -4,6 +4,7 @@
 - Updated how/when certain assets are rendered during startup.
 - Updated tooltips.
 - Fixed a bug that caused data sets to be incorrectly prevented from being selected in the `Average of multiple data sets` and `Subtract impedance` windows.
+- Fixed a bug that caused DRT results to not always load properly.
 
 
 # 3.3.0

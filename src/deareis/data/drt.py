@@ -328,13 +328,11 @@ class DRTResult:
         dictionary["settings"] = DRTSettings.from_dict(dictionary["settings"])
         del dictionary["version"]
         mask: Dict[str, bool] = dictionary["mask"]
-        if len(mask) < len(dictionary["frequency"]):
-            i: int
-            for i in range(0, len(dictionary["frequency"])):
-                flag: bool = mask.get(str(i), False)
-                if flag is True:
-                    del mask[str(i)]
-                mask[i] = flag  # Converting str keys to int
+        key: str
+        for key in list(mask.keys()):
+            flag: bool = mask[key]
+            del mask[key]
+            mask[int(key)] = flag
         dictionary["impedance"] = array(
             list(
                 map(
