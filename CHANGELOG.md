@@ -2,6 +2,7 @@
 
 - Added labels above the circuit previes in the `Fitting` and `Simulation` tabs to clarify that those correspond to the circuits used in the chosen result rather than what is specified in the settings on the left-hand side.
 - Updated how/when certain assets are rendered during startup.
+- Updated how the y-axis limits of DRT plots are automatically adjusted.
 - Updated tooltips.
 - Fixed a bug that caused data sets to be incorrectly prevented from being selected in the `Average of multiple data sets` and `Subtract impedance` windows.
 - Fixed a bug that caused DRT results to not always load properly.

@@ -235,7 +235,7 @@ class DRT(Plot):
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
             dy: float = abs(y_max - y_min) * 0.05
-            if dy < 1e-3:
+            if dy < 1e-7:
                 y_min = -0.5
                 y_max = 0.5
             else:
