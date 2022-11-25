@@ -1,9 +1,9 @@
 # DearEIS - API reference (3.3.0)
 
-_DearEIS_ is built on top of the `pyimpspec` package.
-See the [API reference for `pyimpspec`](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
+DearEIS is built on top of the pyimpspec package.
+See the [API reference for pyimpspec](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
 The API of DearEIS can be used for automatic some tasks (e.g., batch importing data or batch exporting plots).
-However, the `pyimpspec` API may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
+However, the pyimpspec API may be a bit easier to use if you just want to have an API to use in Python scripts or Jupyter notebooks.
 Primarily because the DearEIS API uses settings objects (e.g., `DRTSettings` that can be (de)serialized easily) instead of keyword arguments in the function signatures.
 
 
