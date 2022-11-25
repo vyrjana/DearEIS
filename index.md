@@ -10,7 +10,7 @@ The target audience is researchers who use electrochemical impedance spectroscop
 The program includes features such as:
 
 - [projects that can contain multiple experimental data sets](assets/images/example-projects.gif)
-- reading experimental data from several different data formats
+- [reading experimental data from several different data formats](https://vyrjana.github.io/DearEIS/tutorials/data/#supported-file-formats)
 - [validation of impedance spectra by checking if the data is Kramers-Kronig transformable](assets/images/example-kramers-kronig.gif)
 - [distribution of relaxation times (DRT) analysis](assets/images/example-drt-analysis.gif)
 - [construction of equivalent circuits either by parsing a circuit description code (CDC) or by using the included graphical editor](assets/images/example-circuit-editor.gif)
