@@ -19,6 +19,7 @@
 
 from os.path import basename
 from typing import List, Optional
+import webbrowser
 import dearpygui.dearpygui as dpg
 from deareis.gui.busy_message import BusyMessage
 from deareis.gui.error_message import ErrorMessage
@@ -296,6 +297,12 @@ class MenuBar:
                     callback=lambda: signals.emit(Signal.SHOW_SETTINGS_KEYBINDINGS),
                 )
             with dpg.menu(label="Help"):
+                dpg.add_menu_item(
+                    label="Tutorials",
+                    callback=lambda: webbrowser.open(
+                        "https://vyrjana.github.io/DearEIS/tutorials/"
+                    ),
+                )
                 dpg.add_menu_item(
                     label="About", callback=lambda: signals.emit(Signal.SHOW_HELP_ABOUT)
                 )

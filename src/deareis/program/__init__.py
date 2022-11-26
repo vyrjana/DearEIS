@@ -700,8 +700,6 @@ def show_help_about(*args, **kwargs):
         for url in [
             "https://vyrjana.github.io/DearEIS",
             "https://github.com/vyrjana/DearEIS",
-            # TODO: Link to quickstart/tutorials
-            # TODO: Link to API documentation?
         ]:
             dpg.bind_item_theme(
                 dpg.add_button(
