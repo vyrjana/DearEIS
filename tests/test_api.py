@@ -33,8 +33,11 @@ from numpy import (
     angle,
     ndarray,
 )
+import matplotlib
 import pyimpspec
 import deareis
+
+matplotlib.use("Agg")
 
 
 TEST_PROJECT_PATH: str = join(dirname(__file__), "example-project-v4.json")
