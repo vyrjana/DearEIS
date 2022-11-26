@@ -1,4 +1,4 @@
-# 3.3.1
+# 3.4.0
 
 - Added labels above the circuit previes in the `Fitting` and `Simulation` tabs to clarify that those correspond to the circuits used in the chosen result rather than what is specified in the settings on the left-hand side.
 - Added button that opens URL to tutorials.
