@@ -1,3 +1,8 @@
+# 3.4.2
+
+- Updated documentation.
+
+
 # 3.4.1
 
 - Updated minimum version for pyimpspec.
