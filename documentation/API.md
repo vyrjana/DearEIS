@@ -1,4 +1,4 @@
-# DearEIS - API reference (3.4.1)
+# DearEIS - API reference (3.4.2)
 
 DearEIS is built on top of the pyimpspec package.
 See the [API reference for pyimpspec](https://vyrjana.github.io/pyimpspec/api/) for information more information about classes and functions that are provided by that package and referenced below (e.g. the `Circuit` class).
