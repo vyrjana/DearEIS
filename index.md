@@ -44,8 +44,14 @@ Figure: Screenshot of the Fitting tab showing the result of an equivalent circui
 ### Requirements
 
 - [Python (version 3.8 or later)](https://www.python.org/)
+- The following Python packages
+	- [Dear PyGui](https://github.com/hoffstadt/DearPyGui)
+	- [pyimpspec](https://github.com/vyrjana/pyimpspec)
+	- [requests](https://github.com/psf/requests)
+	- [xdg](https://github.com/srstevenson/xdg)
 
-Check the GitHub repository for more information about the required and optional dependencies.
+These Python packages (and their dependencies) are installed automatically when DearEIS is installed using [pip](https://pip.pypa.io/en/stable/).
+Check the [GitHub repository](https://github.com/vyrjana/DearEIS#requirements) for more information about the required and optional dependencies.
 
 
 ### Supported platforms
