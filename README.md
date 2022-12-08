@@ -79,17 +79,11 @@ These Python packages (and their dependencies) are installed automatically when 
 
 The following Python packages can be installed as optional dependencies for additional functionality:
 
-- [cvxpy](https://github.com/cvxpy/cvxpy): convex optimization
-	- **IMPORTANT!** Windows and MacOS users must follow the steps described in [the CVXPY documentation](https://www.cvxpy.org/install/index.html) before installing this optional dependency!
-- [kvxopt](https://github.com/sanurielf/kvxopt): convex optimization
-	- This fork of cvxopt may support additional platforms (e.g., Apple Silicon hardware like M1).
-
-
-If you wish to make use of these, then they must be specified explicitly when installing pyimpspec:
-
-```
-pip install pyimpspec[cvxpy]
-```
+- Alternatives to cvxopt (used by default by pyimpspec) in DRT calculations using the [TR-RBF method](https://doi.org/10.1016/j.electacta.2015.09.097)
+	- [kvxopt](https://github.com/sanurielf/kvxopt): convex optimization
+		- This fork of cvxopt may support additional platforms (e.g., Apple Silicon hardware like M1).
+	- [cvxpy](https://github.com/cvxpy/cvxpy): convex optimization
+		- **IMPORTANT!** Windows and MacOS users must follow the steps described in [the CVXPY documentation](https://www.cvxpy.org/install/index.html) before installing this optional dependency!
 
 
 ### Installing
@@ -100,10 +94,19 @@ Make sure that a **recent version of Python (3.8+, 64-bit)** and pip are install
 pip install deareis
 ```
 
+**NOTE!** You may wish use the `--user` option when installing with pip if not using a virtual environment.
+If you **only** intend to use DearEIS via the GUI, then you may wish to use, e.g., [pipx](https://pypa.github.io/pipx/) to install DearEIS inside of a virtual environment.
+
+If you wish to install the optional dependencies, then they must be specified explicitly when installing pyimpspec:
+
+```
+pip install deareis[cvxpy]
+```
+
 Alternatively, use the Windows installer available in the [releases section](https://github.com/vyrjana/DearEIS/releases).
 The installer will take care of installing DearEIS using pip and then create shortcuts in the start menu.
 
-Newer versions of DearEIS can be installed at a later date by appending the `-U` option to the command:
+Newer versions of DearEIS can be installed at a later date by appending the `--upgrade` option to the command:
 
 ```
 pip install --upgrade deareis

@@ -1,3 +1,9 @@
+# 3.4.3
+
+- Updated dependency versions.
+- Fixed a bug that caused `utility.format_number` to produce results with two exponents when given certain inputs.
+
+
 # 3.4.2
 
 - Updated documentation.

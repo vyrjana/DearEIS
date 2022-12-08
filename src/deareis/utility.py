@@ -38,12 +38,13 @@ from numpy import (
     float32,
     floating,
     floor,
-    inf,
     integer,
     isclose,
+    isnan,
+    isneginf,
+    isposinf,
     issubdtype,
     log10 as log,
-    nan,
     ndarray,
     pad,
 )
@@ -118,29 +119,43 @@ def format_number(
     assert issubdtype(type(width), integer), width
     assert type(exponent) is bool, exponent
     assert issubdtype(type(significants), integer) and significants >= 0, significants
+
+    def adjust_width(string: str) -> str:
+        if width > 0:
+            return string.rjust(width)
+        return string
+
+    if isnan(value):
+        return adjust_width("NaN")
+    elif isposinf(value):
+        return adjust_width("INF")
+    elif isneginf(value):
+        return adjust_width("-INF")
     fmt: str = "{:." + str(decimals) + "f}"
     if significants > 0:
         fmt = "{:." + str(significants) + "g}"
     string: str
-    if value == nan or value is nan:
-        string = "NaN"
-    elif value == inf:
-        string = "INF"
-    elif value == -inf:
-        string = "-INF"
-    elif exponent:
+    if exponent:
         if value == 0.0:
-            string = "0"
+            return adjust_width("0")
         else:
+            # Convert value to scientific format in nearest SI prefix
+            # (e.g., 47311.0 -> 47e+3 or 0.000851 -> 850e-6
+            # if num. significants is equal to two)
             exp: int = int(floor(log(abs(value)) / 3) * 3)
             coeff: float = value / 10**exp
             string = fmt.format(coeff).lower()
-            if "e+03" in string:
-                string = string[: string.find("e")]
-                exp += 3
-            if exp >= 0:
+            # Convert string from, e.g., 8.5e+2 to 850
+            if "e+" in string or "e-" in string:
+                string = str(
+                    int(
+                        float(string[: string.find("e")])
+                        * float("1" + string[string.find("e") :])
+                    )
+                )
+            if exp > 0:
                 string += "e+{:02d}".format(exp)
-            else:
+            elif exp < 0:
                 string += "e-{:02d}".format(abs(exp))
     else:
         string = fmt.format(value)
@@ -150,11 +165,7 @@ def format_number(
             string = (string[:i] + ".").ljust(significants + 1, "0") + string[i:]
         elif "." in string and i < significants + 1:
             string = string[:i].ljust(significants + 1, "0") + string[i:]
-    if width > 1:
-        string = string.rjust(width)
-    if string.endswith("e+00"):
-        string = string.replace("e+00", "    ")
-    return string
+    return adjust_width(string)
 
 
 def align_numbers(values: List[str]) -> List[str]:
