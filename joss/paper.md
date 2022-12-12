@@ -9,7 +9,7 @@ authors:
   orcid: 0000-0001-5779-5201
   affiliation: 1
 affiliations:
-- name: Åbo Akademi University, Faculty of Science and Engineering, Johan Gadolin Process Chemistry Centre, Laboratory of Molecular Science and Engineering, Henriksgatan 2, FI-20500 Turku (Åbo), Finland
+- name: Åbo Akademi University, Faculty of Science and Engineering, Johan Gadolin Process Chemistry Centre, Laboratory of Molecular Science and Engineering, Turku (Åbo), Finland
   index: 1
 bibliography: paper.bib
 header-includes:
@@ -25,7 +25,7 @@ header-includes:
 Electrochemical impedance spectroscopy (EIS) is a technique that is widely used to characterize the properties of materials used in, e.g., batteries and ion-selective electrodes.
 Analyses of the recorded impedance spectra typically involve some preprocessing, data validation, and fitting of a suitable model to extract quantitative data.
 Analyses of the distribution of relaxation times may also be relevant and can help with choosing an appropriate model.
-DearEIS is a free, open-source, cross-platform program developed for performing such analysis work.
+DearEIS is a free, open source, cross-platform program developed for performing such analysis work.
 The primary audience for DearEIS is researchers and engineers.
 However, the program may also prove useful in the context of, e.g., teaching university-level courses on electrochemistry.
 
@@ -160,13 +160,13 @@ ZView                  Scribner Associates, Inc.
 
 Some of the other software listed in \autoref{tbl:alternatives} are available for free though they are not necessarily also open source (\autoref{tbl:license_comparison}).
 For example, the source code is not publicly available for EIS Spectrum Analyzer, Kramers-Kronig Test, and Lin-KK Tool.
-The source code for LEVM/LEVMW is included with the binaries, but the source code is not distributed under an open-source license.
+The source code for LEVM/LEVMW is included with the binaries, but the source code is not distributed under an open source license.
 DRTtools requires the user to have licenses for MATLAB and its Optimization Toolbox package, which adds a financial barrier to its use.
 Fortunately, a Python-based port called pyDRTtools is available.
 Several of these free software support multiple platforms.
 
 
-Table: Comparison of source code availability, applicable open-source license(s) if the source code is available, and supported major platforms of the software included in \autoref{tbl:alternatives}.
+Table: Comparison of source code availability, applicable open source license(s) if the source code is available, and supported major platforms of the software included in \autoref{tbl:alternatives}.
 \su{1}The Apache License version 2.0 (APLv2), the GNU General Public License version 3.0 (GPLv3), and the MIT license (MIT).
 \su{2}May also work on other platforms with the help of a compatibility layer or an emulator.
 \su{3}pyimpspec is a dependency of DearEIS.
@@ -229,10 +229,10 @@ The commercial software in \autoref{tbl:license_comparison} only support Windows
 
 In terms of key functionality, RelaxIS is the most similar alternative to DearEIS with LEVM/LEVMW as a close second (\autoref{tbl:feature_comparison}).
 However, RelaxIS is a closed-source, commercial product, which introduces a financial barrier to entry, and it officially only supports Windows.
-LEVM/LEVMW is, as was mentioned earlier, a free though not truly open-source alternative.
+LEVM/LEVMW is, as was mentioned earlier, a free though not truly open source alternative.
 The software officially supports MS-DOS/Windows but may also work natively on other platforms provided that a compatible Fortran compiler is available.
 There is a rather steep learning curve associated with using LEVM and its CLI directly, particularly regarding the process of preparing the input files, despite the rather comprehensive manual that is included.
-LEVMW greatly simplifies this process, though some may find its GUI unintuitive to use by modern standards.
+LEVMW greatly simplifies this process, though some may find its GUI not intuitive to use by modern standards.
 
 
 Table: Comparison of some key features currently available in the software included in \autoref{tbl:alternatives}.
@@ -337,8 +337,8 @@ DearEIS has several features in addition to those that are included in \autoref{
 
 Ultimately, DearEIS provides a unified GUI for various analytical functions that in some cases were previously only available as separate, smaller programs that may or may not have had a GUI.
 The barrier to entry should therefore be quite low since DearEIS works on multiple platforms, is freely available, and does not require a highly technically proficient user.
-Simultaneously, DearEIS does faciliate more advanced use cases by providing an API.
-The open-source nature of DearEIS will hopefully ensure that the project can be extended and used far into the future.
+Simultaneously, DearEIS does facilitate more advanced use cases by providing an API.
+The open source nature of DearEIS will hopefully ensure that the project can be extended and used far into the future.
 
 
 \pagebreak
