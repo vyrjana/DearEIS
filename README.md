@@ -7,6 +7,7 @@ A GUI program for analyzing, simulating, and visualizing impedance spectra.
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
 [![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![PyPI](https://img.shields.io/pypi/v/DearEIS)](https://pypi.org/project/deareis/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.04808/status.svg)](https://doi.org/10.21105/joss.04808)
 
 
 ## Table of contents
