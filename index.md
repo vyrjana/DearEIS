@@ -3,6 +3,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/DearEIS)
 [![GitHub](https://img.shields.io/github/license/vyrjana/DearEIS)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![PyPI](https://img.shields.io/pypi/v/DearEIS)](https://pypi.org/project/deareis/)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.04808/status.svg)](https://doi.org/10.21105/joss.04808)
 
 
 DearEIS is a Python package that includes both a program with a graphical user interface (GUI) and an application programming interface (API) for working with impedance spectra.
@@ -63,21 +64,24 @@ Check the [GitHub repository](https://github.com/vyrjana/DearEIS#requirements) f
 
 ### Step-by-step
 
-- Make sure to first install a recent version of Python if you do not already have it installed.
+- Make sure to first install a recent version of Python (3.8 or later) if you do not already have it installed.
 - DearEIS can then be installed with [pip](https://pip.pypa.io/en/stable/), which is the package installer for Python and should be included with most distributions of the official Python runtime.
-	- **NOTE!** [An installer](https://github.com/vyrjana/DearEIS/releases/download/3.0.0/DearEIS-installer.exe) is available for Windows.
+	- **NOTE!** [A simple installer](https://github.com/vyrjana/DearEIS/releases/download/3.0.0/DearEIS-installer.exe) is available for Windows.
 		The installer takes care of installing DearEIS for you using pip so the next step can be ignored.
-		Additionally, the installer also creates a few shortcuts in the start menu.
+		Additionally, the installer also creates a few shortcuts in the start menu, e.g., for starting and for updating DearEIS.
 - Execute the following command in a terminal (e.g., PowerShell on Windows) once Python has been installed:
 
 ```
 pip install deareis
 ```
 
+**NOTE!** You may wish use the `--user` option when installing with pip if you are not using a virtual environment.
+If you **only** intend to use DearEIS via the GUI, then you may wish to use, e.g., [pipx](https://pypa.github.io/pipx/) to install DearEIS inside of a virtual environment.
+
 
 ### Updating
 
-Updating DearEIS is as simple as adding the `--upgrade` (or `-U`) argument to the command shown above:
+Updating DearEIS is as simple as adding the `--upgrade` argument to the command shown above:
 
 ```
 pip install --upgrade deareis
