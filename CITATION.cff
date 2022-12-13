@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+title: DearEIS
+type: software
+identifiers:
+  - description: Archived snapshots of versions
+    type: doi
+    value: "10.5281/zenodo.7371986"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/vyrjana/DearEIS"
+authors:
+  - family-names: Yrjänä
+    given-names: Ville
+    orcid: "https://orcid.org/0000-0001-5779-5201"
+preferred-citation:
+  type: article
+  doi: "10.21105/joss.04808"
+  url: "https://joss.theoj.org/papers/10.21105/joss.04808"
+  year: 2022
+  volume: 7
+  number: 80
+  pages: 4808
+  title: "DearEIS - A GUI program for analyzing impedance spectra"
+  journal: "Journal of Open Source Software"
+  authors:
+    - family-names: Yrjänä
+      given-names: Ville
+      orcid: "https://orcid.org/0000-0001-5779-5201"
