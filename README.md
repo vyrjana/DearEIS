@@ -95,7 +95,7 @@ Make sure that a **recent version of Python (3.8+, 64-bit)** and pip are install
 pip install deareis
 ```
 
-**NOTE!** You may wish use the `--user` option when installing with pip if not using a virtual environment.
+**NOTE!** You may wish use the `--user` option when installing with pip if you are not using a virtual environment.
 If you **only** intend to use DearEIS via the GUI, then you may wish to use, e.g., [pipx](https://pypa.github.io/pipx/) to install DearEIS inside of a virtual environment.
 
 If you wish to install the optional dependencies, then they must be specified explicitly when installing pyimpspec:
