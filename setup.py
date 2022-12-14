@@ -34,7 +34,7 @@ entry_points = {
 }
 
 dependencies = [
-    "dearpygui==1.7.3",  # Used to implement the GUI.
+    "dearpygui==1.8.0",  # Used to implement the GUI.
     "pyimpspec~=3.2",  # Used for parsing, fitting, and analyzing impedance spectra.
     "requests~=2.28",  # Used to check package status on PyPI.
     "xdg~=5.1",  # Used to figure out where to place config, state, etc. files.
