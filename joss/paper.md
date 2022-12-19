@@ -255,7 +255,7 @@ Aftermath              Yes                  Yes         GUI
 
 DRT-python-code                  Yes                    GUI\su{5}
 
-DRTtools                         Yes                    GUI
+DRTtools               Yes       Yes                    GUI
 
 EC-Lab                 Yes                  Yes         GUI
 
@@ -279,7 +279,7 @@ Nova                   Yes                  Yes         GUI
 
 PSTrace                                     Yes         GUI, CLI, API
 
-pyDRTtools                       Yes                    GUI
+pyDRTtools             Yes       Yes                    GUI
 
 PyEIS                  Yes                  Yes         API
 
