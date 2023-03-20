@@ -79,6 +79,7 @@ class FileDialog:
         self._merge: bool = kwargs.get("merge", False)
         self._multiple: bool = kwargs.get("multiple", True)
         self._window: int = dpg.generate_uuid()
+        self._input_widgets: List[int] = []
         x: int
         y: int
         w: int
@@ -129,6 +130,7 @@ class FileDialog:
                     width=-1,
                     tag=self._path_input,
                 )
+                self._input_widgets.append(self._path_input)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="C", callback=lambda: self.clear_search())
                 attach_tooltip("Clear the search input." + "\n\nShortcut: Ctrl+C")
@@ -139,6 +141,7 @@ class FileDialog:
                     tag=self._search_input,
                     callback=lambda s, a, u: dpg.set_value(self._table, a.lower()),
                 )
+                self._input_widgets.append(self._search_input)
                 attach_tooltip(
                     "Search for something based on a substring."
                     + "\n\nShortcut: Ctrl+F"
@@ -224,6 +227,7 @@ class FileDialog:
                         width=-100,
                         tag=self._name_input,
                     )
+                    self._input_widgets.append(self._name_input)
                     self._name_extension_combo: int = dpg.generate_uuid()
                     dpg.add_combo(
                         default_value=default_extension,
@@ -304,8 +308,7 @@ class FileDialog:
     def close(self, cancel: bool = False, keybinding: bool = False):
         if keybinding is True and (
             not dpg.is_item_visible(self._window)
-            or dpg.is_item_active(self._search_input)
-            or dpg.is_item_active(self._path_input)
+            or self.has_active_input()
         ):
             return
         self.hide()
@@ -381,8 +384,7 @@ class FileDialog:
         assert type(keybinding) is bool, keybinding
         if keybinding and (
             not is_control_down()
-            or dpg.is_item_active(self._search_input)
-            or dpg.is_item_active(self._path_input)
+            or self.has_active_input()
         ):
             return
         dpg.set_value(self._table, "")
@@ -398,8 +400,7 @@ class FileDialog:
         assert type(keybinding) is bool, keybinding
         if keybinding and (
             not is_control_down()
-            or dpg.is_item_focused(self._path_input)
-            or dpg.is_item_focused(self._search_input)
+            or self.has_active_input()
         ):
             return
         state = not is_shift_down()
@@ -595,8 +596,7 @@ class FileDialog:
     def load_files(self, keybinding: bool = False):
         if keybinding is True and (
             not dpg.is_item_visible(self._window)
-            or dpg.is_item_active(self._search_input)
-            or dpg.is_item_active(self._path_input)
+            or self.has_active_input()
         ):
             return
         paths: List[str] = list(
@@ -617,8 +617,7 @@ class FileDialog:
     def save_file(self, keybinding: bool = False):
         if keybinding is True and (
             not dpg.is_item_visible(self._window)
-            or dpg.is_item_active(self._search_input)
-            or dpg.is_item_active(self._path_input)
+            or self.has_active_input()
         ):
             return
         name: str = dpg.get_value(self._name_input).strip()
@@ -636,8 +635,7 @@ class FileDialog:
     def go_back_one_folder(self):
         if (
             not dpg.is_item_visible(self._window)
-            or dpg.is_item_active(self._search_input)
-            or dpg.is_item_active(self._path_input)
+            or self.has_active_input()
         ):
             return
         path: str = self.get_current_path()
@@ -653,3 +651,6 @@ class FileDialog:
         index: int = items.index(dpg.get_value(combo)) + step
         dpg.set_value(combo, items[index % len(items)])
         self.update_current_path(self.get_current_path())
+
+    def has_active_input(self) -> bool:
+        return any(map(dpg.is_item_active, self._input_widgets))

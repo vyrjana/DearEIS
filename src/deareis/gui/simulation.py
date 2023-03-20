@@ -819,7 +819,7 @@ class SimulationTab:
 
     def create_nyquist_plot(self):
         with dpg.tab(label="Nyquist"):
-            self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-1)
+            self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
             self.nyquist_plot.plot(
                 real=array([]),
                 imaginary=array([]),
@@ -870,7 +870,7 @@ class SimulationTab:
 
     def create_bode_plot(self):
         with dpg.tab(label="Bode"):
-            self.bode_plot: Bode = Bode(width=-1, height=-1)
+            self.bode_plot: Bode = Bode(width=-1, height=-24)
             self.bode_plot.plot(
                 frequency=array([]),
                 magnitude=array([]),
@@ -942,7 +942,7 @@ class SimulationTab:
 
     def create_impedance_plot(self):
         with dpg.tab(label="Real & Imag."):
-            self.impedance_plot: Impedance = Impedance(width=-1, height=-1)
+            self.impedance_plot: Impedance = Impedance(width=-1, height=-24)
             self.impedance_plot.plot(
                 frequency=array([]),
                 real=array([]),
@@ -1022,18 +1022,7 @@ class SimulationTab:
         self.settings_menu.set_settings(settings)
 
     def resize(self, width: int, height: int):
-        assert type(width) is int and width > 0
-        assert type(height) is int and height > 0
-        if not self.is_visible():
-            return
-        height -= self.circuit_preview_height + 24 * 5 + 12
-        plots: List[Plot] = [
-            self.nyquist_plot,
-            self.bode_plot,
-            self.impedance_plot,
-        ]
-        for plot in plots:
-            plot.resize(-1, height)
+        return
 
     def next_plot_tab(self):
         tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)

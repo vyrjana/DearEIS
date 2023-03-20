@@ -1,3 +1,10 @@
+# 4.0.1
+
+- Fixed bug that caused the mask that was applied to the original data to also be applied to the new data set when subtracting impedances.
+- Fixed bugs related to keybindings in the file dialog window.
+- Fixed bugs causing plots in the `Fitting` and `Simulation` tabs to have incorrect heights on Windows.
+
+
 # 4.0.0
 
 - Added `Getting started` window when running DearEIS for the first time.

@@ -437,6 +437,7 @@ class SubtractImpedance:
         dictionary: dict = self.preview_data.to_dict()
         del dictionary["uuid"]
         data: DataSet = DataSet.from_dict(dictionary)
+        data.set_mask({})
         data.set_label(f"{self.preview_data.get_label()} - subtracted")
         self.callback(data)
 
