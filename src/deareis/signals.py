@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,9 @@ class Signal(IntEnum):
     APPLY_FIT_SETTINGS = auto()
     APPLY_SIMULATION_SETTINGS = auto()
     APPLY_TEST_SETTINGS = auto()
+    APPLY_ZHIT_SETTINGS = auto()
     AVERAGE_DATA_SETS = auto()
+    BATCH_PERFORM_ANALYSIS = auto()
     BLOCK_KEYBINDINGS = auto()
     CHECK_UPDATES = auto()
     CLEAR_RECENT_PROJECTS = auto()
@@ -56,11 +58,14 @@ class Signal(IntEnum):
     DELETE_PLOT_SETTINGS = auto()
     DELETE_SIMULATION_RESULT = auto()
     DELETE_TEST_RESULT = auto()
+    DELETE_ZHIT_RESULT = auto()
+    DUPLICATE_PLOT_SETTINGS = auto()
     EXPORT_PLOT = auto()
     HIDE_BUSY_MESSAGE = auto()
     LOAD_DATA_SET_FILES = auto()
     LOAD_PROJECT_FILES = auto()
     LOAD_SIMULATION_AS_DATA_SET = auto()
+    LOAD_ZHIT_AS_DATA_SET = auto()
     MODIFY_DATA_SET_PATH = auto()
     MODIFY_PLOT_SERIES_THEME = auto()
     MODIFY_PROJECT_NOTES = auto()
@@ -70,7 +75,10 @@ class Signal(IntEnum):
     PERFORM_FIT = auto()
     PERFORM_SIMULATION = auto()
     PERFORM_TEST = auto()
+    PERFORM_ZHIT = auto()
+    PREVIEW_ZHIT_WEIGHTS = auto()
     REDO_PROJECT_ACTION = auto()
+    REFRESH_USER_DEFINED_ELEMENTS = auto()
     RENAME_DATA_SET = auto()
     RENAME_PLOT_SERIES = auto()
     RENAME_PLOT_SETTINGS = auto()
@@ -93,20 +101,24 @@ class Signal(IntEnum):
     SELECT_PLOT_APPEARANCE_SETTINGS = auto()
     SELECT_PLOT_SETTINGS = auto()
     SELECT_PLOT_TYPE = auto()
+    SELECT_POINTS_TO_INTERPOLATE = auto()
     SELECT_PROJECT_FILES = auto()
     SELECT_PROJECT_TAB = auto()
     SELECT_SIMULATION_RESULT = auto()
     SELECT_TEST_RESULT = auto()
+    SELECT_ZHIT_RESULT = auto()
     SHOW_BUSY_MESSAGE = auto()
     SHOW_CHANGELOG = auto()
     SHOW_COMMAND_PALETTE = auto()
     SHOW_ENLARGED_PLOT = auto()
     SHOW_ERROR_MESSAGE = auto()
+    SHOW_GETTING_STARTED_WINDOW = auto()
     SHOW_HELP_ABOUT = auto()
     SHOW_HELP_LICENSES = auto()
     SHOW_SETTINGS_APPEARANCE = auto()
     SHOW_SETTINGS_DEFAULTS = auto()
     SHOW_SETTINGS_KEYBINDINGS = auto()
+    SHOW_SETTINGS_USER_DEFINED_ELEMENTS = auto()
     TOGGLE_DATA_POINT = auto()
     TOGGLE_PLOT_SERIES = auto()
     UNBLOCK_KEYBINDINGS = auto()
@@ -196,7 +208,9 @@ def register(signal: Signal, callback: Callable) -> int:
 
 
 def unregister(
-    signal: Signal, callback: Optional[Callable] = None, uuid: Optional[int] = None
+    signal: Signal,
+    callback: Optional[Callable] = None,
+    uuid: Optional[int] = None,
 ):
     if DEBUG:
         print(f"\nsignals.unregister: {str(signal)}")

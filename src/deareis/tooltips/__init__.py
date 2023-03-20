@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,16 +18,18 @@
 # the LICENSES folder.
 
 import dearpygui.dearpygui as dpg
-from .general import general
-from .data_sets import data_sets
-from .kramers_kronig import kramers_kronig
-from .fitting import fitting
-from .simulation import simulation
-from .plotting import plotting
+from .batch_analysis import batch_analysis
 from .circuit_editor import circuit_editor
-from .recent_projects import recent_projects
-from .home import home
+from .data_sets import data_sets
 from .drt import drt
+from .fitting import fitting
+from .general import general
+from .home import home
+from .kramers_kronig import kramers_kronig
+from .plotting import plotting
+from .recent_projects import recent_projects
+from .simulation import simulation
+from .zhit import zhit
 
 
 def update_tooltip(tag: int, msg: str, wrap: bool = True):

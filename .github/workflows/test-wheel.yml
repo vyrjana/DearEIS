@@ -1,10 +1,6 @@
 name: build
 
 on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
-
   schedule:
     - cron: '0 12 1 * *'
 
@@ -31,6 +27,10 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install build
 
+    - name: Run pre-build script
+      run: |
+        python ./pre-build.py
+
     - name: Build wheel
       run: python -m build
 
@@ -44,7 +44,7 @@ jobs:
         tar --list -f ./dist/*.tar.gz | grep "deareis/gui/licenses/LICENSE-DearEIS.txt"
         dist="$(tar --list -f ./dist/*.tar.gz | grep "deareis/gui/licenses/LICENSE-.*\.txt" | sort)"
         repo="$(ls LICENSES | grep "LICENSE-.*.txt" | sort)"
-        python -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
+        python -c "from sys import argv; from os.path import basename; dist = set(list(map(basename, argv[1].split('\n')))); dist.remove('LICENSE-DearEIS.txt'); repo = set(list(map(basename, argv[2].split('\n')))); assert dist == repo, 'Incorrect set of bundled licenses! An extra .txt file has probably been left in the \'/src/deareis/gui/licenses\' folder.'; list(map(print, sorted(dist)))" "$dist" "$repo"
 
     - name: Check wheel contents
       run: |
@@ -56,7 +56,7 @@ jobs:
         unzip -Z1 ./dist/*.whl | grep "deareis/gui/licenses/LICENSE-DearEIS.txt"
         dist="$(unzip -Z1 ./dist/*.whl | grep "deareis/gui/licenses/LICENSE-.*\.txt" | sort)"
         repo="$(ls LICENSES | grep "LICENSE-.*.txt" | sort)"
-        python -c "from sys import argv; from os.path import basename; dist = list(map(basename, argv[1].split('\n'))); dist.remove('LICENSE-DearEIS.txt'); repo = list(map(basename, argv[2].split('\n'))); assert dist == repo; list(map(print, dist))" "$dist" "$repo"
+        python -c "from sys import argv; from os.path import basename; dist = set(list(map(basename, argv[1].split('\n')))); dist.remove('LICENSE-DearEIS.txt'); repo = set(list(map(basename, argv[2].split('\n')))); assert dist == repo, 'Incorrect set of bundled licenses! An extra .txt file has probably been left in the \'/src/deareis/gui/licenses\' folder.'; list(map(print, sorted(dist)))" "$dist" "$repo"
 
     - name: Install wheel
       working-directory: ./dist

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 # the LICENSES folder.
 
 from dataclasses import dataclass
+from inspect import signature
 from typing import (
     Callable,
     Dict,
@@ -31,10 +32,18 @@ from numpy import (
     array,
     integer,
     issubdtype,
-    ndarray,
+)
+from pyimpspec.typing import (
+    ComplexImpedances,
+    Frequencies,
+    Gammas,
+    Impedances,
+    Phases,
+    TimeConstants,
 )
 from deareis.data import DataSet
 from deareis.data.kramers_kronig import TestResult
+from deareis.data.zhit import ZHITResult
 from deareis.data.drt import DRTResult
 from deareis.data.fitting import FitResult
 from deareis.data.simulation import SimulationResult
@@ -59,7 +68,7 @@ class PlotSeries:
     A class that represents the data used to plot an item/series.
     """
 
-    data: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+    data: Union[DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult]
     label: str
     color: Tuple[float, float, float, float]
     marker: int
@@ -72,48 +81,56 @@ class PlotSeries:
     def get_label(self) -> str:
         return self.label
 
-    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
-        if type(self.data) is DataSet or type(self.data) is DRTResult:
-            return self.data.get_frequency()
-        return self.data.get_frequency(num_per_decade=num_per_decade)
+    def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
+        if "num_per_decade" not in signature(self.data.get_frequencies).parameters:
+            return self.data.get_frequencies()
+        return self.data.get_frequencies(num_per_decade=num_per_decade)
 
-    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
-        if type(self.data) is DataSet or type(self.data) is DRTResult:
-            return self.data.get_impedance()
-        return self.data.get_impedance(num_per_decade=num_per_decade)
+    def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
+        if "num_per_decade" not in signature(self.data.get_impedances).parameters:
+            return self.data.get_impedances()
+        return self.data.get_impedances(num_per_decade=num_per_decade)
 
-    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
-        if type(self.data) is DataSet or type(self.data) is DRTResult:
+    def get_nyquist_data(
+        self, num_per_decade: int = -1
+    ) -> Tuple[Impedances, Impedances]:
+        if "num_per_decade" not in signature(self.data.get_nyquist_data).parameters:
             return self.data.get_nyquist_data()
         return self.data.get_nyquist_data(num_per_decade=num_per_decade)
 
     def get_bode_data(
         self,
         num_per_decade: int = -1,
-    ) -> Tuple[ndarray, ndarray, ndarray]:
-        if type(self.data) is DataSet or type(self.data) is DRTResult:
+    ) -> Tuple[Frequencies, Impedances, Phases]:
+        if "num_per_decade" not in signature(self.data.get_bode_data).parameters:
             return self.data.get_bode_data()
         return self.data.get_bode_data(num_per_decade=num_per_decade)
 
-    def get_tau(self) -> ndarray:
+    def get_time_constants(self) -> TimeConstants:
         if type(self.data) is not DRTResult:
             return array([])
-        return self.data.get_tau()
+        return self.data.get_time_constants()
 
-    def get_gamma(self, imaginary: bool = False) -> ndarray:
-        if type(self.data) is not DRTResult:
-            return array([])
-        return self.data.get_gamma(imaginary=imaginary)
-
-    def get_drt_data(self, imaginary: bool = False) -> Tuple[ndarray, ndarray]:
+    def get_gammas(self) -> Tuple[Gammas, Gammas]:
         if type(self.data) is not DRTResult:
             return (
                 array([]),
                 array([]),
             )
-        return self.data.get_drt_data(imaginary=imaginary)
+        return self.data.get_gammas()
 
-    def get_drt_credible_intervals(self) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
+    def get_drt_data(self) -> Tuple[TimeConstants, Gammas, Gammas]:
+        if not isinstance(self.data, DRTResult):
+            return (
+                array([]),
+                array([]),
+                array([]),
+            )
+        return self.data.get_drt_data()
+
+    def get_drt_credible_intervals_data(
+        self,
+    ) -> Tuple[TimeConstants, Gammas, Gammas, Gammas]:
         if type(self.data) is not DRTResult:
             return (
                 array([]),
@@ -121,7 +138,7 @@ class PlotSeries:
                 array([]),
                 array([]),
             )
-        return self.data.get_drt_credible_intervals()
+        return self.data.get_drt_credible_intervals_data()
 
     def get_color(self) -> Tuple[float, float, float, float]:
         return self.color
@@ -325,6 +342,12 @@ class PlotSettings:
             "themes": self.themes.copy() if session else {k: -1 for k in self.themes},
         }
 
+    def get_num_series(self) -> int:
+        return len(self.series_order)
+
+    def get_series_uuids(self) -> List[str]:
+        return self.series_order[:]
+
     def get_label(self) -> str:
         return self.plot_label
 
@@ -391,17 +414,24 @@ class PlotSettings:
 
     def add_series(
         self,
-        series: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult],
+        series: Union[
+            DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult
+        ],
     ):
         # TODO: Refactor so that series is replaced by uuid?
         # Include the type as another argument to determine whether or not a line should be drawn?
-        assert (
-            type(series) is DataSet
-            or type(series) is TestResult
-            or type(series) is DRTResult
-            or type(series) is FitResult
-            or type(series) is SimulationResult
-        ), series
+        for Class in [
+            DataSet,
+            TestResult,
+            ZHITResult,
+            DRTResult,
+            FitResult,
+            SimulationResult,
+        ]:
+            if isinstance(series, Class):
+                break
+        else:
+            raise NotImplementedError(f"Unsupported series type: '{type(series)}'")
         uuid: str = series.uuid
         if uuid in self.series_order:
             return
@@ -430,15 +460,18 @@ class PlotSettings:
     def find_series(
         self,
         uuid: str,
-        datasets: List[DataSet],
+        data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
-    ) -> Optional[Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]]:
+    ) -> Optional[
+        Union[DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult]
+    ]:
         def find_dataset() -> Optional[DataSet]:
             data: DataSet
-            for data in datasets:
+            for data in data_sets:
                 if data.uuid == uuid:
                     return data
             return None
@@ -448,6 +481,13 @@ class PlotSettings:
             for test in [test for _ in tests.values() for test in _]:
                 if test.uuid == uuid:
                     return test
+            return None
+
+        def find_zhit() -> Optional[ZHITResult]:
+            zhit: ZHITResult
+            for zhit in [zhit for _ in zhits.values() for zhit in _]:
+                if zhit.uuid == uuid:
+                    return zhit
             return None
 
         def find_drt() -> Optional[DRTResult]:
@@ -477,6 +517,9 @@ class PlotSettings:
         test: Optional[TestResult] = find_test()
         if test is not None:
             return test
+        zhit: Optional[ZHITResult] = find_zhit()
+        if zhit is not None:
+            return zhit
         drt: Optional[DRTResult] = find_drt()
         if drt is not None:
             return drt

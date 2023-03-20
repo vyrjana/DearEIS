@@ -1,0 +1,157 @@
+# DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
+# Copyright 2023 DearEIS developers
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# The licenses of DearEIS' dependencies and/or sources of portions of code are included in
+# the LICENSES folder.
+
+from traceback import format_exc
+from typing import (
+    List,
+    Optional,
+)
+from numpy import (
+    array,
+    ndarray,
+)
+from pyimpspec.exceptions import ZHITError
+import deareis.api.zhit as api
+from deareis.data import (
+    DataSet,
+    PlotSettings,
+    Project,
+    ZHITResult,
+    ZHITSettings,
+)
+from deareis.gui import ProjectTab
+from deareis.gui.zhit.weights_preview import WeightsPreview
+from deareis.signals import Signal
+import deareis.signals as signals
+from deareis.state import STATE
+
+
+def select_zhit_result(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    zhit: Optional[ZHITResult] = kwargs.get("zhit")
+    data: Optional[DataSet] = kwargs.get("data")
+    if data is None or zhit is None:
+        return
+    is_busy_message_visible: bool = STATE.is_busy_message_visible()
+    if not is_busy_message_visible:
+        signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading Z-HIT result")
+    project_tab.select_zhit_result(zhit, data)
+    if not is_busy_message_visible:
+        signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
+
+def delete_zhit_result(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    zhit: Optional[ZHITResult] = kwargs.get("zhit")
+    data: Optional[DataSet] = kwargs.get("data")
+    if data is None or zhit is None:
+        return
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting Z-HIT result")
+    settings: Optional[PlotSettings] = project_tab.get_active_plot()
+    update_plot: bool = (
+        zhit.uuid in settings.series_order if settings is not None else False
+    )
+    project.delete_zhit(
+        data=data,
+        zhit=zhit,
+    )
+    project_tab.populate_zhits(project, data)
+    if settings is not None:
+        project_tab.plotting_tab.populate_zhits(
+            project.get_all_zhits(),
+            project.get_data_sets(),
+            settings,
+        )
+    if update_plot:
+        signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
+
+def apply_zhit_settings(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    settings: Optional[ZHITSettings] = kwargs.get("settings")
+    if settings is None:
+        return
+    project_tab.set_zhit_settings(settings)
+
+
+def perform_zhit(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    data: Optional[DataSet] = kwargs.get("data")
+    settings: Optional[ZHITSettings] = kwargs.get("settings")
+    if data is None or settings is None:
+        return
+    assert data.get_num_points() > 0, "There are no data points to analyze!"
+    batch: bool = kwargs.get("batch", False)
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing Z-HIT analysis")
+    try:
+        zhit: ZHITResult = api.perform_zhit(
+            data=data,
+            settings=settings,
+            num_procs=STATE.config.num_procs or -1,
+        )
+    except ZHITError:
+        signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
+        return
+    project.add_zhit(
+        data=data,
+        zhit=zhit,
+    )
+    project_tab.populate_zhits(project, data)
+    project_tab.plotting_tab.populate_zhits(
+        project.get_all_zhits(),
+        project.get_data_sets(),
+        project_tab.get_active_plot(),
+    )
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    if batch is False:
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+
+
+def preview_zhit_weights(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    data: Optional[DataSet] = project_tab.get_active_data_set()
+    settings: Optional[ZHITSettings] = kwargs.get("settings")
+    if data is None or settings is None:
+        return
+    preview_window: WeightsPreview = WeightsPreview(
+        data=data,
+        settings=settings,
+    )
+    signals.emit(
+        Signal.BLOCK_KEYBINDINGS,
+        window=preview_window.window,
+        window_object=preview_window,
+    )

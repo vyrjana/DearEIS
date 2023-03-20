@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ from deareis.gui.kramers_kronig import KramersKronigTab
 from deareis.gui.overview import OverviewTab
 from deareis.gui.plotting import PlottingTab
 from deareis.gui.simulation import SimulationTab
+from deareis.gui.zhit import ZHITTab
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.enums import (
@@ -50,9 +51,12 @@ from deareis.data import (
     SimulationSettings,
     TestResult,
     TestSettings,
+    ZHITResult,
+    ZHITSettings,
 )
 import deareis.themes as themes
 from deareis.keybindings import Context
+from deareis.utility import pad_tab_labels
 
 
 class ProjectTab:
@@ -89,15 +93,18 @@ class ProjectTab:
                 self.overview_tab: OverviewTab = OverviewTab()
                 self.data_sets_tab: DataSetsTab = DataSetsTab()
                 self.kramers_kronig_tab: KramersKronigTab = KramersKronigTab(state)
+                self.zhit_tab: ZHITTab = ZHITTab(state)
                 self.drt_tab: DRTTab = DRTTab(state)
                 self.fitting_tab: FittingTab = FittingTab(state)
                 self.simulation_tab: SimulationTab = SimulationTab(state)
                 self.plotting_tab: PlottingTab = PlottingTab(state)
+            pad_tab_labels(self.tab_bar)
             tab_lookup.update(
                 {
                     self.overview_tab.tab: self.overview_tab,
                     self.data_sets_tab.tab: self.data_sets_tab,
                     self.kramers_kronig_tab.tab: self.kramers_kronig_tab,
+                    self.zhit_tab.tab: self.zhit_tab,
                     self.drt_tab.tab: self.drt_tab,
                     self.fitting_tab.tab: self.fitting_tab,
                     self.simulation_tab.tab: self.simulation_tab,
@@ -109,6 +116,7 @@ class ProjectTab:
                     self.overview_tab.tab: Context.OVERVIEW_TAB,
                     self.data_sets_tab.tab: Context.DATA_SETS_TAB,
                     self.kramers_kronig_tab.tab: Context.KRAMERS_KRONIG_TAB,
+                    self.zhit_tab.tab: Context.ZHIT_TAB,
                     self.drt_tab.tab: Context.DRT_TAB,
                     self.fitting_tab.tab: Context.FITTING_TAB,
                     self.simulation_tab.tab: Context.SIMULATION_TAB,
@@ -140,6 +148,7 @@ class ProjectTab:
         assert type(height) is int and height > 0, height
         self.data_sets_tab.resize(width, height)
         self.kramers_kronig_tab.resize(width, height)
+        self.zhit_tab.resize(width, height)
         self.drt_tab.resize(width, height)
         self.fitting_tab.resize(width, height)
         self.simulation_tab.resize(width, height)
@@ -173,7 +182,8 @@ class ProjectTab:
         return self.context_lookup[dpg.get_value(self.tab_bar)]
 
     def get_active_data_set(
-        self, context: Optional[Context] = None
+        self,
+        context: Optional[Context] = None,
     ) -> Optional[DataSet]:
         assert type(context) is Context or context is None, context
         tag: Optional[int] = None
@@ -181,24 +191,29 @@ class ProjectTab:
             tag = {
                 Context.DATA_SETS_TAB: self.data_sets_tab.delete_button,
                 Context.KRAMERS_KRONIG_TAB: self.kramers_kronig_tab.perform_test_button,
+                Context.ZHIT_TAB: self.zhit_tab.perform_zhit_button,
                 Context.DRT_TAB: self.drt_tab.perform_drt_button,
                 Context.FITTING_TAB: self.fitting_tab.perform_fit_button,
                 Context.SIMULATION_TAB: self.simulation_tab.perform_sim_button,
-            }.get(context)
+            }.get(context, self.data_sets_tab.delete_button)
         else:
             tag = {
                 self.data_sets_tab.tab: self.data_sets_tab.delete_button,
                 self.kramers_kronig_tab.tab: self.kramers_kronig_tab.perform_test_button,
+                self.zhit_tab.tab: self.zhit_tab.perform_zhit_button,
                 self.drt_tab.tab: self.drt_tab.perform_drt_button,
                 self.fitting_tab.tab: self.fitting_tab.perform_fit_button,
                 self.simulation_tab.tab: self.simulation_tab.perform_sim_button,
-            }.get(dpg.get_value(self.tab_bar))
+            }.get(dpg.get_value(self.tab_bar), self.data_sets_tab.delete_button)
         if tag is None:
             return None
         return dpg.get_item_user_data(tag)
 
     def get_active_test(self) -> Optional[TestResult]:
         return dpg.get_item_user_data(self.kramers_kronig_tab.delete_button).get("test")
+
+    def get_active_zhit(self) -> Optional[ZHITResult]:
+        return dpg.get_item_user_data(self.zhit_tab.delete_button).get("zhit")
 
     def get_active_drt(self) -> Optional[DRTResult]:
         return dpg.get_item_user_data(self.drt_tab.delete_button).get("drt")
@@ -221,6 +236,9 @@ class ProjectTab:
     def select_kramers_kronig_tab(self):
         dpg.set_value(self.tab_bar, self.kramers_kronig_tab.tab)
 
+    def select_zhit_tab(self):
+        dpg.set_value(self.tab_bar, self.zhit_tab.tab)
+
     def select_drt_tab(self):
         dpg.set_value(self.tab_bar, self.drt_tab.tab)
 
@@ -235,7 +253,7 @@ class ProjectTab:
 
     def set_label(self, label: str):
         assert type(label) is str and label != "", label
-        dpg.set_item_label(self.tab, label)
+        dpg.set_item_label(self.tab, label.ljust(10))
         self.overview_tab.set_label(label)
 
     def get_notes(self) -> str:
@@ -255,6 +273,7 @@ class ProjectTab:
         labels: List[str] = list(lookup.keys())
         self.data_sets_tab.populate_data_sets(labels, lookup)
         self.kramers_kronig_tab.populate_data_sets(labels, lookup)
+        self.zhit_tab.populate_data_sets(labels, lookup)
         self.drt_tab.populate_data_sets(labels, lookup)
         self.fitting_tab.populate_data_sets(labels, lookup)
         self.simulation_tab.populate_data_sets(labels, lookup)
@@ -264,6 +283,16 @@ class ProjectTab:
         assert type(data) is DataSet or data is None, data
         self.kramers_kronig_tab.populate_tests(
             {_.get_label(): _ for _ in project.get_tests(data)}
+            if data is not None
+            else {},
+            data,
+        )
+
+    def populate_zhits(self, project: Project, data: Optional[DataSet]):
+        assert type(project) is Project, project
+        assert type(data) is DataSet or data is None, data
+        self.zhit_tab.populate_zhits(
+            {_.get_label(): _ for _ in project.get_zhits(data)}
             if data is not None
             else {},
             data,
@@ -310,6 +339,7 @@ class ProjectTab:
         assert type(data) is DataSet or data is None, data
         self.data_sets_tab.select_data_set(data)
         self.kramers_kronig_tab.select_test_result(None, data)
+        self.zhit_tab.select_zhit_result(None, data)
         self.drt_tab.select_drt_result(None, data)
         self.fitting_tab.select_fit_result(None, data)
 
@@ -318,6 +348,8 @@ class ProjectTab:
             return self.data_sets_tab.get_next_data_set()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.get_next_data_set()
+        elif context == Context.ZHIT_TAB:
+            return self.zhit_tab.get_next_data_set()
         elif context == Context.DRT_TAB:
             return self.drt_tab.get_next_data_set()
         elif context == Context.FITTING_TAB:
@@ -329,6 +361,8 @@ class ProjectTab:
             return self.data_sets_tab.get_previous_data_set()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.get_previous_data_set()
+        elif context == Context.ZHIT_TAB:
+            return self.zhit_tab.get_previous_data_set()
         elif context == Context.DRT_TAB:
             return self.drt_tab.get_previous_data_set()
         elif context == Context.FITTING_TAB:
@@ -346,6 +380,12 @@ class ProjectTab:
 
     def get_previous_test_result(self) -> Optional[TestResult]:
         return self.kramers_kronig_tab.get_previous_result()
+
+    def get_next_zhit_result(self) -> Optional[ZHITResult]:
+        return self.zhit_tab.get_next_result()
+
+    def get_previous_zhit_result(self) -> Optional[ZHITResult]:
+        return self.zhit_tab.get_previous_result()
 
     def get_next_drt_result(self) -> Optional[DRTResult]:
         return self.drt_tab.get_next_result()
@@ -382,6 +422,11 @@ class ProjectTab:
         assert type(data) is DataSet, data
         self.kramers_kronig_tab.select_test_result(test, data)
 
+    def select_zhit_result(self, zhit: ZHITResult, data: DataSet):
+        assert type(zhit) is ZHITResult, zhit
+        assert type(data) is DataSet, data
+        self.zhit_tab.select_zhit_result(zhit, data)
+
     def select_drt_result(self, drt: DRTResult, data: DataSet):
         assert type(drt) is DRTResult, drt
         assert type(data) is DataSet, data
@@ -393,7 +438,9 @@ class ProjectTab:
         self.fitting_tab.select_fit_result(fit, data)
 
     def select_simulation_result(
-        self, simulation: Optional[SimulationResult], data: Optional[DataSet]
+        self,
+        simulation: Optional[SimulationResult],
+        data: Optional[DataSet],
     ):
         assert type(simulation) is SimulationResult or simulation is None, simulation
         assert type(data) is DataSet or data is None, data
@@ -404,6 +451,7 @@ class ProjectTab:
         settings: PlotSettings,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -413,20 +461,22 @@ class ProjectTab:
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(adjust_limits) is bool, adjust_limits
         assert type(plot_only) is bool, plot_only
         self.plotting_tab.select_plot(
-            settings,
-            data_sets,
-            tests,
-            drts,
-            fits,
-            simulations,
-            adjust_limits,
-            plot_only,
+            settings=settings,
+            data_sets=data_sets,
+            tests=tests,
+            zhits=zhits,
+            drts=drts,
+            fits=fits,
+            simulations=simulations,
+            adjust_limits=adjust_limits,
+            plot_only=plot_only,
         )
 
     def select_plot_type(self, plot_type: PlotType):
@@ -444,6 +494,13 @@ class ProjectTab:
     def set_test_settings(self, settings: TestSettings):
         assert type(settings) is TestSettings, settings
         self.kramers_kronig_tab.set_settings(settings)
+
+    def get_zhit_settings(self) -> ZHITSettings:
+        return self.zhit_tab.get_settings()
+
+    def set_zhit_settings(self, settings: ZHITSettings):
+        assert isinstance(settings, ZHITSettings), settings
+        self.zhit_tab.set_settings(settings)
 
     def get_fit_settings(self) -> FitSettings:
         return self.fitting_tab.get_settings()
@@ -470,6 +527,8 @@ class ProjectTab:
         {
             self.data_sets_tab.tab: self.data_sets_tab.show_enlarged_nyquist,
             self.kramers_kronig_tab.tab: self.kramers_kronig_tab.show_enlarged_nyquist,
+            self.zhit_tab.tab: self.zhit_tab.show_enlarged_nyquist,
+            self.drt_tab.tab: self.drt_tab.show_enlarged_nyquist,
             self.fitting_tab.tab: self.fitting_tab.show_enlarged_nyquist,
             self.simulation_tab.tab: self.simulation_tab.show_enlarged_nyquist,
         }.get(dpg.get_value(self.tab_bar))()
@@ -478,6 +537,8 @@ class ProjectTab:
         {
             self.data_sets_tab.tab: self.data_sets_tab.show_enlarged_bode,
             self.kramers_kronig_tab.tab: self.kramers_kronig_tab.show_enlarged_bode,
+            self.zhit_tab.tab: self.zhit_tab.show_enlarged_bode,
+            self.drt_tab.tab: self.drt_tab.show_enlarged_bode,
             self.fitting_tab.tab: self.fitting_tab.show_enlarged_bode,
             self.simulation_tab.tab: self.simulation_tab.show_enlarged_bode,
         }.get(dpg.get_value(self.tab_bar))()
@@ -485,6 +546,7 @@ class ProjectTab:
     def show_enlarged_residuals(self):
         {
             self.kramers_kronig_tab.tab: self.kramers_kronig_tab.show_enlarged_residuals,
+            self.zhit_tab.tab: self.zhit_tab.show_enlarged_residuals,
             self.drt_tab.tab: self.drt_tab.show_enlarged_residuals,
             self.fitting_tab.tab: self.fitting_tab.show_enlarged_residuals,
         }.get(dpg.get_value(self.tab_bar))()
@@ -496,14 +558,40 @@ class ProjectTab:
 
     def show_enlarged_impedance(self):
         {
+            self.data_sets_tab.tab: self.data_sets_tab.show_enlarged_impedance,
+            self.kramers_kronig_tab.tab: self.kramers_kronig_tab.show_enlarged_impedance,
+            self.zhit_tab.tab: self.zhit_tab.show_enlarged_impedance,
             self.drt_tab.tab: self.drt_tab.show_enlarged_impedance,
+            self.fitting_tab.tab: self.fitting_tab.show_enlarged_impedance,
+            self.simulation_tab.tab: self.simulation_tab.show_enlarged_impedance,
         }.get(dpg.get_value(self.tab_bar))()
+
+    def next_plot_tab(self, context: Context):
+        {
+            Context.DATA_SETS_TAB: self.data_sets_tab,
+            Context.KRAMERS_KRONIG_TAB: self.kramers_kronig_tab,
+            Context.ZHIT_TAB: self.zhit_tab,
+            Context.DRT_TAB: self.drt_tab,
+            Context.FITTING_TAB: self.fitting_tab,
+            Context.SIMULATION_TAB: self.simulation_tab,
+        }[context].next_plot_tab()
+
+    def previous_plot_tab(self, context: Context):
+        {
+            Context.DATA_SETS_TAB: self.data_sets_tab,
+            Context.KRAMERS_KRONIG_TAB: self.kramers_kronig_tab,
+            Context.ZHIT_TAB: self.zhit_tab,
+            Context.DRT_TAB: self.drt_tab,
+            Context.FITTING_TAB: self.fitting_tab,
+            Context.SIMULATION_TAB: self.simulation_tab,
+        }[context].previous_plot_tab()
 
     def update_plots(
         self,
         settings: PlotSettings,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -511,12 +599,14 @@ class ProjectTab:
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         self.plotting_tab.plot_series(
             data_sets,
             tests,
+            zhits,
             drts,
             fits,
             simulations,
@@ -545,16 +635,20 @@ class ProjectTab:
 
     def get_bode_plot(self, context: Context) -> Optional[Plot]:
         if context == Context.KRAMERS_KRONIG_TAB:
-            return self.kramers_kronig_tab.bode_plot_horizontal
+            return self.kramers_kronig_tab.bode_plot
+        elif context == Context.ZHIT_TAB:
+            return self.zhit_tab.bode_plot
         elif context == Context.FITTING_TAB:
-            return self.fitting_tab.bode_plot_horizontal
+            return self.fitting_tab.bode_plot
         elif context == Context.SIMULATION_TAB:
-            return self.simulation_tab.bode_plot_horizontal
+            return self.simulation_tab.bode_plot
         return None
 
     def get_residuals_plot(self, context: Context) -> Optional[Plot]:
         if context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.residuals_plot
+        elif context == Context.ZHIT_TAB:
+            return self.zhit_tab.residuals_plot
         elif context == Context.DRT_TAB:
             return self.drt_tab.residuals_plot
         elif context == Context.FITTING_TAB:
@@ -573,6 +667,7 @@ class ProjectTab:
     ) -> Tuple[
         List[DataSet],
         List[TestResult],
+        List[ZHITResult],
         List[DRTResult],
         List[FitResult],
         List[SimulationResult],
@@ -581,6 +676,7 @@ class ProjectTab:
         return (
             self.plotting_tab.possible_data_sets.filter(string, False),
             self.plotting_tab.possible_tests.filter(string, False),
+            self.plotting_tab.possible_zhits.filter(string, False),
             self.plotting_tab.possible_drts.filter(string, False),
             self.plotting_tab.possible_fits.filter(string, False),
             self.plotting_tab.possible_simulations.filter(string, False),
@@ -596,6 +692,8 @@ class ProjectTab:
             return self.data_sets_tab.has_active_input()
         elif context == Context.KRAMERS_KRONIG_TAB:
             return self.kramers_kronig_tab.has_active_input()
+        elif context == Context.ZHIT_TAB:
+            return self.zhit_tab.has_active_input()
         elif context == Context.DRT_TAB:
             return self.drt_tab.has_active_input()
         elif context == Context.FITTING_TAB:

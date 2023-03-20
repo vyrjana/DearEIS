@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,16 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 import dearpygui.dearpygui as dpg
 from pyimpspec import Circuit
-from deareis.gui.circuit_editor.parser import Parser
+from deareis.gui.circuit_editor.parser import (
+    Node,
+    Parser,
+)
 
 
 class CircuitPreview:
@@ -39,7 +45,14 @@ class CircuitPreview:
         dpg.delete_item(self.node_editor, children_only=True)
 
     def update(self, circuit: Optional[Circuit]):
+        self.parser.unblock_linking()
         self.clear()
         if circuit is None:
             return
-        self.parser.circuit_to_nodes(circuit)
+        self.parser.circuit_to_nodes(circuit, y_step=50)
+        self.parser.block_linking()
+        nodes: List[Node] = [self.parser.we_node, self.parser.cere_node]
+        nodes.extend(self.parser.nodes)
+        node: Node
+        for node in nodes:
+            node.set_preview()

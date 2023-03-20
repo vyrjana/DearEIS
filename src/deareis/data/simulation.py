@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ from numpy import (
     angle,
     integer,
     issubdtype,
-    ndarray,
 )
 from pandas import DataFrame
 from pyimpspec import (
@@ -36,7 +35,13 @@ from pyimpspec import (
     Element,
 )
 import pyimpspec
-from pyimpspec.analysis.fitting import _interpolate
+from pyimpspec import (
+    ComplexImpedances,
+    Frequencies,
+    Impedances,
+    Phases,
+)
+from pyimpspec.analysis.utility import _interpolate
 from deareis.utility import format_timestamp
 
 
@@ -167,12 +172,12 @@ class SimulationResult:
     settings: SimulationSettings
 
     def __post_init__(self):
-        self._cached_frequency: Dict[int, ndarray] = {}
-        self._cached_impedance: Dict[int, ndarray] = {}
-        self._frequency: ndarray = self.get_frequency(
+        self._cached_frequencies: Dict[int, Frequencies] = {}
+        self._cached_impedances: Dict[int, ComplexImpedances] = {}
+        self._frequency: Frequencies = self.get_frequencies(
             num_per_decade=self.settings.num_per_decade
         )
-        self._impedance: ndarray = self.get_impedance(
+        self._impedance: ComplexImpedances = self.get_impedances(
             num_per_decade=self.settings.num_per_decade
         )
 
@@ -203,7 +208,7 @@ class SimulationResult:
             "version": VERSION,
             "uuid": self.uuid,
             "timestamp": self.timestamp,
-            "circuit": self.circuit.to_string(12),
+            "circuit": self.circuit.serialize(),
             "settings": self.settings.to_dict(),
         }
 
@@ -214,15 +219,26 @@ class SimulationResult:
         element_labels: List[str] = []
         parameter_labels: List[str] = []
         values: List[float] = []
+        internal_identifiers: Dict[int, Element] = {
+            v: k
+            for k, v in self.circuit.generate_element_identifiers(running=True).items()
+        }
+        external_identifiers: Dict[
+            Element, int
+        ] = self.circuit.generate_element_identifiers(running=False)
         element: Element
-        for element in sorted(
-            self.circuit.get_elements(flattened=True),
-            key=lambda _: _.get_identifier(),
+        ident: int
+        for (ident, element) in sorted(
+            internal_identifiers.items(),
+            key=lambda _: _[0],
         ):
-            parameters: Dict[str, float] = element.get_parameters()
+            element_label: str = self.circuit.get_element_name(
+                element, identifiers=external_identifiers
+            )
+            parameters: Dict[str, float] = element.get_values()
             parameter_label: str
             for parameter_label in sorted(parameters.keys()):
-                element_labels.append(element.get_label())
+                element_labels.append(element_label)
                 parameter_labels.append(parameter_label)
                 values.append(parameters[parameter_label])
         return DataFrame.from_dict(
@@ -237,17 +253,13 @@ class SimulationResult:
         """
         Generate a label for the result.
         """
-        cdc: str = self.settings.cdc
-        while "{" in cdc:
-            i: int = cdc.find("{")
-            j: int = cdc.find("}")
-            cdc = cdc.replace(cdc[i : j + 1], "")
+        cdc: str = self.circuit.to_string()
         if cdc.startswith("[") and cdc.endswith("]"):
             cdc = cdc[1:-1]
         timestamp: str = format_timestamp(self.timestamp)
         return f"{cdc} ({timestamp})"
 
-    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+    def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
         """
         Get an array of frequencies within the range of simulated frequencies.
 
@@ -255,19 +267,23 @@ class SimulationResult:
         ----------
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies defined by the minimum and maximum frequencies used to generate the original simulation result.
+
+        Returns
+        -------
+        Frequencies
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            if num_per_decade not in self._cached_frequency:
-                self._cached_frequency.clear()
-                self._cached_frequency[num_per_decade] = _interpolate(
+            if num_per_decade not in self._cached_frequencies:
+                self._cached_frequencies.clear()
+                self._cached_frequencies[num_per_decade] = _interpolate(
                     [self.settings.min_frequency, self.settings.max_frequency],
                     num_per_decade,
                 )
-            return self._cached_frequency[num_per_decade]
+            return self._cached_frequencies[num_per_decade]
         return self._frequency
 
-    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+    def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
         """
         Get the complex impedances produced by the simulated circuit within the range of frequencies used to generate the original simulation result.
 
@@ -275,28 +291,37 @@ class SimulationResult:
         ----------
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of simulated frequencies and used to calculate the impedance produced by the simulated circuit.
+        Returns
+        -------
+        ComplexImpedances
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            if num_per_decade not in self._cached_impedance:
-                self._cached_impedance.clear()
-                self._cached_impedance[num_per_decade] = self.circuit.impedances(
-                    self.get_frequency(num_per_decade)
+            if num_per_decade not in self._cached_impedances:
+                self._cached_impedances.clear()
+                self._cached_impedances[num_per_decade] = self.circuit.get_impedances(
+                    self.get_frequencies(num_per_decade)
                 )
-            return self._cached_impedance[num_per_decade]
+            return self._cached_impedances[num_per_decade]
         return self._impedance
 
-    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+    def get_nyquist_data(
+        self, num_per_decade: int = -1
+    ) -> Tuple[Impedances, Impedances]:
         """
-        Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
+        Get the data required to plot the results as a Nyquist plot (-Im(Z) vs Re(Z)).
 
         Parameters
         ----------
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies and used to calculate the impedance produced by the simulated circuit.
+
+        Returns
+        -------
+        Tuple[Impedances, Impedances]
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
-        Z: ndarray = self.get_impedance(num_per_decade)
+        Z: ComplexImpedances = self.get_impedances(num_per_decade)
         return (
             Z.real,
             -Z.imag,
@@ -304,20 +329,71 @@ class SimulationResult:
 
     def get_bode_data(
         self, num_per_decade: int = -1
-    ) -> Tuple[ndarray, ndarray, ndarray]:
+    ) -> Tuple[Frequencies, Impedances, Phases]:
         """
-        Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
+        Get the data required to plot the results as a Bode plot (Mod(Z) and -Phase(Z) vs f).
 
         Parameters
         ----------
         num_per_decade: int = -1
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of frequencies and used to calculate the impedance produced by the fitted circuit.
+
+        Returns
+        -------
+        Tuple[Frequencies, Impedances, Phases]
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
-        f: ndarray = self.get_frequency(num_per_decade)
-        Z: ndarray = self.get_impedance(num_per_decade)
+        f: Frequencies = self.get_frequencies(num_per_decade)
+        Z: ComplexImpedances = self.get_impedances(num_per_decade)
         return (
             f,
             abs(Z),
             -angle(Z, deg=True),
+        )
+
+    def to_parameters_dataframe(self) -> DataFrame:
+        """
+        Get a `pandas.DataFrame` instance containing a table of element parameters.
+
+        Returns
+        -------
+        pandas.DataFrame
+        """
+        element_labels: List[str] = []
+        parameter_labels: List[str] = []
+        values: List[float] = []
+        units: List[str] = []
+        internal_identifiers: Dict[int, Element] = {
+            v: k
+            for k, v in self.circuit.generate_element_identifiers(running=True).items()
+        }
+        external_identifiers: Dict[
+            Element, int
+        ] = self.circuit.generate_element_identifiers(running=False)
+        element_label: str
+        parameters: Dict[int, Dict[str, float]]
+        element: Element
+        ident: int
+        for (ident, element) in sorted(
+            internal_identifiers.items(),
+            key=lambda _: _[0],
+        ):
+            element_label = self.circuit.get_element_name(
+                element,
+                identifiers=external_identifiers,
+            )
+            parameters = element.get_values()
+            parameter_label: str
+            for parameter_label in sorted(parameters.keys()):
+                element_labels.append(element_label)
+                parameter_labels.append(parameter_label)
+                values.append(parameters[parameter_label])
+                units.append(element.get_unit(parameter_label))
+        return DataFrame.from_dict(
+            {
+                "Element": element_labels,
+                "Parameter": parameter_labels,
+                "Value": values,
+                "Unit": units,
+            }
         )

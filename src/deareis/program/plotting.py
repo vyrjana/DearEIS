@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,9 +18,11 @@
 # the LICENSES folder.
 
 from os.path import exists, dirname
+from re import search
 from typing import (
     Dict,
     List,
+    Match,
     Optional,
     Tuple,
     Union,
@@ -38,6 +40,7 @@ from deareis.data import (
     Project,
     SimulationResult,
     TestResult,
+    ZHITResult,
 )
 from deareis.gui import ProjectTab
 from deareis.gui.file_dialog import FileDialog
@@ -62,15 +65,15 @@ def new_plot_settings(*args, **kwargs):
         i += 1
         label = f"Plot ({i})"
     settings: PlotSettings = PlotSettings(
-        label,
-        PlotType.NYQUIST,
-        [],
-        {},
-        {},
-        {},
-        {},
-        {},
-        uuid4().hex,
+        plot_label=label,
+        plot_type=PlotType.NYQUIST,
+        series_order=[],
+        labels={},
+        colors={},
+        markers={},
+        show_lines={},
+        themes={},
+        uuid=uuid4().hex,
     )
     project.add_plot(settings)
     project_tab.populate_plots(project)
@@ -205,12 +208,13 @@ def modify_plot_series_theme(*args, **kwargs):
         marker = themes.PLOT_MARKERS.get(label, -1)
         settings.set_series_marker(uuid, marker)  # type: ignore
         project_tab.update_plots(
-            settings,
-            project.get_data_sets(),
-            project.get_all_tests(),
-            project.get_all_drts(),
-            project.get_all_fits(),
-            project.get_simulations(),
+            settings=settings,
+            data_sets=project.get_data_sets(),
+            tests=project.get_all_tests(),
+            zhits=project.get_all_zhits(),
+            drts=project.get_all_drts(),
+            fits=project.get_all_fits(),
+            simulations=project.get_simulations(),
         )
         states[1] = hash_state()
 
@@ -223,12 +227,13 @@ def modify_plot_series_theme(*args, **kwargs):
         show_line = state
         settings.set_series_line(uuid, state)  # type: ignore
         project_tab.update_plots(
-            settings,
-            project.get_data_sets(),
-            project.get_all_tests(),
-            project.get_all_drts(),
-            project.get_all_fits(),
-            project.get_simulations(),
+            settings=settings,
+            data_sets=project.get_data_sets(),
+            tests=project.get_all_tests(),
+            zhits=project.get_all_zhits(),
+            drts=project.get_all_drts(),
+            fits=project.get_all_fits(),
+            simulations=project.get_simulations(),
         )
         states[1] = hash_state()
 
@@ -304,8 +309,8 @@ def export_plot(*args, **kwargs):
 
 
 def save_plot(*args, **kwargs):
-    fig = kwargs["figure"]  # Optional[matplotlib.figure.Figure]
-    if fig is None:
+    figure = kwargs["figure"]  # Optional[matplotlib.figure.Figure]
+    if figure is None:
         return
     STATE.close_plot_exporter()
 
@@ -314,7 +319,7 @@ def save_plot(*args, **kwargs):
         directory: str = dirname(path)
         if exists(directory):
             STATE.latest_plot_directory = directory
-        fig.savefig(path)
+        figure.savefig(path)
 
     FileDialog(
         cwd=STATE.latest_plot_directory,
@@ -384,12 +389,13 @@ def select_plot_settings(*args, **kwargs):
     if not is_busy_message_visible:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
     project_tab.select_plot(
-        settings,
-        project.get_data_sets(),
-        project.get_all_tests(),
-        project.get_all_drts(),
-        project.get_all_fits(),
-        project.get_simulations(),
+        settings=settings,
+        data_sets=project.get_data_sets(),
+        tests=project.get_all_tests(),
+        zhits=project.get_all_zhits(),
+        drts=project.get_all_drts(),
+        fits=project.get_all_fits(),
+        simulations=project.get_simulations(),
         adjust_limits=kwargs.get("adjust_limits", True),
         plot_only=kwargs.get("plot_only", False),
     )
@@ -427,6 +433,7 @@ def toggle_plot_series(*args, **kwargs):
     enabled: bool = kwargs.get("enabled", False)
     data_sets: Optional[List[DataSet]] = kwargs.get("data_sets")
     tests: Optional[List[TestResult]] = kwargs.get("tests")
+    zhits: Optional[List[ZHITResult]] = kwargs.get("zhits")
     drts: Optional[List[DRTResult]] = kwargs.get("drts")
     fits: Optional[List[FitResult]] = kwargs.get("fits")
     simulations: Optional[List[SimulationResult]] = kwargs.get("simulations")
@@ -440,6 +447,11 @@ def toggle_plot_series(*args, **kwargs):
             list(map(settings.add_series, tests))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), tests))
+    if zhits is not None:
+        if enabled:
+            list(map(settings.add_series, zhits))
+        else:
+            list(map(lambda _: settings.remove_series(_.uuid), zhits))
     if drts is not None:
         if enabled:
             list(map(settings.add_series, drts))
@@ -478,3 +490,31 @@ def delete_plot_settings(*args, **kwargs):
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=plots[0])
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
+
+def duplicate_plot_settings(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    settings: Optional[PlotSettings] = kwargs.get("settings")
+    if settings is None:
+        return
+    existing_labels: List[str] = list(map(lambda _: _.get_label(), project.get_plots()))
+    label: str = settings.get_label()
+    match: Optional[Match] = search(r"^(?P<label>.+?)\s+\((?P<num>\d+)\)$", label)
+    i: int = 1
+    if match is not None:
+        label = match.group("label")
+        i = int(match.group("num"))
+    while f"{label} ({i})" in existing_labels:
+        i += 1
+    label = f"{label} ({i})"
+    dictionary: dict = settings.to_dict(session=False)
+    dictionary["plot_label"] = label
+    dictionary["uuid"] = uuid4().hex
+    settings: PlotSettings = PlotSettings.from_dict(dictionary)
+    project.add_plot(settings)
+    project_tab.populate_plots(project)
+    signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

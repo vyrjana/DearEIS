@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from hashlib import sha1
 from typing import Dict
 from dataclasses import dataclass
 import dearpygui.dearpygui as dpg
@@ -180,6 +181,12 @@ class Keybinding:
     mod_ctrl: bool
     mod_shift: bool
     action: Action
+
+    def __post_init__(self):
+        self._hash: int = int(sha1(repr(self).encode()).hexdigest(), 16)
+
+    def __hash__(self) -> int:
+        return self._hash
 
     def __contains__(self, key: int) -> bool:
         assert key in dpg_to_string, key

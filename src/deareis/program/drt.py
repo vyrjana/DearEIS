@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,9 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from multiprocessing import cpu_count
 from typing import (
     Optional,
 )
-from pyimpspec.analysis.drt.bht import _get_default_num_procs
 import deareis.api.drt as api
 from deareis.data import (
     DRTResult,
@@ -104,14 +102,12 @@ def perform_drt(*args, **kwargs):
     assert (
         data.get_num_points() > 0
     ), "There are no data points to use to calculate the distribution of relaxation times!"
-    num_procs: int = _get_default_num_procs()
-    if num_procs > 1 and num_procs == cpu_count():
-        num_procs -= 1
+    batch: bool = kwargs.get("batch", False)
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing analysis")
     drt: DRTResult = api.calculate_drt(
         data=data,
         settings=settings,
-        num_procs=num_procs,
+        num_procs=STATE.config.num_procs or -1,
     )
     project.add_drt(data=data, drt=drt)
     project_tab.populate_drts(project, data)
@@ -120,5 +116,6 @@ def perform_drt(*args, **kwargs):
         project.get_data_sets(),
         project_tab.get_active_plot(),
     )
-    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    if batch is False:
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

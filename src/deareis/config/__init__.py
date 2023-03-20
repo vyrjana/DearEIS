@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ from deareis.data import (
     FitSettings,
     SimulationSettings,
     TestSettings,
+    ZHITSettings,
 )
 from deareis.enums import (
     Action,
@@ -64,6 +65,7 @@ from .defaults import (
     DEFAULT_MARKERS,
     DEFAULT_COLORS,
     DEFAULT_TEST_SETTINGS,
+    DEFAULT_ZHIT_SETTINGS,
     DEFAULT_FIT_SETTINGS,
     DEFAULT_SIMULATION_SETTINGS,
     DEFAULT_DRT_SETTINGS,
@@ -75,7 +77,9 @@ VERSION: int = 4
 
 
 def _parse_v4(dictionary: dict) -> dict:
-    # TODO: Update when VERSION is incremented to 4
+    # TODO: Update when VERSION is incremented
+    if "num_procs" not in dictionary:
+        dictionary["num_procs"] = 0
     return dictionary
 
 
@@ -107,48 +111,46 @@ def _parse_v3(dictionary: dict) -> dict:
     del dictionary["export_extension"]
     del dictionary["export_experimental_clear_registry"]
     del dictionary["export_experimental_disable_previews"]
-    return _parse_v4(dictionary)
+    return dictionary
 
 
 def _parse_v2(dictionary: dict) -> dict:
-    return _parse_v3(
-        {
-            "version": 3,
-            "auto_backup_interval": dictionary["auto_backup_interval"],
-            "num_per_decade_in_simulated_lines": dictionary[
-                "num_per_decade_in_simulated_lines"
-            ],
-            "markers": dictionary["markers"],
-            "colors": dictionary["colors"],
-            "default_test_settings": dictionary["default_test_settings"],
-            "default_fit_settings": dictionary["default_fit_settings"],
-            "default_drt_settings": dictionary.get(
-                "default_drt_settings",
-                DEFAULT_DRT_SETTINGS.to_dict(),
-            ),
-            "default_simulation_settings": dictionary["default_simulation_settings"],
-            "export_units": dictionary.get("export_units", 1),
-            "export_width": dictionary.get("export_width", 10.0),
-            "export_height": dictionary.get("export_height", 6.0),
-            "export_dpi": dictionary.get("export_dpi", 100),
-            "export_preview": dictionary.get("export_preview", 4),
-            "export_title": dictionary.get("export_title", True),
-            "export_legend": dictionary.get("export_legend", True),
-            "export_legend_location": dictionary.get("export_legend_location", 0),
-            "export_grid": dictionary.get("export_grid", False),
-            "export_tight": dictionary.get("export_tight", False),
-            "export_num_per_decade": dictionary.get("export_num_per_decade", 100),
-            "export_extension": dictionary.get("export_extension", 4),
-            "export_experimental_clear_registry": dictionary.get(
-                "export_experimental_clear_registry",
-                True,
-            ),
-            "export_experimental_disable_previews": dictionary.get(
-                "export_experimental_disable_previews",
-                False,
-            ),
-        }
-    )
+    return {
+        "version": 3,
+        "auto_backup_interval": dictionary["auto_backup_interval"],
+        "num_per_decade_in_simulated_lines": dictionary[
+            "num_per_decade_in_simulated_lines"
+        ],
+        "markers": dictionary["markers"],
+        "colors": dictionary["colors"],
+        "default_test_settings": dictionary["default_test_settings"],
+        "default_fit_settings": dictionary["default_fit_settings"],
+        "default_drt_settings": dictionary.get(
+            "default_drt_settings",
+            DEFAULT_DRT_SETTINGS.to_dict(),
+        ),
+        "default_simulation_settings": dictionary["default_simulation_settings"],
+        "export_units": dictionary.get("export_units", 1),
+        "export_width": dictionary.get("export_width", 10.0),
+        "export_height": dictionary.get("export_height", 6.0),
+        "export_dpi": dictionary.get("export_dpi", 100),
+        "export_preview": dictionary.get("export_preview", 4),
+        "export_title": dictionary.get("export_title", True),
+        "export_legend": dictionary.get("export_legend", True),
+        "export_legend_location": dictionary.get("export_legend_location", 0),
+        "export_grid": dictionary.get("export_grid", False),
+        "export_tight": dictionary.get("export_tight", False),
+        "export_num_per_decade": dictionary.get("export_num_per_decade", 100),
+        "export_extension": dictionary.get("export_extension", 4),
+        "export_experimental_clear_registry": dictionary.get(
+            "export_experimental_clear_registry",
+            True,
+        ),
+        "export_experimental_disable_previews": dictionary.get(
+            "export_experimental_disable_previews",
+            False,
+        ),
+    }
 
 
 def _parse_v1(dictionary: dict) -> dict:
@@ -175,21 +177,19 @@ def _parse_v1(dictionary: dict) -> dict:
         if old in markers:
             markers[new] = markers[old]
             del markers[old]
-    return _parse_v2(
-        {
-            "version": 2,
-            "auto_backup_interval": dictionary.get("auto_backup_interval", 10),
-            "num_per_decade_in_simulated_lines": dictionary[
-                "num_per_decade_in_simulated_lines"
-            ],
-            "markers": dictionary["markers"],
-            "colors": dictionary["colors"],
-            "default_test_settings": dictionary["default_test_settings"],
-            "default_fit_settings": dictionary["default_fit_settings"],
-            "default_drt_settings": DEFAULT_DRT_SETTINGS.to_dict(),
-            "default_simulation_settings": dictionary["default_simulation_settings"],
-        }
-    )
+    return {
+        "version": 2,
+        "auto_backup_interval": dictionary.get("auto_backup_interval", 10),
+        "num_per_decade_in_simulated_lines": dictionary[
+            "num_per_decade_in_simulated_lines"
+        ],
+        "markers": dictionary["markers"],
+        "colors": dictionary["colors"],
+        "default_test_settings": dictionary["default_test_settings"],
+        "default_fit_settings": dictionary["default_fit_settings"],
+        "default_drt_settings": DEFAULT_DRT_SETTINGS.to_dict(),
+        "default_simulation_settings": dictionary["default_simulation_settings"],
+    }
 
 
 class Config:
@@ -199,6 +199,7 @@ class Config:
         self.auto_backup_interval: int = None  # type: ignore
         self.num_per_decade_in_simulated_lines: int = None  # type: ignore
         self.default_test_settings: TestSettings = None  # type: ignore
+        self.default_zhit_settings: ZHITSettings = None  # type: ignore
         self.default_fit_settings: FitSettings = None  # type: ignore
         self.default_drt_settings: DRTSettings = None  # type: ignore
         self.default_simulation_settings: SimulationSettings = None  # type: ignore
@@ -206,6 +207,7 @@ class Config:
         self.markers: Dict[str, int] = None  # type: ignore
         self.colors: Dict[str, List[float]] = None  # type: ignore
         self.keybindings: List[Keybinding] = None  # type: ignore
+        self.user_defined_elements_path: str = None  # type: ignore
         self.from_dict(self.default_settings())
         if not exists(self.config_path):
             self.save()
@@ -228,9 +230,11 @@ class Config:
     def default_settings(self) -> dict:
         return {
             "version": VERSION,
+            "num_procs": 0,
             "auto_backup_interval": 10,
             "num_per_decade_in_simulated_lines": 100,
             "default_test_settings": DEFAULT_TEST_SETTINGS.to_dict(),
+            "default_zhit_settings": DEFAULT_ZHIT_SETTINGS.to_dict(),
             "default_fit_settings": DEFAULT_FIT_SETTINGS.to_dict(),
             "default_drt_settings": DEFAULT_DRT_SETTINGS.to_dict(),
             "default_plot_export_settings": DEFAULT_PLOT_EXPORT_SETTINGS.to_dict(),
@@ -238,6 +242,7 @@ class Config:
             "colors": DEFAULT_COLORS,
             "markers": DEFAULT_MARKERS,
             "keybindings": list(map(lambda _: _.to_dict(), DEFAULT_KEYBINDINGS)),
+            "user_defined_elements_path": "",
         }
 
     def to_dict(self) -> dict:
@@ -245,9 +250,11 @@ class Config:
             dump_json(  # This is done to get new instances in memory
                 {
                     "version": VERSION,
+                    "num_procs": self.num_procs,
                     "auto_backup_interval": self.auto_backup_interval,
                     "num_per_decade_in_simulated_lines": self.num_per_decade_in_simulated_lines,
                     "default_test_settings": self.default_test_settings.to_dict(),
+                    "default_zhit_settings": self.default_zhit_settings.to_dict(),
                     "default_fit_settings": self.default_fit_settings.to_dict(),
                     "default_drt_settings": self.default_drt_settings.to_dict(),
                     "default_simulation_settings": self.default_simulation_settings.to_dict(),
@@ -255,6 +262,7 @@ class Config:
                     "colors": self.colors,
                     "markers": self.markers,
                     "keybindings": list(map(lambda _: _.to_dict(), self.keybindings)),
+                    "user_defined_elements_path": self.user_defined_elements_path,
                 }
             )
         )
@@ -278,6 +286,7 @@ class Config:
             fp.write(new_config)
 
     def from_dict(self, settings: dict):
+        self.num_procs = settings["num_procs"]
         self.auto_backup_interval = settings["auto_backup_interval"]
         self.num_per_decade_in_simulated_lines = settings[
             "num_per_decade_in_simulated_lines"
@@ -286,6 +295,12 @@ class Config:
             settings.get(
                 "default_test_settings",
                 DEFAULT_TEST_SETTINGS.to_dict(),
+            )
+        )
+        self.default_zhit_settings = ZHITSettings.from_dict(
+            settings.get(
+                "default_zhit_settings",
+                DEFAULT_ZHIT_SETTINGS.to_dict(),
             )
         )
         self.default_fit_settings = FitSettings.from_dict(
@@ -360,7 +375,11 @@ class Config:
         for key, theme in color_themes.items():
             themes.update_plot_series_theme_color(theme, self.colors[key])
         self.keybindings = list(map(Keybinding.from_dict, settings["keybindings"]))
-        self.validate_keybindings(self.keybindings)
+        try:
+            self.validate_keybindings(self.keybindings)
+        except AssertionError:
+            print(format_exc())
+        self.user_defined_elements_path = settings["user_defined_elements_path"]
 
     def check_type(self, user: Any, default: Any, key: str):
         assert type(user) == type(default), (user, default, key)
@@ -401,7 +420,13 @@ class Config:
             4: _parse_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        dictionary = self.merge_dicts(parsers[version](dictionary), self.to_dict())
+        v: int
+        p: Callable
+        for v, p in parsers.items():
+            if v < version:
+                continue
+            dictionary = p(dictionary)
+        dictionary = self.merge_dicts(dictionary, self.to_dict())
         self.from_dict(dictionary)
 
     def validate_keybindings(self, keybindings: List[Keybinding]):
@@ -429,7 +454,7 @@ class Config:
                         "The same keybinding has been applied to multiple actions in the same context or in overlapping contexts:\n- "
                         + "\n- ".join(
                             map(repr, filter(lambda _: str(_) == string, keybindings))
-                        )
+                        ) + "\n\nYou should modify one or more of the keybindings to resolve the situation. Alternatively, reset the keybindings."
                     )
         actions: List[Action] = list(map(lambda _: _.action, keybindings))
         action: Action

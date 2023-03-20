@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,13 +18,33 @@
 # the LICENSES folder.
 
 from traceback import format_exc
-from typing import List, Optional, Set
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+)
 import dearpygui.dearpygui as dpg
 import deareis.signals as signals
 from deareis.signals import Signal
-from .keybinding import Keybinding, dpg_to_string
-from deareis.enums import Action, Context, action_contexts
-from deareis.data import DataSet, TestResult, FitResult, SimulationResult
+from .keybinding import (
+    Keybinding,
+    dpg_to_string,
+)
+from deareis.enums import (
+    Action,
+    Context,
+    action_contexts,
+)
+from deareis.data import (
+    DRTResult,
+    DataSet,
+    FitResult,
+    SimulationResult,
+    TestResult,
+    ZHITResult,
+)
 
 
 def is_shift_down() -> bool:
@@ -41,6 +61,25 @@ def is_control_down() -> bool:
 
 def is_alt_down() -> bool:
     return dpg.is_key_down(dpg.mvKey_Alt)
+
+
+def filter_keybindings(key: int, keybindings: List[Keybinding]) -> List[Keybinding]:
+    filtered_keybindings: List[Keybinding] = []
+    is_alt_pressed: bool = is_alt_down()
+    is_control_pressed: bool = is_control_down()
+    is_shift_pressed: bool = is_shift_down()
+    kb: Keybinding
+    for kb in keybindings:
+        if key not in kb:
+            continue
+        if kb.mod_alt is not is_alt_pressed:
+            continue
+        if kb.mod_ctrl is not is_control_pressed:
+            continue
+        if kb.mod_shift is not is_shift_pressed:
+            continue
+        filtered_keybindings.append(kb)
+    return filtered_keybindings
 
 
 class KeybindingHandler:
@@ -88,39 +127,10 @@ class KeybindingHandler:
                 signals.emit(Signal.UNBLOCK_KEYBINDINGS)
             else:
                 return
-        filtered_keybindings: List[Keybinding] = list(
-            filter(lambda _: key in _, self.keybindings)
+        filtered_keybindings: List[Keybinding] = filter_keybindings(
+            key=key,
+            keybindings=self.keybindings,
         )
-        if not filtered_keybindings:
-            return
-        if is_alt_down():
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_alt is True, filtered_keybindings)
-            )
-        else:
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_alt is False, filtered_keybindings)
-            )
-        if not filtered_keybindings:
-            return
-        if is_control_down():
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_ctrl is True, filtered_keybindings)
-            )
-        else:
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_ctrl is False, filtered_keybindings)
-            )
-        if not filtered_keybindings:
-            return
-        if is_shift_down():
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_shift is True, filtered_keybindings)
-            )
-        else:
-            filtered_keybindings = list(
-                filter(lambda _: _.mod_shift is False, filtered_keybindings)
-            )
         if not filtered_keybindings:
             return
         project = self.state.get_active_project()  # Optional[Project]
@@ -167,7 +177,7 @@ class KeybindingHandler:
     def validate_keybindings(self, keybindings: List[Keybinding]):
         assert len(set(list(map(str, keybindings)))) == 1, (
             "The same keybinding has been applied to multiple actions:\n- "
-            + "\n- ".join(list(map(str, keybindings)))
+            + "\n- ".join(list(map(repr, keybindings)))
         )
 
     def perform_action(
@@ -238,6 +248,8 @@ class KeybindingHandler:
                 project_tab.select_data_sets_tab()
             elif action == Action.SELECT_KRAMERS_KRONIG_TAB:
                 project_tab.select_kramers_kronig_tab()
+            elif action == Action.SELECT_ZHIT_TAB:
+                project_tab.select_zhit_tab()
             elif action == Action.SELECT_DRT_TAB:
                 project_tab.select_drt_tab()
             elif action == Action.SELECT_FITTING_TAB:
@@ -247,6 +259,27 @@ class KeybindingHandler:
             elif action == Action.SELECT_PLOTTING_TAB:
                 project_tab.select_plotting_tab()
             # Project-level: multiple tabs
+            elif action == Action.BATCH_PERFORM_ACTION:
+                if context == Context.KRAMERS_KRONIG_TAB:
+                    signals.emit(
+                        Signal.BATCH_PERFORM_ANALYSIS,
+                        settings=project_tab.get_test_settings(),
+                    )
+                elif context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.BATCH_PERFORM_ANALYSIS,
+                        settings=project_tab.get_zhit_settings(),
+                    )
+                elif context == Context.DRT_TAB:
+                    signals.emit(
+                        Signal.BATCH_PERFORM_ANALYSIS,
+                        settings=project_tab.get_drt_settings(),
+                    )
+                elif context == Context.FITTING_TAB:
+                    signals.emit(
+                        Signal.BATCH_PERFORM_ANALYSIS,
+                        settings=project_tab.get_fit_settings(),
+                    )
             elif action == Action.PERFORM_ACTION:
                 if context == Context.DATA_SETS_TAB:
                     signals.emit(Signal.SELECT_DATA_SET_FILES)
@@ -255,7 +288,13 @@ class KeybindingHandler:
                         Signal.PERFORM_TEST,
                         data=project_tab.get_active_data_set(),
                         settings=project_tab.get_test_settings(),
-                    ),
+                    )
+                elif context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.PERFORM_ZHIT,
+                        data=project_tab.get_active_data_set(),
+                        settings=project_tab.get_zhit_settings(),
+                    )
                 elif context == Context.DRT_TAB:
                     signals.emit(
                         Signal.PERFORM_DRT,
@@ -267,13 +306,13 @@ class KeybindingHandler:
                         Signal.PERFORM_FIT,
                         data=project_tab.get_active_data_set(),
                         settings=project_tab.get_fit_settings(),
-                    ),
+                    )
                 elif context == Context.SIMULATION_TAB:
                     signals.emit(
                         Signal.PERFORM_SIMULATION,
                         data=project_tab.get_active_data_set(),
                         settings=project_tab.get_simulation_settings(),
-                    ),
+                    )
                 elif context == Context.PLOTTING_TAB:
                     signals.emit(Signal.NEW_PLOT_SETTINGS)
                 # - Create plot
@@ -287,6 +326,12 @@ class KeybindingHandler:
                     signals.emit(
                         Signal.DELETE_TEST_RESULT,
                         test=project_tab.get_active_test(),
+                        data=project_tab.get_active_data_set(),
+                    )
+                elif context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.DELETE_ZHIT_RESULT,
+                        zhit=project_tab.get_active_zhit(),
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.DRT_TAB:
@@ -317,6 +362,7 @@ class KeybindingHandler:
                 if (
                     context == Context.DATA_SETS_TAB
                     or context == Context.KRAMERS_KRONIG_TAB
+                    or context == Context.ZHIT_TAB
                     or context == Context.DRT_TAB
                     or context == Context.FITTING_TAB
                 ):
@@ -340,6 +386,7 @@ class KeybindingHandler:
                 if (
                     context == Context.DATA_SETS_TAB
                     or context == Context.KRAMERS_KRONIG_TAB
+                    or context == Context.ZHIT_TAB
                     or context == Context.DRT_TAB
                     or context == Context.FITTING_TAB
                 ):
@@ -366,6 +413,12 @@ class KeybindingHandler:
                         test=project_tab.get_next_test_result(),
                         data=project_tab.get_active_data_set(),
                     )
+                if context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.SELECT_ZHIT_RESULT,
+                        zhit=project_tab.get_next_zhit_result(),
+                        data=project_tab.get_active_data_set(),
+                    )
                 elif context == Context.DRT_TAB:
                     signals.emit(
                         Signal.SELECT_DRT_RESULT,
@@ -385,17 +438,19 @@ class KeybindingHandler:
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.PLOTTING_TAB:
-                    signals.emit(
-                        Signal.SELECT_PLOT_TYPE,
-                        settings=project_tab.get_active_plot(),
-                        plot_type=project_tab.get_next_plot_type(),
-                    )
+                    project_tab.plotting_tab.next_series_tab()
                 # - Plot type
             elif action == Action.PREVIOUS_SECONDARY_RESULT:
                 if context == Context.KRAMERS_KRONIG_TAB:
                     signals.emit(
                         Signal.SELECT_TEST_RESULT,
                         test=project_tab.get_previous_test_result(),
+                        data=project_tab.get_active_data_set(),
+                    )
+                if context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.SELECT_ZHIT_RESULT,
+                        zhit=project_tab.get_previous_zhit_result(),
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.DRT_TAB:
@@ -417,17 +472,52 @@ class KeybindingHandler:
                         data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.PLOTTING_TAB:
+                    project_tab.plotting_tab.previous_series_tab()
+                # - Plot type
+            elif action == Action.NEXT_PLOT_TAB:
+                if context in (
+                    Context.DATA_SETS_TAB,
+                    Context.KRAMERS_KRONIG_TAB,
+                    Context.ZHIT_TAB,
+                    Context.DRT_TAB,
+                    Context.FITTING_TAB,
+                    Context.SIMULATION_TAB,
+                ):
+                    project_tab.next_plot_tab(context)
+                elif context == Context.PLOTTING_TAB:
+                    signals.emit(
+                        Signal.SELECT_PLOT_TYPE,
+                        settings=project_tab.get_active_plot(),
+                        plot_type=project_tab.get_next_plot_type(),
+                    )
+            elif action == Action.PREVIOUS_PLOT_TAB:
+                if context in (
+                    Context.DATA_SETS_TAB,
+                    Context.KRAMERS_KRONIG_TAB,
+                    Context.ZHIT_TAB,
+                    Context.DRT_TAB,
+                    Context.FITTING_TAB,
+                    Context.SIMULATION_TAB,
+                ):
+                    project_tab.previous_plot_tab(context)
+                elif context == Context.PLOTTING_TAB:
                     signals.emit(
                         Signal.SELECT_PLOT_TYPE,
                         settings=project_tab.get_active_plot(),
                         plot_type=project_tab.get_previous_plot_type(),
                     )
-                # - Plot type
             elif action == Action.LOAD_SIMULATION_AS_DATA_SET:
                 if context == Context.SIMULATION_TAB:
                     signals.emit(
                         Signal.LOAD_SIMULATION_AS_DATA_SET,
                         simulation=project_tab.get_active_simulation(),
+                    )
+            elif action == Action.LOAD_ZHIT_AS_DATA_SET:
+                if context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.LOAD_ZHIT_AS_DATA_SET,
+                        zhit=project_tab.get_active_zhit(),
+                        data=project_tab.get_active_data_set(),
                     )
             elif action == Action.APPLY_SETTINGS:
                 if context == Context.KRAMERS_KRONIG_TAB:
@@ -435,6 +525,12 @@ class KeybindingHandler:
                     signals.emit(
                         Signal.APPLY_TEST_SETTINGS,
                         settings=test.settings if test is not None else None,
+                    )
+                if context == Context.ZHIT_TAB:
+                    zhit = project_tab.get_active_zhit()
+                    signals.emit(
+                        Signal.APPLY_ZHIT_SETTINGS,
+                        settings=zhit.settings if zhit is not None else None,
                     )
                 elif context == Context.DRT_TAB:
                     drt = project_tab.get_active_drt()
@@ -467,6 +563,14 @@ class KeybindingHandler:
                         test=test,
                         data=project_tab.get_active_data_set(),
                     )
+                elif context == Context.ZHIT_TAB:
+                    zhit = project_tab.get_active_zhit()
+                    signals.emit(
+                        Signal.APPLY_DATA_SET_MASK,
+                        mask=zhit.mask if zhit is not None else None,
+                        zhit=zhit,
+                        data=project_tab.get_active_data_set(),
+                    )
                 elif context == Context.DRT_TAB:
                     drt = project_tab.get_active_drt()
                     signals.emit(
@@ -483,6 +587,12 @@ class KeybindingHandler:
                         fit=fit,
                         data=project_tab.get_active_data_set(),
                     )
+            elif action == Action.PREVIEW_ZHIT_WEIGHTS:
+                if context == Context.ZHIT_TAB:
+                    signals.emit(
+                        Signal.PREVIEW_ZHIT_WEIGHTS,
+                        settings=project_tab.get_zhit_settings(),
+                    )
             elif action == Action.SHOW_ENLARGED_DRT:
                 project_tab.show_enlarged_drt()
             elif action == Action.SHOW_ENLARGED_IMPEDANCE:
@@ -493,11 +603,22 @@ class KeybindingHandler:
                 project_tab.show_enlarged_bode()
             elif action == Action.SHOW_ENLARGED_RESIDUALS:
                 project_tab.show_enlarged_residuals()
+            elif action == Action.DUPLICATE_PLOT:
+                if context == Context.PLOTTING_TAB:
+                    signals.emit(
+                        Signal.DUPLICATE_PLOT_SETTINGS,
+                        settings=project_tab.get_active_plot(),
+                    )
             elif action == Action.SHOW_CIRCUIT_EDITOR:
                 if context == Context.FITTING_TAB:
                     project_tab.fitting_tab.show_circuit_editor()
                 elif context == Context.SIMULATION_TAB:
                     project_tab.simulation_tab.show_circuit_editor()
+            elif action == Action.ADJUST_PARAMETERS:
+                if context == Context.FITTING_TAB:
+                    project_tab.fitting_tab.show_parameter_adjustment()
+                elif context == Context.SIMULATION_TAB:
+                    project_tab.simulation_tab.show_parameter_adjustment()
             elif action == Action.COPY_DRT_DATA:
                 signals.emit(
                     Signal.COPY_PLOT_DATA,
@@ -534,18 +655,21 @@ class KeybindingHandler:
                         Signal.COPY_OUTPUT,
                         output=project_tab.drt_tab.get_active_output(),
                         drt=project_tab.get_active_drt(),
+                        data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.FITTING_TAB:
                     signals.emit(
                         Signal.COPY_OUTPUT,
                         output=project_tab.get_active_output(context),
                         fit_or_sim=project_tab.get_active_fit(),
+                        data=project_tab.get_active_data_set(),
                     )
                 elif context == Context.SIMULATION_TAB:
                     signals.emit(
                         Signal.COPY_OUTPUT,
                         output=project_tab.get_active_output(context),
                         fit_or_sim=project_tab.get_active_simulation(),
+                        data=project_tab.get_active_data_set(),
                     )
                 else:
                     raise Exception(f"Unsupported context: {context=}")
@@ -566,6 +690,11 @@ class KeybindingHandler:
                         Signal.SELECT_DATA_SET_MASK_TO_COPY,
                         data=data,
                     )
+                elif action == Action.INTERPOLATE_POINTS:
+                    signals.emit(
+                        Signal.SELECT_POINTS_TO_INTERPOLATE,
+                        data=data,
+                    )
                 elif action == Action.SUBTRACT_IMPEDANCE:
                     signals.emit(
                         Signal.SELECT_IMPEDANCE_TO_SUBTRACT,
@@ -576,12 +705,16 @@ class KeybindingHandler:
                 # Project-level: plotting tab
                 data_sets: List[DataSet]
                 tests: List[TestResult]
+                zhits: List[ZHITResult]
+                drts: List[DRTResult]
                 fits: List[FitResult]
                 simulations: List[SimulationResult]
                 if action == Action.SELECT_ALL_PLOT_SERIES:
                     (
                         data_sets,
                         tests,
+                        zhits,
+                        drts,
                         fits,
                         simulations,
                     ) = project_tab.get_filtered_plot_series()
@@ -590,6 +723,8 @@ class KeybindingHandler:
                         enabled=True,
                         data_sets=data_sets,
                         tests=tests,
+                        zhits=zhits,
+                        drts=drts,
                         fits=fits,
                         simulations=simulations,
                         settings=settings,
@@ -598,6 +733,8 @@ class KeybindingHandler:
                     (
                         data_sets,
                         tests,
+                        zhits,
+                        drts,
                         fits,
                         simulations,
                     ) = project_tab.get_filtered_plot_series()
@@ -606,6 +743,8 @@ class KeybindingHandler:
                         enabled=False,
                         data_sets=data_sets,
                         tests=tests,
+                        zhits=zhits,
+                        drts=drts,
                         fits=fits,
                         simulations=simulations,
                         settings=settings,
@@ -630,3 +769,59 @@ class KeybindingHandler:
                         Signal.EXPORT_PLOT,
                         settings=settings,
                     )
+
+
+class TemporaryKeybindingHandler:
+    def __init__(self, callbacks: Dict[Keybinding, Callable] = {}):
+        self._blocked: bool = False
+        self.callbacks: Dict[Keybinding, Callable] = callbacks
+        self.key_handler: int = dpg.generate_uuid()
+        with dpg.handler_registry(tag=self.key_handler):
+            registered_keys: Set[int] = set()
+            kb: Keybinding
+            for kb in callbacks:
+                if kb.key in registered_keys:
+                    continue
+                registered_keys.add(kb.key)
+                dpg.add_key_release_handler(
+                    key=kb.key,
+                    callback=lambda s, a, u: self.process(a),
+                )
+
+    def delete(self):
+        if self.key_handler > 0 and dpg.does_item_exist(self.key_handler):
+            dpg.delete_item(self.key_handler)
+
+    def block(self):
+        self._blocked = True
+
+    def unblock(self):
+        self._blocked = False
+
+    def process(self, key: int):
+        if self._blocked is True:
+            return
+        filtered_keybindings: List[Keybinding] = filter_keybindings(
+            key=key,
+            keybindings=list(self.callbacks.keys()),
+        )
+        if not filtered_keybindings:
+            return
+        try:
+            self.validate_keybindings(
+                {kb: self.callbacks[kb] for kb in filtered_keybindings}
+            )
+            self.callbacks[filtered_keybindings[0]]()
+        except Exception:
+            signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
+
+    def validate_keybindings(self, callbacks: Dict[Keybinding, Callable]):
+        assert len(set(list(map(str, callbacks.keys())))) == 1, (
+            "The same keybinding has been applied to multiple actions:\n- "
+            + "\n- ".join(list(map(str, callbacks.keys())))
+        )
+        assert (
+            len(set(callbacks.values())) == 1
+        ), "There are multiple possible actions to perform:\n- " + "\n- ".join(
+            list(map(repr, callbacks.values()))
+        )

@@ -1,3 +1,5 @@
-flake8
-setuptools
-build
+build~=0.10
+flake8~=6.0
+setuptools~=67.2
+sphinx~=5.3
+sphinx-rtd-theme~=1.2

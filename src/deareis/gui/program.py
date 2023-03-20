@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -93,6 +93,8 @@ class HomeTab:
         assert type(paths) is list, paths
         dpg.delete_item(self.recent_projects_table, children_only=True, slot=1)
         for path in paths:
+            if path.strip() == "":
+                continue
             with dpg.table_row(
                 parent=self.recent_projects_table,
             ):
@@ -109,11 +111,12 @@ class HomeTab:
                 attach_tooltip(path)
                 dpg.add_checkbox(
                     user_data=path,
-                    callback=lambda s, a, u: self.updated_selection(),
+                    callback=lambda s, a, u: self.update_selection(),
                 )
                 attach_tooltip(tooltips.recent_projects.checkbox)
+        self.update_selection()
 
-    def updated_selection(self):
+    def update_selection(self):
         paths: List[str] = self.get_selected_projects()
         if len(paths) > 1:
             dpg.set_item_label(
@@ -296,11 +299,20 @@ class MenuBar:
                     label="Keybindings",
                     callback=lambda: signals.emit(Signal.SHOW_SETTINGS_KEYBINDINGS),
                 )
+                dpg.add_menu_item(
+                    label="User-defined elements",
+                    callback=lambda: signals.emit(
+                        Signal.SHOW_SETTINGS_USER_DEFINED_ELEMENTS
+                    ),
+                )
+            # TODO: Tools?
+            # - Calculate equivalent capacitance from (RQ) circuit
+            # - Convert Y to sigma for Warburg elements
             with dpg.menu(label="Help"):
                 dpg.add_menu_item(
-                    label="Tutorials",
+                    label="Documentation",
                     callback=lambda: webbrowser.open(
-                        "https://vyrjana.github.io/DearEIS/tutorials/"
+                        "https://vyrjana.github.io/DearEIS"
                     ),
                 )
                 dpg.add_menu_item(

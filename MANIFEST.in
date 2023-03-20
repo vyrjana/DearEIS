@@ -1,8 +1,8 @@
-include COPYRIGHT
-include CONTRIBUTORS
-include LICENSE
-include README.md
-include LICENSES/README.md
-include LICENSES/*.txt
+include src/deareis/CHANGELOG.md
+include src/deareis/CONTRIBUTORS
+include src/deareis/COPYRIGHT
+include src/deareis/LICENSE
+include src/deareis/LICENSES/*
+include src/deareis/README.md
 include src/deareis/gui/changelog/CHANGELOG.md
 include src/deareis/gui/licenses/*.txt

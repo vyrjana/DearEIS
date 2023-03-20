@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,15 +45,15 @@ from deareis.enums import (
 def perform_test(
     data: DataSet,
     settings: TestSettings,
-    num_procs: int = -1,
+    num_procs: int = 0,
 ) -> TestResult:
     """
     Wrapper for the `pyimpspec.perform_test` function.
 
     Performs a linear Kramers-Kronig test as described by Boukamp (1995).
     The results can be used to check the validity of an impedance spectrum before performing equivalent circuit fitting.
-    If the number of (RC) circuits is less than two, then a suitable number of (RC) circuits is determined using the procedure described by Schönleber et al. (2014) based on a criterion for the calculated mu-value (zero to one).
-    A mu-value of one represents underfitting and a mu-value of zero represents overfitting.
+    If the number of (RC) circuits is less than two, then a suitable number of (RC) circuits is determined using the procedure described by Schönleber et al. (2014) based on a criterion for the calculated |mu| (0.0 to 1.0).
+    A |mu| of 1.0 represents underfitting and a |mu| of 0.0 represents overfitting.
 
     References:
 
@@ -69,9 +69,9 @@ def perform_test(
         The settings that determine how the test is performed.
         Note that `Test.EXPLORATORY` is not supported by this function.
 
-    num_procs: int = -1
+    num_procs: int, optional
         The maximum number of parallel processes to use when performing a test.
-        A value less than one results in using the number of cores returned by multiprocessing.cpu_count.
+        A value less than 1 will result in an attempt to automatically figure out a suitable value.
         Applies only to the `TestMode.CNLS` test.
 
     Returns
@@ -96,25 +96,24 @@ def perform_test(
         num_procs=num_procs,
     )
     return TestResult(
-        _uuid4().hex,
-        _time(),
-        result.circuit,
-        result.num_RC,
-        result.mu,
-        result.pseudo_chisqr,
-        result.frequency,
-        result.impedance,
-        result.real_residual,
-        result.imaginary_residual,
-        data.get_mask().copy(),
-        settings,
+        uuid=_uuid4().hex,
+        timestamp=_time(),
+        circuit=result.circuit,
+        num_RC=result.num_RC,
+        mu=result.mu,
+        pseudo_chisqr=result.pseudo_chisqr,
+        frequencies=result.frequencies,
+        impedances=result.impedances,
+        residuals=result.residuals,
+        mask=data.get_mask().copy(),
+        settings=settings,
     )
 
 
 def perform_exploratory_tests(
     data: DataSet,
     settings: TestSettings,
-    num_procs: int = -1,
+    num_procs: int = 0,
 ) -> List[TestResult]:
     """
     Wrapper for the `pyimpspec.perform_exploratory_tests` function.
@@ -130,7 +129,7 @@ def perform_exploratory_tests(
         The settings that determine how the test is performed.
         Note that only `Test.EXPLORATORY` is supported by this function.
 
-    num_procs: int = -1
+    num_procs: int, optional
         See perform_test for details.
 
     Returns
@@ -140,6 +139,7 @@ def perform_exploratory_tests(
     assert (
         settings.mode == TestMode.EXPLORATORY
     ), "Use deareis.perform_test to perform the test!"
+    assert settings.method != CNLSMethod.AUTO
     num_RCs: List[int] = list(range(1, settings.num_RC + 1))
     assert len(num_RCs) > 0, "Invalid settings!"
     results: List[_pyimpspec.TestResult] = _pyimpspec.perform_exploratory_tests(
@@ -158,18 +158,17 @@ def perform_exploratory_tests(
     return list(
         map(
             lambda _: TestResult(
-                _uuid4().hex,
-                time,
-                _.circuit,
-                _.num_RC,
-                _.mu,
-                _.pseudo_chisqr,
-                _.frequency,
-                _.impedance,
-                _.real_residual,
-                _.imaginary_residual,
-                mask.copy(),
-                settings,
+                uuid=_uuid4().hex,
+                timestamp=time,
+                circuit=_.circuit,
+                num_RC=_.num_RC,
+                mu=_.mu,
+                pseudo_chisqr=_.pseudo_chisqr,
+                frequencies=_.frequencies,
+                impedances=_.impedances,
+                residuals=_.residuals,
+                mask=mask.copy(),
+                settings=settings,
             ),
             results,
         )

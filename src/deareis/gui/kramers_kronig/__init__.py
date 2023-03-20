@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,34 +17,70 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional
-from numpy import allclose, array, log10 as log, ndarray
-from pyimpspec.analysis.kramers_kronig import _calculate_residuals
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
+from numpy import (
+    allclose,
+    array,
+    isnan,
+    log10 as log,
+    ndarray,
+)
+from pyimpspec.analysis.utility import _calculate_residuals
+from pyimpspec import ComplexResiduals
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.enums import (
-    Context,
     CNLSMethod,
-    TestMode,
+    Context,
     Test,
-    label_to_cnls_method,
-    label_to_test_mode,
-    label_to_test,
+    TestMode,
     cnls_method_to_label,
+    label_to_cnls_method,
+    label_to_test,
+    label_to_test_mode,
     test_mode_to_label,
     test_to_label,
 )
-from deareis.data import TestResult, TestSettings, DataSet
-from deareis.gui.plots import Bode, Nyquist, Residuals
+from deareis.utility import (
+    format_number,
+    pad_tab_labels,
+)
+from deareis.data import (
+    DataSet,
+    TestResult,
+    TestSettings,
+)
+from deareis.gui.plots import (
+    Bode,
+    Impedance,
+    Nyquist,
+    Residuals,
+)
 import deareis.tooltips as tooltips
-from deareis.tooltips import attach_tooltip, update_tooltip
+from deareis.tooltips import (
+    attach_tooltip,
+    update_tooltip,
+)
 import deareis.themes as themes
+from deareis.gui.shared import (
+    DataSetsCombo,
+    ResultsCombo,
+)
 
 
 class SettingsMenu:
     def __init__(
-        self, default_settings: TestSettings, label_pad: int, limited: bool = False
+        self,
+        default_settings: TestSettings,
+        label_pad: int,
+        limited: bool = False,
+        **kwargs,
     ):
         with dpg.group(horizontal=True):
             dpg.add_text("Test".rjust(label_pad))
@@ -119,12 +155,14 @@ class SettingsMenu:
             dpg.add_text("Fitting method".rjust(label_pad))
             attach_tooltip(tooltips.kramers_kronig.method)
             self.method_combo: int = dpg.generate_uuid()
+            fitting_methods: List[str] = list(label_to_cnls_method.keys())
+            fitting_methods.remove("Auto")
             dpg.add_combo(
                 default_value=cnls_method_to_label.get(
                     default_settings.method,
-                    list(label_to_cnls_method.keys())[0],
+                    fitting_methods[0],
                 ),
-                items=list(label_to_cnls_method.keys()),
+                items=fitting_methods,
                 width=-1,
                 tag=self.method_combo,
             )
@@ -221,6 +259,7 @@ class SettingsMenu:
         return dpg.is_item_active(self.max_nfev_input)
 
 
+# TODO: AbstractStatisticsTable
 class StatisticsTable:
     def __init__(self):
         label_pad: int = 23
@@ -251,6 +290,9 @@ class StatisticsTable:
                     ("log X² (pseudo)", tooltips.kramers_kronig.pseudo_chisqr),
                     ("µ", tooltips.kramers_kronig.mu),
                     ("Number of RC elements", tooltips.kramers_kronig.num_RC),
+                    ("Series resistance", tooltips.kramers_kronig.series_resistance),
+                    ("Series capacitance", tooltips.kramers_kronig.series_capacitance),
+                    ("Series inductance", tooltips.kramers_kronig.series_inductance),
                 ]:
                     with dpg.table_row(parent=self._table):
                         dpg.add_text(label.rjust(label_pad))
@@ -270,32 +312,40 @@ class StatisticsTable:
 
     def populate(self, test: TestResult):
         dpg.show_item(self._header)
+        rows: List[int] = dpg.get_item_children(self._table, slot=1)
         cells: List[int] = []
         row: int
-        for row in dpg.get_item_children(self._table, slot=1):
+        for row in rows:
             cells.append(dpg.get_item_children(row, slot=1)[2])
-        assert len(cells) == 3, cells
-        tag: int
+        assert len(cells) == 6, cells
+        R: float = test.get_series_resistance()
+        C: float = test.get_series_capacitance()
+        L: float = test.get_series_inductance()
+        values: List[str] = [
+            f"{log(test.pseudo_chisqr):.3f}",
+            f"{test.mu:.3f}",
+            f"{test.num_RC}",
+            format_number(R, significants=3).strip() if not isnan(R) else "",
+            format_number(C, significants=3).strip() if not isnan(C) else "",
+            format_number(L, significants=3).strip() if not isnan(L) else "",
+        ]
+        num_rows: int = 0
+        cell: int
         value: str
-        for (tag, value) in [
-            (
-                cells[0],
-                f"{log(test.pseudo_chisqr):.3f}",
-            ),
-            (
-                cells[1],
-                f"{test.mu:.3f}",
-            ),
-            (
-                cells[2],
-                f"{test.num_RC}",
-            ),
-        ]:
-            dpg.set_value(tag, value)
-            update_tooltip(dpg.get_item_user_data(tag), value)
-            dpg.show_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
+        for row, cell, value in zip(rows, cells, values):
+            if value == "":
+                dpg.hide_item(row)
+                continue
+            else:
+                dpg.show_item(row)
+                num_rows += 1
+            dpg.set_value(cell, value)
+            update_tooltip(dpg.get_item_user_data(cell), value)
+            dpg.show_item(dpg.get_item_parent(dpg.get_item_user_data(cell)))
+        dpg.set_item_height(self._table, 18 + 23 * max(1, num_rows))
 
 
+# TODO: AbstractSettingsTable
 class SettingsTable:
     def __init__(self):
         label_pad: int = 23
@@ -336,6 +386,7 @@ class SettingsTable:
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
+            dpg.add_spacer(height=8)
             with dpg.group(horizontal=True):
                 self._apply_settings_button: int = dpg.generate_uuid()
                 dpg.add_button(
@@ -345,6 +396,7 @@ class SettingsTable:
                         **u,
                     ),
                     tag=self._apply_settings_button,
+                    width=154,
                 )
                 attach_tooltip(tooltips.general.apply_settings)
                 self._apply_mask_button: int = dpg.generate_uuid()
@@ -355,6 +407,7 @@ class SettingsTable:
                         **u,
                     ),
                     tag=self._apply_mask_button,
+                    width=-1,
                 )
                 attach_tooltip(tooltips.general.apply_mask)
 
@@ -468,480 +521,371 @@ class SettingsTable:
         )
 
 
-class DataSetsCombo:
-    def __init__(self, label: str, width: int):
-        self.labels: List[str] = []
-        dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
-        dpg.add_combo(
-            callback=lambda s, a, u: signals.emit(
-                Signal.SELECT_DATA_SET,
-                data=u.get(a),
-            ),
-            user_data={},
-            width=width,
-            tag=self.tag,
+class TestResultsCombo(ResultsCombo):
+    def selection_callback(self, sender: int, app_data: str, user_data: tuple):
+        signals.emit(
+            Signal.SELECT_TEST_RESULT,
+            test=user_data[0].get(app_data),
+            data=user_data[1],
         )
 
-    def populate(self, labels: List[str], lookup: Dict[str, DataSet]):
-        self.labels.clear()
-        self.labels.extend(labels)
-        label: str = dpg.get_value(self.tag) or ""
-        if labels and label not in labels:
-            label = labels[0]
-        dpg.configure_item(
-            self.tag,
-            default_value=label,
-            items=labels,
-            user_data=lookup,
+    def adjust_label(self, old: str, longest: int) -> str:
+        label: str
+        timestamp: str
+        label, timestamp = (
+            old[: old.find(" (")],
+            old[old.find(" (") + 1 :],
         )
-
-    def get(self) -> Optional[DataSet]:
-        return dpg.get_item_user_data(self.tag).get(dpg.get_value(self.tag))
-
-    def set(self, label: str):
-        assert type(label) is str, label
-        assert label in self.labels, (
-            label,
-            self.labels,
-        )
-        dpg.set_value(self.tag, label)
-
-    def get_next(self) -> Optional[DataSet]:
-        lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.tag)
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) + 1
-        return lookup[labels[index % len(labels)]]
-
-    def get_previous(self) -> Optional[DataSet]:
-        lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.tag)
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) - 1
-        return lookup[labels[index % len(labels)]]
-
-    def clear(self):
-        dpg.configure_item(
-            self.tag,
-            default_value="",
-        )
-
-
-class ResultsCombo:
-    def __init__(self, label: str, width: int):
-        self.labels: List[str] = []
-        dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
-        dpg.add_combo(
-            callback=lambda s, a, u: signals.emit(
-                Signal.SELECT_TEST_RESULT,
-                test=u[0].get(a),
-                data=u[1],
-            ),
-            user_data=(
-                {},
-                None,
-            ),
-            width=width,
-            tag=self.tag,
-        )
-
-    def populate(self, lookup: Dict[str, TestResult], data: Optional[DataSet]):
-        self.labels.clear()
-        labels: List[str] = list(lookup.keys())
-        self.labels.extend(labels)
-        dpg.configure_item(
-            self.tag,
-            items=labels,
-            default_value=labels[0] if labels else "",
-            user_data=(
-                lookup,
-                data,
-            ),
-        )
-
-    def get(self) -> Optional[TestResult]:
-        return dpg.get_item_user_data(self.tag)[0].get(dpg.get_value(self.tag))
-
-    def set(self, label: str):
-        assert type(label) is str, label
-        assert label in self.labels, (
-            label,
-            self.labels,
-        )
-        dpg.set_value(self.tag, label)
-
-    def clear(self):
-        dpg.configure_item(
-            self.tag,
-            default_value="",
-        )
-
-    def get_next(self) -> Optional[TestResult]:
-        lookup: Dict[str, TestResult] = dpg.get_item_user_data(self.tag)[0]
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) + 1
-        return lookup[labels[index % len(labels)]]
-
-    def get_previous(self) -> Optional[TestResult]:
-        lookup: Dict[str, TestResult] = dpg.get_item_user_data(self.tag)[0]
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) - 1
-        return lookup[labels[index % len(labels)]]
+        return f"{label.ljust(longest)} {timestamp}"
 
 
 class KramersKronigTab:
     def __init__(self, state):
         self.state = state
         self.queued_update: Optional[Callable] = None
+        self.create_tab(state)
+        self.set_settings(self.state.config.default_test_settings)
+
+    def create_tab(self, state):
         self.tab: int = dpg.generate_uuid()
         label_pad: int = 24
         with dpg.tab(label="Kramers-Kronig", tag=self.tab):
             with dpg.child_window(border=False):
                 with dpg.group(horizontal=True):
-                    self.sidebar_window: int = dpg.generate_uuid()
-                    self.sidebar_width: int = 350
-                    with dpg.child_window(
-                        border=False,
-                        width=self.sidebar_width,
-                        tag=self.sidebar_window,
-                    ):
-                        # TODO: Split into a separate class?
-                        with dpg.child_window(width=-1, height=220):
-                            self.settings_menu: SettingsMenu = SettingsMenu(
-                                state.config.default_test_settings, label_pad
-                            )
-                            with dpg.group(horizontal=True):
-                                self.visibility_item: int = dpg.generate_uuid()
-                                dpg.add_text(
-                                    "?".rjust(label_pad),
-                                    tag=self.visibility_item,
-                                )
-                                attach_tooltip(tooltips.kramers_kronig.perform)
-                                self.perform_test_button: int = dpg.generate_uuid()
-                                dpg.add_button(
-                                    label="Perform test",
-                                    callback=lambda s, a, u: signals.emit(
-                                        Signal.PERFORM_TEST,
-                                        data=u,
-                                        settings=self.get_settings(),
-                                    ),
-                                    user_data=None,
-                                    width=-1,
-                                    tag=self.perform_test_button,
-                                )
-                        with dpg.child_window(width=-1, height=58):
-                            label_pad = 8
-                            with dpg.group(horizontal=True):
-                                self.data_sets_combo: DataSetsCombo = DataSetsCombo(
-                                    label="Data set".rjust(label_pad),
-                                    width=-60,
-                                )
-                            with dpg.group(horizontal=True):
-                                self.results_combo: ResultsCombo = ResultsCombo(
-                                    label="Result".rjust(label_pad),
-                                    width=-60,
-                                )
-                                self.delete_button: int = dpg.generate_uuid()
-                                dpg.add_button(
-                                    label="Delete",
-                                    callback=lambda s, a, u: signals.emit(
-                                        Signal.DELETE_TEST_RESULT,
-                                        **u,
-                                    ),
-                                    width=-1,
-                                    tag=self.delete_button,
-                                )
-                                attach_tooltip(tooltips.kramers_kronig.delete)
-                        with dpg.child_window(width=-1, height=-1):
-                            with dpg.group(show=False):
-                                self.validity_text: int = dpg.generate_uuid()
-                                dpg.bind_item_theme(
-                                    dpg.add_text(
-                                        "",
-                                        wrap=self.sidebar_width - 24,
-                                        tag=self.validity_text,
-                                    ),
-                                    themes.result.invalid,
-                                )
-                                dpg.add_spacer(height=8)
-                            self.statistics_table: StatisticsTable = StatisticsTable()
-                            dpg.add_spacer(height=8)
-                            self.settings_table: SettingsTable = SettingsTable()
-                    self.plot_window: int = dpg.generate_uuid()
-                    with dpg.child_window(border=False, tag=self.plot_window):
-                        with dpg.group():
-                            # Residuals
-                            self.residuals_plot: Residuals = Residuals(
-                                width=-1,
-                                height=300,
-                            )
-                            self.residuals_plot.plot(
-                                frequency=array([]),
-                                real=array([]),
-                                imaginary=array([]),
-                            )
-                            with dpg.group(horizontal=True):
-                                self.enlarge_residuals_button: int = dpg.generate_uuid()
-                                self.adjust_residuals_limits_checkbox: int = (
-                                    dpg.generate_uuid()
-                                )
-                                dpg.add_button(
-                                    label="Enlarge residuals",
-                                    callback=self.show_enlarged_residuals,
-                                    tag=self.enlarge_residuals_button,
-                                )
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    tag=self.adjust_residuals_limits_checkbox,
-                                )
-                                attach_tooltip(tooltips.general.adjust_residuals_limits)
-                                dpg.add_button(
-                                    label="Copy as CSV",
-                                    callback=lambda s, a, u: signals.emit(
-                                        Signal.COPY_PLOT_DATA,
-                                        plot=self.residuals_plot,
-                                        context=Context.KRAMERS_KRONIG_TAB,
-                                    ),
-                                )
-                                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
-                            # Nyquist and Bode
-                            self.minimum_plot_side: int = 400
-                            with dpg.group(horizontal=True):
-                                with dpg.group():
-                                    self.nyquist_plot: Nyquist = Nyquist(
-                                        width=self.minimum_plot_side,
-                                        height=self.minimum_plot_side,
-                                    )
-                                    self.nyquist_plot.plot(
-                                        real=array([]),
-                                        imaginary=array([]),
-                                        label="Data",
-                                        line=False,
-                                        theme=themes.nyquist.data,
-                                    )
-                                    self.nyquist_plot.plot(
-                                        real=array([]),
-                                        imaginary=array([]),
-                                        label="Fit",
-                                        line=False,
-                                        fit=True,
-                                        theme=themes.nyquist.simulation,
-                                    )
-                                    self.nyquist_plot.plot(
-                                        real=array([]),
-                                        imaginary=array([]),
-                                        label="Fit",
-                                        line=True,
-                                        fit=True,
-                                        theme=themes.nyquist.simulation,
-                                        show_label=False,
-                                    )
-                                    with dpg.group(horizontal=True):
-                                        self.enlarge_nyquist_button: int = (
-                                            dpg.generate_uuid()
-                                        )
-                                        self.adjust_nyquist_limits_checkbox: int = (
-                                            dpg.generate_uuid()
-                                        )
-                                        dpg.add_button(
-                                            label="Enlarge Nyquist",
-                                            callback=self.show_enlarged_nyquist,
-                                            tag=self.enlarge_nyquist_button,
-                                        )
-                                        dpg.add_checkbox(
-                                            default_value=True,
-                                            tag=self.adjust_nyquist_limits_checkbox,
-                                        )
-                                        attach_tooltip(
-                                            tooltips.general.adjust_nyquist_limits
-                                        )
-                                        dpg.add_button(
-                                            label="Copy as CSV",
-                                            callback=lambda s, a, u: signals.emit(
-                                                Signal.COPY_PLOT_DATA,
-                                                plot=self.nyquist_plot,
-                                                context=Context.KRAMERS_KRONIG_TAB,
-                                            ),
-                                        )
-                                        attach_tooltip(
-                                            tooltips.general.copy_plot_data_as_csv
-                                        )
-                                self.horizontal_bode_group: int = dpg.generate_uuid()
-                                with dpg.group(tag=self.horizontal_bode_group):
-                                    self.bode_plot_horizontal: Bode = Bode(
-                                        width=self.minimum_plot_side,
-                                        height=self.minimum_plot_side,
-                                    )
-                                    self.bode_plot_horizontal.plot(
-                                        frequency=array([]),
-                                        magnitude=array([]),
-                                        phase=array([]),
-                                        labels=(
-                                            "|Z| (d)",
-                                            "phi (d)",
-                                        ),
-                                        line=False,
-                                        themes=(
-                                            themes.bode.magnitude_data,
-                                            themes.bode.phase_data,
-                                        ),
-                                    )
-                                    self.bode_plot_horizontal.plot(
-                                        frequency=array([]),
-                                        magnitude=array([]),
-                                        phase=array([]),
-                                        labels=(
-                                            "|Z| (f)",
-                                            "phi (f)",
-                                        ),
-                                        line=False,
-                                        fit=True,
-                                        themes=(
-                                            themes.bode.magnitude_simulation,
-                                            themes.bode.phase_simulation,
-                                        ),
-                                    )
-                                    self.bode_plot_horizontal.plot(
-                                        frequency=array([]),
-                                        magnitude=array([]),
-                                        phase=array([]),
-                                        labels=(
-                                            "|Z| (f)",
-                                            "phi (f)",
-                                        ),
-                                        line=True,
-                                        fit=True,
-                                        themes=(
-                                            themes.bode.magnitude_simulation,
-                                            themes.bode.phase_simulation,
-                                        ),
-                                        show_labels=False,
-                                    )
-                                    with dpg.group(horizontal=True):
-                                        self.enlarge_bode_horizontal_button: int = (
-                                            dpg.generate_uuid()
-                                        )
-                                        self.adjust_bode_limits_horizontal_checkbox: int = (
-                                            dpg.generate_uuid()
-                                        )
-                                        dpg.add_button(
-                                            label="Enlarge Bode",
-                                            callback=self.show_enlarged_bode,
-                                            tag=self.enlarge_bode_horizontal_button,
-                                        )
-                                        dpg.add_checkbox(
-                                            default_value=True,
-                                            tag=self.adjust_bode_limits_horizontal_checkbox,
-                                        )
-                                        attach_tooltip(
-                                            tooltips.general.adjust_bode_limits
-                                        )
-                                        dpg.add_button(
-                                            label="Copy as CSV",
-                                            callback=lambda s, a, u: signals.emit(
-                                                Signal.COPY_PLOT_DATA,
-                                                plot=self.bode_plot_horizontal,
-                                                context=Context.KRAMERS_KRONIG_TAB,
-                                            ),
-                                        )
-                                        attach_tooltip(
-                                            tooltips.general.copy_plot_data_as_csv
-                                        )
-                            self.vertical_bode_group: int = dpg.generate_uuid()
-                            with dpg.group(tag=self.vertical_bode_group):
-                                self.bode_plot_vertical: Bode = Bode(
-                                    width=-1,
-                                    height=self.minimum_plot_side,
-                                )
-                                self.bode_plot_vertical.plot(
-                                    frequency=array([]),
-                                    magnitude=array([]),
-                                    phase=array([]),
-                                    labels=(
-                                        "|Z| (d)",
-                                        "phi (d)",
-                                    ),
-                                    line=False,
-                                    themes=(
-                                        themes.bode.magnitude_data,
-                                        themes.bode.phase_data,
-                                    ),
-                                )
-                                self.bode_plot_vertical.plot(
-                                    frequency=array([]),
-                                    magnitude=array([]),
-                                    phase=array([]),
-                                    labels=(
-                                        "|Z| (f)",
-                                        "phi (f)",
-                                    ),
-                                    line=False,
-                                    fit=True,
-                                    themes=(
-                                        themes.bode.magnitude_simulation,
-                                        themes.bode.phase_simulation,
-                                    ),
-                                )
-                                self.bode_plot_vertical.plot(
-                                    frequency=array([]),
-                                    magnitude=array([]),
-                                    phase=array([]),
-                                    labels=(
-                                        "|Z| (f)",
-                                        "phi (f)",
-                                    ),
-                                    line=True,
-                                    fit=True,
-                                    themes=(
-                                        themes.bode.magnitude_simulation,
-                                        themes.bode.phase_simulation,
-                                    ),
-                                    show_labels=False,
-                                )
-                                with dpg.group(horizontal=True):
-                                    self.enlarge_bode_vertical_button: int = (
-                                        dpg.generate_uuid()
-                                    )
-                                    self.adjust_bode_limits_vertical_checkbox: int = (
-                                        dpg.generate_uuid()
-                                    )
-                                    dpg.add_button(
-                                        label="Enlarge Bode",
-                                        callback=lambda s, a, u: signals.emit(
-                                            Signal.SHOW_ENLARGED_PLOT,
-                                            plot=self.bode_plot_vertical,
-                                            adjust_limits=dpg.get_value(
-                                                self.adjust_bode_limits_horizontal_checkbox
-                                            ),
-                                        ),
-                                        tag=self.enlarge_bode_vertical_button,
-                                    )
-                                    dpg.add_checkbox(
-                                        default_value=True,
-                                        source=self.adjust_bode_limits_horizontal_checkbox,
-                                        tag=self.adjust_bode_limits_vertical_checkbox,
-                                    )
-                                    attach_tooltip(tooltips.general.adjust_bode_limits)
-                                    dpg.add_button(
-                                        label="Copy as CSV",
-                                        callback=lambda s, a, u: signals.emit(
-                                            Signal.COPY_PLOT_DATA,
-                                            plot=self.bode_plot_vertical,
-                                            context=Context.KRAMERS_KRONIG_TAB,
-                                        ),
-                                    )
-                                    attach_tooltip(
-                                        tooltips.general.copy_plot_data_as_csv
-                                    )
-        self.set_settings(self.state.config.default_test_settings)
+                    self.create_sidebar(state, label_pad)
+                    self.create_plots()
+
+    def create_sidebar(self, state, label_pad: int):
+        self.sidebar_window: int = dpg.generate_uuid()
+        self.sidebar_width: int = 350
+        with dpg.child_window(
+            border=False,
+            width=self.sidebar_width,
+            tag=self.sidebar_window,
+        ):
+            # TODO: Split into a separate class?
+            with dpg.child_window(width=-1, height=220):
+                self.settings_menu: SettingsMenu = SettingsMenu(
+                    state.config.default_test_settings,
+                    label_pad,
+                )
+                with dpg.group(horizontal=True):
+                    self.visibility_item: int = dpg.generate_uuid()
+                    dpg.add_text(
+                        "?".rjust(label_pad),
+                        tag=self.visibility_item,
+                    )
+                    attach_tooltip(tooltips.kramers_kronig.perform)
+                    self.perform_test_button: int = dpg.generate_uuid()
+                    dpg.add_button(
+                        label="Perform",
+                        callback=lambda s, a, u: signals.emit(
+                            Signal.PERFORM_TEST,
+                            data=u,
+                            settings=self.get_settings(),
+                        ),
+                        user_data=None,
+                        width=-70,
+                        tag=self.perform_test_button,
+                    )
+                    dpg.add_button(
+                        label="Batch",
+                        callback=lambda s, a, u: signals.emit(
+                            Signal.BATCH_PERFORM_ANALYSIS,
+                            settings=self.get_settings(),
+                        ),
+                        width=-1,
+                    )
+            with dpg.child_window(width=-1, height=58):
+                label_pad = 8
+                with dpg.group(horizontal=True):
+                    self.data_sets_combo: DataSetsCombo = DataSetsCombo(
+                        label="Data set".rjust(label_pad),
+                        width=-60,
+                    )
+                with dpg.group(horizontal=True):
+                    self.results_combo: TestResultsCombo = TestResultsCombo(
+                        label="Result".rjust(label_pad),
+                        width=-60,
+                    )
+                    self.delete_button: int = dpg.generate_uuid()
+                    dpg.add_button(
+                        label="Delete",
+                        callback=lambda s, a, u: signals.emit(
+                            Signal.DELETE_TEST_RESULT,
+                            **u,
+                        ),
+                        width=-1,
+                        tag=self.delete_button,
+                    )
+                    attach_tooltip(tooltips.kramers_kronig.delete)
+            with dpg.child_window(width=-1, height=-1):
+                with dpg.group(show=False):
+                    self.validity_text: int = dpg.generate_uuid()
+                    dpg.bind_item_theme(
+                        dpg.add_text(
+                            "",
+                            wrap=self.sidebar_width - 24,
+                            tag=self.validity_text,
+                        ),
+                        themes.result.invalid,
+                    )
+                    dpg.add_spacer(height=8)
+                self.statistics_table: StatisticsTable = StatisticsTable()
+                dpg.add_spacer(height=8)
+                self.settings_table: SettingsTable = SettingsTable()
+
+    def create_plots(self):
+        self.plot_window: int = dpg.generate_uuid()
+        with dpg.child_window(border=False, tag=self.plot_window):
+            self.create_residuals_plot()
+            dpg.add_spacer(height=4)
+            dpg.add_separator()
+            dpg.add_spacer(height=4)
+            self.plot_tab_bar: int = dpg.generate_uuid()
+            with dpg.tab_bar(tag=self.plot_tab_bar):
+                self.create_nyquist_plot()
+                self.create_bode_plot()
+                self.create_impedance_plot()
+            pad_tab_labels(self.plot_tab_bar)
+
+    def create_residuals_plot(self):
+        self.residuals_plot: Residuals = Residuals(
+            width=-1,
+            height=300,
+        )
+        self.residuals_plot.plot(
+            frequency=array([]),
+            real=array([]),
+            imaginary=array([]),
+        )
+        with dpg.group(horizontal=True):
+            self.enlarge_residuals_button: int = dpg.generate_uuid()
+            self.adjust_residuals_limits_checkbox: int = dpg.generate_uuid()
+            dpg.add_button(
+                label="Enlarge plot",
+                callback=self.show_enlarged_residuals,
+                tag=self.enlarge_residuals_button,
+            )
+            dpg.add_button(
+                label="Copy as CSV",
+                callback=lambda s, a, u: signals.emit(
+                    Signal.COPY_PLOT_DATA,
+                    plot=self.residuals_plot,
+                    context=Context.KRAMERS_KRONIG_TAB,
+                ),
+            )
+            attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+            dpg.add_checkbox(
+                label="Adjust limits",
+                default_value=True,
+                tag=self.adjust_residuals_limits_checkbox,
+            )
+            attach_tooltip(tooltips.general.adjust_residuals_limits)
+
+    def create_nyquist_plot(self):
+        with dpg.tab(label="Nyquist"):
+            self.nyquist_plot: Nyquist = Nyquist(
+                width=-1,
+                height=-24,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Data",
+                line=False,
+                theme=themes.nyquist.data,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Fit",
+                line=False,
+                fit=True,
+                theme=themes.nyquist.simulation,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Fit",
+                line=True,
+                fit=True,
+                theme=themes.nyquist.simulation,
+                show_label=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_nyquist_button: int = dpg.generate_uuid()
+                self.adjust_nyquist_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_nyquist,
+                    tag=self.enlarge_nyquist_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.nyquist_plot,
+                        context=Context.KRAMERS_KRONIG_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_nyquist_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_nyquist_limits)
+
+    def create_bode_plot(self):
+        with dpg.tab(label="Bode"):
+            self.bode_plot: Bode = Bode(
+                width=-1,
+                height=-24,
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), d.",
+                    "Phase(Z), d.",
+                ),
+                line=False,
+                themes=(
+                    themes.bode.magnitude_data,
+                    themes.bode.phase_data,
+                ),
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), f.",
+                    "Phase(Z), f.",
+                ),
+                line=False,
+                fit=True,
+                themes=(
+                    themes.bode.magnitude_simulation,
+                    themes.bode.phase_simulation,
+                ),
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), f.",
+                    "Phase(Z), f.",
+                ),
+                line=True,
+                fit=True,
+                themes=(
+                    themes.bode.magnitude_simulation,
+                    themes.bode.phase_simulation,
+                ),
+                show_labels=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_bode_button: int = dpg.generate_uuid()
+                self.adjust_bode_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_bode,
+                    tag=self.enlarge_bode_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.bode_plot,
+                        context=Context.KRAMERS_KRONIG_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_bode_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_bode_limits)
+
+    def create_impedance_plot(self):
+        with dpg.tab(label="Real & Imag."):
+            self.impedance_plot: Impedance = Impedance(
+                width=-1,
+                height=-24,
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), d.",
+                    "Im(Z), d.",
+                ),
+                line=False,
+                themes=(
+                    themes.impedance.real_data,
+                    themes.impedance.imaginary_data,
+                ),
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), f.",
+                    "Im(Z), f.",
+                ),
+                line=False,
+                fit=True,
+                themes=(
+                    themes.impedance.real_simulation,
+                    themes.impedance.imaginary_simulation,
+                ),
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), f.",
+                    "Im(Z), f.",
+                ),
+                line=True,
+                fit=True,
+                themes=(
+                    themes.impedance.real_simulation,
+                    themes.impedance.imaginary_simulation,
+                ),
+                show_labels=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_impedance_button: int = dpg.generate_uuid()
+                self.adjust_impedance_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_impedance,
+                    tag=self.enlarge_impedance_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.impedance_plot,
+                        context=Context.KRAMERS_KRONIG_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_impedance_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_impedance_limits)
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
@@ -949,23 +893,7 @@ class KramersKronigTab:
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0
         assert type(height) is int and height > 0
-        if not self.is_visible():
-            return
-        if width < (self.sidebar_width + self.minimum_plot_side * 2):
-            if dpg.is_item_shown(self.horizontal_bode_group):
-                dpg.hide_item(self.horizontal_bode_group)
-                dpg.show_item(self.vertical_bode_group)
-                self.nyquist_plot.resize(-1, self.minimum_plot_side)
-        else:
-            if dpg.is_item_shown(self.vertical_bode_group):
-                dpg.show_item(self.horizontal_bode_group)
-                dpg.hide_item(self.vertical_bode_group)
-            dpg.split_frame()
-            width, height = dpg.get_item_rect_size(self.plot_window)
-            width = round((width - 24) / 2) + 7
-            height = height - 300 - 24 * 2 - 2
-            self.nyquist_plot.resize(width, height)
-            self.bode_plot_horizontal.resize(width, height)
+        return
 
     def clear(self, hide: bool = True):
         self.data_sets_combo.clear()
@@ -975,8 +903,8 @@ class KramersKronigTab:
         dpg.set_item_user_data(self.perform_test_button, None)
         self.residuals_plot.clear(delete=False)
         self.nyquist_plot.clear(delete=False)
-        self.bode_plot_horizontal.clear(delete=False)
-        self.bode_plot_vertical.clear(delete=False)
+        self.bode_plot.clear(delete=False)
+        self.impedance_plot.clear(delete=False)
 
     def get_settings(self) -> TestSettings:
         return self.settings_menu.get_settings()
@@ -1037,23 +965,23 @@ class KramersKronigTab:
         mag: ndarray
         phase: ndarray
         freq, mag, phase = data.get_bode_data()
-        self.bode_plot_horizontal.update(
+        self.bode_plot.update(
             index=0,
             frequency=freq,
             magnitude=mag,
             phase=phase,
         )
-        self.bode_plot_vertical.update(
+        self.impedance_plot.update(
             index=0,
             frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            real=real,
+            imaginary=imag,
         )
 
     def assert_test_up_to_date(self, test: TestResult, data: DataSet):
         # Check if the number of unmasked points is the same
-        Z_exp: ndarray = data.get_impedance()
-        Z_test: ndarray = test.get_impedance()
+        Z_exp: ndarray = data.get_impedances()
+        Z_test: ndarray = test.get_impedances()
         assert Z_exp.shape == Z_test.shape, "The number of data points differ!"
         # Check if the masks are the same
         mask_exp: Dict[int, bool] = data.get_mask()
@@ -1073,13 +1001,12 @@ class KramersKronigTab:
             ), f"The data set's mask differs at index {i + 1}!"
         # Check if the frequencies and impedances are the same
         assert allclose(
-            test.get_frequency(), data.get_frequency()
+            test.get_frequencies(),
+            data.get_frequencies(),
         ), "The frequencies differ!"
-        real_residual: ndarray
-        imaginary_residual: ndarray
-        real_residual, imaginary_residual = _calculate_residuals(Z_exp, Z_test)
-        assert allclose(test.real_residual, real_residual) and allclose(
-            test.imaginary_residual, imaginary_residual
+        residuals: ComplexResiduals = _calculate_residuals(Z_exp, Z_test)
+        assert allclose(test.residuals.real, residuals.real) and allclose(
+            test.residuals.imag, residuals.imag
         ), "The data set's impedances differ from what they were when the test was performed!"
 
     def select_test_result(self, test: Optional[TestResult], data: Optional[DataSet]):
@@ -1102,9 +1029,10 @@ class KramersKronigTab:
                 self.residuals_plot.queue_limits_adjustment()
             if dpg.get_value(self.adjust_nyquist_limits_checkbox):
                 self.nyquist_plot.queue_limits_adjustment()
-            if dpg.get_value(self.adjust_bode_limits_horizontal_checkbox):
-                self.bode_plot_horizontal.queue_limits_adjustment()
-                self.bode_plot_vertical.queue_limits_adjustment()
+            if dpg.get_value(self.adjust_bode_limits_checkbox):
+                self.bode_plot.queue_limits_adjustment()
+            if dpg.get_value(self.adjust_impedance_limits_checkbox):
+                self.impedance_plot.queue_limits_adjustment()
             return
         self.results_combo.set(test.get_label())
         message: str
@@ -1126,7 +1054,7 @@ class KramersKronigTab:
         freq: ndarray
         real: ndarray
         imag: ndarray
-        freq, real, imag = test.get_residual_data()
+        freq, real, imag = test.get_residuals_data()
         self.residuals_plot.update(
             index=0,
             frequency=freq,
@@ -1150,7 +1078,7 @@ class KramersKronigTab:
         mag: ndarray
         phase: ndarray
         freq, mag, phase = test.get_bode_data()
-        self.bode_plot_horizontal.update(
+        self.bode_plot.update(
             index=1,
             frequency=freq,
             magnitude=mag,
@@ -1159,35 +1087,50 @@ class KramersKronigTab:
         freq, mag, phase = test.get_bode_data(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_horizontal.update(
+        self.bode_plot.update(
             index=2,
             frequency=freq,
             magnitude=mag,
             phase=phase,
         )
-        freq, mag, phase = test.get_bode_data()
-        self.bode_plot_vertical.update(
+        freq = test.get_frequencies()
+        Z: ndarray = test.get_impedances()
+        self.impedance_plot.update(
             index=1,
             frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            real=Z.real,
+            imaginary=-Z.imag,
         )
-        freq, mag, phase = test.get_bode_data(
+        freq = test.get_frequencies(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        self.bode_plot_vertical.update(
+        Z: ndarray = test.get_impedances(
+            num_per_decade=self.state.config.num_per_decade_in_simulated_lines
+        )
+        self.impedance_plot.update(
             index=2,
             frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            real=Z.real,
+            imaginary=-Z.imag,
         )
         if dpg.get_value(self.adjust_residuals_limits_checkbox):
             self.residuals_plot.queue_limits_adjustment()
         if dpg.get_value(self.adjust_nyquist_limits_checkbox):
             self.nyquist_plot.queue_limits_adjustment()
-        if dpg.get_value(self.adjust_bode_limits_horizontal_checkbox):
-            self.bode_plot_horizontal.queue_limits_adjustment()
-            self.bode_plot_vertical.queue_limits_adjustment()
+        if dpg.get_value(self.adjust_bode_limits_checkbox):
+            self.bode_plot.queue_limits_adjustment()
+        if dpg.get_value(self.adjust_impedance_limits_checkbox):
+            self.impedance_plot.queue_limits_adjustment()
+
+    def next_plot_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + 1
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
+
+    def previous_plot_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) - 1
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
     def show_enlarged_nyquist(self):
         signals.emit(
@@ -1199,8 +1142,15 @@ class KramersKronigTab:
     def show_enlarged_bode(self):
         signals.emit(
             Signal.SHOW_ENLARGED_PLOT,
-            plot=self.bode_plot_horizontal,
-            adjust_limits=dpg.get_value(self.adjust_bode_limits_horizontal_checkbox),
+            plot=self.bode_plot,
+            adjust_limits=dpg.get_value(self.adjust_bode_limits_checkbox),
+        )
+
+    def show_enlarged_impedance(self):
+        signals.emit(
+            Signal.SHOW_ENLARGED_PLOT,
+            plot=self.impedance_plot,
+            adjust_limits=dpg.get_value(self.adjust_impedance_limits_checkbox),
         )
 
     def show_enlarged_residuals(self):

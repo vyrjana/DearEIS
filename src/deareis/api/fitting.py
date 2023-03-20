@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,22 +18,22 @@
 # the LICENSES folder.
 
 from time import time as _time
-from typing import Optional
+from typing import (
+    Dict,
+    Optional,
+)
 from uuid import uuid4 as _uuid4
 from numpy import (
     integer as _integer,
     issubdtype as _issubdtype,
 )
 import pyimpspec as _pyimpspec
-from pyimpspec import (
-    Circuit,
-    FittedParameter,
-    FittingError,
-)
+from pyimpspec import Circuit
 from deareis.data import (
     DataSet,
     FitResult,
     FitSettings,
+    FittedParameter,
 )
 from deareis.enums import (
     CNLSMethod,
@@ -48,7 +48,7 @@ from deareis.enums import (
 def fit_circuit(
     data: DataSet,
     settings: FitSettings,
-    num_procs: int = -1,
+    num_procs: int = 0,
 ) -> FitResult:
     """
     Wrapper for the `pyimpspec.fit_circuit` function.
@@ -63,8 +63,9 @@ def fit_circuit(
     settings: FitSettings
         The settings that determine the circuit and how the fit is performed.
 
-    num_procs: int = -1
+    num_procs: int, optional
         The maximum number of parallel processes to use when method is `CNLSMethod.AUTO` and/or weight is `Weight.AUTO`.
+        A value less than 1 will result in an attempt to automatically figure out a suitable value.
 
     Returns
     -------
@@ -86,24 +87,34 @@ def fit_circuit(
     weight: Optional[Weight] = _value_to_weight.get(result.weight)
     assert method is not None
     assert weight is not None
+    parameters: Dict[str, Dict[str, FittedParameter]] = {}
+    for element_symbol in result.parameters:
+        parameters[element_symbol] = {}
+        for parameter_symbol, param in result.parameters[element_symbol].items():
+            parameters[element_symbol][parameter_symbol] = FittedParameter(
+                value=param.value,
+                stderr=param.stderr,
+                fixed=param.fixed,
+                unit=param.unit,
+            )
     return FitResult(
-        _uuid4().hex,
-        _time(),
-        result.circuit,
-        result.parameters,
-        result.frequency,
-        result.impedance,
-        result.real_residual,
-        result.imaginary_residual,
-        data.get_mask(),
-        result.minimizer_result.chisqr,
-        result.minimizer_result.redchi,
-        result.minimizer_result.aic,
-        result.minimizer_result.bic,
-        result.minimizer_result.ndata,
-        result.minimizer_result.nfree,
-        result.minimizer_result.nfev,
-        method,
-        weight,
-        settings,
+        uuid=_uuid4().hex,
+        timestamp=_time(),
+        circuit=result.circuit,
+        parameters=parameters,
+        frequencies=result.frequencies,
+        impedances=result.impedances,
+        residuals=result.residuals,
+        mask=data.get_mask(),
+        pseudo_chisqr=result.pseudo_chisqr,
+        chisqr=result.minimizer_result.chisqr,
+        red_chisqr=result.minimizer_result.redchi,
+        aic=result.minimizer_result.aic,
+        bic=result.minimizer_result.bic,
+        ndata=result.minimizer_result.ndata,
+        nfree=result.minimizer_result.nfree,
+        nfev=result.minimizer_result.nfev,
+        method=method,
+        weight=weight,
+        settings=settings,
     )

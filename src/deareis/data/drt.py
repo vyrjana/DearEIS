@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import (
     Callable,
     Dict,
+    List,
     Tuple,
     Optional,
 )
@@ -28,15 +29,28 @@ from numpy import (
     angle,
     array,
     floating,
+    full,
+    isnan,
     issubdtype,
-    ndarray,
+    nan,
 )
 from scipy.signal import find_peaks
 from pandas import DataFrame
+from pyimpspec.analysis.utility import _calculate_pseudo_chisqr
 from pyimpspec import (
-    Circuit,
-    parse_cdc,
+    ComplexImpedances,
+    ComplexResiduals,
+    Frequencies,
+    Gamma,
+    Gammas,
+    Impedances,
+    Indices,
+    Phases,
+    Residuals,
+    TimeConstant,
+    TimeConstants,
 )
+from deareis.data.fitting import FitResult
 from deareis.enums import (
     DRTMethod,
     DRTMode,
@@ -51,14 +65,30 @@ from deareis.enums import (
     rbf_shape_to_label,
     rbf_type_to_label,
 )
-from deareis.utility import format_timestamp
+from deareis.utility import (
+    format_timestamp,
+    rename_dict_entry,
+)
+from deareis.data import DataSet
 
 
-VERSION: int = 2
+VERSION: int = 3
+
+
+def _parse_settings_v3(dictionary: dict) -> dict:
+    if "fit" not in dictionary:
+        dictionary["fit"] = None
+    if "circuit" in dictionary:
+        del dictionary["circuit"]
+    if "timeout" not in dictionary:
+        dictionary["timeout"] = 60
+    return dictionary
 
 
 def _parse_settings_v2(dictionary: dict) -> dict:
-    # TODO: Update implementation once VERSION is incremented
+    rename_dict_entry(dictionary, "W", "gaussian_width")
+    dictionary["fit"] = None
+    del dictionary["circuit"]
     return dictionary
 
 
@@ -66,7 +96,7 @@ def _parse_settings_v1(dictionary: dict) -> dict:
     dictionary["circuit"] = ""
     dictionary["W"] = 0.15
     dictionary["num_per_decade"] = 100
-    return _parse_settings_v2(dictionary)
+    return dictionary
 
 
 @dataclass(frozen=True)
@@ -105,11 +135,15 @@ class DRTSettings:
 
     inductance: bool
         Whether or not to include an inductive term in the calculations.
-        TR-RBF methods only.
+        TR-RBF method only.
 
     credible_intervals: bool
         Whether or not to calculate Bayesian credible intervals.
-        TR-RBF methods only.
+        TR-RBF method only.
+
+    timeout: int
+        The number of seconds to wait for the calculation of credible intervals to complete.
+        TR-RBF method only.
 
     num_samples: int
         The number of samples to use when calculating:
@@ -126,15 +160,13 @@ class DRTSettings:
         Smaller values provide stricter conditions.
         BHT and TR-RBF methods only.
 
-    circuit: Optional[Circuit]
-        A circuit that contains one or more "(RQ)" or "(RC)" elements connected in series.
+    fit: Optional[FitResult]
+        The FitResult for a circuit that contains one or more "(RQ)" or "(RC)" elements connected in series.
         An optional series resistance may also be included.
         For example, a circuit with a CDC representation of "R(RQ)(RQ)(RC)" would be a valid circuit.
-        It is highly recommended that the provided circuit has already been fitted.
-        However, if all of the various parameters of the provided circuit are at their default values, then an attempt will be made to fit the circuit to the data.
         m(RQ)fit method only.
 
-    W: float
+    gaussian_width: float
         The width of the Gaussian curve that is used to approximate the DRT of an "(RC)" element.
         m(RQ)fit method only.
 
@@ -152,11 +184,12 @@ class DRTSettings:
     shape_coeff: float
     inductance: bool
     credible_intervals: bool
+    timeout: int
     num_samples: int
     num_attempts: int
     maximum_symmetry: float
-    circuit: Optional[Circuit]
-    W: float
+    fit: Optional[FitResult]
+    gaussian_width: float
     num_per_decade: int
 
     def __repr__(self) -> str:
@@ -174,11 +207,12 @@ class DRTSettings:
             "shape_coeff": self.shape_coeff,
             "inductance": self.inductance,
             "credible_intervals": self.credible_intervals,
+            "timeout": self.timeout,
             "num_samples": self.num_samples,
             "num_attempts": self.num_attempts,
             "maximum_symmetry": self.maximum_symmetry,
-            "circuit": self.circuit.to_string(12) if self.circuit is not None else "",
-            "W": self.W,
+            "fit": self.fit.to_dict(session=False) if self.fit is not None else None,
+            "gaussian_width": self.gaussian_width,
             "num_per_decade": self.num_per_decade,
         }
 
@@ -187,31 +221,71 @@ class DRTSettings:
         assert type(dictionary) is dict
         assert "version" in dictionary
         version: int = dictionary["version"]
+        del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
             2: _parse_settings_v2,
+            3: _parse_settings_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        del dictionary["version"]
-        dictionary = parsers[version](dictionary)
+        v: int
+        p: Callable
+        for v, p in parsers.items():
+            if v < version:
+                continue
+            dictionary = p(dictionary)
+        assert "method" in dictionary
+        assert "mode" in dictionary
+        assert "lambda_value" in dictionary
+        assert "rbf_type" in dictionary
+        assert "derivative_order" in dictionary
+        assert "rbf_shape" in dictionary
+        assert "shape_coeff" in dictionary
+        assert "inductance" in dictionary
+        assert "credible_intervals" in dictionary
+        assert "timeout" in dictionary
+        assert "num_samples" in dictionary
+        assert "num_attempts" in dictionary
+        assert "maximum_symmetry" in dictionary
+        assert "fit" in dictionary
+        assert "gaussian_width" in dictionary
+        assert "num_per_decade" in dictionary
         dictionary["method"] = DRTMethod(dictionary["method"])
         dictionary["mode"] = DRTMode(dictionary["mode"])
         dictionary["rbf_type"] = RBFType(dictionary["rbf_type"])
         dictionary["rbf_shape"] = RBFShape(dictionary["rbf_shape"])
-        dictionary["circuit"] = (
-            parse_cdc(dictionary["circuit"]) if dictionary["circuit"] != "" else None
-        )
+        if dictionary["fit"] is not None:
+            dictionary["fit"] = FitResult.from_dict(dictionary["fit"])
         return Class(**dictionary)
 
 
+def _parse_result_v3(dictionary: dict) -> dict:
+    if "pseudo_chisqr" not in dictionary:
+        dictionary["pseudo_chisqr"] = nan
+    if "chisqr" in dictionary:
+        del dictionary["chisqr"]
+    return dictionary
+
+
 def _parse_result_v2(dictionary: dict) -> dict:
-    # TODO: Update implementation once VERSION is incremented
+    rename_dict_entry(dictionary, "tau", "time_constants")
+    rename_dict_entry(dictionary, "gamma", "real_gammas")
+    rename_dict_entry(dictionary, "imaginary_gamma", "imaginary_gammas")
+    rename_dict_entry(dictionary, "real_impedance", "real_impedances")
+    rename_dict_entry(dictionary, "imaginary_impedance", "imaginary_impedances")
+    rename_dict_entry(dictionary, "frequency", "frequencies")
+    rename_dict_entry(dictionary, "real_residual", "real_residuals")
+    rename_dict_entry(dictionary, "imaginary_residual", "imaginary_residuals")
+    rename_dict_entry(dictionary, "mean_gamma", "mean_gammas")
+    rename_dict_entry(dictionary, "lower_bound", "lower_bounds")
+    rename_dict_entry(dictionary, "upper_bound", "upper_bounds")
+    dictionary["chisqr"] = nan
     return dictionary
 
 
 def _parse_result_v1(dictionary: dict) -> dict:
-    return _parse_result_v2(dictionary)
+    return dictionary
 
 
 @dataclass
@@ -227,47 +301,43 @@ class DRTResult:
     timestamp: float
         The Unix time (in seconds) for when the test was performed.
 
-    tau: ndarray
+    time_constants: TimeConstants
         The time constants (in seconds).
 
-    gamma: ndarray
-        The corresponding gamma(tau) values (in ohms).
-        These are the gamma(tau) for the real part when the BHT method has been used.
+    real_gammas: Gammas
+        The corresponding gamma values (in ohms).
 
-    frequency: ndarray
+    imaginary_gammas: Gammas
+        The gamma values calculated based the imaginary part of the impedance data.
+        Only non-empty when the TR-RBF method has been used.
+
+    frequencies: Frequencies
         The frequencies of the analyzed data set.
 
-    impedance: ndarray
+    impedances: ComplexImpedances
         The modeled impedances.
 
-    real_residual: ndarray
-        The residuals for the real parts of the modeled and experimental impedances.
+    residuals: ComplexResiduals
+        The residuals for the real and imaginary parts of the modeled impedances.
 
-    imaginary_residual: ndarray
-        The residuals for the imaginary parts of the modeled and experimental impedances.
-
-    mean_gamma: ndarray
+    mean_gammas: Gammas
         The mean values for gamma(tau).
         Only non-empty when the TR-RBF method has been used and the Bayesian credible intervals have been calculated.
 
-    lower_bound: ndarray
+    lower_bounds: Gammas
         The lower bound for the gamma(tau) values.
         Only non-empty when the TR-RBF method has been used and the Bayesian credible intervals have been calculated.
 
-    upper_bound: ndarray
+    upper_bounds: Gammas
         The upper bound for the gamma(tau) values.
         Only non-empty when the TR-RBF method has been used and the Bayesian credible intervals have been calculated.
-
-    imaginary_gamma: ndarray
-        These are the gamma(tau) for the imaginary part when the BHT method has been used.
-        Only non-empty when the BHT method has been used.
 
     scores: Dict[str, complex]
         The scores calculated for the analyzed data set.
         Only non-empty when the BHT method has been used.
 
-    chisqr: float
-        The chi-square goodness of fit value for the modeled impedance.
+    pseudo_chisqr: float
+        The calculated |pseudo chi-squared| (eq. 14 in Boukamp, 1995).
 
     lambda_value: float
         The regularization parameter used as part of the Tikhonov regularization.
@@ -282,18 +352,17 @@ class DRTResult:
 
     uuid: str
     timestamp: float
-    tau: ndarray
-    gamma: ndarray
-    frequency: ndarray
-    impedance: ndarray
-    real_residual: ndarray
-    imaginary_residual: ndarray
-    mean_gamma: ndarray
-    lower_bound: ndarray
-    upper_bound: ndarray
-    imaginary_gamma: ndarray
+    time_constants: TimeConstants
+    real_gammas: Gammas
+    imaginary_gammas: Gammas
+    frequencies: Frequencies
+    impedances: ComplexImpedances
+    residuals: ComplexResiduals
+    mean_gammas: Gammas
+    lower_bounds: Gammas
+    upper_bounds: Gammas
     scores: Dict[str, complex]
-    chisqr: float
+    pseudo_chisqr: float
     lambda_value: float
     mask: Dict[int, bool]
     settings: DRTSettings
@@ -302,50 +371,99 @@ class DRTResult:
         return f"DRTResult ({self.get_label()}, {hex(id(self))})"
 
     @classmethod
-    def from_dict(Class, dictionary: dict) -> "DRTResult":
+    def from_dict(
+        Class, dictionary: dict, data: Optional[DataSet] = None
+    ) -> "DRTResult":
         """
         Create an instance from a dictionary.
+
+        Parameters
+        ----------
+        dictionary: dict
+            The dictionary to turn into a DRTResult object.
+
+        data: Optional[DataSet], optional
+            The DataSet object that this result is for.
+
+        Returns
+        -------
+        DRTResult
         """
-        assert type(dictionary) is dict
+        assert isinstance(dictionary, dict), dictionary
+        assert data is None or isinstance(data, DataSet), data
         assert "version" in dictionary
         version: int = dictionary["version"]
+        del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
             2: _parse_result_v2,
+            3: _parse_result_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        dictionary = parsers[version](dictionary)
-        dictionary["tau"] = array(dictionary["tau"])
-        dictionary["gamma"] = array(dictionary["gamma"])
-        dictionary["frequency"] = array(dictionary["frequency"])
-        dictionary["real_residual"] = array(dictionary["real_residual"])
-        dictionary["imaginary_residual"] = array(dictionary["imaginary_residual"])
-        dictionary["mean_gamma"] = array(dictionary["mean_gamma"])
-        dictionary["lower_bound"] = array(dictionary["lower_bound"])
-        dictionary["upper_bound"] = array(dictionary["upper_bound"])
-        dictionary["imaginary_gamma"] = array(dictionary["imaginary_gamma"])
+        v: int
+        p: Callable
+        for v, p in parsers.items():
+            if v < version:
+                continue
+            dictionary = p(dictionary)
+        assert "uuid" in dictionary
+        assert "timestamp" in dictionary
+        assert "time_constants" in dictionary
+        assert "real_gammas" in dictionary
+        assert "imaginary_gammas" in dictionary
+        assert "real_impedances" in dictionary
+        assert "imaginary_impedances" in dictionary
+        assert "frequencies" in dictionary
+        assert "real_residuals" in dictionary
+        assert "imaginary_residuals" in dictionary
+        assert "mean_gammas" in dictionary
+        assert "lower_bounds" in dictionary
+        assert "upper_bounds" in dictionary
+        assert "real_scores" in dictionary
+        assert "imaginary_scores" in dictionary
+        assert "pseudo_chisqr" in dictionary
+        assert "lambda_value" in dictionary
+        assert "mask" in dictionary
+        assert "settings" in dictionary
+        dictionary["time_constants"] = array(dictionary["time_constants"])
+        dictionary["real_gammas"] = array(dictionary["real_gammas"])
+        dictionary["imaginary_gammas"] = array(dictionary["imaginary_gammas"])
+        dictionary["frequencies"] = array(dictionary["frequencies"])
+        dictionary["mean_gammas"] = array(dictionary["mean_gammas"])
+        dictionary["lower_bounds"] = array(dictionary["lower_bounds"])
+        dictionary["upper_bounds"] = array(dictionary["upper_bounds"])
         dictionary["settings"] = DRTSettings.from_dict(dictionary["settings"])
-        del dictionary["version"]
         mask: Dict[str, bool] = dictionary["mask"]
-        key: str
-        for key in list(mask.keys()):
-            flag: bool = mask[key]
-            del mask[key]
-            mask[int(key)] = flag
-        dictionary["impedance"] = array(
+        dictionary["mask"] = {
+            i: mask.get(str(i), False) for i in range(0, len(dictionary["frequencies"]))
+        }
+        dictionary["impedances"] = array(
             list(
                 map(
                     lambda _: complex(*_),
                     zip(
-                        dictionary["real_impedance"],
-                        dictionary["imaginary_impedance"],
+                        dictionary["real_impedances"],
+                        dictionary["imaginary_impedances"],
                     ),
                 )
             )
         )
-        del dictionary["real_impedance"]
-        del dictionary["imaginary_impedance"]
+        del dictionary["real_impedances"]
+        del dictionary["imaginary_impedances"]
+        dictionary["residuals"] = array(
+            list(
+                map(
+                    lambda _: complex(*_),
+                    zip(
+                        dictionary["real_residuals"],
+                        dictionary["imaginary_residuals"],
+                    ),
+                )
+            )
+        )
+        del dictionary["real_residuals"]
+        del dictionary["imaginary_residuals"]
         dictionary["scores"] = {
             k: complex(
                 dictionary["real_scores"][k],
@@ -355,30 +473,39 @@ class DRTResult:
         }
         del dictionary["real_scores"]
         del dictionary["imaginary_scores"]
+        if isnan(dictionary["pseudo_chisqr"]):
+            dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
+                Z_exp=data.get_impedances(),
+                Z_fit=dictionary["impedances"],
+            )
         return Class(**dictionary)
 
     def to_dict(self) -> dict:
         """
         Return a dictionary that can be used to recreate an instance.
+
+        Returns
+        -------
+        dict
         """
         dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
             "timestamp": self.timestamp,
-            "tau": list(self.tau),
-            "gamma": list(self.gamma),
-            "real_impedance": list(self.impedance.real),
-            "imaginary_impedance": list(self.impedance.imag),
-            "frequency": list(self.frequency),
-            "real_residual": list(self.real_residual),
-            "imaginary_residual": list(self.imaginary_residual),
-            "mean_gamma": list(self.mean_gamma),
-            "lower_bound": list(self.lower_bound),
-            "upper_bound": list(self.upper_bound),
-            "imaginary_gamma": list(self.imaginary_gamma),
+            "time_constants": list(self.time_constants),
+            "real_gammas": list(self.real_gammas),
+            "imaginary_gammas": list(self.imaginary_gammas),
+            "real_impedances": list(self.impedances.real),
+            "imaginary_impedances": list(self.impedances.imag),
+            "frequencies": list(self.frequencies),
+            "real_residuals": list(self.residuals.real),
+            "imaginary_residuals": list(self.residuals.imag),
+            "mean_gammas": list(self.mean_gammas),
+            "lower_bounds": list(self.lower_bounds),
+            "upper_bounds": list(self.upper_bounds),
             "real_scores": {k: v.real for k, v in self.scores.items()},
             "imaginary_scores": {k: v.imag for k, v in self.scores.items()},
-            "chisqr": self.chisqr,
+            "pseudo_chisqr": self.pseudo_chisqr,
             "lambda_value": self.lambda_value,
             "mask": {k: True for k, v in self.mask.items() if v is True},
             "settings": self.settings.to_dict(),
@@ -388,221 +515,250 @@ class DRTResult:
     def get_label(self) -> str:
         """
         Generate a label for the result.
+
+        Returns
+        -------
+        str
         """
         method: str = drt_method_to_label[self.settings.method]
         timestamp: str = format_timestamp(self.timestamp)
         return f"{method} ({timestamp})"
 
-    def get_frequency(self) -> ndarray:
+    def get_frequencies(self) -> Frequencies:
         """
         Get the frequencies (in hertz) of the data set.
 
         Returns
         -------
-        ndarray
+        Frequencies
         """
-        return self.frequency
+        return self.frequencies
 
-    def get_impedance(self) -> ndarray:
+    def get_impedances(self) -> ComplexImpedances:
         """
         Get the complex impedance of the model.
 
         Returns
         -------
-        ndarray
+        ComplexImpedances
         """
-        return self.impedance
+        return self.impedances
 
-    def get_tau(self) -> ndarray:
+    def get_time_constants(self) -> TimeConstants:
         """
         Get the time constants.
 
         Returns
         -------
-        ndarray
+        TimeConstants
         """
-        return self.tau
+        return self.time_constants
 
-    def get_gamma(self, imaginary: bool = False) -> ndarray:
+    def get_gammas(self) -> Tuple[Gammas, Gammas]:
         """
         Get the gamma values.
 
-        Parameters
-        ----------
-        imaginary: bool = False
-            Get the imaginary gamma (non-empty only when using the BHT method).
-
         Returns
         -------
-        ndarray
+        Tuple[Gammas, Gammas]
         """
-        if imaginary is True:
-            return self.imaginary_gamma
-        return self.gamma
+        return (
+            self.real_gammas,
+            self.imaginary_gammas,
+        )
 
-    def to_dataframe(
+    def to_peaks_dataframe(
         self,
         threshold: float = 0.0,
-        imaginary: bool = False,
-        latex_labels: bool = False,
-        include_frequency: bool = False,
+        columns: Optional[List[str]] = None,
     ) -> DataFrame:
         """
         Get the peaks as a pandas.DataFrame object that can be used to generate, e.g., a Markdown table.
 
         Parameters
         ----------
-        threshold: float = 0.0
-            The threshold for the peaks (0.0 to 1.0 relative to the highest peak).
+        threshold: float, optional
+            The minimum peak height threshold (relative to the height of the tallest peak) for a peak to be included.
 
-        imaginary: bool = False
-            Use the imaginary gamma (non-empty only when using the BHT method).
-
-        latex_labels: bool = False
-            Whether or not to use LaTeX macros in the labels.
-
-        include_frequency: bool = False
-            Whether or not to also include a column with the frequencies corresponding to the time constants.
+        columns: Optional[List[str]], optional
+            The labels to use as the column headers for real time constants, real gammas, imaginary time constants, and imaginary gammas.
 
         Returns
         -------
         DataFrame
         """
-        tau: ndarray
-        gamma: ndarray
-        tau, gamma = self.get_peaks(threshold=threshold, imaginary=imaginary)
-        f: ndarray = 1 / tau
-        dictionary: dict = {}
-        dictionary["tau (s)" if not latex_labels else r"$\tau$ (s)"] = tau
-        if include_frequency is True:
-            dictionary["f (Hz)" if not latex_labels else r"$f$ (Hz)"] = f
-        dictionary[
-            "gamma (ohms)" if not latex_labels else r"$\gamma\ (\Omega)$"
-        ] = gamma
+        if columns is None:
+            if self.settings.method == DRTMethod.BHT:
+                columns = [
+                    "tau, real (s)",
+                    "gamma, real (ohm)",
+                    "tau, imag. (s)",
+                    "gamma, imag. (ohm)",
+                ]
+            else:
+                columns = [
+                    "tau (s)",
+                    "gamma (ohm)",
+                ]
+        assert isinstance(columns, list)
+        if self.settings.method == DRTMethod.BHT:
+            assert len(columns) >= 4
+        else:
+            assert len(columns) >= 2
+        real_taus: TimeConstants
+        real_gammas: Gammas
+        imag_taus: TimeConstants
+        imag_gammas: Gammas
+        (real_taus, real_gammas, imag_taus, imag_gammas) = self.get_peaks(
+            threshold=threshold
+        )
+        if self.settings.method != DRTMethod.BHT:
+            dictionary: dict = {
+                columns[0]: real_taus,
+                columns[1]: real_gammas,
+            }
+        else:
+            dictionary: dict = {
+                columns[0]: real_taus,
+                columns[1]: real_gammas,
+                columns[2]: imag_taus,
+                columns[3]: imag_gammas,
+            }
         return DataFrame.from_dict(dictionary)
 
     def get_peaks(
         self,
         threshold: float = 0.0,
-        imaginary: bool = False,
-    ) -> Tuple[ndarray, ndarray]:
+    ) -> Tuple[TimeConstants, Gammas, TimeConstants, Gammas]:
         """
         Get the time constants (in seconds) and gamma (in ohms) of peaks with magnitudes greater than the threshold.
         The threshold and the magnitudes are all relative to the magnitude of the highest peak.
 
         Parameters
         ----------
-        threshold: float = 0.0
+        threshold: float, optional
             The threshold for the relative magnitude (0.0 to 1.0).
-
-        imaginary: bool = False
-            Use the imaginary gamma (non-empty only when using the BHT method).
 
         Returns
         -------
-        Tuple[ndarray, ndarray]
+        Tuple[TimeConstants, Gammas, TimeConstants, Gammas]
         """
-        assert (
-            issubdtype(type(threshold), floating) and 0.0 <= threshold <= 1.0
-        ), threshold
-        assert type(imaginary) is bool, imaginary
-        gamma: ndarray = self.gamma if not imaginary else self.imaginary_gamma
-        assert type(gamma) is ndarray, gamma
-        if not gamma.any():
-            return (
-                array([]),
-                array([]),
-            )
-        indices: ndarray
-        indices, _ = find_peaks(gamma)
-        if not indices.any():
-            return (
-                array([]),
-                array([]),
-            )
-        max_g: float = max(gamma)
-        if max_g == 0.0:
-            return (
-                array([]),
-                array([]),
-            )
-        indices = array(
-            list(
-                filter(
-                    lambda _: gamma[_] / max_g > threshold and gamma[_] > 0.0, indices
+        assert issubdtype(type(threshold), floating), type(threshold)
+        assert 0.0 <= threshold <= 1.0, threshold
+
+        def filter_indices(gammas: Gammas) -> Indices:
+            max_g: Gamma = max(gammas)
+            indices: Indices = find_peaks(gammas)[0]
+            return array(
+                list(
+                    filter(
+                        lambda _: gammas[_] / max_g > threshold and gammas[_] > 0.0,
+                        indices,
+                    ),
                 )
             )
-        )
-        if indices.any():
-            return (
-                self.tau[indices],
-                gamma[indices],
-            )
+
+        real_indices: Indices = filter_indices(self.real_gammas)
+        real_taus: TimeConstants
+        real_gammas: Gammas
+        if real_indices.size > 0:
+            real_taus = self.time_constants[real_indices]
+            real_gammas = self.real_gammas[real_indices]
+        else:
+            real_taus = array([])
+            real_gammas = array([])
+        imag_indices: Indices
+        if self.imaginary_gammas.size > 0:
+            imag_indices = filter_indices(self.imaginary_gammas)
+            imag_taus: TimeConstants
+            imag_gammas: Gammas
+            if imag_indices.size > 0:
+                imag_taus = self.time_constants[imag_indices]
+                imag_gammas = self.imaginary_gammas[imag_indices]
+            else:
+                imag_taus = array([])
+                imag_gammas = array([])
+        else:
+            imag_taus = array([])
+            imag_gammas = array([])
+        if real_taus.size != imag_taus.size:
+
+            def pad(
+                t: TimeConstants,
+                g: Gammas,
+                w: int,
+            ) -> Tuple[TimeConstants, Gammas]:
+                tmp_taus: TimeConstants = full(w, nan, dtype=TimeConstant)
+                tmp_gammas: Gammas = full(w, nan, dtype=Gamma)
+                tmp_taus[: t.size] = t
+                tmp_gammas[: g.size] = g
+                return (
+                    tmp_taus,
+                    tmp_gammas,
+                )
+
+            max_size: int = max(real_taus.size, imag_taus.size)
+            real_taus, real_gammas = pad(real_taus, real_gammas, max_size)
+            imag_taus, imag_gammas = pad(imag_taus, imag_gammas, max_size)
         return (
-            array([]),
-            array([]),
+            real_taus,
+            real_gammas,
+            imag_taus,
+            imag_gammas,
         )
 
-    def get_nyquist_data(self) -> Tuple[ndarray, ndarray]:
+    def get_nyquist_data(self) -> Tuple[Impedances, Impedances]:
         """
         Get the data necessary to plot this DataSet as a Nyquist plot: the real and the negative imaginary parts of the impedances.
 
         Returns
         -------
-        Tuple[ndarray, ndarray]
+        Tuple[Impedances, Impedances]
         """
         return (
-            self.impedance.real,
-            -self.impedance.imag,
+            self.impedances.real,
+            -self.impedances.imag,
         )
 
-    def get_bode_data(self) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_bode_data(self) -> Tuple[Frequencies, Impedances, Phases]:
         """
         Get the data necessary to plot this DataSet as a Bode plot: the frequencies, the absolute magnitudes of the impedances, and the negative phase angles/shifts of the impedances in degrees.
 
         Returns
         -------
-        Tuple[ndarray, ndarray, ndarray]
+        Tuple[Frequencies, Impedances, Phases]
         """
         return (
-            self.frequency,
-            abs(self.impedance),
-            -angle(self.impedance, deg=True),
+            self.frequencies,
+            abs(self.impedances),
+            -angle(self.impedances, deg=True),
         )
 
-    def get_drt_data(self, imaginary: bool = False) -> Tuple[ndarray, ndarray]:
+    def get_drt_data(self) -> Tuple[TimeConstants, Gammas, Gammas]:
         """
         Get the data necessary to plot this DRTResult as a DRT plot: the time constants and the corresponding gamma values.
 
-        Parameters
-        ----------
-        imaginary: bool = False
-            Get the imaginary gamma (non-empty only when using the BHT method).
-
         Returns
         -------
-        Tuple[ndarray, ndarray]
+        Tuple[TimeConstants, Gammas, Gammas]
         """
-        gamma: ndarray = self.gamma if not imaginary else self.imaginary_gamma
-        if not gamma.any():
-            return (
-                array([]),
-                array([]),
-            )
         return (
-            self.tau,
-            gamma,
+            self.time_constants,
+            self.real_gammas,
+            self.imaginary_gammas,
         )
 
-    def get_drt_credible_intervals(self) -> Tuple[ndarray, ndarray, ndarray, ndarray]:
+    def get_drt_credible_intervals_data(
+        self,
+    ) -> Tuple[TimeConstants, Gammas, Gammas, Gammas]:
         """
         Get the data necessary to plot the Bayesian credible intervals for this DRTResult: the time constants, the mean gamma values, the lower bound gamma values, and the upper bound gamma values.
 
         Returns
         -------
-        Tuple[ndarray, ndarray, ndarray, ndarray]
+        Tuple[TimeConstants, Gammas, Gammas, Gammas]
         """
-        if not self.mean_gamma.any():
+        if not self.mean_gammas.any():
             return (
                 array([]),
                 array([]),
@@ -610,31 +766,32 @@ class DRTResult:
                 array([]),
             )
         return (
-            self.tau,
-            self.mean_gamma,
-            self.lower_bound,
-            self.upper_bound,
+            self.time_constants,
+            self.mean_gammas,
+            self.lower_bounds,
+            self.upper_bounds,
         )
 
-    def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_residuals_data(self) -> Tuple[Frequencies, Residuals, Residuals]:
         """
-        Get the data necessary to plot the relative residuals for this DRTResult: the frequencies, the relative residuals for the real parts of the impedances in percents, and the relative residuals for the imaginary parts of the impedances in percents.
+        Get the data necessary to plot the relative residuals for this DRTResult: the frequencies and the relative residuals for the real and imaginary parts of the impedances in percents.
 
         Returns
         -------
-        Tuple[ndarray, ndarray, ndarray]
+        Tuple[Frequencies, Residuals, Residuals]
         """
         return (
-            self.frequency,
-            self.real_residual * 100,
-            self.imaginary_residual * 100,
+            self.frequencies,
+            self.residuals.real * 100,
+            self.residuals.imag * 100,
         )
 
     def get_scores(self) -> Dict[str, complex]:
         """
-        Get the scores (BHT method) for the data set.
+        Get the scores for the data set.
         The scores are represented as complex values where the real and imaginary parts have magnitudes ranging from 0.0 to 1.0.
         A consistent impedance spectrum should score high.
+        BHT method only.
 
         Returns
         -------
@@ -642,32 +799,52 @@ class DRTResult:
         """
         return self.scores
 
-    def get_score_dataframe(self, latex_labels: bool = False) -> Optional[DataFrame]:
+    def to_scores_dataframe(
+        self,
+        columns: Optional[List[str]] = None,
+        rows: Optional[List[str]] = None,
+    ) -> Optional[DataFrame]:
         """
-        Get the scores (BHT) method for the data set as a pandas.DataFrame object that can be used to generate, e.g., a Markdown table.
+        Get the scores for the data set as a pandas.DataFrame object that can be used to generate, e.g., a Markdown table.
+        BHT method only.
 
         Parameters
         ----------
-        latex_labels: bool = False
-            Whether or not to use LaTeX macros in the labels.
+        columns: Optional[List[str]], optional
+            The labels for the column headers.
+
+        rows: Optional[List[str]], optional
+            The labels for the rows.
 
         Returns
         -------
-        Optional[DataFrame]
+        Optional[pandas.DataFrame]
         """
-        if not self.scores:
+        if self.settings.method != DRTMethod.BHT:
             return None
+        if columns is None:
+            columns = [
+                "Score",
+                "Real (%)",
+                "Imag. (%)",
+            ]
+        assert isinstance(columns, list), columns
+        assert len(columns) == 3
+        if rows is None:
+            rows = [
+                "Mean",
+                "Residuals, 1 sigma",
+                "Residuals, 2 sigma",
+                "Residuals, 3 sigma",
+                "Hellinger distance",
+                "Jensen-Shannon distance",
+            ]
+        assert isinstance(rows, list), rows
+        assert len(rows) == 6
         return DataFrame.from_dict(
             {
-                "Score": [
-                    "Mean" if not latex_labels else r"$s_\mu$",
-                    "Residuals, 1 sigma" if not latex_labels else r"$s_{1\sigma}$",
-                    "Residuals, 2 sigma" if not latex_labels else r"$s_{2\sigma}$",
-                    "Residuals, 3 sigma" if not latex_labels else r"$s_{3\sigma}$",
-                    "Hellinger distance" if not latex_labels else r"$s_{\rm HD}$",
-                    "Jensen-Shannon distance" if not latex_labels else r"$s_{\rm JSD}$",
-                ],
-                ("Real (%)" if not latex_labels else r"Real (\%)"): [
+                columns[0]: rows,
+                columns[1]: [
                     self.scores["mean"].real * 100,
                     self.scores["residuals_1sigma"].real * 100,
                     self.scores["residuals_2sigma"].real * 100,
@@ -675,7 +852,7 @@ class DRTResult:
                     self.scores["hellinger_distance"].real * 100,
                     self.scores["jensen_shannon_distance"].real * 100,
                 ],
-                ("Imaginary (%)" if not latex_labels else r"Imaginary (\%)"): [
+                columns[2]: [
                     self.scores["mean"].imag * 100,
                     self.scores["residuals_1sigma"].imag * 100,
                     self.scores["residuals_2sigma"].imag * 100,

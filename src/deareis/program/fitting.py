@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from multiprocessing import cpu_count
 from typing import (
     Optional,
 )
+import pyimpspec
 import deareis.api.fitting as api
 from deareis.data import (
     DataSet,
@@ -103,10 +103,16 @@ def perform_fit(*args, **kwargs):
     if data is None or settings is None:
         return
     assert data.get_num_points() > 0, "There are no data points to fit the circuit to!"
-    # Prevent the GUI from becoming unresponsive or sluggish
-    num_procs: int = max(2, cpu_count() - 1)
+    circuit: pyimpspec.Circuit = pyimpspec.parse_cdc(settings.cdc)
+    if len(circuit.get_elements()) == 0:
+        return
+    batch: bool = kwargs.get("batch", False)
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing fit")
-    fit: FitResult = api.fit_circuit(data=data, settings=settings, num_procs=num_procs)
+    fit: FitResult = api.fit_circuit(
+        data=data,
+        settings=settings,
+        num_procs=STATE.config.num_procs or -1,
+    )
     project.add_fit(data, fit)
     project_tab.populate_fits(project, data)
     project_tab.plotting_tab.populate_fits(
@@ -114,5 +120,6 @@ def perform_fit(*args, **kwargs):
         project.get_data_sets(),
         project_tab.get_active_plot(),
     )
-    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    if batch is False:
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

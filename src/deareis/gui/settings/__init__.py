@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,3 +20,7 @@
 from .appearance import AppearanceSettings
 from .defaults import show_defaults_settings_window
 from .keybindings import KeybindingRemapping
+from .user_defined_elements import (
+    refresh as refresh_user_defined_elements,
+    show_user_defined_elements_window,
+)

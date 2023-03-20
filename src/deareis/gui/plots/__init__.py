@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ class ModalPlotWindow:
             Nyquist: "Nyquist",
             Residuals: "Residuals",
             DRT: "Distribution of relaxation times",
-            Impedance: "Complex impedance",
+            Impedance: "Real and imaginary impedance",
             ImpedanceImaginary: "Imaginary impedance",
             ImpedanceReal: "Real impedance",
         }
@@ -62,10 +62,7 @@ class ModalPlotWindow:
         with dpg.window(
             label=labels.get(type(original), "Unknown plot type"),
             modal=True,
-            pos=(
-                x,
-                y,
-            ),
+            pos=(x, y),
             width=w,
             height=h,
             on_close=self.close,

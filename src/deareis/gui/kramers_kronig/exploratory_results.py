@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,9 +47,11 @@ from deareis.gui.plots import (
     Nyquist,
     Residuals,
 )
+from deareis.state import STATE
+from deareis.enums import Action
 from deareis.keybindings import (
-    is_alt_down,
-    is_control_down,
+    Keybinding,
+    TemporaryKeybindingHandler,
 )
 
 
@@ -79,9 +81,8 @@ class ExploratoryResults:
         self.residuals_plot: Optional[Residuals] = None
         self.nyquist_plot: Optional[Nyquist] = None
         self.bode_plot: Optional[Bode] = None
-        self.key_handler: int = dpg.generate_uuid()
         self._assemble()
-        self._setup_keybindings()
+        self.register_keybindings()
         self.data: DataSet = data
         self.results: List[TestResult] = results
         self.settings: TestSettings = settings
@@ -91,10 +92,12 @@ class ExploratoryResults:
         results.sort(key=lambda _: _.num_RC)
         default_label: str = ""
         self.label_to_result: Dict[str, TestResult] = {}
+        max_num_RC_length: int = len(str(max(self.num_RCs)))
         result: TestResult
         for result in results:
             label: str = (
-                f"{result.num_RC}: µ = {result.mu:.3f}, "
+                str(result.num_RC).rjust(max_num_RC_length)
+                + f": µ = {result.mu:.3f}, "
                 + f"log X² (ps.) = {log(result.pseudo_chisqr):.3f}"
             )
             if result == default_result:
@@ -122,31 +125,66 @@ class ExploratoryResults:
         self.plot(default_label)
         signals.register(Signal.VIEWPORT_RESIZED, self.resize)
 
-    def _setup_keybindings(self):
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.close,
-            )
-            dpg.add_key_release_handler(
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
                 key=dpg.mvKey_Return,
-                callback=lambda: self.accept(
-                    dpg.get_item_user_data(self.accept_button),
-                    keybinding=True,
-                ),
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
             )
-            dpg.add_key_release_handler(
+        callbacks[kb] = lambda: self.accept(
+            dpg.get_item_user_data(self.accept_button),
+        )
+        # Previous result
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
                 key=dpg.mvKey_Prior,
-                callback=lambda: self.plot(
-                    self.labels[(self.result_index - 1) % len(self.labels)]
-                ),
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_PRIMARY_RESULT,
             )
-            dpg.add_key_release_handler(
+        callbacks[kb] = lambda: self.plot(
+            self.labels[(self.result_index - 1) % len(self.labels)]
+        )
+        # Next result
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
                 key=dpg.mvKey_Next,
-                callback=lambda: self.plot(
-                    self.labels[(self.result_index + 1) % len(self.labels)]
-                ),
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_PRIMARY_RESULT,
             )
+        callbacks[kb] = lambda: self.plot(
+            self.labels[(self.result_index + 1) % len(self.labels)]
+        )
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
 
     def _assemble(self):
         x: int
@@ -220,8 +258,8 @@ class ExploratoryResults:
                         magnitude=array([]),
                         phase=array([]),
                         labels=(
-                            "|Z| (d)",
-                            "phi (d)",
+                            "Mod(Z), d.",
+                            "Phase(Z), d.",
                         ),
                         themes=(
                             themes.bode.magnitude_data,
@@ -232,7 +270,7 @@ class ExploratoryResults:
                         frequency=array([]),
                         magnitude=array([]),
                         phase=array([]),
-                        labels=("|Z| (f)", "phi (f)"),
+                        labels=("Mod(Z), f.", "Phase(Z), f."),
                         show_labels=False,
                         line=True,
                         themes=(
@@ -244,7 +282,7 @@ class ExploratoryResults:
                         frequency=array([]),
                         magnitude=array([]),
                         phase=array([]),
-                        labels=("|Z| (f)", "phi (f)"),
+                        labels=("Mod(Z), f.", "Phase(Z), f."),
                         themes=(
                             themes.bode.magnitude_simulation,
                             themes.bode.phase_simulation,
@@ -279,7 +317,7 @@ class ExploratoryResults:
         freq: ndarray
         real: ndarray
         imag: ndarray
-        freq, real, imag = result.get_residual_data()
+        freq, real, imag = result.get_residuals_data()
         self.residuals_plot.update(
             index=0,
             frequency=freq,
@@ -373,16 +411,10 @@ class ExploratoryResults:
     def close(self):
         dpg.hide_item(self.window)
         dpg.delete_item(self.window)
-        dpg.delete_item(self.key_handler)
+        self.keybinding_handler.delete()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         signals.unregister(Signal.VIEWPORT_RESIZED, self.resize)
 
-    def accept(self, result: TestResult, keybinding: bool = False):
-        if keybinding is True and not (
-            is_control_down()
-            if dpg.get_platform() == dpg.mvPlatform_Windows
-            else is_alt_down()
-        ):
-            return
+    def accept(self, result: TestResult):
         self.callback(self.data, result, self.settings)
         self.close()

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ from datetime import datetime
 from hashlib import sha1
 from os.path import exists
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
     Set,
@@ -34,6 +36,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 import dearpygui.dearpygui as dpg
 from numpy import (
     all as array_all,
+    array,
     asarray,
     float32,
     floating,
@@ -48,9 +51,26 @@ from numpy import (
     ndarray,
     pad,
 )
+from pyimpspec import (
+    Circuit,
+    Connection,
+    Container,
+    Element,
+    ImpedanceError,
+    InvalidParameterKey,
+    ParsingError,
+    TokenizingError,
+    parse_cdc as _parse_cdc,
+)
 
 
 MATH_REGISTRY: int = dpg.add_texture_registry()
+
+
+def rename_dict_entry(dictionary: dict, old: str, new: str):
+    assert new not in dictionary
+    dictionary[new] = dictionary[old]
+    del dictionary[old]
 
 
 def calculate_checksum(*args, **kwargs) -> str:
@@ -72,7 +92,8 @@ def calculate_checksum(*args, **kwargs) -> str:
 
 
 def calculate_window_position_dimensions(
-    width: Union[int, float] = 0.9, height: Union[int, float] = 0.9
+    width: Union[int, float] = 0.9,
+    height: Union[int, float] = 0.9,
 ) -> Tuple[int, int, int, int]:
     assert (issubdtype(type(width), floating) and width > 0.0 and width < 1.0) or (
         issubdtype(type(width), integer) and width > 0
@@ -331,3 +352,123 @@ def render_math(
     )
     plt.close(fig)
     return tag
+
+
+def find_parent_containers(circuit: Circuit) -> Dict[Element, Container]:
+    parent_containers: Dict[Element, Container] = {}
+
+    def mark_elements(connection: Connection, container: Optional[Container]):
+        nonlocal parent_containers
+        for elem_or_con in connection.get_elements(flattened=False):
+            if isinstance(elem_or_con, Connection):
+                mark_elements(connection=elem_or_con, container=container)
+            elif isinstance(elem_or_con, Container):
+                if container is not None:
+                    parent_containers[elem_or_con] = container
+                con: Optional[Connection]
+                for con in elem_or_con.get_subcircuits().values():
+                    if con is None:
+                        continue
+                    mark_elements(connection=con, container=elem_or_con)
+            elif container is not None:
+                parent_containers[elem_or_con] = container
+
+    mark_elements(
+        connection=circuit.get_connections(flattened=False)[0],
+        container=None,
+    )
+    return parent_containers
+
+
+def process_cdc(cdc: str) -> Tuple[Optional[Circuit], str]:
+    try:
+        circuit: Circuit = _parse_cdc(cdc)
+    except (TokenizingError, ParsingError, InvalidParameterKey) as err:
+        return (None, str(err))
+    try:
+        circuit.get_impedances(array([1e-3, 1e0, 1e3]))
+    except (ImpedanceError, NotImplementedError) as err:
+        return (None, str(err))
+    return (circuit, "")
+
+
+def format_latex_value(value: Any, fmt: str = "{:.3g}") -> str:
+    if isinstance(value, bool):
+        return str(value)
+    try:
+        float(value)
+    except ValueError:
+        return str(value)
+    return fmt.format(value)
+
+
+def format_latex_unit(unit: str) -> str:
+    assert isinstance(unit, str), unit
+    unit = unit.strip()
+    if unit == "":
+        return unit
+    stack: List[List[str]] = [[]]
+    chars: List[str] = []
+    c: str
+    for c in unit:
+        if c == "*":
+            chars.append(r" \times ")
+        elif c == "/":
+            chars.append(" / ")
+        elif c == "(":
+            chars.append("{")
+        elif c == ")":
+            chars.append("}")
+        else:
+            chars.append(c)
+    unit = "".join(chars)
+    return f"$\\rm {unit}$"
+
+
+def format_latex_element(label: str) -> str:
+    assert isinstance(label, str), label
+    if "_" not in label:
+        return f"$\\rm {label}$"
+    assert label.count("_") == 1
+    pre, post = label.split("_")
+    return f"$\\rm {pre}_{{{post}}}$"
+
+
+def pad_tab_labels(tab_bar: int):
+    labels: Dict[int, str] = {}
+    tab: int
+    for tab in dpg.get_item_children(tab_bar, slot=1):
+        labels[tab] = dpg.get_item_label(tab)
+    longest_length: int = max(map(len, labels.values()))
+    label: str
+    for tab, label in labels.items():
+        dpg.set_item_label(tab, label.ljust(longest_length))
+
+
+class HorizontalWidgets:
+    def __init__(self):
+        self.table: int = dpg.add_table(
+            header_row=False,
+            policy=dpg.mvTable_SizingStretchProp,
+        )
+        self.stage: int = dpg.add_stage()
+        dpg.push_container_stack(self.stage)
+
+    def __enter__(self) -> "HorizontalWidgets":
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        dpg.pop_container_stack()
+        with dpg.table_row(parent=self.table):
+            dpg.unstage(self.stage)
+
+    def add(self, tag: int, fraction: float):
+        assert isinstance(tag, int), tag
+        assert tag > 0
+        assert isinstance(fraction, float), fraction
+        assert 0.0 < fraction < 1.0
+        dpg.add_table_column(
+            init_width_or_weight=fraction,
+            parent=self.table,
+        )
+        dpg.set_item_width(tag, -1)

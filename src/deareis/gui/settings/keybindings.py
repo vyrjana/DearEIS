@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -92,6 +92,8 @@ class KeybindingTable:
         action: Action
         description: str
         for action, description in action_descriptions.items():
+            if action in (Action.CANCEL, Action.CUSTOM):
+                continue
             kb: Optional[Keybinding] = self.find_keybinding(action)
             filter_key: str = "|".join(
                 [str(kb) if kb else "", description.lower()]
@@ -303,7 +305,7 @@ class KeybindingRemapping:
             height=h,
             no_move=False,
             no_resize=True,
-            on_close=self.close_window,
+            on_close=self.close,
             tag=self.window,
         ):
             key_filter_input: int = dpg.generate_uuid()
@@ -335,13 +337,14 @@ Filter based on descriptions.
                 key_filter_input, description_filter_input, state
             )
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Clear all", callback=self.clear_all)
-                dpg.add_button(label="Reset", callback=self.reset)
+                button_pad: int = 12
+                dpg.add_button(label="Clear all".ljust(button_pad), callback=self.clear_all)
+                dpg.add_button(label="Reset".ljust(button_pad), callback=self.reset)
         self.key_handler: int = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,
-                callback=self.close_window,
+                callback=self.close,
             )
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
 
@@ -355,7 +358,7 @@ Filter based on descriptions.
         self.state.keybinding_handler.register(self.state.config.keybindings)
         self.table.populate()
 
-    def close_window(self):
+    def close(self):
         if self.table.is_remapping():
             return
         if dpg.does_item_exist(self.window):

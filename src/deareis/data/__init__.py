@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from .kramers_kronig import (
 from .fitting import (
     FitResult,
     FitSettings,
+    FittedParameter,
 )
 from .simulation import (
     SimulationResult,
@@ -38,4 +39,8 @@ from .plotting import (
 from .drt import (
     DRTResult,
     DRTSettings,
+)
+from .zhit import (
+    ZHITResult,
+    ZHITSettings,
 )

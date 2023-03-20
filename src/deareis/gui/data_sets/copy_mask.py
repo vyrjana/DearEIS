@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,20 +17,37 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, List
-from numpy import array, ndarray
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Tuple,
+)
+from numpy import (
+    array,
+    ndarray,
+)
 import dearpygui.dearpygui as dpg
-from deareis.gui.plots import Nyquist
+from deareis.gui.plots import (
+    BodeMagnitude,
+    BodePhase,
+    Nyquist,
+)
 import deareis.themes as themes
-from deareis.utility import calculate_window_position_dimensions
+from deareis.utility import (
+    calculate_window_position_dimensions,
+    pad_tab_labels,
+)
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.data import DataSet
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
+from deareis.state import STATE
+from deareis.enums import Action
 from deareis.keybindings import (
-    is_alt_down,
-    is_control_down,
+    Keybinding,
+    TemporaryKeybindingHandler,
 )
 
 
@@ -47,6 +64,95 @@ class CopyMask:
         ]
         self.labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
         self.callback: Callable = callback
+        self.create_window()
+        self.register_keybindings()
+        self.select_source(self.labels[0])
+        self.nyquist_plot.queue_limits_adjustment()
+        self.magnitude_plot.queue_limits_adjustment()
+        self.phase_plot.queue_limits_adjustment()
+
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Return,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
+            )
+        callbacks[kb] = self.accept
+        # Previous source
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_source(-1)
+        # Next source
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_source(1)
+        # Previous plot tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PLOT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=True,
+                action=Action.PREVIOUS_PLOT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_plot_tab(step=-1)
+        # Next plot tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PLOT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=True,
+                action=Action.NEXT_PLOT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_plot_tab(step=1)
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
+
+    def create_window(self):
         x: int
         y: int
         w: int
@@ -76,48 +182,65 @@ class CopyMask:
                     tag=self.combo,
                     callback=lambda s, a, u: self.select_source(a),
                 )
+            self.create_plots()
+            dpg.add_button(
+                label="Accept".ljust(12),
+                callback=self.accept,
+            )
+
+    def create_plots(self):
+        settings: List[dict] = [
+            {
+                "label": "Excluded",
+                "theme": themes.nyquist.data,
+            },
+            {
+                "label": "Included",
+                "theme": themes.bode.phase_data,
+                "show_label": False,
+            },
+            {
+                "label": "Included",
+                "line": True,
+                "theme": themes.bode.phase_data,
+            },
+        ]
+        self.plot_tab_bar: int = dpg.generate_uuid()
+        with dpg.tab_bar(tag=self.plot_tab_bar):
+            self.create_nyquist_plot(settings)
+            self.create_magnitude_plot(settings)
+            self.create_phase_plot(settings)
+        pad_tab_labels(self.plot_tab_bar)
+
+    def create_nyquist_plot(self, settings: List[dict]):
+        with dpg.tab(label="Nyquist"):
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
-            self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
-                label="Excluded",
-                theme=themes.nyquist.data,
-            )
-            self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
-                label="Included",
-                theme=themes.bode.phase_data,
-                show_label=False,
-            )
-            self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
-                label="Included",
-                line=True,
-                theme=themes.bode.phase_data,
-            )
-            dpg.add_button(label="Accept", callback=self.accept)
-        self.key_handler: int = dpg.generate_uuid()
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.close,
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Return,
-                callback=lambda: self.accept(keybinding=True),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Prior,
-                callback=lambda: self.cycle_source(-1),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Next,
-                callback=lambda: self.cycle_source(1),
-            )
-        self.select_source(self.labels[0])
-        self.nyquist_plot.queue_limits_adjustment()
+            for kwargs in settings:
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    **kwargs,
+                )
+
+    def create_magnitude_plot(self, settings: List[dict]):
+        with dpg.tab(label="Bode - magnitude"):
+            self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-24)
+            for kwargs in settings:
+                self.magnitude_plot.plot(
+                    frequency=array([]),
+                    magnitude=array([]),
+                    **kwargs,
+                )
+
+    def create_phase_plot(self, settings: List[dict]):
+        with dpg.tab(label="Bode - phase"):
+            self.phase_plot: BodePhase = BodePhase(width=-1, height=-24)
+            for kwargs in settings:
+                self.phase_plot.plot(
+                    frequency=array([]),
+                    phase=array([]),
+                    **kwargs,
+                )
 
     def cycle_source(self, step: int):
         assert type(step) is int, step
@@ -130,43 +253,71 @@ class CopyMask:
         assert type(label) is str, label
         self.preview_data.set_mask(self.data.get_mask())
         self.preview_data.set_mask(self.data_sets[self.labels.index(label)].get_mask())
-        self.update_preview()
+        self.update_previews()
 
-    def update_preview(self):
-        real: ndarray
-        imag: ndarray
-        real, imag = self.preview_data.get_nyquist_data(masked=True)
-        self.nyquist_plot.update(
-            index=0,
-            real=real,
-            imaginary=imag,
-        )
-        real, imag = self.preview_data.get_nyquist_data(masked=False)
-        self.nyquist_plot.update(
-            index=1,
-            real=real,
-            imaginary=imag,
-        )
-        self.nyquist_plot.update(
-            index=2,
-            real=real,
-            imaginary=imag,
-        )
+    def update_previews(self):
+        self.update_nyquist_plot(self.preview_data)
+        self.update_magnitude_plot(self.preview_data)
+        self.update_phase_plot(self.preview_data)
+
+    def update_nyquist_plot(self, data: DataSet):
+        data: List[Tuple[ndarray, ndarray]] = [
+            data.get_nyquist_data(masked=True),
+            data.get_nyquist_data(masked=False),
+            data.get_nyquist_data(masked=False),
+        ]
+        for i, (real, imag) in enumerate(data):
+            self.nyquist_plot.update(
+                index=i,
+                real=real,
+                imaginary=imag,
+            )
+
+    def update_magnitude_plot(self, data: DataSet):
+        data: List[Tuple[ndarray, ndarray, ndarray]] = [
+            data.get_bode_data(masked=True),
+            data.get_bode_data(masked=False),
+            data.get_bode_data(masked=False),
+        ]
+        i: int
+        freq: ndarray
+        mag: ndarray
+        for i, (freq, mag, _) in enumerate(data):
+            self.magnitude_plot.update(
+                index=i,
+                frequency=freq,
+                magnitude=mag,
+            )
+
+    def update_phase_plot(self, data: DataSet):
+        data: List[Tuple[ndarray, ndarray, ndarray]] = [
+            data.get_bode_data(masked=True),
+            data.get_bode_data(masked=False),
+            data.get_bode_data(masked=False),
+        ]
+        i: int
+        freq: ndarray
+        phase: ndarray
+        for i, (freq, _, phase) in enumerate(data):
+            self.phase_plot.update(
+                index=i,
+                frequency=freq,
+                phase=phase,
+            )
 
     def close(self):
         dpg.hide_item(self.window)
         dpg.delete_item(self.window)
-        dpg.delete_item(self.key_handler)
+        self.keybinding_handler.delete()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self, keybinding: bool = False):
-        if keybinding is True and not (
-            is_control_down()
-            if dpg.get_platform() == dpg.mvPlatform_Windows
-            else is_alt_down()
-        ):
-            return
+    def accept(self):
         self.callback(
             self.data_sets[self.labels.index(dpg.get_value(self.combo))].get_mask(),
         )
         self.close()
+
+    def cycle_plot_tab(self, step: int):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + step
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])

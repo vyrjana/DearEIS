@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,9 +42,7 @@ A resistor with an initial value of 25 kiloohms can de defined as 'R{R=25e3}' or
 
 The initial value can be defined as a fixed value by appending the numeric value with the lower- or upper-case letter 'f' (i.e. 'R{R=25e3f}' or 'R{R=25e3F}').
 
-A lower limit can be defined by appending a forward slash and then a numeric value (e.g. 'R{R=25e3/20e3}' sets 20 kiloohms as the lower limit).
-
-An upper limit can be defined in a similar way as a lower limit (e.g. 'R{R=25e3/20e3/30e3}' sets 30 kiloohms as the upper limit and 20 kiloohms as the lower limit). The lower limit can also be omitted (e.g. 'R{R=25e3//30e3}' sets 30 kiloohms as the upper limit while leaving the lower boundary unlimited).
+A lower limit can be defined by appending a forward slash and then a numeric value (e.g. 'R{R=25e3/20e3}' sets 20 kiloohms as the lower limit). An upper limit can be defined in a similar way as a lower limit (e.g. 'R{R=25e3/20e3/30e3}' sets 30 kiloohms as the upper limit and 20 kiloohms as the lower limit). Unconstrained limits can be defined with 'inf' (e.g., 'R{R=2e3/inf/1e4}').
 
 Some elements have multiple parameters and in that case multiple parameter definitions can be included in the CDC by separating the parameter definitions with commas (e.g. 'Q{Y=1e-5//1e-4,n=0.8F}').
 
@@ -52,8 +50,6 @@ A label can be defined by appending a colon and then a string of text (e.g. 'R{R
     """.strip(),
         "element_combo": """
 This drop-down list can be used to select an element that you want to add as a node to the window below once the 'Add' button is clicked.
-
-The 'Add dummy' button adds a dummy node that can be used as a junction point, which may be necessary when representing certain circuits using nodes.
     """.strip(),
         "basic_cdc": """
 This is the basic CDC output generated based on the nodes and connections in the window above.
@@ -68,8 +64,17 @@ This output is unlikely to be accepted by another program that accepts a CDC as 
         "status": """
 Potential issues with the circuit, which is defined using nodes and connections in the window above, are presented here.
     """.strip(),
+        "parse_cdc": """
+Parse the circuit description code (CDC) defined in the input field to the left, generate the corresponding circuit element nodes in the editor below, and connect all of the nodes.
+    """.strip(),
+        "add_element": """
+Add a node that represents the circuit element that is currently selected in the combo box to the left.
+    """.strip(),
+        "clear": """
+Remove all of the circuit element nodes.
+    """.strip(),
         "dummy_node": """
-A dummy node that can be used as a junction when required to construct a circuit.
+Add a dummy node that can be used as a junction.
     """.strip(),
     }
 )

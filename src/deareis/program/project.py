@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ from typing import (
     List,
     Optional,
 )
+from uuid import uuid4
 import dearpygui.dearpygui as dpg
 from deareis.data import (
     DataSet,
@@ -43,13 +44,17 @@ from deareis.gui import ProjectTab
 from deareis.gui.file_dialog import FileDialog
 from deareis.signals import Signal
 from deareis.state import STATE
-from deareis.utility import calculate_window_position_dimensions
+from deareis.utility import (
+    HorizontalWidgets,
+    calculate_window_position_dimensions,
+)
 import deareis.signals as signals
 
 
 def new_project(*args, **kwargs):
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Creating new project")
     project: Project = Project()
+    project._is_new = True
     project_tab: ProjectTab
     existing_tab: bool
     project_tab, existing_tab = STATE.add_project(project)
@@ -201,9 +206,7 @@ def restore_project_state(*args, **kwargs):
         settings=plot,
     )
     project_tab.populate_data_sets(project)
-    data: Optional[DataSet] = project_tab.get_active_data_set(
-        context=Context.DATA_SETS_TAB
-    )
+    data: Optional[DataSet] = project_tab.get_active_data_set()
     data_sets: List[DataSet] = project.get_data_sets()
     if data is None and data_sets:
         data = data_sets[0]
@@ -267,6 +270,7 @@ def save_project_as(*args, **kwargs):
         callback=lambda *a, **k: signals.emit(
             Signal.SAVE_PROJECT,
             close_project=kwargs.get("close_project", False),
+            replacement_uuid=uuid4().hex,
             **k,
         ),
         extensions=[".json"],
@@ -282,18 +286,28 @@ def save_project(*args, **kwargs):
     path: Optional[str] = kwargs.get("path", "").strip() or None
     if path is None and project.get_path().strip() == "":
         signals.emit(
-            Signal.SAVE_PROJECT_AS, close_project=kwargs.get("close_project", False)
+            Signal.SAVE_PROJECT_AS,
+            close_project=kwargs.get("close_project", False),
         )
         return
     assert path is None or exists(
         dirname(path)
     ), f"Folder does not exist: '{dirname(path)}'"
-    project.save(path)
-    STATE.update_project_state_saved_index(project)
-    project_tab.set_dirty(STATE.is_project_dirty(project))
+    if "replacement_uuid" in kwargs and project._is_new is False:  # Save as
+        old_uuid: str = project.uuid
+        old_path: str = project.get_path()
+        project.uuid = kwargs["replacement_uuid"]
+        project.save(path)
+        project.uuid = old_uuid
+        project.set_path(old_path)
+        signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
+    else:
+        project.save(path)
+        STATE.update_project_state_saved_index(project)
+        project_tab.set_dirty(STATE.is_project_dirty(project))
+        STATE.clear_project_backups([project])
     STATE.set_recent_projects(paths=[project.get_path()])
-    STATE.clear_project_backups([project])
-    if kwargs.get("close_project", False):
+    if kwargs.get("close_project", False) is True:
         STATE.remove_project(project)
         dpg.delete_item(project_tab.tab)
 
@@ -325,19 +339,17 @@ def close_project(*args, **kwargs):
 
     def save():
         close()
+        dpg.split_frame(delay=60)
         signals.emit(Signal.SAVE_PROJECT, close_project=True)
 
     x: int
     y: int
     w: int
     h: int
-    x, y, w, h = calculate_window_position_dimensions(300, 56)
+    x, y, w, h = calculate_window_position_dimensions(300, 104)
     with dpg.window(
         label="Unsaved changes",
-        pos=(
-            x,
-            y,
-        ),
+        pos=(x, y),
         width=w,
         height=h,
         no_resize=True,
@@ -349,13 +361,20 @@ def close_project(*args, **kwargs):
             wrap=260,
         )
         dpg.add_spacer(height=8)
-        with dpg.group(horizontal=True):
-            dpg.add_button(
-                label="Save",
-                callback=save,
+        hw: HorizontalWidgets
+        with HorizontalWidgets() as hw:
+            hw.add(
+                dpg.add_button(label="Save", callback=save),
+                fraction=0.33,
             )
-            dpg.add_button(label="Discard", callback=discard)
-            dpg.add_button(label="Cancel", callback=close)
+            hw.add(
+                dpg.add_button(label="Discard", callback=discard),
+                fraction=0.3,
+            )
+            hw.add(
+                dpg.add_button(label="Cancel", callback=close),
+                fraction=0.3,
+            )
     with dpg.handler_registry(tag=key_handler):
         dpg.add_key_release_handler(
             key=dpg.mvKey_Escape,

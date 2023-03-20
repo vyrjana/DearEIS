@@ -1,20 +1,49 @@
-# 3.4.3
+# 4.0.0
+
+- Added `Getting started` window when running DearEIS for the first time.
+- Added ability to replace outliers with interpolated points.
+- Added `Process` button to the `Data sets` tab in the spot where the `Average` button used to be and clicking the button opens a popup with `Average`, `Interpolate`, and `Subtract` buttons.
+- Added multiple plot types to most tabs and several modal windows as sub-tabs for each plot type.
+- Added ability to perform batch analyses via the GUI.
+- Added `Series resistance/capacitance/inductance` rows to the statistics table in the `Kramers-Kronig` tab.
+- Added `Z-HIT analysis` tab for reconstructing modulus data from phase data.
+- Added `Timeout` setting for the TR-RBF method in the `DRT analysis` tab.
+- Added a row for the log pseudo chi-squared to the statistics table in the `Fitting` tab.
+- Added highlighting of fitted parameters with values that were restricted by the lower or upper limit in the `Fitting` tab.
+- Added an `Adjust parameters` button, which brings up a window for adjusting initial values with a real-time preview, to the `Fitting` and `Simulation` tabs.
+- Added `Duplicate` button to the `Plotting` tab.
+- Added a window for defining a path to a Python script/package that defines one or more user-defined elements using pyimpspec's API.
+- Added setting for specifying how many parallel processes to use when, e.g., fitting circuits.
+- Updated to use version 4.0.0 of pyimpspec.
+- Updated project file and configuration file structures.
+- Updated DRTSettings implementation regarding the settings for the m(RQ)fit method.
+- Updated how "save as" works for projects (a new project tab is created alongside the original project tab after saving).
+- Updated how result labels are displayed in their respective drop-down lists.
+- Updated labels on plot axes, table headers, etc.
+- Updated the layout of the window for averaging data sets.
+- Updated tooltips.
+- Updated the `Subtract impedances` function to result in the creation of a new data set instead of replacing the existing data set.
+- Updated the keybindings in most of the modal windows to be based on similar keybindings that are available in other contexts (i.e., these keybindings are also affected by changes made by the user).
+- Switched to Sphinx for documentation.
+
+
+# 3.4.3 (2022/12/14)
 
 - Updated dependency versions.
 - Fixed a bug that caused `utility.format_number` to produce results with two exponents when given certain inputs.
 
 
-# 3.4.2
+# 3.4.2 (2022/11/28)
 
 - Updated documentation.
 
 
-# 3.4.1
+# 3.4.1 (2022/11/26)
 
 - Updated minimum version for pyimpspec.
 
 
-# 3.4.0
+# 3.4.0 (2022/11/26)
 
 - Added labels above the circuit previes in the `Fitting` and `Simulation` tabs to clarify that those correspond to the circuits used in the chosen result rather than what is specified in the settings on the left-hand side.
 - Added button that opens URL to tutorials.
@@ -25,7 +54,7 @@
 - Fixed a bug that caused DRT results to not always load properly.
 
 
-# 3.3.0
+# 3.3.0 (2022/11/22)
 
 - Added clickable hyperlinks to the `About` window.
 - Added the ability to subtract the impedance of a fitted circuit in the `Subtract impedance` window by choosing an existing fit result.
@@ -35,7 +64,7 @@
 - Fixed the BHT method (DRT analysis) so that it works properly when `num_procs` is set to greater than one and NumPy is using OpenBLAS.
 
 
-# 3.2.0
+# 3.2.0 (2022/11/01)
 
 - Added support for calculating the distribution of relaxation times using the `m(RQ)fit` method.
 - Added support (including a keybinding) for loading a simulated spectrum as a data set.
@@ -49,13 +78,13 @@
 - Fixed a bug that was triggered by having too few unmasked data points when performing Kramers-Kronig tests.
 
 
-# 3.1.3
+# 3.1.3 (2022/09/21)
 
 - Fixed bugs that caused the toggling of a plottable series (e.g., a data set or a Kramers-Kronig test result) in the `Plotting` tab to apply the change to the wrong plot under certain circumstances.
 - Fixed bugs that caused a failure to properly adjust the axis limits in cases where the difference between the maximum and minimum values being plotted was zero or all values were zero.
 
 
-# 3.1.2
+# 3.1.2 (2022/09/15)
 
 - Added the 3-sigma CI series to the legends of DRT plots.
 - Updated the order that the mean and 3-sigma CI series are plotted in DRT plots.
@@ -65,12 +94,12 @@
 - Updated labels in the `DRT plots` section of the appearance settings window.
 
 
-# 3.1.1
+# 3.1.1 (2022/09/13)
 
 - Updated API documentation.
 
 
-# 3.1.0
+# 3.1.0 (2022/09/11)
 
 - Added the ability to copy circuit diagrams to the clipboard as SVG from the `Fitting` and `Simulation` tabs.
 - Updated to use version 3.1.0 of `pyimpspec`, which resulted in the following changes:
@@ -87,7 +116,7 @@
 - Pinned Dear PyGui at version 1.6.2 until the automatic adjustment of axis limits in plots can be made to work properly with version 1.7.0.
 
 
-# 3.0.0
+# 3.0.0 (2022/09/05)
 
 **Breaking changes in the API!**
 
@@ -130,7 +159,7 @@
 - Fixed bugs that caused (un)selecting groups of items in the `Plotting` tab to not work properly.
 
 
-# 2.2.0
+# 2.2.0 (2022/08/10)
 
 - Added `num_per_decade` argument to the `deareis.mpl.plot_fit` function.
 - Added sorting of elements to the `to_dataframe` methods in the `FitResult` and `SimulationResult` classes.
@@ -140,7 +169,7 @@
 - Removed `tabulate` as explicit dependency since it was added as an explicit dependency to `pyimpspec`.
 
 
-# 2.1.0
+# 2.1.0 (2022/08/04)
 
 - Added a setting for the interval for saving automatic backups to the `Settings - defaults` window.
 - Added a changelog window that is shown automatically when DearEIS has been updated.
@@ -152,13 +181,13 @@
 - Refactored code.
 
 
-# 2.0.1
+# 2.0.1 (2022/08/01)
 
 - Added GitHub Actions workflow for testing the package (API only) on Linux (Ubuntu), MacOS, and Windows.
 - Fixed issues that prevented tests from passing.
 
 
-# 2.0.0
+# 2.0.0 (2022/07/31)
 
 - Added a window for exporting plots using matplotlib.
 	- Testing showed that attempting to free the memory allocated to the plot previews caused DearEIS to always crash on one of the computers used for testing.
@@ -189,18 +218,18 @@
 - Refactored code and removed deprecated code.
 
 
-# 1.1.0
+# 1.1.0 (2022/07/13)
 
 - Added support for `.dfr` data format.
 
 
-# 1.0.2
+# 1.0.2 (2022/07/09)
 
 - Updated classifiers in `setup.py`.
 - Fixed a bug that caused an error when deleting any data set.
 
 
-# 1.0.1
+# 1.0.1 (2022/07/05)
 
 - Added an Inno Setup Script for producing an installer for Windows.
 - Updated About window.
@@ -210,7 +239,7 @@
 - Refactored code.
 
 
-# 1.0.0
+# 1.0.0 (2022/06/16)
 
 - Rewrote large parts of the program.
 - Added the ability to create a project by merging two or more existing projects.
@@ -222,7 +251,7 @@
 - Various bug fixes.
 
 
-# 0.3.0
+# 0.3.0 (2022/04/04)
 
 - Added a `Plotting` tab that can be used to plot multiple data sets, test results, fit results, and simulation results in a single figure. Currently supports Nyquist, Bode (magnitude), and Bode (phase) plot types.
 - Added a setting for specifying the number of points per decade to use when drawing simulated responses as lines.
@@ -247,14 +276,14 @@
 - Fixed a bug that allowed specifying an invalid number of RC circuits for the Kramers-Kronig test.
 
 
-# 0.2.1
+# 0.2.1 (2022/03/28)
 
 - Fixed the handling of unsupported file formats when loading data sets.
 - Fixed erroneous extension on state file for storing recently opened projects.
 - Fixed the effect of editing notes on whether or not a project is dirty.
 - Fixed a bug that caused an exception just before the program terminates.
 
-# 0.2.0
+# 0.2.0 (2022/03/28)
 
 - Added a confirmation window when possibly overwriting a file while saving a project under a new name.
 - Added file extension filters to the file dialog when loading data sets.
@@ -263,21 +292,21 @@
 - Fixed a bug that prevented saving a project that had previously been saved, then modified just prior to an abrupt termination of the program, and finally restored from the snapshot created before the program terminated.
 
 
-# 0.1.3
+# 0.1.3 (2022/03/28)
 
 - Fixed a packaging bug that prevented the `console_script` entry point from working on Windows.
 
 
-# 0.1.2
+# 0.1.2 (2022/03/28)
 
 - Fixed a packaging bug that prevented the `console_script` entry point from working on Windows.
 
 
-# 0.1.1
+# 0.1.1 (2022/03/28)
 
 - Fixed a packaging bug that prevented third-party licenses from being included in the generated wheel.
 
 
-# 0.1.0
+# 0.1.0 (2022/03/28)
 
 - Initial public beta release.

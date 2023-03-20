@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,42 +21,19 @@ import dearpygui.dearpygui as _dpg
 
 _dpg.create_context()
 
+from pyimpspec import (
+    get_default_num_procs,
+    set_default_num_procs,
+)
 from deareis.data import Project
 from deareis.api.data import (
     DataSet,
-    # - exceptions
-    UnsupportedFileFormat,
     # - functions
     parse_data,
 )
-from deareis.api.circuit import (
-    Circuit,
-    CircuitBuilder,
-    # - connections
-    Connection,
-    Parallel,
-    Series,
-    # - elements
-    Element,
-    Capacitor,
-    ConstantPhaseElement,
-    DeLevieFiniteLength,
-    Gerischer,
-    HavriliakNegami,
-    HavriliakNegamiAlternative,
-    Inductor,
-    ModifiedInductor,
-    Resistor,
-    Warburg,
-    WarburgOpen,
-    WarburgShort,
-    # - exceptions
-    ParsingError,
-    UnexpectedCharacter,
-    # - functions
-    get_elements,
-    parse_cdc,
-)
+from deareis.api.circuit import *
+from deareis.typing import *
+from deareis.exceptions import *
 from deareis.api.kramers_kronig import (
     TestResult,
     TestSettings,
@@ -74,8 +51,6 @@ from deareis.api.fitting import (
     # - enums
     CNLSMethod,
     Weight,
-    # - exceptions
-    FittingError,
     # - functions
     fit_circuit,
 )
@@ -99,9 +74,17 @@ from deareis.api.drt import (
     DRTMode,
     RBFShape,
     RBFType,
-    # - exceptions
-    DRTError,
     # - functions
     calculate_drt,
+)
+from deareis.api.zhit import (
+    ZHITResult,
+    ZHITSettings,
+    # - enums
+    ZHITInterpolation,
+    ZHITSmoothing,
+    ZHITWindow,
+    # - functions
+    perform_zhit,
 )
 from deareis.api.plot import mpl  # matplotlib-based plotting

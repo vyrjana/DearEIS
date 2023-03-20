@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,8 +24,9 @@ from typing import (
     List,
     Optional,
 )
-from pyimpspec.data.formats import UnsupportedFileFormat
-from pyimpspec.data import get_parsers
+import dearpygui.dearpygui as dpg
+from pyimpspec.exceptions import UnsupportedFileFormat
+from pyimpspec import get_parsers
 import pyimpspec
 from deareis.data import (
     DRTResult,
@@ -34,11 +35,13 @@ from deareis.data import (
     Project,
     SimulationResult,
     TestResult,
+    ZHITResult,
 )
 from deareis.enums import Context
 from deareis.gui import ProjectTab
 from deareis.gui.data_sets.average_data_sets import AverageDataSets
 from deareis.gui.data_sets.copy_mask import CopyMask
+from deareis.gui.data_sets.interpolate_points import InterpolatePoints
 from deareis.gui.data_sets.subtract_impedance import SubtractImpedance
 from deareis.gui.data_sets.toggle_data_points import ToggleDataPoints
 from deareis.gui.file_dialog import FileDialog
@@ -58,6 +61,7 @@ def select_data_set(*args, **kwargs):
     data: Optional[DataSet] = kwargs.get("data")
     project_tab.select_data_set(data)
     project_tab.populate_tests(project, data)
+    project_tab.populate_zhits(project, data)
     project_tab.populate_drts(project, data)
     project_tab.populate_fits(project, data)
     project_tab.populate_simulations(project)
@@ -65,12 +69,42 @@ def select_data_set(*args, **kwargs):
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
+def load_zhit_as_data_set(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+    zhit: Optional[ZHITResult] = kwargs.get("zhit")
+    data: Optional[DataSet] = kwargs.get("data")
+    if zhit is None or data is None:
+        return
+    signals.emit(
+        Signal.SHOW_BUSY_MESSAGE,
+        message="Loading Z-HIT analysis result as data set",
+    )
+    new_data: DataSet = DataSet(
+        zhit.get_frequencies(),
+        zhit.get_impedances(),
+        mask={},
+        label=f"{data.get_label()} - {zhit.get_label()}",
+    )
+    project.add_data_set(new_data)
+    project_tab.populate_data_sets(project)
+    signals.emit(Signal.SELECT_DATA_SET, data=new_data)
+    signals.emit(
+        Signal.SELECT_PLOT_SETTINGS,
+        settings=project_tab.get_active_plot(),
+    )
+    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
+
 def load_simulation_as_data_set(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    simulation: SimulationResult = kwargs.get("simulation")
+    simulation: Optional[SimulationResult] = kwargs.get("simulation")
     if simulation is None:
         return
     signals.emit(
@@ -78,8 +112,8 @@ def load_simulation_as_data_set(*args, **kwargs):
         message="Loading simulation result as data set",
     )
     data: DataSet = DataSet(
-        simulation.get_frequency(),
-        simulation.get_impedance(),
+        simulation.get_frequencies(),
+        simulation.get_impedances(),
         mask={},
         label=simulation.get_label(),
     )
@@ -278,16 +312,22 @@ def apply_data_set_mask(*args, **kwargs):
     test: Optional[TestResult] = kwargs.get("test")
     drt: Optional[DRTResult] = kwargs.get("drt")
     fit: Optional[FitResult] = kwargs.get("fit")
+    zhit: Optional[ZHITResult] = kwargs.get("zhit")
     if test is not None:
         signals.emit(Signal.SELECT_TEST_RESULT, data=data, test=test)
     elif drt is not None:
         signals.emit(Signal.SELECT_DRT_RESULT, data=data, drt=drt)
     elif fit is not None:
         signals.emit(Signal.SELECT_FIT_RESULT, data=data, fit=fit)
+    elif zhit is not None:
+        signals.emit(Signal.SELECT_ZHIT_RESULT, data=data, zhit=zhit)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
 
 def select_data_sets_to_average(*args, **kwargs):
+    if "popup" in kwargs:
+        dpg.hide_item(kwargs["popup"])
+        dpg.split_frame(delay=33)
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
@@ -366,37 +406,68 @@ def select_data_set_mask_to_copy(*args, **kwargs):
 
 
 def select_impedance_to_subtract(*args, **kwargs):
+    if "popup" in kwargs:
+        dpg.hide_item(kwargs["popup"])
+        dpg.split_frame(delay=33)
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     data: Optional[DataSet] = kwargs.get("data")
     if project is None or project_tab is None or data is None:
         return
 
-    def replace_data(new: DataSet):
+    def add_data(new: DataSet):
         assert project is not None
         assert project_tab is not None
-        assert data is not None
-        project.replace_data_set(data, new)
+        project.add_data_set(new)
         project_tab.populate_data_sets(project)
         signals.emit(
-            Signal.SELECT_PLOT_SETTINGS, settings=project_tab.get_active_plot()
+            Signal.SELECT_PLOT_SETTINGS,
+            settings=project_tab.get_active_plot(),
         )
         signals.emit(Signal.SELECT_DATA_SET, data=new)
-        signals.emit(
-            Signal.SELECT_SIMULATION_RESULT,
-            simulation=project_tab.get_active_simulation(),
-            data=project_tab.get_active_data_set(context=Context.SIMULATION_TAB),
-        )
         signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
     subtract_impedance_window: SubtractImpedance = SubtractImpedance(
         data=data,
         data_sets=project.get_data_sets(),
         fits=project.get_fits(data),
-        callback=replace_data,
+        callback=add_data,
     )
     signals.emit(
         Signal.BLOCK_KEYBINDINGS,
         window=subtract_impedance_window.window,
         window_object=subtract_impedance_window,
+    )
+
+
+def select_points_to_interpolate(*args, **kwargs):
+    if "popup" in kwargs:
+        dpg.hide_item(kwargs["popup"])
+        dpg.split_frame(delay=33)
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    data: Optional[DataSet] = kwargs.get("data")
+    if project is None or project_tab is None or data is None:
+        return
+
+    def add_data(new: DataSet):
+        assert project is not None
+        assert project_tab is not None
+        project.add_data_set(new)
+        project_tab.populate_data_sets(project)
+        signals.emit(
+            Signal.SELECT_PLOT_SETTINGS,
+            settings=project_tab.get_active_plot(),
+        )
+        signals.emit(Signal.SELECT_DATA_SET, data=new)
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+
+    interpolate_points: InterpolatePoints = InterpolatePoints(
+        data=data,
+        callback=add_data,
+    )
+    signals.emit(
+        Signal.BLOCK_KEYBINDINGS,
+        window=interpolate_points.window,
+        window_object=interpolate_points,
     )

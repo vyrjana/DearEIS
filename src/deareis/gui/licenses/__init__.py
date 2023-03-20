@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,9 +21,20 @@ import dearpygui.dearpygui as dpg
 from deareis.utility import calculate_window_position_dimensions
 from os import walk
 from os.path import abspath, exists, dirname, join
-from typing import Dict, IO, List
+from typing import (
+    Callable,
+    Dict,
+    IO,
+    List,
+)
 from deareis.signals import Signal
 import deareis.signals as signals
+from deareis.state import STATE
+from deareis.enums import Action
+from deareis.keybindings import (
+    Keybinding,
+    TemporaryKeybindingHandler,
+)
 
 
 def read_file(path: str) -> str:
@@ -54,61 +65,150 @@ def get_licenses(root: str) -> Dict[str, str]:
     return licenses
 
 
-def show_license_window():
-    licenses: Dict[str, str] = get_licenses(dirname(abspath(__file__)))
-    x: int
-    y: int
-    w: int
-    h: int
-    x, y, w, h = calculate_window_position_dimensions(640, 540)
-    window: int = dpg.generate_uuid()
-    key_handler: int = dpg.generate_uuid()
+class LicensesWindow:
+    def __init__(self):
+        self.licenses: Dict[str, str] = get_licenses(dirname(abspath(__file__)))
+        self.create_window()
+        self.register_keybindings()
 
-    def close_window():
-        if dpg.does_item_exist(window):
-            dpg.delete_item(window)
-        if dpg.does_item_exist(key_handler):
-            dpg.delete_item(key_handler)
-        signals.emit(Signal.UNBLOCK_KEYBINDINGS)
-
-    with dpg.handler_registry(tag=key_handler):
-        dpg.add_key_release_handler(
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
             key=dpg.mvKey_Escape,
-            callback=close_window,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Previous tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PROJECT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=False,
+                mod_ctrl=True,
+                mod_shift=False,
+                action=Action.PREVIOUS_PROJECT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_tabs(step=-1)
+        # Next tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PROJECT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=False,
+                mod_ctrl=True,
+                mod_shift=False,
+                action=Action.NEXT_PROJECT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_tabs(step=1)
+        # Previous license
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_licenses(step=-1)
+        # Next license
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_licenses(step=1)
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
         )
 
-    with dpg.window(
-        label="Licenses",
-        modal=True,
-        pos=(
-            x,
-            y,
-        ),
-        width=w,
-        height=h,
-        no_move=False,
-        no_resize=True,
-        on_close=close_window,
-        tag=window,
-    ):
-        with dpg.tab_bar():
-            with dpg.tab(label="DearEIS"):
-                with dpg.child_window(border=False):
-                    dpg.add_text(licenses["DearEIS"], wrap=w)
-                del licenses["DearEIS"]
-            with dpg.tab(label="Dependencies"):
-                text_widget: int = dpg.generate_uuid()
+    def create_window(self):
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions(640, 540)
+        self.window: int = dpg.generate_uuid()
+        with dpg.window(
+            label="Licenses",
+            modal=True,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+            no_move=False,
+            no_resize=True,
+            on_close=self.close,
+            tag=self.window,
+        ):
+            self.tab_bar: int = dpg.generate_uuid()
+            with dpg.tab_bar(tag=self.tab_bar):
+                with dpg.tab(label="DearEIS"):
+                    with dpg.child_window(border=False):
+                        dpg.add_text(self.licenses["DearEIS"], wrap=w)
+                    del self.licenses["DearEIS"]
+                with dpg.tab(label="Dependencies"):
+                    self.text_widget: int = dpg.generate_uuid()
+                    items: List[str] = list(sorted(self.licenses.keys()))
+                    self.license_combo: int = dpg.generate_uuid()
+                    dpg.add_combo(
+                        items=items,
+                        default_value=items[0],
+                        width=-1,
+                        callback=self.show_dependency_license,
+                        tag=self.license_combo,
+                    )
+                    with dpg.child_window(border=False):
+                        dpg.add_text(
+                            self.licenses[items[0]],
+                            wrap=w,
+                            tag=self.text_widget,
+                        )
+        signals.emit(
+            Signal.BLOCK_KEYBINDINGS,
+            window=self.window,
+            window_object=self,
+        )
 
-                def show_dependency_license(sender: int, label: str):
-                    dpg.set_value(text_widget, licenses[label])
+    def show_dependency_license(self, sender: int, label: str):
+        dpg.set_value(self.text_widget, self.licenses[label])
 
-                items: List[str] = list(sorted(licenses.keys()))
-                dpg.add_combo(
-                    items=items,
-                    default_value=items[0],
-                    width=-1,
-                    callback=show_dependency_license,
-                )
-                with dpg.child_window(border=False):
-                    dpg.add_text(licenses[items[0]], wrap=w, tag=text_widget)
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
+    def cycle_tabs(self, step: int):
+        tabs: List[int] = dpg.get_item_children(self.tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.tab_bar)) + step
+        dpg.set_value(self.tab_bar, tabs[index % len(tabs)])
+
+    def cycle_licenses(self, step: int):
+        labels: List[str] = list(self.licenses.keys())
+        index: int = labels.index(dpg.get_value(self.license_combo)) + step
+        dpg.set_value(self.license_combo, labels[index % len(labels)])
+        self.show_dependency_license(self.license_combo, labels[index % len(labels)])
+
+    def close(self):
+        if dpg.does_item_exist(self.window):
+            dpg.delete_item(self.window)
+        self.keybinding_handler.delete()
+        signals.emit(Signal.UNBLOCK_KEYBINDINGS)
+
+
+def show_license_window():
+    LicensesWindow()

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,28 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from typing import (
+    Callable,
+    Dict,
+    Optional,
+)
 import dearpygui.dearpygui as dpg
 from deareis.utility import calculate_window_position_dimensions
 from deareis.signals import Signal
 import deareis.signals as signals
+from deareis.enums import Action
+from deareis.keybindings import (
+    Keybinding,
+    TemporaryKeybindingHandler,
+)
 
 
 class ErrorMessage:
     def __init__(self):
+        self.keybinding_handler: Optional[TemporaryKeybindingHandler] = None
+        self.create_window()
+
+    def create_window(self):
         self.window: int = dpg.generate_uuid()
         with dpg.window(
             label="ERROR",
@@ -63,12 +77,7 @@ An exception has been raised! The very end of the traceback (see below) may offe
         if not self.is_visible():
             dpg.show_item(self.window)
             dpg.split_frame()
-            self.key_handler: int = dpg.generate_uuid()
-            with dpg.handler_registry(tag=self.key_handler):
-                dpg.add_key_release_handler(
-                    key=dpg.mvKey_Escape,
-                    callback=self.hide,
-                )
+            self.register_keybindings()
         else:
             traceback = f"{dpg.get_value(self.traceback_text)}\n\n{traceback}"
         width: int
@@ -78,9 +87,25 @@ An exception has been raised! The very end of the traceback (see below) may offe
             dpg.set_value(self.message_text, message)
         dpg.set_value(self.traceback_text, traceback)
 
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.hide
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
+
     def hide(self):
-        if dpg.does_item_exist(self.key_handler):
-            dpg.delete_item(self.key_handler)
+        if self.keybinding_handler is not None:
+            self.keybinding_handler.delete()
         if dpg.is_item_visible(self.window):
             dpg.hide_item(self.window)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 
 from types import SimpleNamespace
 
-kulikovsky2020: str = "DOI:10.1039/D0CP02094J"
+kulikovsky2021: str = "DOI:10.1149/1945-7111/abf508"
 wan2015: str = "DOI:10.1016/j.electacta.2015.09.097"
 ciucci2015: str = "DOI:10.1016/j.electacta.2015.03.123"
 effat2017: str = "DOI:10.1016/j.electacta.2017.07.050"
@@ -33,23 +33,21 @@ drt = SimpleNamespace(
 The method to use when calculating the distribution of relaxation times.
 
 BHT: Bayesian Hilbert transform method.
+- {liu2020}
 
 TR-NNLS: Tikhonov regularization combined with non-negative least squares fitting.
+- {kulikovsky2021}
 
 TR-RBF: Tikhonov regularization combined with radial basis function (or piecewise linear) discretization and convex optimization.
-
-m(RQ)fit: multi-(RQ) complex non-linear least squares fit.
-
-The TR-NNLS method is very fast while the slower TR-RBF method provides the ability to optionally also calculate Bayesian credible intervals. The BHT method, while temperamental due to randomization of initial values, is able to provide numerical scores that can be used to assess the quality of an impedance spectrum. The m(RQ)fit method requires a suitable fitted circuit but may be able to distinguish peaks that are in close proximity and would only show up as broad peaks in some other methods.
-
-References:
-- {kulikovsky2020}
 - {wan2015}
 - {ciucci2015}
 - {effat2017}
-- {liu2020}
+
+m(RQ)fit: multi-(RQ) complex non-linear least squares fit.
 - {boukamp2015}
 - {boukamp2017}
+
+The TR-NNLS method is very fast while the slower TR-RBF method provides the ability to optionally also calculate Bayesian credible intervals. The BHT method, while temperamental due to randomization of initial values, is able to provide numerical scores that can be used to assess the quality of an impedance spectrum. The m(RQ)fit method requires a suitable fitted circuit but may be able to distinguish peaks that are in close proximity and would only show up as broad peaks in some other methods.
     """.strip(),
         "mode": """
 The data to use when performing the calculations:
@@ -72,6 +70,9 @@ This is only used when the method setting is set to BHT or TR-RBF.
         "credible_intervals": """
 Whether or not the Bayesican credible intervals are calculated when using the TR-RBF method. The number of samples to use can also be defined. More accurate results can be obtained with a greater number of samples albeit at the expense of requiring more time.
     """.strip(),
+        "credible_intervals_timeout": """
+How many seconds to wait for the calculation of credible intervals to finish before timing out.
+    """.strip(),
         "num_samples": """
 The number of samples to use when:
 - calculating Bayesian credible intervals (TR-RBF method)
@@ -93,8 +94,6 @@ DRT analyses work best with data sets where the imaginary part of the impedance 
 If the BHT or TR-RBF methods are used for the first time, then keeping the number of samples and attempts modest at first is recommended. It may take quite a long time depending on the computer's performance.
 
 If the BHT method is used, then scores for the consistency of the data will be included. The scores range from 0 to 100 %.
-
-Reference: {liu2020}
     """.strip(),
         "delete": """
 Delete the current analysis result.
@@ -123,13 +122,13 @@ Valid circuits consist of one or more parallel RQ (or RC) circuits in series. An
 
 This is only used when the method is set to m(RQ)fit.
     """.strip(),
-        "W": """
+        "gaussian_width": """
 The width of the Gauss function used to calculate the distribution of relaxation times for (RC) circuits (or (RQ) circuits where n ~ 1).
 
 This is only used when the method is set to m(RQ)fit.
     """.strip(),
         "num_per_decade": """
-The number of points per decade to use when calculating the distribution of relaxation times. This only affects the final step where the distribution of relaxation times are calculated using the analytical solutions (or approximations in the case of (RC) circuits).
+The number of points per decade to use when calculating the distribution of relaxation times. This affects the final step where the distribution of relaxation times are calculated using the analytical solutions (or approximations in the case of (RC) circuits) when using the m(RQ)fit method.
 
 This is only used when the method is set to m(RQ)fit.
     """.strip(),

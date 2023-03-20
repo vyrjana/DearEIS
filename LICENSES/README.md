@@ -43,6 +43,11 @@
 - License: custom license
 - Dependency via _pyimpspec_.
 
+# numdifftools
+- https://github.com/pbrod/numdifftools 
+- License: BSD 3-clause
+- Dependency via _pyimpspec_.
+
 # numpy
 - https://github.com/numpy/numpy
 - License: BSD 3-clause
@@ -86,7 +91,12 @@
 # SciPy
 - https://github.com/scipy/scipy
 - License: BSD 3-clause
-- Dependency via _pyimpspec_.
+- Dependency (primarily via _pyimpspec_).
+
+# statsmodels
+- https://github.com/statsmodels/statsmodels
+- License: BSD 3-clause
+- Dependency (primarily via _pyimpspec_).
 
 # SymPy
 - https://github.com/sympy/sympy

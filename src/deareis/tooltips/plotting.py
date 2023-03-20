@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ The label assigned to this data set in the 'Data sets' tab.
     """.strip(),
         "test_checkbox": """
 Whether or not this test result is included in the plot.
+    """.strip(),
+        "zhit_checkbox": """
+Whether or not this Z-HIT analysis result is included in the plot.
     """.strip(),
         "drt_checkbox": """
 Whether or not this DRT analysis result is included in the plot.

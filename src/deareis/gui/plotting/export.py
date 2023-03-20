@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 from math import floor
 from typing import (
     Callable,
+    Dict,
     List,
     Optional,
     Tuple,
@@ -60,6 +61,11 @@ from deareis.enums import (
     plot_preview_limit_to_label,
     label_to_plot_preview_limit,
     label_to_plot_units,
+)
+from deareis.enums import Action
+from deareis.keybindings import (
+    Keybinding,
+    TemporaryKeybindingHandler,
 )
 
 
@@ -433,7 +439,7 @@ class SettingsMenu:
 
 class PlotExporter:
     def __init__(self, config: Config):
-        self.key_handler: int = -1
+        self.keybinding_handler: Optional[TemporaryKeybindingHandler] = None
         self.settings: Optional[PlotSettings] = None
         self.project: Optional[Project] = None
         self.texture_registry: int = dpg.generate_uuid()
@@ -468,7 +474,7 @@ class PlotExporter:
                     with dpg.child_window(border=False):
                         self.save_button: int = dpg.add_button(
                             label="Save as",
-                            callback=lambda s, a, u: self.save(fig=u),
+                            callback=lambda s, a, u: self.save(figure=u),
                             user_data=None,
                             width=-1,
                         )
@@ -477,9 +483,9 @@ class PlotExporter:
 
     def clear(self):
         settings: PlotExportSettings = self.settings_menu.get_settings()
-        fig: Optional[Figure] = dpg.get_item_user_data(self.save_button)
-        if fig is not None:
-            plt.close(fig)
+        figure: Optional[Figure] = dpg.get_item_user_data(self.save_button)
+        if figure is not None:
+            plt.close(figure)
             dpg.set_item_user_data(self.save_button, None)
         if not settings.disable_preview:
             self.image_plot.clear()
@@ -490,28 +496,45 @@ class PlotExporter:
         self.settings_menu.set_settings(settings)
 
     def close(self):
-        if dpg.does_item_exist(self.key_handler):
-            dpg.delete_item(self.key_handler)
+        if self.keybinding_handler is not None:
+            self.keybinding_handler.delete()
         dpg.hide_item(self.window)
         self.clear()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def initialize_keybindings(self):
-        self.key_handler = dpg.generate_uuid()
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.close,
-            )
-            dpg.add_key_release_handler(
+    def register_keybindings(self):
+        from deareis.state import STATE
+
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
                 key=dpg.mvKey_Return,
-                callback=lambda: self.save(
-                    dpg.get_item_user_data(self.save_button), keybinding=True
-                ),
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
             )
+        callbacks[kb] = lambda: self.save(dpg.get_item_user_data(self.save_button))
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
 
     def show(self, settings: PlotSettings, project: Project):
-        self.initialize_keybindings()
+        self.register_keybindings()
         self.settings = settings
         self.project = project
         dpg.show_item(self.window)
@@ -556,7 +579,7 @@ class PlotExporter:
                 pixel_height = preview_limit
         width = pixel_width / dpi
         height = pixel_height / dpi
-        fig: Figure = plt.figure(
+        figure: Figure = plt.figure(
             figsize=(
                 width,
                 height,
@@ -564,7 +587,7 @@ class PlotExporter:
             dpi=dpi,
         )
         return (
-            fig,
+            figure,
             pixel_width,
             pixel_height,
         )
@@ -580,17 +603,17 @@ class PlotExporter:
             format_number(float(pixel_height), decimals=0, exponent=False),
         ]
         self.settings_menu.update_dimensions_output(pixel_dimensions)
-        fig: Figure = plt.figure(
+        figure: Figure = plt.figure(
             figsize=(
                 width,
                 height,
             ),
             dpi=dpi,
         )
-        return fig
+        return figure
 
-    def plot(self, fig: Figure, export_settings: PlotExportSettings):
-        assert type(fig) is Figure, type(fig)
+    def plot(self, figure: Figure, export_settings: PlotExportSettings):
+        assert type(figure) is Figure, type(figure)
         assert type(export_settings) is PlotExportSettings, type(export_settings)
         assert self.settings is not None
         assert self.project is not None
@@ -605,13 +628,13 @@ class PlotExporter:
             self.project,
             x_limits=x_limits,
             y_limits=y_limits,
-            show_title=export_settings.show_title,
-            show_legend=export_settings.show_legend,
+            title=export_settings.show_title,
+            legend=export_settings.show_legend,
             legend_loc=int(export_settings.legend_location),
             tight_layout=export_settings.has_tight_layout,
-            show_grid=export_settings.show_grid,
-            fig=fig,
-            axis=fig.gca(),
+            grid=export_settings.show_grid,
+            figure=figure,
+            axes=[figure.gca()],
             num_per_decade=export_settings.num_per_decade,
         )
 
@@ -628,15 +651,15 @@ class PlotExporter:
         self.clear()
         width = width / upi
         height = height / upi
-        final_fig: Figure = self.create_final_figure(width, height, dpi)
-        dpg.set_item_user_data(self.save_button, final_fig)
-        self.plot(final_fig, settings)
+        final_figure: Figure = self.create_final_figure(width, height, dpi)
+        dpg.set_item_user_data(self.save_button, final_figure)
+        self.plot(final_figure, settings)
         # Preview
         if not settings.disable_preview:
-            preview_fig: Figure
+            preview_figure: Figure
             pixel_width: int
             pixel_height: int
-            preview_fig, pixel_width, pixel_height = self.create_preview_figure(
+            preview_figure, pixel_width, pixel_height = self.create_preview_figure(
                 width,
                 height,
                 dpi,
@@ -644,8 +667,8 @@ class PlotExporter:
                 if settings.preview_limit != PlotPreviewLimit.NONE
                 else 0,
             )
-            canvas: FigureCanvasAgg = FigureCanvasAgg(preview_fig)
-            self.plot(preview_fig, settings)
+            canvas: FigureCanvasAgg = FigureCanvasAgg(preview_figure)
+            self.plot(preview_figure, settings)
             canvas.draw()
             tag: int = dpg.add_raw_texture(
                 pixel_width,
@@ -665,31 +688,25 @@ class PlotExporter:
                     pixel_height,
                 ),
             )
-            plt.close(preview_fig)
+            plt.close(preview_figure)
             self.image_plot.queue_limits_adjustment()
         x_min: float
         x_max: float
         y_min: float
         y_max: float
-        x_min, x_max = final_fig.gca().get_xlim()
-        y_min, y_max = final_fig.gca().get_ylim()
+        x_min, x_max = final_figure.gca().get_xlim()
+        y_min, y_max = final_figure.gca().get_ylim()
         self.settings_menu.update_plot_limits(x_min, x_max, y_min, y_max)
 
-    def save(self, fig: Optional[Figure], keybinding: bool = False):
-        if fig is None:
-            return
-        elif keybinding is True and not (
-            is_control_down()
-            if dpg.get_platform() == dpg.mvPlatform_Windows
-            else is_alt_down()
-        ):
+    def save(self, figure: Optional[Figure], keybinding: bool = False):
+        if figure is None:
             return
         extension: str = self.settings_menu.get_settings().extension
         self.close()
-        dpg.split_frame()
+        dpg.split_frame(delay=33)
         signals.emit(
             Signal.SAVE_PLOT,
-            figure=fig,
+            figure=figure,
             default_extension=extension if extension in PLOT_EXTENSIONS else ".png",
             extensions=PLOT_EXTENSIONS,
         )

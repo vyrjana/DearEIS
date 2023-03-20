@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,11 +19,8 @@
 
 from uuid import uuid4 as _uuid4
 from time import time as _time
+from numpy import array
 import pyimpspec as _pyimpspec
-from pyimpspec import (
-    DRTError,
-)
-from pyimpspec.analysis.drt.bht import _get_default_num_procs
 from deareis.data import DataSet
 from deareis.data.drt import (
     DRTResult,
@@ -44,7 +41,7 @@ from deareis.enums import (
 def calculate_drt(
     data: DataSet,
     settings: DRTSettings,
-    num_procs: int = -1,
+    num_procs: int = 0,
 ) -> DRTResult:
     """
     Wrapper for the `pyimpspec.calculate_drt` function.
@@ -53,7 +50,7 @@ def calculate_drt(
 
     References:
 
-    - Kulikovsky, A., 2020, Phys. Chem. Chem. Phys., 22, 19131-19138 (https://doi.org/10.1039/D0CP02094J)
+    - Kulikovsky, A., 2021, J. Electrochem. Soc., 168, 044512 (https://doi.org/10.1149/1945-7111/abf508)
     - Wan, T. H., Saccoccio, M., Chen, C., and Ciucci, F., 2015, Electrochim. Acta, 184, 483-499 (https://doi.org/10.1016/j.electacta.2015.09.097).
     - Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 (https://doi.org/10.1016/j.electacta.2015.03.123)
     - Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 (https://doi.org/10.1016/j.electacta.2017.07.050)
@@ -70,14 +67,12 @@ def calculate_drt(
     settings: DRTSettings
         The settings to use.
 
-    num_procs: int = -1
+    num_procs: int, optional
         The maximum number of processes to use.
-        A value below one results in using the total number of CPU cores present.
+        A value less than 1 will result in an attempt to automatically figure out a suitable value.
     """
-    if settings.method == DRTMethod.M_RQ_FIT:
-        assert settings.circuit is not None, "A (fitted) circuit has not been provided!"
-    if num_procs < 1:
-        num_procs = _get_default_num_procs()
+    if settings.method == DRTMethod.MRQ_FIT:
+        assert settings.fit is not None, "A fitted circuit has not been provided!"
     result: _pyimpspec.DRTResult = _pyimpspec.calculate_drt(
         data=data,
         method=_drt_method_to_value[settings.method],
@@ -92,27 +87,33 @@ def calculate_drt(
         num_samples=settings.num_samples,
         num_attempts=settings.num_attempts,
         maximum_symmetry=settings.maximum_symmetry,
-        circuit=settings.circuit,
-        W=settings.W,
-        num_per_decade=settings.num_per_decade,
+        circuit=settings.fit.circuit if settings.method == DRTMethod.MRQ_FIT else None,
+        fit=settings.fit if settings.method == DRTMethod.MRQ_FIT else None,
+        gaussian_width=settings.gaussian_width,
+        timeout=settings.timeout,
         num_procs=num_procs,
     )
+    real_gammas: _pyimpspec.Gammas = result.real_gammas if hasattr(result, "real_gammas") else result.gammas
+    imaginary_gammas: _pyimpspec.Gammas = result.imaginary_gammas if hasattr(result, "imaginary_gammas") else array([])
     return DRTResult(
-        _uuid4().hex,
-        _time(),
-        result.tau,
-        result.gamma,
-        result.frequency,
-        result.impedance,
-        result.real_residual,
-        result.imaginary_residual,
-        result.mean_gamma,
-        result.lower_bound,
-        result.upper_bound,
-        result.imaginary_gamma,
-        result.scores,
-        result.chisqr,
-        result.lambda_value,
-        data.get_mask().copy(),
-        settings,
+        uuid=_uuid4().hex,
+        timestamp=_time(),
+        time_constants=result.time_constants,
+        real_gammas=real_gammas,
+        imaginary_gammas=imaginary_gammas,
+        frequencies=result.frequencies,
+        impedances=result.impedances,
+        residuals=result.residuals,
+        mean_gammas=result.mean_gammas if hasattr(result, "mean_gammas") else array([]),
+        lower_bounds=result.lower_bounds
+        if hasattr(result, "lower_bounds")
+        else array([]),
+        upper_bounds=result.upper_bounds
+        if hasattr(result, "upper_bounds")
+        else array([]),
+        scores=result.scores if hasattr(result, "scores") else {},
+        pseudo_chisqr=result.pseudo_chisqr,
+        lambda_value=result.lambda_value if hasattr(result, "lambda_value") else -1.0,
+        mask=data.get_mask().copy(),
+        settings=settings,
     )

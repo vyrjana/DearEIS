@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ def parse() -> Namespace:
 DearEIS ({PACKAGE_VERSION})
 A GUI program for analyzing, simulating, and visualizing impedance spectra.
 
-Copyright (C) 2022 DearEIS developers
+Copyright (C) 2023 DearEIS developers
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

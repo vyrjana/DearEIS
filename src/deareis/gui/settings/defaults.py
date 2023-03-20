@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@ from typing import (
     Callable,
     List,
 )
+from pyimpspec import (
+    get_default_num_procs,
+    set_default_num_procs,
+)
 import dearpygui.dearpygui as dpg
 from deareis.utility import calculate_window_position_dimensions
 from deareis.tooltips import attach_tooltip
@@ -31,15 +35,18 @@ from deareis.data import (
     FitSettings,
     SimulationSettings,
     TestSettings,
+    ZHITSettings,
 )
 from deareis.config import (
     DEFAULT_TEST_SETTINGS,
+    DEFAULT_ZHIT_SETTINGS,
     DEFAULT_DRT_SETTINGS,
     DEFAULT_FIT_SETTINGS,
     DEFAULT_SIMULATION_SETTINGS,
     DEFAULT_PLOT_EXPORT_SETTINGS,
 )
 from deareis.gui.kramers_kronig import SettingsMenu as TestSettingsMenu
+from deareis.gui.zhit import SettingsMenu as ZHITSettingsMenu
 from deareis.gui.drt import SettingsMenu as DRTSettingsMenu
 from deareis.gui.fitting import SettingsMenu as FitSettingsMenu
 from deareis.gui.simulation import SettingsMenu as SimulationSettingsMenu
@@ -55,9 +62,11 @@ def section_spacer():
 def general_settings(label_pad: int, state):
     with dpg.collapsing_header(label="General", default_open=True):
         auto_backup_interval: int = dpg.generate_uuid()
+        num_procs_input: int = dpg.generate_uuid()
 
         def update_auto_backup_interval(value: int):
             state.config.auto_backup_interval = value
+            set_default_num_procs(value)
 
         with dpg.group(horizontal=True):
             dpg.add_text("Auto-backup interval".rjust(label_pad))
@@ -72,6 +81,23 @@ def general_settings(label_pad: int, state):
                 callback=lambda s, a, u: update_auto_backup_interval(a),
                 width=-54,
                 tag=auto_backup_interval,
+            )
+
+        def update_num_procs(value: int):
+            state.config.num_procs = value
+
+        with dpg.group(horizontal=True):
+            dpg.add_text("Number of processes".rjust(label_pad))
+            attach_tooltip(tooltips.general.num_procs.format(get_default_num_procs()))
+            dpg.add_input_int(
+                default_value=state.config.num_procs,
+                min_value=0,
+                min_clamped=True,
+                step=0,
+                on_enter=True,
+                callback=lambda s, a, u: update_num_procs(a),
+                width=-54,
+                tag=num_procs_input,
             )
         section_spacer()
 
@@ -97,6 +123,30 @@ def kramers_kronig_tab_settings(label_pad: int, state) -> Callable:
         settings: TestSettings = settings_menu.get_settings()
         state.config.default_test_settings = settings
         signals.emit(Signal.APPLY_TEST_SETTINGS, settings=settings)
+
+    return callback
+
+
+def zhit_tab_settings(label_pad: int, state) -> Callable:
+    with dpg.collapsing_header(label="Z-HIT analysis tab", default_open=True):
+        settings_menu: ZHITSettingsMenu = ZHITSettingsMenu(
+            state.config.default_zhit_settings,
+            label_pad,
+        )
+        with dpg.group(horizontal=True):
+            dpg.add_text("".rjust(label_pad))
+            dpg.add_button(
+                label="Restore defaults",
+                callback=lambda s, a, u: settings_menu.set_settings(
+                    DEFAULT_ZHIT_SETTINGS,
+                ),
+            )
+        section_spacer()
+
+    def callback():
+        settings: ZHITSettings = settings_menu.get_settings()
+        state.config.default_zhit_settings = settings
+        signals.emit(Signal.APPLY_ZHIT_SETTINGS, settings=settings)
 
     return callback
 
@@ -198,50 +248,64 @@ def plotting_tab_settings(label_pad: int, state) -> Callable:
     return callback
 
 
-def show_defaults_settings_window(state):
-    x: int
-    y: int
-    w: int
-    h: int
-    x, y, w, h = calculate_window_position_dimensions(390, 540)
+class DefaultsSettings:
+    def __init__(self, state):
+        self.settings_update_callbacks: List[Callable] = []
+        self.create_window(state)
+        self.register_keybindings()
 
-    window: int = dpg.generate_uuid()
-    key_handler: int = dpg.generate_uuid()
-    settings_update_callbacks: List[Callable] = []
+    def register_keybindings(self):
+        self.key_handler: int = dpg.generate_uuid()
+        with dpg.handler_registry(tag=self.key_handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=self.close,
+            )
 
-    def close_window():
-        for callback in settings_update_callbacks:
+    def create_window(self, state):
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions(390, 540)
+        self.window: int = dpg.generate_uuid()
+        with dpg.window(
+            label="Settings - defaults",
+            modal=True,
+            pos=(x, y),
+            width=w,
+            height=h,
+            no_resize=True,
+            on_close=self.close,
+            tag=self.window,
+        ):
+            label_pad: int = 24
+            general_settings(label_pad, state)
+            self.settings_update_callbacks.append(
+                kramers_kronig_tab_settings(label_pad, state)
+            )
+            self.settings_update_callbacks.append(zhit_tab_settings(label_pad, state))
+            self.settings_update_callbacks.append(drt_tab_settings(label_pad, state))
+            self.settings_update_callbacks.append(
+                fitting_tab_settings(label_pad, state)
+            )
+            self.settings_update_callbacks.append(
+                simulation_tab_settings(label_pad, state)
+            )
+            self.settings_update_callbacks.append(
+                plotting_tab_settings(label_pad, state)
+            )
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
+
+    def close(self):
+        for callback in self.settings_update_callbacks:
             callback()
-        if dpg.does_item_exist(window):
-            dpg.delete_item(window)
-        if dpg.does_item_exist(key_handler):
-            dpg.delete_item(key_handler)
+        if dpg.does_item_exist(self.window):
+            dpg.delete_item(self.window)
+        if dpg.does_item_exist(self.key_handler):
+            dpg.delete_item(self.key_handler)
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    with dpg.handler_registry(tag=key_handler):
-        dpg.add_key_release_handler(
-            key=dpg.mvKey_Escape,
-            callback=close_window,
-        )
 
-    with dpg.window(
-        label="Settings - defaults",
-        modal=True,
-        pos=(
-            x,
-            y,
-        ),
-        width=w,
-        height=h,
-        no_resize=True,
-        on_close=close_window,
-        tag=window,
-    ):
-        label_pad: int = 24
-        general_settings(label_pad, state)
-        settings_update_callbacks.append(kramers_kronig_tab_settings(label_pad, state))
-        settings_update_callbacks.append(drt_tab_settings(label_pad, state))
-        settings_update_callbacks.append(fitting_tab_settings(label_pad, state))
-        settings_update_callbacks.append(simulation_tab_settings(label_pad, state))
-        settings_update_callbacks.append(plotting_tab_settings(label_pad, state))
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
+def show_defaults_settings_window(state):
+    DefaultsSettings(state)

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -293,6 +293,24 @@ bode: SimpleNamespace = SimpleNamespace(
 )
 
 
+zhit: SimpleNamespace = SimpleNamespace(
+    **{
+        "magnitude": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "weight": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Square,
+        ),
+        "window": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 60.0],
+            dpg.mvPlotMarker_Plus,
+        ),
+    }
+)
+
+
 drt: SimpleNamespace = SimpleNamespace(
     **{
         "real_gamma": create_plot_series_theme(
@@ -322,7 +340,7 @@ impedance: SimpleNamespace = SimpleNamespace(
             dpg.mvPlotMarker_Circle,
         ),
         "real_simulation": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0],
+            [0.0, 153.0, 136.0, 190.0],
             dpg.mvPlotMarker_Cross,
         ),
         "imaginary_data": create_plot_series_theme(
@@ -330,7 +348,7 @@ impedance: SimpleNamespace = SimpleNamespace(
             dpg.mvPlotMarker_Square,
         ),
         "imaginary_simulation": create_plot_series_theme(
-            [0.0, 153.0, 136.0, 190.0],
+            [238.0, 51.0, 119.0, 190.0],
             dpg.mvPlotMarker_Plus,
         ),
     }
@@ -339,11 +357,11 @@ impedance: SimpleNamespace = SimpleNamespace(
 residuals: SimpleNamespace = SimpleNamespace(
     **{
         "real": create_plot_series_theme(
-            [238.0, 51.0, 119.0, 190.0],
+            [0.0, 153.0, 136.0, 190.0],
             dpg.mvPlotMarker_Circle,
         ),
         "imaginary": create_plot_series_theme(
-            [0.0, 153.0, 136.0, 190.0],
+            [238.0, 51.0, 119.0, 190.0],
             dpg.mvPlotMarker_Square,
         ),
     }
@@ -495,6 +513,7 @@ tab: SimpleNamespace = SimpleNamespace(
 
 _valid_cdc: int = dpg.generate_uuid()
 _invalid_cdc: int = dpg.generate_uuid()
+_normal_cdc: int = dpg.generate_uuid()
 with dpg.theme(tag=_valid_cdc):
     with dpg.theme_component(dpg.mvInputText, enabled_state=True):
         dpg.add_theme_color(
@@ -537,10 +556,32 @@ with dpg.theme(tag=_invalid_cdc):
                 255.0,
             ],
         )
+with dpg.theme(tag=_normal_cdc):
+    with dpg.theme_component(dpg.mvInputText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                100.0,
+                100.0,
+                100.0,
+                255.0,
+            ],
+        )
 cdc: SimpleNamespace = SimpleNamespace(
     **{
         "valid": _valid_cdc,
         "invalid": _invalid_cdc,
+        "normal": _normal_cdc,
     }
 )
 
@@ -597,34 +638,309 @@ result: SimpleNamespace = SimpleNamespace(
 )
 
 
-_valid_node: int = dpg.generate_uuid()
-with dpg.theme(tag=_valid_node):
-    with dpg.theme_component(dpg.mvNode):
+_default_background_color = (
+    62.0,
+    62.0,
+    62.0,
+    255.0,
+)
+_default_title_bar_color = (
+    37.0,
+    37.0,
+    37.0,
+    255.0,
+)
+_default_outline_color = (
+    100.0,
+    100.0,
+    100.0,
+    255.0,
+)
+_invalid_color = (
+    151.0,
+    29.0,
+    29.0,
+    255.0,
+)
+_invalid_unselected_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_invalid_unselected_node):
+    with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
             dpg.mvNodeCol_NodeBackground,
-            (
-                255.0,
-                255.0,
-                255.0,
-                255.0,
-            ),
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
         )
-_invalid_node: int = dpg.generate_uuid()
-with dpg.theme(tag=_invalid_node):
-    with dpg.theme_component(dpg.mvNode):
         dpg.add_theme_color(
-            dpg.mvNodeCol_NodeBackground,
+            dpg.mvNodeCol_NodeBackgroundHovered,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundSelected,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBar,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarHovered,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarSelected,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeOutline,
+            _default_outline_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
             (
-                255,
+                255.0,
                 0.0,
                 0.0,
                 255.0,
             ),
+            category=dpg.mvThemeCat_Core,
+        )
+_invalid_selected_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_invalid_selected_node):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundHovered,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundSelected,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBar,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarHovered,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarSelected,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeOutline,
+            _invalid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_valid_color = (
+    15.0,
+    86.0,
+    135.0,
+    255.0,
+)
+_valid_selected_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_selected_node):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            _valid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundHovered,
+            _valid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundSelected,
+            _valid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBar,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarHovered,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarSelected,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeOutline,
+            _valid_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_valid_unselected_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_unselected_node):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundHovered,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundSelected,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBar,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarHovered,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarSelected,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeOutline,
+            _default_outline_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_preview_node: int = dpg.generate_uuid()
+with dpg.theme(tag=_preview_node):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackground,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundHovered,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeBackgroundSelected,
+            _default_background_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBar,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarHovered,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_TitleBarSelected,
+            _default_title_bar_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_NodeOutline,
+            _default_outline_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_style(
+            dpg.mvNodeStyleVar_NodePadding,
+            x=8,
+            y=4,
+            category=dpg.mvThemeCat_Nodes,
         )
 circuit_editor: SimpleNamespace = SimpleNamespace(
     **{
-        "valid_node": _valid_node,
-        "invalid_node": _invalid_node,
+        "valid_selected_node": _valid_selected_node,
+        "valid_unselected_node": _valid_unselected_node,
+        "invalid_selected_node": _invalid_selected_node,
+        "invalid_unselected_node": _invalid_unselected_node,
+        "preview_node": _preview_node,
+    }
+)
+
+
+_limited_parameter: int = dpg.generate_uuid()
+with dpg.theme(tag=_limited_parameter):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+fitting: SimpleNamespace = SimpleNamespace(
+    **{
+        "limited_parameter": _limited_parameter,
     }
 )
 
@@ -717,6 +1033,57 @@ with dpg.theme() as transparent_modal_background:
             category=dpg.mvThemeCat_Core,
         )
 
+_valid_path: int = dpg.generate_uuid()
+_invalid_path: int = dpg.generate_uuid()
+with dpg.theme(tag=_valid_path):
+    with dpg.theme_component(dpg.mvInputText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ],
+        )
+with dpg.theme(tag=_invalid_path):
+    with dpg.theme_component(dpg.mvInputText, enabled_state=True):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+    with dpg.theme_component(dpg.mvInputText, enabled_state=False):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            [
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ],
+        )
+path: SimpleNamespace = SimpleNamespace(
+    **{
+        "valid": _valid_path,
+        "invalid": _invalid_path,
+    }
+)
+
 
 # URL theme
 url_theme: int
@@ -743,36 +1110,59 @@ with dpg.theme() as global_theme:
     # Enabled
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_style(
-            dpg.mvStyleVar_WindowRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_WindowRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_ChildRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_ChildRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_FrameRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_FrameRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_PopupRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_PopupRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_ScrollbarRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_ScrollbarRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_GrabRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_GrabRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
         dpg.add_theme_style(
-            dpg.mvStyleVar_TabRounding, _rounding, category=dpg.mvThemeCat_Core
+            dpg.mvStyleVar_TabRounding,
+            _rounding,
+            category=dpg.mvThemeCat_Core,
         )
 
         # Plots
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_PlotPadding, 8, 8, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_PlotPadding,
+            8,
+            8,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_LabelPadding, 5, 2, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_LabelPadding,
+            5,
+            2,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_LegendPadding, 5, 5, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_LegendPadding,
+            5,
+            5,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
             dpg.mvPlotStyleVar_LegendInnerPadding,
@@ -781,16 +1171,25 @@ with dpg.theme() as global_theme:
             category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_MousePosPadding, 8, 8, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_MousePosPadding,
+            8,
+            8,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_LineWeight, 1.5, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_LineWeight,
+            1.5,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_MarkerSize, 4.5, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_MarkerSize,
+            4.5,
+            category=dpg.mvThemeCat_Plots,
         )
         dpg.add_theme_style(
-            dpg.mvPlotStyleVar_MarkerWeight, 2.0, category=dpg.mvThemeCat_Plots
+            dpg.mvPlotStyleVar_MarkerWeight,
+            2.0,
+            category=dpg.mvThemeCat_Plots,
         )
 
         # Nodes

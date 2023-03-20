@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,6 +37,9 @@ Copy the chosen output to the clipboard.
         "open_circuit_editor": """
 Open the circuit editor.
     """.strip(),
+        "adjust_plot_limits": """
+Automatically adjust the limits of the plot to fit the data.
+    """.strip(),
         "adjust_nyquist_limits": """
 Automatically adjust the limits of the Nyquist plot to fit the data.
     """.strip(),
@@ -70,6 +73,9 @@ The highlighted result can be executed by pressing Enter. The window can be clos
 The number of actions between automatically saving a backup of the current state of a project in case of, e.g., crashes or power outages.
 
 Setting this interval to zero disables automatic backups.
+    """.strip(),
+        "num_procs": """
+The number of parallel processes to use when performing, e.g., circuit fitting. A value greater than 0 results in that specific number of processes being used. A value of 0 results in N-1 processes being used where N = {} at the moment. The value of N is based on the detected linear algebra libraries that are used by NumPy and by the values of some environment variables used by those libraries.
     """.strip(),
     }
 )

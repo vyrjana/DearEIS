@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 from inspect import signature
 from itertools import chain
 from typing import (
+    Any,
     Callable,
     Dict,
     List,
@@ -28,6 +29,7 @@ from typing import (
     Union,
 )
 from numpy import ndarray
+from pyimpspec import ComplexImpedance
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.tooltips import attach_tooltip
@@ -46,6 +48,7 @@ from deareis.data import (
     PlotSettings,
     SimulationResult,
     TestResult,
+    ZHITResult,
 )
 from deareis.gui.plots import (
     BodeMagnitude,
@@ -58,7 +61,10 @@ from deareis.gui.plots import (
 from deareis.gui.plots.base import Plot
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.utility import is_filtered_item_visible
+from deareis.utility import (
+    is_filtered_item_visible,
+    pad_tab_labels,
+)
 
 
 TABLE_HEADER_HEIGHT: int = 18
@@ -146,7 +152,9 @@ class DataSetsGroup:
                 dpg.add_checkbox(
                     default_value=data.uuid in settings.series_order,
                     callback=lambda s, a, u: signals.emit(
-                        Signal.TOGGLE_PLOT_SERIES, enabled=a, **u
+                        Signal.TOGGLE_PLOT_SERIES,
+                        enabled=a,
+                        **u,
                     ),
                     user_data={
                         "data_sets": [data],
@@ -224,7 +232,11 @@ class TestResultGroup:
     def __init__(self, parent: int):
         self.header: int = dpg.generate_uuid()
         with dpg.collapsing_header(
-            label="PLACEHOLDER", show=False, tag=self.header, parent=parent, indent=8
+            label="PLACEHOLDER",
+            show=False,
+            tag=self.header,
+            parent=parent,
+            indent=8,
         ):
             with dpg.group(horizontal=True, indent=8):
                 self.select_all_button: int = dpg.generate_uuid()
@@ -273,7 +285,10 @@ class TestResultGroup:
         self.active_hash = ""
 
     def populate(
-        self, tests: List[TestResult], data: DataSet, settings: PlotSettings
+        self,
+        tests: List[TestResult],
+        data: DataSet,
+        settings: PlotSettings,
     ) -> bool:
         assert type(tests) is list, tests
         assert type(data) is DataSet, data
@@ -508,11 +523,310 @@ class TestsGroup:
         return tests
 
 
+class ZHITResultGroup:
+    def __init__(self, parent: int):
+        self.header: int = dpg.generate_uuid()
+        with dpg.collapsing_header(
+            label="PLACEHOLDER",
+            show=False,
+            tag=self.header,
+            parent=parent,
+            indent=8,
+        ):
+            with dpg.group(horizontal=True, indent=8):
+                self.select_all_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Select all",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_PLOT_SERIES, **u
+                    ),
+                    user_data={},
+                    tag=self.select_all_button,
+                )
+                self.unselect_all_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Unselect all",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_PLOT_SERIES, **u
+                    ),
+                    user_data={},
+                    tag=self.unselect_all_button,
+                )
+            with dpg.group(indent=8):
+                self.table: int = dpg.generate_uuid()
+                with dpg.table(
+                    borders_outerV=True,
+                    borders_outerH=True,
+                    borders_innerV=True,
+                    borders_innerH=True,
+                    scrollY=True,
+                    freeze_rows=1,
+                    width=-1,
+                    height=TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT,
+                    tag=self.table,
+                ):
+                    dpg.add_table_column(label="", width_fixed=True)
+                    attach_tooltip(tooltips.plotting.zhit_checkbox)
+                    dpg.add_table_column(label="Label", width_fixed=True)
+            dpg.add_spacer(height=8)
+        self.zhit_hash: str = ""
+        self.active_hash: str = ""
+
+    def clear(self):
+        dpg.delete_item(self.table, children_only=True, slot=1)
+        dpg.configure_item(self.table, height=TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT)
+        dpg.hide_item(self.header)
+        self.zhit_hash = ""
+        self.active_hash = ""
+
+    def populate(
+        self,
+        zhits: List[ZHITResult],
+        data: DataSet,
+        settings: PlotSettings,
+    ) -> bool:
+        assert type(zhits) is list, zhits
+        assert type(data) is DataSet, data
+        assert type(settings) is PlotSettings, settings
+        zhit_hash: str = ",".join([_.uuid for _ in zhits])
+        if zhit_hash == self.zhit_hash:
+            return False
+        self.clear()
+        self.zhit_hash = zhit_hash
+        dpg.set_item_label(self.header, data.get_label())
+        zhit: ZHITResult
+        for zhit in zhits:
+            with dpg.table_row(
+                filter_key=f"{data.get_label().lower()} {zhit.get_label().lower()}",
+                parent=self.table,
+            ):
+                dpg.add_checkbox(
+                    default_value=zhit.uuid in settings.series_order,
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_PLOT_SERIES, enabled=a, **u
+                    ),
+                    user_data={
+                        "zhits": [zhit],
+                        "settings": settings,
+                    },
+                )
+                dpg.add_text(zhit.get_label())
+                attach_tooltip(zhit.get_label())
+        dpg.configure_item(
+            self.table,
+            height=TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT * max(1, len(zhits)),
+        )
+        dpg.show_item(self.header)
+        return True
+
+    def update(
+        self,
+        active_hash: str,
+        zhits: List[ZHITResult],
+        data: DataSet,
+        settings: PlotSettings,
+    ):
+        assert type(active_hash) is str, active_hash
+        assert type(zhits) is list, zhits
+        assert type(data) is DataSet, data
+        assert type(settings) is PlotSettings, settings
+        if active_hash == self.active_hash:
+            return
+        self.active_hash = active_hash
+        zhit: ZHITResult
+        row: int
+        for (zhit, row) in zip(zhits, dpg.get_item_children(self.table, slot=1)):
+            cells: List[int] = dpg.get_item_children(row, slot=1)
+            dpg.configure_item(
+                cells[0],
+                default_value=zhit.uuid in settings.series_order,
+                user_data={
+                    "zhits": [zhit],
+                    "settings": settings,
+                },
+            )
+
+    def filter(self, string: str, collapse: bool) -> List[ZHITResult]:
+        assert type(string) is str, string
+        stripped_string: str = string.strip()
+        dpg.set_value(self.table, string)
+        zhits: List[ZHITResult] = []
+        row: int
+        for row in dpg.get_item_children(self.table, slot=1):
+            filter_key: str = dpg.get_item_filter_key(row)
+            subset: List[DataSet] = dpg.get_item_user_data(
+                dpg.get_item_children(row, slot=1)[0]
+            ).get("zhits", [])
+            if is_filtered_item_visible(row, stripped_string):
+                zhits.extend(subset)
+        dpg.configure_item(
+            self.table, height=TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT * len(zhits)
+        )
+        if zhits:
+            dpg.show_item(self.header)
+            if collapse:
+                dpg.set_value(self.header, not string == "")
+        else:
+            if collapse:
+                dpg.set_value(self.header, False)
+            dpg.hide_item(self.header)
+        dpg.get_item_user_data(self.select_all_button).update({"zhits": zhits})
+        dpg.get_item_user_data(self.unselect_all_button).update({"zhits": zhits})
+        return zhits
+
+
+class ZHITsGroup:
+    def __init__(self):
+        self.groups: Dict[str, ZHITResultGroup] = {}
+        self.header: int = dpg.generate_uuid()
+        with dpg.collapsing_header(
+            label="Z-HIT analysis results",
+            tag=self.header,
+        ):
+            self.button_group: int = dpg.generate_uuid()
+            with dpg.group(horizontal=True, indent=8, tag=self.button_group):
+                dpg.add_button(
+                    label="Expand all",
+                    callback=lambda s, a, u: self.expand_subheaders(True),
+                )
+                dpg.add_button(
+                    label="Collapse all",
+                    callback=lambda s, a, u: self.expand_subheaders(False),
+                )
+                self.select_all_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Select all",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_PLOT_SERIES, **u
+                    ),
+                    user_data={},
+                    tag=self.select_all_button,
+                )
+                self.unselect_all_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Unselect all",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.TOGGLE_PLOT_SERIES, **u
+                    ),
+                    user_data={},
+                    tag=self.unselect_all_button,
+                )
+            dpg.add_spacer(height=8)
+        self.data_hash: str = ""
+
+    def expand_subheaders(self, state: bool):
+        assert type(state) is bool
+        subheader: int
+        for subheader in dpg.get_item_children(self.header, slot=1):
+            if "::mvCollapsingHeader" not in dpg.get_item_type(subheader):
+                continue
+            dpg.set_value(subheader, state)
+
+    def clear(self):
+        group: ZHITResultGroup
+        for group in self.groups.values():
+            group.clear()
+        dpg.hide_item(self.header)
+        self.data_hash = ""
+
+    def populate(
+        self,
+        zhits: Dict[str, List[ZHITResult]],
+        data_sets: List[DataSet],
+        settings: PlotSettings,
+    ):
+        assert type(zhits) is dict, zhits
+        assert type(data_sets) is list, data_sets
+        assert type(settings) is PlotSettings, settings
+        if not data_sets:
+            self.clear()
+            dpg.configure_item(
+                self.select_all_button,
+                user_data={},
+            )
+            dpg.configure_item(
+                self.unselect_all_button,
+                user_data={},
+            )
+            return
+        data_hash: str = ",".join([_.uuid for _ in data_sets])
+        if data_hash != self.data_hash:
+            self.clear()
+            self.data_hash = data_hash
+        active_hash: str = ",".join(sorted(settings.series_order)) + f",{settings.uuid}"
+        all_zhits: List[ZHITResult] = []
+        data: DataSet
+        for data in data_sets:
+            if not zhits[data.uuid]:
+                if data.uuid in self.groups:
+                    self.groups[data.uuid].clear()
+                continue
+            if data.uuid not in self.groups:
+                self.groups[data.uuid] = ZHITResultGroup(self.header)
+            group: ZHITResultGroup = self.groups[data.uuid]
+            if not group.populate(zhits[data.uuid], data, settings):
+                group.update(active_hash, zhits[data.uuid], data, settings)
+            dpg.get_item_user_data(group.select_all_button).update(
+                {
+                    "enabled": True,
+                    "zhits": zhits,
+                    "settings": settings,
+                }
+            )
+            dpg.get_item_user_data(group.unselect_all_button).update(
+                {
+                    "enabled": False,
+                    "zhits": zhits,
+                    "settings": settings,
+                }
+            )
+            all_zhits.extend(zhits[data.uuid])
+        if all_zhits:
+            dpg.show_item(self.header)
+        dpg.get_item_user_data(self.select_all_button).update(
+            {
+                "enabled": True,
+                "zhits": all_zhits,
+                "settings": settings,
+            }
+        )
+        dpg.get_item_user_data(self.unselect_all_button).update(
+            {
+                "enabled": False,
+                "zhits": all_zhits,
+                "settings": settings,
+            }
+        )
+
+    def filter(self, string: str, collapse: bool) -> List[ZHITResult]:
+        assert type(string) is str, string
+        zhits: List[ZHITResult] = []
+        group: ZHITResultGroup
+        for group in self.groups.values():
+            zhits.extend(group.filter(string, collapse))
+        if zhits:
+            dpg.show_item(self.header)
+            if collapse:
+                dpg.set_value(self.header, not string == "")
+        else:
+            if collapse:
+                dpg.set_value(self.header, False)
+            dpg.hide_item(self.header)
+        dpg.get_item_user_data(self.select_all_button).update({"zhits": zhits})
+        dpg.get_item_user_data(self.unselect_all_button).update({"zhits": zhits})
+        dpg.set_item_label(self.header, f"Z-HIT analysis results ({len(zhits)})")
+        return zhits
+
+
 class DRTResultGroup:
     def __init__(self, parent: int):
         self.header: int = dpg.generate_uuid()
         with dpg.collapsing_header(
-            label="PLACEHOLDER", show=False, tag=self.header, parent=parent, indent=8
+            label="PLACEHOLDER",
+            show=False,
+            tag=self.header,
+            parent=parent,
+            indent=8,
         ):
             with dpg.group(horizontal=True, indent=8):
                 self.select_all_button: int = dpg.generate_uuid()
@@ -803,7 +1117,11 @@ class FitResultGroup:
     def __init__(self, parent: int):
         self.header: int = dpg.generate_uuid()
         with dpg.collapsing_header(
-            label="PLACEHOLDER", show=False, tag=self.header, parent=parent, indent=8
+            label="PLACEHOLDER",
+            show=False,
+            tag=self.header,
+            parent=parent,
+            indent=8,
         ):
             with dpg.group(horizontal=True, indent=8):
                 self.select_all_button: int = dpg.generate_uuid()
@@ -1279,10 +1597,38 @@ class ActiveSeries:
         dpg.delete_item(self.table, children_only=True, slot=1)
         dpg.configure_item(self.table, height=TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT)
 
+    def find_parent_data(
+        self,
+        series: Any,
+        data_sets: List[DataSet],
+        tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
+        drts: Dict[str, List[DRTResult]],
+        fits: Dict[str, List[FitResult]],
+    ) -> Optional[DataSet]:
+        if not hasattr(series, "uuid"):
+            return None
+        all_results: dict = {
+            TestResult: tests,
+            ZHITResult: zhits,
+            DRTResult: drts,
+            FitResult: fits,
+        }.get(type(series), {})
+        uuid: str
+        results: Any
+        for uuid, results in all_results.items():
+            if series in results:
+                data: DataSet
+                for data in data_sets:
+                    if data.uuid == uuid:
+                        return data
+        return None
+
     def populate(
         self,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -1290,19 +1636,28 @@ class ActiveSeries:
     ):
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(settings) is PlotSettings, settings
         self.clear()
         series: List[
-            Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+            Union[
+                DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult
+            ]
         ] = []
         series.extend(filter(lambda _: _.uuid in settings.series_order, data_sets))
         series.extend(
             filter(
                 lambda _: _.uuid in settings.series_order,
                 list(chain(*list(tests.values()))),
+            )
+        )
+        series.extend(
+            filter(
+                lambda _: _.uuid in settings.series_order,
+                list(chain(*list(zhits.values()))),
             )
         )
         series.extend(
@@ -1322,23 +1677,27 @@ class ActiveSeries:
         ser: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
         types: dict = {
             DataSet: (
-                "D",
+                "Data",
                 "Data set",
             ),
             TestResult: (
                 "KK",
                 "Kramers-Kronig test",
             ),
+            ZHITResult: (
+                "Z-HIT",
+                "Z-HIT analysis",
+            ),
             DRTResult: (
                 "DRT",
                 "DRT analysis",
             ),
             FitResult: (
-                "F",
                 "Fit",
+                "Circuit fit",
             ),
             SimulationResult: (
-                "S",
+                "Sim.",
                 "Simulation",
             ),
         }
@@ -1348,7 +1707,7 @@ class ActiveSeries:
             type_tooltip: str
             type_label, type_tooltip = types[type(ser)]
             with dpg.table_row(parent=self.table):
-                dpg.add_text(type_label.ljust(4))
+                dpg.add_text(type_label.ljust(5))
                 attach_tooltip(type_tooltip)
                 dpg.add_input_text(
                     hint=ser.get_label(),
@@ -1366,7 +1725,23 @@ class ActiveSeries:
                         "series": ser,
                     },
                 )
-                attach_tooltip(ser.get_label())
+                if isinstance(ser, DataSet):
+                    attach_tooltip(ser.get_label())
+                else:
+                    parent_data: Optional[DataSet] = self.find_parent_data(
+                        series=ser,
+                        data_sets=data_sets,
+                        tests=tests,
+                        zhits=zhits,
+                        drts=drts,
+                        fits=fits,
+                    )
+                    if parent_data is not None:
+                        attach_tooltip(
+                            f"{ser.get_label()}\n\n{parent_data.get_label()}"
+                        )
+                    else:
+                        attach_tooltip(ser.get_label())
                 dpg.add_button(
                     label="Edit",
                     width=-1,
@@ -1443,7 +1818,7 @@ class PlottingTab:
         self.plotted_uuid: str = ""
         self.plot_types: Dict[PlotType, Plot] = {}
         label_pad: int = 5
-        sidebar_width: int = 400
+        sidebar_width: int = 420
         self.tab: int = dpg.generate_uuid()
         with dpg.tab(label="Plotting", tag=self.tab):
             with dpg.child_window(border=False):
@@ -1453,11 +1828,12 @@ class PlottingTab:
                         width=sidebar_width, border=False, tag=self.sidebar_window
                     ):
                         with dpg.child_window(height=82):
+                            combo_width: int = -80
                             with dpg.group(horizontal=True):
                                 dpg.add_text("Plot".rjust(label_pad))
                                 self.plot_combo: int = dpg.generate_uuid()
                                 dpg.add_combo(
-                                    width=-64,
+                                    width=combo_width,
                                     callback=lambda s, a, u: signals.emit(
                                         Signal.SELECT_PLOT_SETTINGS,
                                         settings=u.get(a),
@@ -1479,7 +1855,7 @@ class PlottingTab:
                                 dpg.add_text("Label".rjust(label_pad))
                                 self.label_input: int = dpg.generate_uuid()
                                 dpg.add_input_text(
-                                    width=-64,
+                                    width=combo_width,
                                     on_enter=True,
                                     callback=lambda s, a, u: signals.emit(
                                         Signal.RENAME_PLOT_SETTINGS,
@@ -1489,6 +1865,39 @@ class PlottingTab:
                                         ),
                                     ),
                                     tag=self.label_input,
+                                )
+                                self.duplicate_button: int = dpg.generate_uuid()
+                                dpg.add_button(
+                                    label="Duplicate",
+                                    callback=lambda s, a, u: signals.emit(
+                                        Signal.DUPLICATE_PLOT_SETTINGS,
+                                        settings=u,
+                                    ),
+                                    user_data=None,
+                                    width=-1,
+                                    tag=self.duplicate_button,
+                                )
+                            with dpg.group(horizontal=True):
+                                dpg.add_text("Type".rjust(label_pad))
+                                self.type_combo: int = dpg.generate_uuid()
+                                dpg.add_combo(
+                                    default_value=plot_type_to_label[PlotType.NYQUIST],
+                                    items=list(
+                                        map(
+                                            lambda _: plot_type_to_label[_],
+                                            [_ for _ in PlotType],
+                                        )
+                                    ),
+                                    width=combo_width,
+                                    tag=self.type_combo,
+                                    callback=lambda s, a, u: signals.emit(
+                                        Signal.SELECT_PLOT_TYPE,
+                                        plot_type=label_to_plot_type.get(a),
+                                        settings=dpg.get_item_user_data(
+                                            self.delete_button
+                                        ),
+                                    ),
+                                    user_data=PlotType.NYQUIST,
                                 )
                                 self.delete_button: int = dpg.generate_uuid()
                                 dpg.add_button(
@@ -1501,42 +1910,21 @@ class PlottingTab:
                                     tag=self.delete_button,
                                 )
                                 attach_tooltip(tooltips.plotting.remove)
-                            with dpg.group(horizontal=True):
-                                dpg.add_text("Type".rjust(label_pad))
-                                self.type_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    default_value=plot_type_to_label[PlotType.NYQUIST],
-                                    items=list(
-                                        map(
-                                            lambda _: plot_type_to_label[_],
-                                            [_ for _ in PlotType],
-                                        )
-                                    ),
-                                    width=-64,
-                                    tag=self.type_combo,
-                                    callback=lambda s, a, u: signals.emit(
-                                        Signal.SELECT_PLOT_TYPE,
-                                        plot_type=label_to_plot_type.get(a),
-                                        settings=dpg.get_item_user_data(
-                                            self.delete_button
-                                        ),
-                                    ),
-                                    user_data=PlotType.NYQUIST,
-                                )
                         with dpg.child_window(width=sidebar_width, height=-40):
-                            with dpg.tab_bar():
+                            self.series_tab_bar: int = dpg.generate_uuid()
+                            with dpg.tab_bar(tag=self.series_tab_bar):
                                 with dpg.tab(label="Available"):
                                     with dpg.group(horizontal=True):
-                                        dpg.add_text("Filter")
-                                        attach_tooltip(tooltips.plotting.filter)
                                         self.filter_input: int = dpg.generate_uuid()
                                         dpg.add_input_text(
+                                            hint="Filter...",
                                             width=-1,
                                             callback=lambda s, a, u: self.filter_possible_series(
                                                 a
                                             ),
                                             tag=self.filter_input,
                                         )
+                                        attach_tooltip(tooltips.plotting.filter)
                                     with dpg.child_window(
                                         border=False, width=-1, height=-1
                                     ):
@@ -1550,6 +1938,9 @@ class PlottingTab:
                                             self.possible_tests: TestsGroup = (
                                                 TestsGroup()
                                             )
+                                            self.possible_zhits: ZHITsGroup = (
+                                                ZHITsGroup()
+                                            )
                                             self.possible_drts: DRTsGroup = DRTsGroup()
                                             self.possible_fits: FitsGroup = FitsGroup()
                                             self.possible_simulations: SimulationsGroup = (
@@ -1557,6 +1948,7 @@ class PlottingTab:
                                             )
                                 with dpg.tab(label="Active"):
                                     self.active_series: ActiveSeries = ActiveSeries()
+                            pad_tab_labels(self.series_tab_bar)
                         with dpg.child_window(width=sidebar_width, height=-1):
                             with dpg.group(horizontal=True):
                                 self.select_all_button: int = dpg.generate_uuid()
@@ -1597,12 +1989,13 @@ class PlottingTab:
                                 attach_tooltip(tooltips.plotting.copy_appearance)
                                 self.export_button: int = dpg.generate_uuid()
                                 dpg.add_button(
-                                    label="Export",
+                                    label="Export plot",
                                     callback=lambda s, a, u: signals.emit(
                                         Signal.EXPORT_PLOT, **u
                                     ),
                                     user_data={},
                                     tag=self.export_button,
+                                    width=-1,
                                 )
                                 attach_tooltip(tooltips.plotting.export_plot)
                     with dpg.child_window(border=False, width=-1, height=-1):
@@ -1671,12 +2064,6 @@ class PlottingTab:
                                     tooltips.plotting.collapse_expand_sidebar
                                 )
                                 self.visibility_item: int = dpg.generate_uuid()
-                                self.adjust_limits_checkbox: int = dpg.generate_uuid()
-                                dpg.add_checkbox(
-                                    default_value=True,
-                                    tag=self.adjust_limits_checkbox,
-                                )
-                                attach_tooltip(tooltips.general.adjust_limits)
                                 dpg.add_button(
                                     label="Copy as CSV",
                                     callback=lambda s, a, u: signals.emit(
@@ -1689,6 +2076,13 @@ class PlottingTab:
                                     tag=self.visibility_item,
                                 )
                                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                                self.adjust_limits_checkbox: int = dpg.generate_uuid()
+                                dpg.add_checkbox(
+                                    label="Adjust limits",
+                                    default_value=True,
+                                    tag=self.adjust_limits_checkbox,
+                                )
+                                attach_tooltip(tooltips.general.adjust_limits)
 
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0
@@ -1728,6 +2122,7 @@ class PlottingTab:
         self,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -1736,6 +2131,7 @@ class PlottingTab:
     ):
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
@@ -1776,7 +2172,13 @@ class PlottingTab:
                 Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
             ]
             series = settings.find_series(
-                uuid, data_sets, tests, drts, fits, simulations
+                uuid=uuid,
+                data_sets=data_sets,
+                tests=tests,
+                zhits=zhits,
+                drts=drts,
+                fits=fits,
+                simulations=simulations,
             )
             if series is None:
                 settings.series_order.remove(uuid)
@@ -1803,7 +2205,8 @@ class PlottingTab:
             mag: ndarray
             phase: ndarray
             tau: ndarray
-            gamma: ndarray
+            real_gamma: ndarray
+            imaginary_gamma: ndarray
             if plot_type == PlotType.NYQUIST:
                 if settings.get_series_marker(uuid) >= 0:
                     real, imag = series.get_nyquist_data()
@@ -1955,19 +2358,18 @@ class PlottingTab:
                 if type(series) is not DRTResult:
                     continue
                 if series.settings.method == DRTMethod.BHT:
-                    tau, gamma = series.get_drt_data()
+                    tau, real_gamma, imaginary_gamma = series.get_drt_data()
                     self.series_tags[series.uuid] = plot.plot(
                         tau=tau,
-                        gamma=gamma,
+                        gamma=real_gamma,
                         label=f"{label}, real" if label is not None else label,
                         line=True,
                         theme=theme,
                         show_label=show_label,
                     )
-                    tau, gamma = series.get_drt_data(imaginary=True)
                     self.series_tags[f"{series.uuid}_imaginary"] = plot.plot(
                         tau=tau,
-                        gamma=gamma,
+                        gamma=imaginary_gamma,
                         label=f"{label}, imag." if label is not None else label,
                         line=True,
                         theme=theme,
@@ -1977,7 +2379,7 @@ class PlottingTab:
                     series.settings.method == DRTMethod.TR_RBF
                     and series.settings.credible_intervals is True
                 ):
-                    tau, mean, lower, upper = series.get_drt_credible_intervals()
+                    tau, mean, lower, upper = series.get_drt_credible_intervals_data()
                     alt_color: List[float] = settings.get_series_color(uuid).copy()
                     alt_color[-1] = themes.get_plot_series_theme_color(
                         themes.drt.credible_intervals
@@ -2001,20 +2403,20 @@ class PlottingTab:
                         theme=theme,
                         show_label=show_label,
                     )
-                    tau, gamma = series.get_drt_data()
+                    tau, real_gamma, imaginary_gamma = series.get_drt_data()
                     self.series_tags[series.uuid] = plot.plot(
                         tau=tau,
-                        gamma=gamma,
+                        gamma=real_gamma,
                         label=label,
                         line=True,
                         theme=theme,
                         show_label=show_label,
                     )
                 else:
-                    tau, gamma = series.get_drt_data()
+                    tau, real_gamma, imaginary_gamma = series.get_drt_data()
                     self.series_tags[series.uuid] = plot.plot(
                         tau=tau,
-                        gamma=gamma,
+                        gamma=real_gamma,
                         label=label,
                         line=True,
                         theme=theme,
@@ -2022,8 +2424,8 @@ class PlottingTab:
                     )
             elif plot_type == PlotType.IMPEDANCE_REAL:
                 if settings.get_series_marker(uuid) >= 0:
-                    freq = series.get_frequency()
-                    real = series.get_impedance().real
+                    freq = series.get_frequencies()
+                    real = series.get_impedances().real
                     self.series_tags[series.uuid] = plot.plot(
                         x=freq,
                         y=real,
@@ -2035,14 +2437,14 @@ class PlottingTab:
                     if (
                         (is_simulation or is_fit)
                         and "num_per_decade"
-                        in signature(series.get_frequency).parameters
+                        in signature(series.get_frequencies).parameters
                         and "num_per_decade"
-                        in signature(series.get_impedance).parameters
+                        in signature(series.get_impedances).parameters
                     ):
-                        freq = series.get_frequency(
+                        freq = series.get_frequencies(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         )
-                        real = series.get_impedance(
+                        real = series.get_impedances(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         ).real
                     if settings.get_series_line(uuid):
@@ -2058,19 +2460,19 @@ class PlottingTab:
                     if (
                         (is_simulation or is_fit)
                         and "num_per_decade"
-                        in signature(series.get_frequency).parameters
+                        in signature(series.get_frequencies).parameters
                         and "num_per_decade"
-                        in signature(series.get_impedance).parameters
+                        in signature(series.get_impedances).parameters
                     ):
-                        freq = series.get_frequency(
+                        freq = series.get_frequencies(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         )
-                        real = series.get_impedance(
+                        real = series.get_impedances(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         ).real
                     else:
-                        freq = series.get_frequency()
-                        real = series.get_impedance().real
+                        freq = series.get_frequencies()
+                        real = series.get_impedances().real
                     self.series_tags[series.uuid] = plot.plot(
                         x=freq,
                         y=real,
@@ -2081,8 +2483,8 @@ class PlottingTab:
                     )
             elif plot_type == PlotType.IMPEDANCE_IMAGINARY:
                 if settings.get_series_marker(uuid) >= 0:
-                    freq = series.get_frequency()
-                    imag = -series.get_impedance().imag
+                    freq = series.get_frequencies()
+                    imag = -series.get_impedances().imag
                     self.series_tags[series.uuid] = plot.plot(
                         x=freq,
                         y=imag,
@@ -2094,14 +2496,14 @@ class PlottingTab:
                     if (
                         (is_simulation or is_fit)
                         and "num_per_decade"
-                        in signature(series.get_frequency).parameters
+                        in signature(series.get_frequencies).parameters
                         and "num_per_decade"
-                        in signature(series.get_impedance).parameters
+                        in signature(series.get_impedances).parameters
                     ):
-                        freq = series.get_frequency(
+                        freq = series.get_frequencies(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         )
-                        imag = -series.get_impedance(
+                        imag = -series.get_impedances(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         ).imag
                     if settings.get_series_line(uuid):
@@ -2117,19 +2519,19 @@ class PlottingTab:
                     if (
                         (is_simulation or is_fit)
                         and "num_per_decade"
-                        in signature(series.get_frequency).parameters
+                        in signature(series.get_frequencies).parameters
                         and "num_per_decade"
-                        in signature(series.get_impedance).parameters
+                        in signature(series.get_impedances).parameters
                     ):
-                        freq = series.get_frequency(
+                        freq = series.get_frequencies(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         )
-                        imag = -series.get_impedance(
+                        imag = -series.get_impedances(
                             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
                         ).imag
                     else:
-                        freq = series.get_frequency()
-                        imag = -series.get_impedance().imag
+                        freq = series.get_frequencies()
+                        imag = -series.get_impedances().imag
                     self.series_tags[series.uuid] = plot.plot(
                         x=freq,
                         y=imag,
@@ -2211,6 +2613,7 @@ class PlottingTab:
         settings: PlotSettings,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -2220,18 +2623,21 @@ class PlottingTab:
         assert type(settings) is PlotSettings, settings
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(adjust_limits) is bool, adjust_limits
         assert type(plot_only) is bool, plot_only
         dpg.set_item_user_data(self.delete_button, settings)
+        dpg.set_item_user_data(self.duplicate_button, settings)
         dpg.set_item_user_data(self.export_button, {"settings": settings})
         if not self.is_visible():
             self.queued_update = lambda: self.select_plot(
                 settings,
                 data_sets,
                 tests,
+                zhits,
                 drts,
                 fits,
                 simulations,
@@ -2246,6 +2652,7 @@ class PlottingTab:
             self.populate_possible_series(
                 data_sets,
                 tests,
+                zhits,
                 drts,
                 fits,
                 simulations,
@@ -2254,6 +2661,7 @@ class PlottingTab:
             self.active_series.populate(
                 data_sets,
                 tests,
+                zhits,
                 drts,
                 fits,
                 simulations,
@@ -2264,6 +2672,7 @@ class PlottingTab:
         self.plot_series(
             data_sets,
             tests,
+            zhits,
             drts,
             fits,
             simulations,
@@ -2275,6 +2684,7 @@ class PlottingTab:
         self,
         data_sets: List[DataSet],
         tests: Dict[str, List[TestResult]],
+        zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
@@ -2282,12 +2692,14 @@ class PlottingTab:
     ):
         assert type(data_sets) is list, data_sets
         assert type(tests) is dict, tests
+        assert type(zhits) is dict, zhits
         assert type(drts) is dict, drts
         assert type(fits) is dict, fits
         assert type(simulations) is list, simulations
         assert type(settings) is PlotSettings, settings
         self.populate_data_sets(data_sets, settings)
         self.populate_tests(tests, data_sets, settings)
+        self.populate_zhits(zhits, data_sets, settings)
         self.populate_drts(drts, data_sets, settings)
         self.populate_fits(fits, data_sets, settings)
         self.populate_simulations(simulations, settings)
@@ -2356,6 +2768,32 @@ class PlottingTab:
         dpg.get_item_user_data(self.unselect_all_button).update(
             {
                 "tests": user_data,
+                "settings": settings,
+            }
+        )
+
+    def populate_zhits(
+        self,
+        zhits: Dict[str, List[ZHITResult]],
+        data_sets: List[DataSet],
+        settings: PlotSettings,
+    ):
+        assert type(zhits) is dict, zhits
+        assert type(data_sets) is list, data_sets
+        assert type(settings) is PlotSettings, settings
+        self.possible_zhits.populate(zhits, data_sets, settings)
+        user_data: List[ZHITResult] = self.possible_zhits.filter(
+            self.get_filter_string(), False
+        )
+        dpg.get_item_user_data(self.select_all_button).update(
+            {
+                "zhits": user_data,
+                "settings": settings,
+            }
+        )
+        dpg.get_item_user_data(self.unselect_all_button).update(
+            {
+                "zhits": user_data,
                 "settings": settings,
             }
         )
@@ -2467,6 +2905,7 @@ class PlottingTab:
     ) -> Tuple[
         List[DataSet],
         List[TestResult],
+        List[ZHITResult],
         List[DRTResult],
         List[FitResult],
         List[SimulationResult],
@@ -2474,6 +2913,7 @@ class PlottingTab:
         string = string.lower()
         data_sets: List[DataSet] = self.possible_data_sets.filter(string, True)
         tests: List[TestResult] = self.possible_tests.filter(string, True)
+        zhits: List[ZHITResult] = self.possible_zhits.filter(string, True)
         drts: List[DRTResult] = self.possible_drts.filter(string, True)
         fits: List[FitResult] = self.possible_fits.filter(string, True)
         simulations: List[SimulationResult] = self.possible_simulations.filter(
@@ -2483,6 +2923,7 @@ class PlottingTab:
             {
                 "data_sets": data_sets,
                 "tests": tests,
+                "zhits": zhits,
                 "drts": drts,
                 "fits": fits,
                 "simulations": simulations,
@@ -2492,6 +2933,7 @@ class PlottingTab:
             {
                 "data_sets": data_sets,
                 "tests": tests,
+                "zhits": zhits,
                 "drts": drts,
                 "fits": fits,
                 "simulations": simulations,
@@ -2500,6 +2942,7 @@ class PlottingTab:
         return (
             data_sets,
             tests,
+            zhits,
             drts,
             fits,
             simulations,
@@ -2511,3 +2954,13 @@ class PlottingTab:
             or dpg.is_item_active(self.filter_input)
             or self.active_series.has_active_input()
         )
+
+    def next_series_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.series_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.series_tab_bar)) + 1
+        dpg.set_value(self.series_tab_bar, tabs[index % len(tabs)])
+
+    def previous_series_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.series_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.series_tab_bar)) - 1
+        dpg.set_value(self.series_tab_bar, tabs[index % len(tabs)])

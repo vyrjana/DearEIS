@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,11 +58,11 @@ class Residuals(Plot):
             )
             self._y_axis_1: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="Z' error (%)",
+                label="Re(Z) residual (%)",
             )
             self._y_axis_2: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label='Z" error (%)',
+                label="Im(Z) residual (%)",
             )
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
@@ -147,7 +147,7 @@ class Residuals(Plot):
             dpg.add_scatter_series(
                 x=x,
                 y=y,
-                label="Z'",
+                label="Re(Z)",
                 user_data=(
                     freq,
                     real,
@@ -175,7 +175,7 @@ class Residuals(Plot):
             dpg.add_scatter_series(
                 x=x,
                 y=y,
-                label='Z"',
+                label="Im(Z)",
                 parent=self._y_axis_2,
             ),
             themes.residuals.imaginary,

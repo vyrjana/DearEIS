@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ class Context(IntEnum):
     OVERVIEW_TAB = auto()
     DATA_SETS_TAB = auto()
     KRAMERS_KRONIG_TAB = auto()
+    ZHIT_TAB = auto()
     DRT_TAB = auto()
     FITTING_TAB = auto()
     SIMULATION_TAB = auto()
@@ -34,6 +35,8 @@ class Context(IntEnum):
 
 
 class Action(IntEnum):
+    CANCEL = auto()
+    CUSTOM = auto()
     # Program-level
     NEW_PROJECT = auto()
     LOAD_PROJECT = auto()
@@ -65,8 +68,12 @@ class Action(IntEnum):
     SELECT_OVERVIEW_TAB = auto()
     SELECT_PLOTTING_TAB = auto()
     SELECT_SIMULATION_TAB = auto()
+    SELECT_ZHIT_TAB = auto()
+    NEXT_PLOT_TAB = auto()
+    PREVIOUS_PLOT_TAB = auto()
 
     # Project-level: multiple tabs
+    BATCH_PERFORM_ACTION = auto()
     PERFORM_ACTION = auto()
     # - Load data set
     # - Perform test
@@ -76,6 +83,8 @@ class Action(IntEnum):
     DELETE_RESULT = auto()
     # - Data set
     # - Test result
+    # - Z-HIT result
+    # - DRT result
     # - Fit result
     # - Simulation result
     # - Plot
@@ -86,11 +95,14 @@ class Action(IntEnum):
     NEXT_SECONDARY_RESULT = auto()
     PREVIOUS_SECONDARY_RESULT = auto()
     # - Test result
+    # - Z-HIT result
+    # - DRT result
     # - Fit result
     # - Simulation result
     # - Plot type
     APPLY_SETTINGS = auto()
     # - Kramers-Kronig tab
+    # - Z-HIT tab
     # - DRT tab
     # - Fitting tab
     # - Simulation tab
@@ -112,15 +124,21 @@ class Action(IntEnum):
     COPY_BODE_DATA = auto()
     COPY_RESIDUALS_DATA = auto()
     COPY_OUTPUT = auto()
+    ADJUST_PARAMETERS = auto()
     # - Fit output
     # - Simulation output
     LOAD_SIMULATION_AS_DATA_SET = auto()
+    LOAD_ZHIT_AS_DATA_SET = auto()
 
     # Project-level: data sets tab
     AVERAGE_DATA_SETS = auto()
-    TOGGLE_DATA_POINTS = auto()
     COPY_DATA_SET_MASK = auto()
+    INTERPOLATE_POINTS = auto()
     SUBTRACT_IMPEDANCE = auto()
+    TOGGLE_DATA_POINTS = auto()
+
+    # Project-level: Z-HIT tab
+    PREVIEW_ZHIT_WEIGHTS = auto()
 
     # Project-level: plotting tab
     SELECT_ALL_PLOT_SERIES = auto()
@@ -129,9 +147,12 @@ class Action(IntEnum):
     COPY_PLOT_DATA = auto()
     EXPAND_COLLAPSE_SIDEBAR = auto()
     EXPORT_PLOT = auto()
+    DUPLICATE_PLOT = auto()
 
 
 action_contexts: Dict[Action, List[Context]] = {
+    Action.CANCEL: [],
+    Action.CUSTOM: [],
     Action.NEW_PROJECT: [Context.PROGRAM],
     Action.LOAD_PROJECT: [Context.PROGRAM],
     Action.EXIT: [Context.PROGRAM],
@@ -153,6 +174,24 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.REDO: [Context.PROJECT],
     Action.NEXT_PROJECT_TAB: [Context.PROJECT],
     Action.PREVIOUS_PROJECT_TAB: [Context.PROJECT],
+    Action.NEXT_PLOT_TAB: [
+        Context.DATA_SETS_TAB,
+        Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
+        Context.DRT_TAB,
+        Context.FITTING_TAB,
+        Context.SIMULATION_TAB,
+        Context.PLOTTING_TAB,
+    ],
+    Action.PREVIOUS_PLOT_TAB: [
+        Context.DATA_SETS_TAB,
+        Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
+        Context.DRT_TAB,
+        Context.FITTING_TAB,
+        Context.SIMULATION_TAB,
+        Context.PLOTTING_TAB,
+    ],
     Action.SELECT_DATA_SETS_TAB: [Context.PROJECT],
     Action.SELECT_DRT_TAB: [Context.PROJECT],
     Action.SELECT_FITTING_TAB: [Context.PROJECT],
@@ -160,17 +199,26 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.SELECT_OVERVIEW_TAB: [Context.PROJECT],
     Action.SELECT_PLOTTING_TAB: [Context.PROJECT],
     Action.SELECT_SIMULATION_TAB: [Context.PROJECT],
+    Action.SELECT_ZHIT_TAB: [Context.PROJECT],
     Action.PERFORM_ACTION: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
         Context.PLOTTING_TAB,
     ],
+    Action.BATCH_PERFORM_ACTION: [
+        Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
+        Context.DRT_TAB,
+        Context.FITTING_TAB,
+    ],
     Action.DELETE_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
@@ -179,6 +227,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.NEXT_PRIMARY_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
@@ -187,6 +236,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.PREVIOUS_PRIMARY_RESULT: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
@@ -194,6 +244,7 @@ action_contexts: Dict[Action, List[Context]] = {
     ],
     Action.NEXT_SECONDARY_RESULT: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
@@ -201,6 +252,7 @@ action_contexts: Dict[Action, List[Context]] = {
     ],
     Action.PREVIOUS_SECONDARY_RESULT: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
@@ -208,17 +260,24 @@ action_contexts: Dict[Action, List[Context]] = {
     ],
     Action.APPLY_SETTINGS: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
     Action.APPLY_MASK: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
     ],
     Action.SHOW_ENLARGED_IMPEDANCE: [
+        Context.DATA_SETS_TAB,
+        Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
+        Context.FITTING_TAB,
+        Context.SIMULATION_TAB,
     ],
     Action.SHOW_ENLARGED_DRT: [
         Context.DRT_TAB,
@@ -226,17 +285,22 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.SHOW_ENLARGED_NYQUIST: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
     Action.SHOW_ENLARGED_BODE: [
         Context.DATA_SETS_TAB,
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
+        Context.DRT_TAB,
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
     Action.SHOW_ENLARGED_RESIDUALS: [
         Context.KRAMERS_KRONIG_TAB,
+        Context.ZHIT_TAB,
         Context.DRT_TAB,
         Context.FITTING_TAB,
     ],
@@ -271,9 +335,11 @@ action_contexts: Dict[Action, List[Context]] = {
         Context.SIMULATION_TAB,
     ],
     Action.LOAD_SIMULATION_AS_DATA_SET: [Context.SIMULATION_TAB],
+    Action.LOAD_ZHIT_AS_DATA_SET: [Context.ZHIT_TAB],
     Action.AVERAGE_DATA_SETS: [Context.DATA_SETS_TAB],
     Action.TOGGLE_DATA_POINTS: [Context.DATA_SETS_TAB],
     Action.COPY_DATA_SET_MASK: [Context.DATA_SETS_TAB],
+    Action.INTERPOLATE_POINTS: [Context.DATA_SETS_TAB],
     Action.SUBTRACT_IMPEDANCE: [Context.DATA_SETS_TAB],
     Action.SELECT_ALL_PLOT_SERIES: [Context.PLOTTING_TAB],
     Action.UNSELECT_ALL_PLOT_SERIES: [Context.PLOTTING_TAB],
@@ -281,10 +347,15 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.COPY_PLOT_DATA: [Context.PLOTTING_TAB],
     Action.EXPAND_COLLAPSE_SIDEBAR: [Context.PLOTTING_TAB],
     Action.EXPORT_PLOT: [Context.PLOTTING_TAB],
+    Action.PREVIEW_ZHIT_WEIGHTS: [Context.ZHIT_TAB],
+    Action.DUPLICATE_PLOT: [Context.PLOTTING_TAB],
+    Action.ADJUST_PARAMETERS: [Context.FITTING_TAB, Context.SIMULATION_TAB],
 }
 
 
 action_to_string: Dict[Action, str] = {
+    Action.CANCEL: "cancel",
+    Action.CUSTOM: "custom",
     Action.APPLY_MASK: "apply-mask",
     Action.APPLY_SETTINGS: "apply-settings",
     Action.AVERAGE_DATA_SETS: "average-data-sets",
@@ -303,13 +374,16 @@ action_to_string: Dict[Action, str] = {
     Action.EXIT: "exit-program",
     Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
     Action.EXPORT_PLOT: "export-plot",
+    Action.INTERPOLATE_POINTS: "interpolate-points",
     Action.LOAD_PROJECT: "load-project",
     Action.LOAD_SIMULATION_AS_DATA_SET: "load-simulation-as-data-set",
+    Action.LOAD_ZHIT_AS_DATA_SET: "load-zhit-as-data-set",
     Action.NEW_PROJECT: "new-project",
     Action.NEXT_PRIMARY_RESULT: "next-primary-result",
     Action.NEXT_PROGRAM_TAB: "next-program-tab",
     Action.NEXT_PROJECT_TAB: "next-project-tab",
     Action.NEXT_SECONDARY_RESULT: "next-secondary-result",
+    Action.BATCH_PERFORM_ACTION: "batch-perform-action",
     Action.PERFORM_ACTION: "perform-action",
     Action.PREVIOUS_PRIMARY_RESULT: "previous-primary-result",
     Action.PREVIOUS_PROGRAM_TAB: "previous-program-tab",
@@ -324,6 +398,7 @@ action_to_string: Dict[Action, str] = {
     Action.SELECT_FITTING_TAB: "select-fitting-tab",
     Action.SELECT_HOME_TAB: "select-home-tab",
     Action.SELECT_KRAMERS_KRONIG_TAB: "select-kramers-kronig-tab",
+    Action.SELECT_ZHIT_TAB: "select-zhit-tab",
     Action.SELECT_OVERVIEW_TAB: "select-overview-tab",
     Action.SELECT_PLOTTING_TAB: "select-plotting-tab",
     Action.SELECT_SIMULATION_TAB: "select-simulation-tab",
@@ -344,6 +419,11 @@ action_to_string: Dict[Action, str] = {
     Action.TOGGLE_DATA_POINTS: "toggle-data-points",
     Action.UNDO: "undo",
     Action.UNSELECT_ALL_PLOT_SERIES: "unselect-all-plot-series",
+    Action.PREVIEW_ZHIT_WEIGHTS: "preview-zhit-weights",
+    Action.DUPLICATE_PLOT: "duplicate-plot",
+    Action.ADJUST_PARAMETERS: "adjust-parameters",
+    Action.NEXT_PLOT_TAB: "next-plot-tab",
+    Action.PREVIOUS_PLOT_TAB: "previous-plot-tab",
 }
 string_to_action: Dict[str, Action] = {v: k for k, v in action_to_string.items()}
 # Check that there are no duplicate keys
@@ -353,6 +433,10 @@ assert len(action_to_string) == len(set(action_to_string.values())) and len(
 
 
 action_descriptions: Dict[Action, str] = {
+    Action.CANCEL: """
+Cancel and close the current modal window.
+""".strip(),
+    Action.CUSTOM: "",
     Action.NEW_PROJECT: """
 Create a new project.
 """.strip(),
@@ -428,6 +512,9 @@ Go to the 'Fitting' tab.
     Action.SELECT_KRAMERS_KRONIG_TAB: """
 Go to the 'Kramers-Kronig' tab.
 """.strip(),
+    Action.SELECT_ZHIT_TAB: """
+Go to the 'Z-HIT analysis' tab.
+""".strip(),
     Action.SELECT_OVERVIEW_TAB: """
 Go to the 'Overview' tab.
 """.strip(),
@@ -437,10 +524,18 @@ Go to the 'Plotting' tab.
     Action.SELECT_SIMULATION_TAB: """
 Go to the 'Simulation' tab.
 """.strip(),
+    Action.BATCH_PERFORM_ACTION: """
+Batch perform the primary action of the current project tab:
+- Kramers-Kronig: perform tests.
+- Z-HIT analysis: perform analyses.
+- DRT analysis: perform analyses.
+- Fitting: perform fits.
+""".strip(),
     Action.PERFORM_ACTION: """
 Perform the primary action of the current project tab:
 - Data sets: select files to load.
 - Kramers-Kronig: perform test.
+- Z-HIT analysis: perform analysis.
 - DRT analysis: perform analysis.
 - Fitting: perform fit.
 - Simulation: perform simulation.
@@ -450,6 +545,7 @@ Perform the primary action of the current project tab:
 Delete the current result in the current project tab:
 - Data sets: delete the current data set.
 - Kramers-Kronig: delete the current test result.
+- Z-HIT analysis: delete the current analysis result.
 - DRT analysis: delete the current analysis result.
 - Fitting: delete the current fit result.
 - Simulation: delete the current simulation result.
@@ -459,6 +555,7 @@ Delete the current result in the current project tab:
 Select the next primary result of the current project tab:
 - Data sets: data set.
 - Kramers-Kronig: data set.
+- Z-HIT analysis: data set.
 - DRT analysis: data set.
 - Fitting: data set.
 - Simulation: data set.
@@ -468,6 +565,7 @@ Select the next primary result of the current project tab:
 Select the previous primary result of the current project tab:
 - Data sets: data set.
 - Kramers-Kronig: data set.
+- Z-HIT analysis: data set.
 - DRT analysis: data set.
 - Fitting: data set.
 - Simulation: data set.
@@ -476,22 +574,25 @@ Select the previous primary result of the current project tab:
     Action.NEXT_SECONDARY_RESULT: """
 Select the next secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- Z-HIT analysis: analysis result.
 - DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
-- Plotting: plot type.
+- Plotting: plot series tab.
 """.strip(),
     Action.PREVIOUS_SECONDARY_RESULT: """
 Select the previous secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- Z-HIT analysis: analysis result.
 - DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
-- Plotting: plot type.
+- Plotting: plot series tab.
 """.strip(),
     Action.APPLY_SETTINGS: """
 Apply the settings used in the current secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- Z-HIT analysis: analysis result.
 - DRT analysis: analysis result.
 - Fitting: fit result.
 - Simulation: simulation result.
@@ -499,6 +600,7 @@ Apply the settings used in the current secondary result of the current project t
     Action.APPLY_MASK: """
 Apply the mask used in the current secondary result of the current project tab:
 - Kramers-Kronig: test result.
+- Z-HIT analysis: analysis result.
 - DRT analysis: analysis result.
 - Fitting: fit result.
 """.strip(),
@@ -547,6 +649,9 @@ Select data points to toggle.
     Action.COPY_DATA_SET_MASK: """
 Select which data set's mask to copy.
 """.strip(),
+    Action.INTERPOLATE_POINTS: """
+Interpolate one or more data points in the current data set.
+""".strip(),
     Action.SUBTRACT_IMPEDANCE: """
 Select the impedance to subtract from the current data set.
 """.strip(),
@@ -571,6 +676,24 @@ Export the current plot using matplotlib.
     Action.LOAD_SIMULATION_AS_DATA_SET: """
 Load the current simulation as a data set.
 """.strip(),
+    Action.LOAD_ZHIT_AS_DATA_SET: """
+Load the current Z-HIT analysis result as a data set.
+""".strip(),
+    Action.PREVIEW_ZHIT_WEIGHTS: """
+Preview the weights for the Z-HIT offset adjustment.
+""".strip(),
+    Action.DUPLICATE_PLOT: """
+Duplicate the current plot.
+""".strip(),
+    Action.ADJUST_PARAMETERS: """
+Adjust the (initial) values of circuit parameters prior to fitting or simulation.
+""".strip(),
+    Action.NEXT_PLOT_TAB: """
+Select the next plot type.
+""".strip(),
+    Action.PREVIOUS_PLOT_TAB: """
+Select the previous plot type.
+""".strip(),
 }
 # Check that every action has a description
 assert set(action_to_string.keys()) == set(
@@ -583,29 +706,15 @@ class CNLSMethod(IntEnum):
     Iterative methods used during complex non-linear least-squares fitting:
 
     - AUTO: try each method
-    - AMPGO
-    - BASINHOPPING
     - BFGS
-    - BRUTE
     - CG
-    - COBYLA
-    - DIFFERENTIAL_EVOLUTION
-    - DOGLEG
-    - DUAL_ANNEALING
-    - EMCEE
     - LBFGSB
     - LEASTSQ
     - LEAST_SQUARES
     - NELDER
-    - NEWTON
     - POWELL
-    - SHGO
     - SLSQP
     - TNC
-    - TRUST_CONSTR
-    - TRUST_EXACT
-    - TRUST_KRYLOV
-    - TRUST_NCG
     """
 
     AUTO = 1
@@ -728,13 +837,16 @@ class FitSimOutput(IntEnum):
     CDC_EXTENDED = auto()
     CSV_DATA_TABLE = auto()
     CSV_PARAMETERS_TABLE = auto()
+    CSV_STATISTICS_TABLE = auto()
     JSON_PARAMETERS_TABLE = auto()
+    JSON_STATISTICS_TABLE = auto()
     LATEX_DIAGRAM = auto()
     LATEX_EXPR = auto()
     LATEX_PARAMETERS_TABLE = auto()
+    LATEX_STATISTICS_TABLE = auto()
     MARKDOWN_PARAMETERS_TABLE = auto()
+    MARKDOWN_STATISTICS_TABLE = auto()
     SVG_DIAGRAM = auto()
-    SVG_DIAGRAM_NO_TERMINAL_LABELS = auto()
     SVG_DIAGRAM_NO_LABELS = auto()
     SYMPY_EXPR = auto()
     SYMPY_EXPR_VALUES = auto()
@@ -745,13 +857,16 @@ fit_sim_output_to_label: Dict[FitSimOutput, str] = {
     FitSimOutput.CDC_EXTENDED: "CDC - extended",
     FitSimOutput.CSV_DATA_TABLE: "CSV - impedance table",
     FitSimOutput.CSV_PARAMETERS_TABLE: "CSV - parameters table",
+    FitSimOutput.CSV_STATISTICS_TABLE: "CSV - statistics table",
     FitSimOutput.JSON_PARAMETERS_TABLE: "JSON - parameters table",
+    FitSimOutput.JSON_STATISTICS_TABLE: "JSON - statistics table",
     FitSimOutput.LATEX_DIAGRAM: "LaTeX - circuit diagram",
     FitSimOutput.LATEX_EXPR: "LaTeX - expression",
     FitSimOutput.LATEX_PARAMETERS_TABLE: "LaTeX - parameters table",
+    FitSimOutput.LATEX_STATISTICS_TABLE: "LaTeX - statistics table",
     FitSimOutput.MARKDOWN_PARAMETERS_TABLE: "Markdown - parameters table",
+    FitSimOutput.MARKDOWN_STATISTICS_TABLE: "Markdown - statistics table",
     FitSimOutput.SVG_DIAGRAM: "SVG - circuit diagram",
-    FitSimOutput.SVG_DIAGRAM_NO_TERMINAL_LABELS: "SVG - circuit diagram without terminal labels",
     FitSimOutput.SVG_DIAGRAM_NO_LABELS: "SVG - circuit diagram without any labels",
     FitSimOutput.SYMPY_EXPR: "SymPy - expression",
     FitSimOutput.SYMPY_EXPR_VALUES: "SymPy - expression and values",
@@ -768,12 +883,12 @@ class PlotType(IntEnum):
     """
     Types of plots:
 
-    - NYQUIST: -Zim vs Zre
-    - BODE_MAGNITUDE: |Z| vs f
-    - BODE_PHASE: phi vs f
+    - NYQUIST: -Im(Z) vs Re(Z)
+    - BODE_MAGNITUDE: Mod(Z) vs f
+    - BODE_PHASE: -Phase(Z) vs f
     - DRT: gamma vs tau
-    - IMPEDANCE_REAL: Zre vs f
-    - IMPEDANCE_IMAGINARY: Zim vs f
+    - IMPEDANCE_REAL: Re(Z) vs f
+    - IMPEDANCE_IMAGINARY: -Im(Z) vs f
     """
 
     NYQUIST = 1
@@ -840,9 +955,9 @@ class Weight(IntEnum):
     Types of weights to use during complex non-linear least squares fitting:
 
     - AUTO: try each weight
-    - BOUKAMP: 1 / (Zre^2 + Zim^2) (eq. 13, Boukamp, 1995)
-    - MODULUS: 1 / |Z|
-    - PROPORTIONAL: 1 / Zre^2, 1 / Zim^2
+    - BOUKAMP: :math:`1 / ({\\rm Re}(Z)^2 + {\\rm Im}(Z)^2)` (eq. 13, Boukamp, 1995)
+    - MODULUS: :math:`1 / |Z|`
+    - PROPORTIONAL: :math:`1 / {\\rm Re}(Z)^2, 1 / {\\rm Im}(Z)^2`
     - UNITY: 1
     """
 
@@ -887,26 +1002,27 @@ class DRTMethod(IntEnum):
     - TR_NNLS
     - TR_RBF
     - BHT
-    - M_RQ_FIT
+    - MRQ_FIT
     """
+
     TR_NNLS = 1
     TR_RBF = 2
     BHT = 3
-    M_RQ_FIT = 4
+    MRQ_FIT = 4
 
 
 drt_method_to_label: Dict[DRTMethod, str] = {
     DRTMethod.BHT: "BHT",
     DRTMethod.TR_NNLS: "TR-NNLS",
     DRTMethod.TR_RBF: "TR-RBF",
-    DRTMethod.M_RQ_FIT: "m(RQ)fit",
+    DRTMethod.MRQ_FIT: "m(RQ)fit",
 }
 label_to_drt_method: Dict[str, DRTMethod] = {
     v: k for k, v in drt_method_to_label.items()
 }
 drt_method_to_value: Dict[DRTMethod, str] = {
     DRTMethod.BHT: "bht",
-    DRTMethod.M_RQ_FIT: "m(RQ)fit",
+    DRTMethod.MRQ_FIT: "mrq-fit",
     DRTMethod.TR_NNLS: "tr-nnls",
     DRTMethod.TR_RBF: "tr-rbf",
 }
@@ -926,6 +1042,7 @@ class DRTMode(IntEnum):
     - REAL
     - IMAGINARY
     """
+
     COMPLEX = 1
     REAL = 2
     IMAGINARY = 3
@@ -964,6 +1081,7 @@ class RBFType(IntEnum):
     - INVERSE_QUADRIC
     - PIECEWISE_LINEAR
     """
+
     C0_MATERN = 1
     C2_MATERN = 2
     C4_MATERN = 3
@@ -1013,6 +1131,7 @@ class RBFShape(IntEnum):
     - FWHM
     - FACTOR
     """
+
     FWHM = 1
     FACTOR = 2
 
@@ -1067,10 +1186,11 @@ assert set(drt_output_to_label.keys()) == set(
 class PlotUnits(IntEnum):
     """
     The units of the plot dimensions:
-    
+
     - INCHES
     - CENTIMETERS
     """
+
     INCHES = 1
     CENTIMETERS = 2
 
@@ -1107,6 +1227,7 @@ class PlotPreviewLimit(IntEnum):
     - PX8192
     - PX16384
     """
+
     NONE = 0
     PX256 = 8
     PX512 = 9
@@ -1151,6 +1272,7 @@ class PlotLegendLocation(IntEnum):
     - UPPER_CENTER
     - CENTER
     """
+
     AUTO = 0
     UPPER_RIGHT = 1
     UPPER_LEFT = 2
@@ -1194,3 +1316,157 @@ PLOT_EXTENSIONS: List[str] = [
     ".ps",
     ".svg",
 ]
+
+
+class ZHITSmoothing(IntEnum):
+    """
+    The algorithm to use when smoothing the phase data:
+
+    - AUTO: try all of the options
+    - NONE: no smoothing
+    - LOWESS: `Local Weighted Scatterplot Smoothing <https://www.statsmodels.org/dev/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html#statsmodels.nonparametric.smoothers_lowess.lowess>`_
+    - SAVGOL: `Savitzky-Golay <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html>`_
+    """
+
+    AUTO = 1
+    NONE = 2
+    LOWESS = 3
+    SAVGOL = 4  # Savitzky-Golay
+
+
+label_to_zhit_smoothing: Dict[str, ZHITSmoothing] = {
+    "Auto": ZHITSmoothing.AUTO,
+    "None": ZHITSmoothing.NONE,
+    "LOWESS": ZHITSmoothing.LOWESS,
+    "Savitzky-Golay": ZHITSmoothing.SAVGOL,
+}
+zhit_smoothing_to_label: Dict[ZHITSmoothing, str] = {
+    v: k for k, v in label_to_zhit_smoothing.items()
+}
+zhit_smoothing_to_value: Dict[ZHITSmoothing, str] = {
+    ZHITSmoothing.AUTO: "auto",
+    ZHITSmoothing.NONE: "none",
+    ZHITSmoothing.LOWESS: "lowess",
+    ZHITSmoothing.SAVGOL: "savgol",
+}
+value_to_zhit_smoothing: Dict[str, ZHITSmoothing] = {
+    v: k for k, v in zhit_smoothing_to_value.items()
+}
+
+
+class ZHITInterpolation(IntEnum):
+    """
+    The spline to use for interpolating the smoothed phase data:
+
+    - AUTO: try all of the options
+    - AKIMA: `Akima spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html#scipy.interpolate.Akima1DInterpolator>`_
+    - CUBIC: `cubic spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.CubicSpline.html#scipy.interpolate.CubicSpline>`_
+    - PCHIP: `Piecewise Cubic Hermite Interpolating Polynomial <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html#scipy.interpolate.PchipInterpolator>`_
+    """
+
+    AUTO = 1
+    AKIMA = 2
+    CUBIC = 3
+    PCHIP = 4
+
+
+label_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
+    "Auto": ZHITInterpolation.AUTO,
+    "Akima": ZHITInterpolation.AKIMA,
+    "Cubic": ZHITInterpolation.CUBIC,
+    "PCHIP": ZHITInterpolation.PCHIP,
+}
+zhit_interpolation_to_label: Dict[ZHITInterpolation, str] = {
+    v: k for k, v in label_to_zhit_interpolation.items()
+}
+zhit_interpolation_to_value: Dict[ZHITInterpolation, str] = {
+    ZHITInterpolation.AUTO: "auto",
+    ZHITInterpolation.AKIMA: "akima",
+    ZHITInterpolation.CUBIC: "cubic",
+    ZHITInterpolation.PCHIP: "pchip",
+}
+value_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
+    v: k for k, v in zhit_interpolation_to_value.items()
+}
+
+
+class ZHITWindow(IntEnum):
+    """
+    The window functions to use for determining the weights when adjusting the Mod(Z) offset:
+
+    - AUTO: try all of the options
+    - BARTHANN
+    - BARTLETT
+    - BLACKMAN
+    - BLACKMANHARRIS
+    - BOHMAN
+    - BOXCAR
+    - COSINE
+    - FLATTOP
+    - HAMMING
+    - HANN
+    - LANCZOS
+    - NUTTALL
+    - PARZEN
+    - TRIANG
+
+    See `scipy.signal.windows <https://docs.scipy.org/doc/scipy/reference/signal.windows.html>`_ for information about these.
+    """
+
+    AUTO = 1
+    BARTHANN = 2
+    BARTLETT = 3
+    BLACKMAN = 4
+    BLACKMANHARRIS = 5
+    BOHMAN = 6
+    BOXCAR = 7
+    COSINE = 8
+    FLATTOP = 9
+    HAMMING = 10
+    HANN = 11
+    NUTTALL = 12
+    PARZEN = 13
+    TRIANG = 14
+    LANCZOS = 15
+
+
+label_to_zhit_window: Dict[str, ZHITWindow] = {
+    "Auto": ZHITWindow.AUTO,
+    "Barthann": ZHITWindow.BARTHANN,
+    "Bartlett": ZHITWindow.BARTLETT,
+    "Blackman": ZHITWindow.BLACKMAN,
+    "Blackman-Harris": ZHITWindow.BLACKMANHARRIS,
+    "Bohman": ZHITWindow.BOHMAN,
+    "Boxcar": ZHITWindow.BOXCAR,
+    "Cosine": ZHITWindow.COSINE,
+    "Flat top": ZHITWindow.FLATTOP,
+    "Hamming": ZHITWindow.HAMMING,
+    "Hann": ZHITWindow.HANN,
+    "Lanczos": ZHITWindow.LANCZOS,
+    "Nuttall": ZHITWindow.NUTTALL,
+    "Parzen": ZHITWindow.PARZEN,
+    "Triangular": ZHITWindow.TRIANG,
+}
+zhit_window_to_label: Dict[ZHITWindow, str] = {
+    v: k for k, v in label_to_zhit_window.items()
+}
+zhit_window_to_value: Dict[ZHITWindow, str] = {
+    ZHITWindow.AUTO: "auto",
+    ZHITWindow.BARTHANN: "barthann",
+    ZHITWindow.BARTLETT: "bartlett",
+    ZHITWindow.BLACKMAN: "blackman",
+    ZHITWindow.BLACKMANHARRIS: "blackmanharris",
+    ZHITWindow.BOHMAN: "bohman",
+    ZHITWindow.BOXCAR: "boxcar",
+    ZHITWindow.COSINE: "cosine",
+    ZHITWindow.FLATTOP: "flattop",
+    ZHITWindow.HAMMING: "hamming",
+    ZHITWindow.HANN: "hann",
+    ZHITWindow.LANCZOS: "lanczos",
+    ZHITWindow.NUTTALL: "nuttall",
+    ZHITWindow.PARZEN: "parzen",
+    ZHITWindow.TRIANG: "triang",
+}
+value_to_zhit_window: Dict[str, ZHITWindow] = {
+    v: k for k, v in zhit_window_to_value.items()
+}

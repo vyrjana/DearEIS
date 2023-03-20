@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,15 +35,18 @@ from deareis.data import (
     PlotSettings,
     SimulationResult,
     TestResult,
+    ZHITResult,
 )
 from deareis.utility import calculate_window_position_dimensions
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
 from deareis.data import Project
 import deareis.themes as themes
+from deareis.state import STATE
+from deareis.enums import Action
 from deareis.keybindings import (
-    is_alt_down,
-    is_control_down,
+    Keybinding,
+    TemporaryKeybindingHandler,
 )
 
 
@@ -61,6 +64,7 @@ class SeriesBefore:
             FitResult,
             SimulationResult,
             TestResult,
+            ZHITResult,
         ], series
         assert type(settings) is PlotSettings, settings
         assert type(marker_lookup) is dict, marker_lookup
@@ -176,9 +180,71 @@ class CopyPlotAppearance:
         }
         self.data_sets: List[DataSet] = project.get_data_sets()
         self.tests: Dict[str, List[TestResult]] = project.get_all_tests()
+        self.zhits: Dict[str, List[ZHITResult]] = project.get_all_zhits()
         self.drts: Dict[str, List[DRTResult]] = project.get_all_drts()
         self.fits: Dict[str, List[FitResult]] = project.get_all_fits()
         self.simulations: List[SimulationResult] = project.get_simulations()
+        self.create_window()
+        self.register_keybindings()
+        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
+        self.change_source()
+
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Return,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
+            )
+        callbacks[kb] = self.accept
+        # Previous source
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_source(-1)
+        # Next source
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_source(1)
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
+
+    def create_window(self):
         x: int
         y: int
         w: int
@@ -189,10 +255,7 @@ class CopyPlotAppearance:
             label="Copy appearance settings",
             modal=True,
             no_resize=True,
-            pos=(
-                x,
-                y,
-            ),
+            pos=(x, y),
             width=w,
             height=h,
             on_close=self.close,
@@ -228,24 +291,25 @@ class CopyPlotAppearance:
                             dpg.add_table_column(label="Marker", width_fixed=True)
                             dpg.add_table_column(label="Line", width_fixed=True)
                             uuid: str
-                            for uuid in settings.series_order:
+                            for uuid in self.settings.series_order:
                                 series: Optional[
                                     Union[
                                         DataSet, TestResult, FitResult, SimulationResult
                                     ]
                                 ]
-                                series = settings.find_series(
-                                    uuid,
-                                    self.data_sets,
-                                    self.tests,
-                                    self.drts,
-                                    self.fits,
-                                    self.simulations,
+                                series = self.settings.find_series(
+                                    uuid=uuid,
+                                    data_sets=self.data_sets,
+                                    tests=self.tests,
+                                    zhits=self.zhits,
+                                    drts=self.drts,
+                                    fits=self.fits,
+                                    simulations=self.simulations,
                                 )
                                 assert series is not None
                                 SeriesBefore(
                                     series,
-                                    settings,
+                                    self.settings,
                                     self.marker_lookup,
                                     self.toggle_series,
                                 )
@@ -270,7 +334,7 @@ class CopyPlotAppearance:
                             dpg.add_table_column(label="Line", width_fixed=True)
             with dpg.group(horizontal=True):
                 dpg.add_button(
-                    label="Accept",
+                    label="Accept".ljust(12),
                     callback=self.accept,
                 )
                 dpg.add_spacer(width=354)
@@ -306,39 +370,13 @@ class CopyPlotAppearance:
                     callback=lambda s, a, u: self.change_source(),
                 )
                 attach_tooltip(tooltips.plotting.copy_appearance_lines)
-        self.key_handler: int = dpg.generate_uuid()
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.close,
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Return,
-                callback=lambda: self.accept(keybinding=True),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Prior,
-                callback=lambda: self.cycle_source(-1),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Next,
-                callback=lambda: self.cycle_source(1),
-            )
-        signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
-        self.change_source()
 
     def close(self):
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         dpg.delete_item(self.window)
-        dpg.delete_item(self.key_handler)
+        self.keybinding_handler.delete()
 
-    def accept(self, keybinding: bool = False):
-        if keybinding is True and not (
-            is_control_down()
-            if dpg.get_platform() == dpg.mvPlatform_Windows
-            else is_alt_down()
-        ):
-            return
+    def accept(self):
         dpg.hide_item(self.window)
         changes: Dict[str, Tuple[str, List[float], int, bool]] = {}
         row: int
@@ -396,12 +434,13 @@ class CopyPlotAppearance:
         for uuid in self.settings.series_order:
             SeriesAfter(
                 self.settings.find_series(
-                    uuid,
-                    self.data_sets,
-                    self.tests,
-                    self.drts,
-                    self.fits,
-                    self.simulations,
+                    uuid=uuid,
+                    data_sets=self.data_sets,
+                    tests=self.tests,
+                    zhits=self.zhits,
+                    drts=self.drts,
+                    fits=self.fits,
+                    simulations=self.simulations,
                 ),
                 source
                 if uuid in source.themes and self.series_checkboxes[uuid]

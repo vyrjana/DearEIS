@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,13 +60,13 @@ class Bode(Plot):
             )
             self._y_axis_1: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="|Z| (ohm)",
+                label="Mod(Z) (ohm)",
                 log_scale=True,
                 no_gridlines=True,
             )
             self._y_axis_2: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="-phi (°)",
+                label="-Phase(Z) (°)",
                 no_gridlines=True,
             )
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -289,7 +289,7 @@ class BodeMagnitude(Plot):
             )
             self._y_axis: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="|Z| (ohm)",
+                label="Mod(Z) (ohm)",
                 log_scale=True,
                 no_gridlines=True,
             )
@@ -309,6 +309,26 @@ class BodeMagnitude(Plot):
     def clear(self, *args, **kwargs):
         dpg.delete_item(self._y_axis, children_only=True)
         self._series.clear()
+
+    def update(self, index: int, *args, **kwargs):
+        assert type(index) is int and index >= 0, index
+        assert len(self._series) > index, (
+            index,
+            len(self._series),
+        )
+        assert len(args) == 0, args
+        freq: ndarray = kwargs["frequency"]
+        mag: ndarray = kwargs["magnitude"]
+        assert type(freq) is ndarray, freq
+        assert type(mag) is ndarray, mag
+        i: int
+        series: int
+        for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+            if i != index:
+                continue
+            self._series[index].update(kwargs)
+            dpg.set_value(series, [list(freq), list(mag)])
+            break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
@@ -432,7 +452,7 @@ class BodePhase(Plot):
             )
             self._y_axis: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="-phi (°)",
+                label="-Phase(Z) (°)",
                 no_gridlines=True,
             )
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -451,6 +471,26 @@ class BodePhase(Plot):
     def clear(self, *args, **kwargs):
         dpg.delete_item(self._y_axis, children_only=True)
         self._series.clear()
+
+    def update(self, index: int, *args, **kwargs):
+        assert type(index) is int and index >= 0, index
+        assert len(self._series) > index, (
+            index,
+            len(self._series),
+        )
+        assert len(args) == 0, args
+        freq: ndarray = kwargs["frequency"]
+        phase: ndarray = kwargs["phase"]
+        assert type(freq) is ndarray, freq
+        assert type(phase) is ndarray, phase
+        i: int
+        series: int
+        for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+            if i != index:
+                continue
+            self._series[index].update(kwargs)
+            dpg.set_value(series, [list(freq), list(phase)])
+            break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args

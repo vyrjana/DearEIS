@@ -1,3 +1,0 @@
-[submodule "docs/api_documenter"]
-	path = docs/api_documenter
-	url = https://github.com/vyrjana/python-api-documenter

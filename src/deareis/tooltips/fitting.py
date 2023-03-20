@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,12 +39,20 @@ Reference: {boukamp1995}
         "nfev": """
 The maximum number of function evaluations to perform. This setting can be used to limit the amount of time spent performing a fit. If this setting is set to zero, then no limit is applied.
     """.strip(),
+        "adjust_parameters": """
+Open a window for adjusting the initial values of parameters with a real-time preview.
+    """.strip(),
         "perform": """
 Sometimes a circuit, which ostensibly should be capable of providing a good fit, does not fit well. If the starting values of the parameters have been left at their default values, then rough adjustments may be all that is required. For example, if a circuit contains two parallel RC subcircuits in series (i.e. the CDC contains '(RC)(RC)'), then setting one of the capacitances to be one order of magnitude greater than the other may be sufficient.
 
 Setting both the fitting method and weight function to 'Auto' is recommended as the starting point. Some of the various combinations of fitting methods and weight functions may be more forgiving than others regarding starting values for a particular circuit and thus require less work on the part of the user to achieve a good fit.
 
 The fitting is performed using the Python package called lmfit. That package provides estimates for the error of the fitted parameters whenever possible. Circumstances when it is not possible to provide such estimates include e.g. when a parameter is near its lower/upper limit if such a limit has been defined. A parameter with a large error estimate is indicative of that parameter not really affecting the fit at all. For example, an unnecessary Warburg diffusion element may have its admittance parameter, Y, set to be a very large value and thus the element contributes very little to the overall impedance of the circuit within the frequency range of the experimental data.
+    """.strip(),
+        "pseudo_chisqr": f"""
+Pseudo chi-squared value calculated according to eq. 14.
+
+Reference: {boukamp1995}
     """.strip(),
         "chisqr": """
 The chi-squared value of the fit.
@@ -65,16 +73,16 @@ The degrees of freedom in the fit.
 The number of data points in the fit.
     """.strip(),
         "element": """
-An element in the equivalent circuit.
+An element in the equivalent circuit. Elements marked with an asterisk, *, are nested within the subcircuit of a container element (e.g., a transmission line model (Tlm)). Hovering over the name will show a tooltip that includes information about which container element and the specific subcircuit.
     """.strip(),
         "parameter": """
-A parameter in the element.
+A parameter in the element. Hovering over the name will show a tooltip with the parameter's unit if one has been specified.
     """.strip(),
         "parameter_value": """
-The fitted value of the parameter.
+The fitted value of the parameter. Hovering over the value will show a tooltip that also contains the parameter's unit.
     """.strip(),
         "error": """
-The estimated standard error of the fitted value.
+The estimated relative standard error of the fitted value. Hovering over the value will show a tooltip with the estimated absolute standard error of the fitted value.
     """.strip(),
         "delete": """
 Delete the current fit result.

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,10 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import (
-    Dict,
-    Optional,
-)
 from numpy import allclose
 import pyimpspec
 
@@ -32,25 +28,28 @@ class DataSet(pyimpspec.DataSet):
 
     Parameters
     ----------
-    frequency: ndarray
+    frequencies: Frequencies
         A 1-dimensional array of frequencies in hertz.
 
-    impedance: ndarray
+    impedances: ComplexImpedances
         A 1-dimensional array of complex impedances in ohms.
 
-    mask: Dict[int, bool] = {}
+    mask: Dict[int, bool], optional
         A mapping of integer indices to boolean values where a value of True means that the data point is to be omitted.
 
-    path: str = ""
+    path: str, optional
         The path to the file that has been parsed to generate this DataSet instance.
 
-    label: str = ""
+    label: str, optional
         The label assigned to this DataSet instance.
 
-    uuid: str = ""
+    uuid: str, optional
         The universivally unique identifier assigned to this DataSet instance.
         If empty, then one will be automatically assigned.
     """
+
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
 
     def __eq__(self, other) -> bool:
         # This is implemented because gui/data_sets.py checks if the newly selected DataSet is the
@@ -79,10 +78,12 @@ class DataSet(pyimpspec.DataSet):
                 other.get_num_points(masked=None),
             )
             assert allclose(
-                self.get_frequency(masked=None), other.get_frequency(masked=None)
+                self.get_frequencies(masked=None),
+                other.get_frequencies(masked=None),
             )
             assert allclose(
-                self.get_impedance(masked=None), other.get_impedance(masked=None)
+                self.get_impedances(masked=None),
+                other.get_impedances(masked=None),
             )
         except AssertionError:
             return False
@@ -116,10 +117,6 @@ class DataSet(pyimpspec.DataSet):
             Create an instance from a dictionary.
         """
         # This is implemented to deal with the effects of the modified to_dict method.
-        mask: Optional[Dict[str, bool]] = dictionary.get("mask")
-        if type(mask) is dict and len(mask) < len(dictionary["frequency"]):
-            i: int
-            for i in range(0, len(dictionary["frequency"])):
-                if mask.get(str(i)) is not True:
-                    mask[str(i)] = False
+        if any(map(lambda _: type(_) is str, dictionary["mask"].keys())):
+            dictionary["mask"] = {int(k): v for k, v in dictionary["mask"].items()}
         return Class(**Class._parse(dictionary))

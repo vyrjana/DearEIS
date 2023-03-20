@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ from numpy import (
 import webbrowser
 from pyimpspec import (
     Circuit,
+    Element,
 )
 import pyimpspec
 from pandas import DataFrame
@@ -73,11 +74,13 @@ from .overview import (
     rename_project,
     modify_project_notes,
 )
+from .batch_analysis import select_batch_data_sets
 from .data_sets import (
     apply_data_set_mask,
     delete_data_set,
     load_data_set_files,
     load_simulation_as_data_set,
+    load_zhit_as_data_set,
     modify_data_set_path,
     rename_data_set,
     select_data_points_to_toggle,
@@ -86,6 +89,7 @@ from .data_sets import (
     select_data_set_mask_to_copy,
     select_data_sets_to_average,
     select_impedance_to_subtract,
+    select_points_to_interpolate,
     toggle_data_point,
 )
 from .kramers_kronig import (
@@ -93,6 +97,13 @@ from .kramers_kronig import (
     delete_test_result,
     perform_test,
     select_test_result,
+)
+from .zhit import (
+    apply_zhit_settings,
+    delete_zhit_result,
+    perform_zhit,
+    preview_zhit_weights,
+    select_zhit_result,
 )
 from .drt import (
     apply_drt_settings,
@@ -115,6 +126,7 @@ from .simulation import (
 from .plotting import (
     copy_plot_appearance_settings,
     delete_plot_settings,
+    duplicate_plot_settings,
     export_plot,
     modify_plot_series_theme,
     new_plot_settings,
@@ -128,6 +140,7 @@ from .plotting import (
     toggle_plot_series,
 )
 from .check_updates import perform_update_check
+from deareis.gui.about import show_help_about
 from deareis.gui.plots import show_modal_plot_window
 from deareis.gui.changelog import show_changelog
 from deareis.enums import (
@@ -157,6 +170,10 @@ import deareis.signals as signals
 from deareis.state import STATE
 from deareis.utility import (
     calculate_window_position_dimensions,
+    format_latex_element,
+    format_latex_element as format_latex_parameter,
+    format_latex_unit,
+    format_latex_value,
     pad_dataframe_dictionary,
 )
 from deareis.gui.plots import (
@@ -176,6 +193,8 @@ from deareis.gui.settings import (
     AppearanceSettings,
     KeybindingRemapping,
     show_defaults_settings_window,
+    show_user_defined_elements_window,
+    refresh_user_defined_elements,
 )
 import deareis.themes as themes
 from deareis.version import PACKAGE_VERSION
@@ -236,10 +255,11 @@ def copy_output(*args, **kwargs):
         elif output == FitSimOutput.CDC_EXTENDED:
             clipboard_content = fit_or_sim.circuit.to_string(6)
         elif output == FitSimOutput.CSV_DATA_TABLE:
-            Z_fit_or_sim: ndarray = fit_or_sim.get_impedance()
+            Z_fit_or_sim: ndarray = fit_or_sim.get_impedances()
             dictionary: dict = {}
             if type(fit_or_sim) is FitResult:
-                Z_exp: ndarray = data.get_impedance(masked=None)
+                assert data is not None
+                Z_exp: ndarray = data.get_impedances(masked=None)
                 indices: ndarray = array(
                     [
                         _
@@ -248,17 +268,17 @@ def copy_output(*args, **kwargs):
                     ]
                 )
                 dictionary = {
-                    "f (Hz)": fit_or_sim.get_frequency(),
-                    "Zre_exp (ohm)": Z_exp[indices].real,
-                    "Zim_exp (ohm)": Z_exp[indices].imag,
-                    "Zre_fit (ohm)": Z_fit_or_sim.real,
-                    "Zim_fit (ohm)": Z_fit_or_sim.imag,
+                    "f (Hz)": fit_or_sim.get_frequencies(),
+                    "Re(Z) (ohm) - Data": Z_exp[indices].real,
+                    "Im(Z) (ohm) - Data": Z_exp[indices].imag,
+                    "Re(Z) (ohm) - Fit": Z_fit_or_sim.real,
+                    "Im(Z) (ohm) - Fit": Z_fit_or_sim.imag,
                 }
             else:
                 dictionary = {
-                    "f (Hz)": fit_or_sim.get_frequency(),
-                    "Zre_sim (ohm)": Z_fit_or_sim.real,
-                    "Zim_sim (ohm)": Z_fit_or_sim.imag,
+                    "f (Hz)": fit_or_sim.get_frequencies(),
+                    "Re(Z) (ohm) - Sim.": Z_fit_or_sim.real,
+                    "Im(Z) (ohm) - Sim.": Z_fit_or_sim.imag,
                 }
             if dictionary:
                 dataframe = DataFrame.from_dict(dictionary)
@@ -269,7 +289,7 @@ def copy_output(*args, **kwargs):
             or output == FitSimOutput.LATEX_PARAMETERS_TABLE
             or output == FitSimOutput.MARKDOWN_PARAMETERS_TABLE
         ):
-            dataframe = fit_or_sim.to_dataframe()
+            dataframe = fit_or_sim.to_parameters_dataframe()
             if output == FitSimOutput.CSV_PARAMETERS_TABLE:
                 clipboard_content = dataframe.to_csv(index=False)
             elif output == FitSimOutput.JSON_PARAMETERS_TABLE:
@@ -278,8 +298,11 @@ def copy_output(*args, **kwargs):
                 clipboard_content = (
                     dataframe.style.format(
                         {
-                            "Value": "{:.3g}",
-                            "Std. err. (%)": "{:.3g}",
+                            "Element": format_latex_element,
+                            "Parameter": format_latex_parameter,
+                            "Value": format_latex_value,
+                            "Std. err. (%)": format_latex_value,
+                            "Unit": format_latex_unit,
                         }
                     )
                     .format_index(axis="columns", escape="latex")
@@ -291,17 +314,34 @@ def copy_output(*args, **kwargs):
                     index=False,
                     floatfmt=".3g",
                 )
+        elif (
+            output == FitSimOutput.CSV_STATISTICS_TABLE
+            or output == FitSimOutput.JSON_STATISTICS_TABLE
+            or output == FitSimOutput.LATEX_STATISTICS_TABLE
+            or output == FitSimOutput.MARKDOWN_STATISTICS_TABLE
+        ):
+            dataframe = fit_or_sim.to_statistics_dataframe()
+            if output == FitSimOutput.CSV_STATISTICS_TABLE:
+                clipboard_content = dataframe.to_csv(index=False)
+            elif output == FitSimOutput.JSON_STATISTICS_TABLE:
+                clipboard_content = dataframe.to_json()
+            elif output == FitSimOutput.LATEX_STATISTICS_TABLE:
+                clipboard_content = (
+                    dataframe.style.format({"Value": format_latex_value})
+                    .format_index(axis="columns", escape="latex")
+                    .hide(axis="index")
+                    .to_latex(hrules=True)
+                )
+            elif output == FitSimOutput.MARKDOWN_STATISTICS_TABLE:
+                clipboard_content = dataframe.to_markdown(
+                    index=False,
+                    floatfmt=".3g",
+                )
         elif output == FitSimOutput.LATEX_DIAGRAM:
             clipboard_content = fit_or_sim.circuit.to_circuitikz()
         elif output == FitSimOutput.SVG_DIAGRAM:
             clipboard_content = (
                 fit_or_sim.circuit.to_drawing().get_imagedata(fmt="svg").decode()
-            )
-        elif output == FitSimOutput.SVG_DIAGRAM_NO_TERMINAL_LABELS:
-            clipboard_content = (
-                fit_or_sim.circuit.to_drawing(working_label="", counter_label="")
-                .get_imagedata(fmt="svg")
-                .decode()
             )
         elif output == FitSimOutput.SVG_DIAGRAM_NO_LABELS:
             clipboard_content = (
@@ -325,30 +365,33 @@ def copy_output(*args, **kwargs):
                 if len(symbols) == 0:
                     clipboard_content = str(expr)
                 else:
-                    parameters = fit_or_sim.circuit.get_parameters()
+                    # TODO: Update to work with latest version of pyimpspec
+                    identifiers: Dict[int, Element] = {
+                        v: k
+                        for k, v in fit_or_sim.circuit.generate_element_identifiers(
+                            running=True
+                        ).items()
+                    }
                     lines.append(
                         ", ".join(symbols) + " = sorted(expr.free_symbols, key=str)"
                     )
                     lines.append("parameters = {")
                     if "f" in symbols:
                         symbols.remove("f")
+                    assert len(symbols) == sum(
+                        map(lambda _: len(_.get_values()), identifiers.values())
+                    )
                     sym: str
                     for sym in symbols:
                         assert "_" in sym
                         ident: Union[int, str]
-                        label, ident = sym.split("_")
+                        sym, ident = sym.rsplit("_", 1)
                         value: Optional[float] = None
-                        try:
-                            ident = int(label)
-                            assert ident in parameters
-                            value = parameters[ident][label]
-                        except ValueError:
-                            for element in fit_or_sim.circuit.get_elements():
-                                if not element.get_label().endswith(f"_{ident}"):
-                                    continue
-                                value = element.get_parameters().get(label)
+                        ident = int(ident)
+                        assert ident in identifiers
+                        value = identifiers[ident].get_value(sym)
                         assert value is not None
-                        lines.append(f"\t{sym}: {value:.6E},")
+                        lines.append(f"\t{sym}_{ident}: {value:.6E},")
                     lines.append("}")
                     clipboard_content = "\n".join(lines)
         else:
@@ -365,8 +408,24 @@ def copy_output(*args, **kwargs):
             or output == DRTOutput.LATEX_SCORES
             or output == DRTOutput.MARKDOWN_SCORES
         ):
-            score_dataframe: Optional[DataFrame] = drt.get_score_dataframe(
-                latex_labels=output == DRTOutput.LATEX_SCORES
+            score_dataframe: Optional[DataFrame] = drt.to_scores_dataframe(
+                columns=None
+                if output != DRTOutput.LATEX_SCORES
+                else [
+                    "Score",
+                    r"Real (\%)",
+                    r"Imag. (\%)",
+                ],
+                rows=None
+                if output != DRTOutput.LATEX_SCORES
+                else [
+                    r"$s_\mu$",
+                    r"$s_{1\sigma}$",
+                    r"$s_{2\sigma}$",
+                    r"$s_{3\sigma}$",
+                    r"$s_{\rm HD}$",
+                    r"$s_{\rm JSD}$",
+                ],
             )
             if score_dataframe is not None:
                 if output == DRTOutput.CSV_SCORES:
@@ -377,8 +436,8 @@ def copy_output(*args, **kwargs):
                     clipboard_content = (
                         score_dataframe.style.format(
                             {
-                                "Real (\%)": "{:.3g}",
-                                "Imaginary (\%)": "{:.3g}",
+                                r"Real (\%)": "{:.3g}",
+                                r"Imaginary (\%)": "{:.3g}",
                             }
                         )
                         .hide(axis="index")
@@ -391,8 +450,7 @@ def copy_output(*args, **kwargs):
                     )
     else:
         raise Exception(f"Unsupported output type: {type(output)}")
-    if clipboard_content != "":
-        dpg.set_clipboard_text(clipboard_content)
+    dpg.set_clipboard_text(clipboard_content)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
@@ -519,8 +577,8 @@ def copy_plot_data(*args, **kwargs):
                 label += " "
                 key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
-            dictionary[f"|Z| (ohm) - {label}"] = series["magnitude"]
-            dictionary[f"-phi (°) - {label}"] = series["phase"]
+            dictionary[f"Mod(Z) (ohm) - {label}"] = series["magnitude"]
+            dictionary[f"-Phase(Z) (°) - {label}"] = series["phase"]
     elif type(plot) is Nyquist:
         for series in plot.get_series():
             label = "Data"
@@ -535,12 +593,12 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
-            key = f"Zre (ohm) - {label}"
+            key = f"Re(Z) (ohm) - {label}"
             while key in dictionary:
                 label += " "
-                key = f"Zre (ohm) - {label}"
+                key = f"Re(Z) (ohm) - {label}"
             dictionary[key] = series["real"]
-            dictionary[f"-Zim (ohm) - {label}"] = series["imaginary"]
+            dictionary[f"-Im(Z) (ohm) - {label}"] = series["imaginary"]
     elif type(plot) is BodeMagnitude:
         for series in plot.get_series():
             label = "Data"
@@ -560,7 +618,7 @@ def copy_plot_data(*args, **kwargs):
                 label += " "
                 key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
-            dictionary[f"|Z| (ohm) - {label}"] = series["magnitude"]
+            dictionary[f"Mod(Z) (ohm) - {label}"] = series["magnitude"]
     elif type(plot) is BodePhase:
         for series in plot.get_series():
             label = "Data"
@@ -580,41 +638,35 @@ def copy_plot_data(*args, **kwargs):
                 label += " "
                 key = f"f (Hz) - {label}"
             dictionary[key] = series["frequency"]
-            dictionary[f"-phi (°) - {label}"] = series["phase"]
+            dictionary[f"-Phase(Z) (°) - {label}"] = series["phase"]
     elif type(plot) is Residuals:
         for series in plot.get_series():
             dictionary["f (Hz)"] = series["frequency"]
-            dictionary["real error (%)"] = series["real"]
-            dictionary["imaginary error (%)"] = series["imaginary"]
+            dictionary["real_error (%)"] = series["real"]
+            dictionary["imag_error (%)"] = series["imaginary"]
     elif type(plot) is DRT:
         for series in plot.get_series():
-            label = "Data"
-            if context != Context.PLOTTING_TAB:
-                if series.get("simulation", False):
-                    label = "Sim."
-                elif series.get("fit", False):
-                    label = "Fit"
+            label = series.get("label")
+            if label == "gamma":
+                label = ""
             else:
-                label = series.get("label") or ""
-            key = f"tau (s) - {label}"
-            while key in dictionary:
-                label += " "
-                key = f"tau (s) - {label}"
-            dictionary[key] = series["tau"]
-            if "gamma" in series:
-                dictionary[f"gamma (ohm) - {label}"] = series["gamma"]
-            elif "imaginary" in series:
-                if f"gamma (ohm) - {label}" in dictionary:
-                    dictionary[f"gamma, real (ohm) - {label}"] = dictionary[
-                        "gamma (ohm) - {label}"
-                    ]
-                    del dictionary[f"gamma (ohm) - {label}"]
-                dictionary[f"gamma, imag. (ohm) - {label}"] = series["imaginary"]
+                label = label.capitalize()
+            if label == "":
+                suffix = ""
+            else:
+                suffix = f" - {label}"
+            dictionary[f"tau (s){suffix}"] = series["tau"]
+            if "imaginary" in series:
+                if "gamma" in series:
+                    dictionary[f"gamma_real (ohm){suffix}"] = series["gamma"]
+                dictionary[f"gamma_imag (ohm){suffix}"] = series["imaginary"]
             elif "mean" in series:
-                dictionary[f"gamma, mean (ohm) - {label}"] = series["mean"]
+                dictionary[f"gamma_mean (ohm){suffix}"] = series["mean"]
             elif "lower" in series and "upper" in series:
-                dictionary[f"gamma, lower bound (ohm) - {label}"] = series["lower"]
-                dictionary[f"gamma, upper bound (ohm) - {label}"] = series["lower"]
+                dictionary[f"gamma_lower (ohm){suffix}"] = series["lower"]
+                dictionary[f"gamma_upper (ohm){suffix}"] = series["lower"]
+            elif "gamma" in series:
+                dictionary[f"gamma (ohm){suffix}"] = series["gamma"]
     elif type(plot) is Impedance:
         for series in plot.get_series():
             label = "Data"
@@ -625,13 +677,9 @@ def copy_plot_data(*args, **kwargs):
                     label = "Fit"
             else:
                 label = series.get("label") or ""
-            key = f"f (Hz) - {label}"
-            while key in dictionary:
-                label += " "
-                key = f"f (Hz) - {label}"
-            dictionary[key] = series["frequency"]
-            dictionary["Zre (ohm)"] = series["real"]
-            dictionary["-Zim (ohm)"] = series["imaginary"]
+            dictionary[f"f (Hz) - {label}"] = series["frequency"]
+            dictionary[f"Re(Z) (ohm) - {label}"] = series["real"]
+            dictionary[f"-Im(Z) (ohm) - {label}"] = series["imaginary"]
     elif type(plot) is ImpedanceReal or type(plot) is ImpedanceImaginary:
         for series in plot.get_series():
             label = "Data"
@@ -648,9 +696,9 @@ def copy_plot_data(*args, **kwargs):
                 key = f"f (Hz) - {label}"
             dictionary[key] = series["x"]
             if type(plot) is ImpedanceReal:
-                dictionary[f"Zre (ohm) - {label}"] = series["y"]
+                dictionary[f"Re(Z) (ohm) - {label}"] = series["y"]
             else:
-                dictionary[f"-Zim (ohm) - {label}"] = series["y"]
+                dictionary[f"-Im(Z) (ohm) - {label}"] = series["y"]
     padded_dictionary: Optional[dict] = pad_dataframe_dictionary(dictionary)
     if padded_dictionary is None:
         dpg.set_clipboard_text("")
@@ -658,59 +706,6 @@ def copy_plot_data(*args, **kwargs):
         dpg.set_clipboard_text(
             DataFrame.from_dict(padded_dictionary).to_csv(index=False)
         )
-
-
-def show_help_about(*args, **kwargs):
-    x: int
-    y: int
-    w: int
-    h: int
-    x, y, w, h = calculate_window_position_dimensions(270, 100)
-    window: int = dpg.generate_uuid()
-    key_handler: int = dpg.generate_uuid()
-
-    def close_window():
-        if dpg.does_item_exist(window):
-            dpg.delete_item(window)
-        if dpg.does_item_exist(key_handler):
-            dpg.delete_item(key_handler)
-        signals.emit(Signal.UNBLOCK_KEYBINDINGS)
-
-    with dpg.handler_registry(tag=key_handler):
-        dpg.add_key_release_handler(
-            key=dpg.mvKey_Escape,
-            callback=close_window,
-        )
-
-    with dpg.window(
-        label="About",
-        modal=True,
-        pos=(
-            x,
-            y,
-        ),
-        width=w,
-        height=h,
-        no_resize=True,
-        on_close=close_window,
-        tag=window,
-    ):
-        dpg.add_text(f"DearEIS ({PACKAGE_VERSION})")
-        url: str
-        for url in [
-            "https://vyrjana.github.io/DearEIS",
-            "https://github.com/vyrjana/DearEIS",
-        ]:
-            dpg.bind_item_theme(
-                dpg.add_button(
-                    label=url,
-                    callback=lambda s, a, u: webbrowser.open(u),
-                    user_data=url,
-                    width=-1,
-                ),
-                themes.url_theme,
-            )
-    signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
 
 def restore_unsaved_project_snapshots():
@@ -752,6 +747,52 @@ Encountered error(s) while parsing project file(s). The file(s) might be malform
         )
 
 
+def getting_started_window():
+    window: int = dpg.generate_uuid()
+
+    def resize(*args, **kwargs):
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions(640, 120)
+        dpg.configure_item(
+            window,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+        )
+
+    registration: int = signals.register(Signal.VIEWPORT_RESIZED, resize)
+
+    def close():
+        signals.unregister(Signal.VIEWPORT_RESIZED, resize)
+
+    with dpg.window(
+        label="Getting started",
+        modal=False,
+        no_resize=True,
+        menubar=False,
+        autosize=False,
+        no_collapse=True,
+        on_close=close,
+        tag=window,
+    ):
+        dpg.add_text(
+            """
+If this is your first time using DearEIS, then you may wish to have a look at the set of short tutorials available online. The easiest way to find the tutorials is to go to the 'Help' menu and click 'Documentation'.
+
+A lot of useful information is presented in this program via tooltips that can be viewed by hovering the mouse cursor over labels, buttons, etc.
+        """.strip(),
+            wrap=620,
+        )
+    dpg.split_frame()
+    resize()
+
+
 def initialize_program(args: Namespace):
     assert type(args) is Namespace
     signals.register(Signal.VIEWPORT_RESIZED, viewport_resized)
@@ -788,7 +829,7 @@ def initialize_program(args: Namespace):
         lambda *a, **k: signals.emit(
             Signal.BLOCK_KEYBINDINGS,
             window=STATE.program_window.error_message.window,
-            window_object=None,
+            window_object=STATE.program_window.error_message,
         ),
     )
     # Signals for showing/hiding the modal windows for error messages and for indicating when the
@@ -810,6 +851,10 @@ def initialize_program(args: Namespace):
     )
     signals.register(
         Signal.SHOW_SETTINGS_KEYBINDINGS, lambda: KeybindingRemapping(STATE)
+    )
+    signals.register(
+        Signal.SHOW_SETTINGS_USER_DEFINED_ELEMENTS,
+        lambda: show_user_defined_elements_window(state=STATE),
     )
     # Home tab state
     signals.register(Signal.SELECT_HOME_TAB, select_home_tab)
@@ -843,6 +888,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_DATA_POINTS_TO_TOGGLE, select_data_points_to_toggle)
     signals.register(Signal.SELECT_DATA_SET_MASK_TO_COPY, select_data_set_mask_to_copy)
     signals.register(Signal.SELECT_IMPEDANCE_TO_SUBTRACT, select_impedance_to_subtract)
+    signals.register(Signal.SELECT_POINTS_TO_INTERPOLATE, select_points_to_interpolate)
     signals.register(Signal.TOGGLE_DATA_POINT, toggle_data_point)
     signals.register(Signal.APPLY_DATA_SET_MASK, apply_data_set_mask)
     signals.register(Signal.LOAD_SIMULATION_AS_DATA_SET, load_simulation_as_data_set)
@@ -851,6 +897,13 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_TEST_RESULT, select_test_result)
     signals.register(Signal.DELETE_TEST_RESULT, delete_test_result)
     signals.register(Signal.APPLY_TEST_SETTINGS, apply_test_settings)
+    # Signals for the Z-HIT tab
+    signals.register(Signal.APPLY_ZHIT_SETTINGS, apply_zhit_settings)
+    signals.register(Signal.DELETE_ZHIT_RESULT, delete_zhit_result)
+    signals.register(Signal.PERFORM_ZHIT, perform_zhit)
+    signals.register(Signal.PREVIEW_ZHIT_WEIGHTS, preview_zhit_weights)
+    signals.register(Signal.SELECT_ZHIT_RESULT, select_zhit_result)
+    signals.register(Signal.LOAD_ZHIT_AS_DATA_SET, load_zhit_as_data_set)
     # Signals for the DRT tab
     signals.register(Signal.PERFORM_DRT, perform_drt)
     signals.register(Signal.SELECT_DRT_RESULT, select_drt_result)
@@ -872,6 +925,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_PLOT_SETTINGS, select_plot_settings)
     signals.register(Signal.SELECT_PLOT_TYPE, select_plot_type)
     signals.register(Signal.DELETE_PLOT_SETTINGS, delete_plot_settings)
+    signals.register(Signal.DUPLICATE_PLOT_SETTINGS, duplicate_plot_settings)
     signals.register(Signal.TOGGLE_PLOT_SERIES, toggle_plot_series)
     signals.register(Signal.RENAME_PLOT_SETTINGS, rename_plot_settings)
     signals.register(Signal.RENAME_PLOT_SERIES, rename_plot_series)
@@ -885,6 +939,8 @@ def initialize_program(args: Namespace):
     )
     signals.register(Signal.EXPORT_PLOT, export_plot)
     signals.register(Signal.SAVE_PLOT, save_plot)
+    # Miscellaneous
+    signals.register(Signal.BATCH_PERFORM_ANALYSIS, select_batch_data_sets)
     signals.register(Signal.CHECK_UPDATES, perform_update_check)
     signals.register(Signal.SHOW_CHANGELOG, show_changelog)
     dpg.split_frame(delay=100)
@@ -892,9 +948,17 @@ def initialize_program(args: Namespace):
         dpg.get_viewport_width(),
         dpg.get_viewport_height(),
     )
-    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Rendering assets...")
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Rendering assets")
     signals.emit(Signal.RENDER_MATH)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    signals.register(
+        Signal.REFRESH_USER_DEFINED_ELEMENTS,
+        refresh_user_defined_elements,
+    )
+    signals.emit(
+        Signal.REFRESH_USER_DEFINED_ELEMENTS,
+        path=STATE.config.user_defined_elements_path,
+    )
     # signals.register(Signal., )
     if args.data_files:
         signals.emit(Signal.NEW_PROJECT, data=args.data_files)
@@ -902,7 +966,15 @@ def initialize_program(args: Namespace):
         signals.emit(Signal.LOAD_PROJECT_FILES, paths=args.project_files)
     restore_unsaved_project_snapshots()
     signals.emit_backlog()
+    signals.register(Signal.SHOW_GETTING_STARTED_WINDOW, getting_started_window)
     STATE.check_version()
+    try:
+        STATE.config.validate_keybindings(STATE.config.keybindings)
+    except AssertionError:
+        signals.emit(
+            Signal.SHOW_ERROR_MESSAGE,
+            traceback=format_exc(),
+        )
 
 
 def program_closing():

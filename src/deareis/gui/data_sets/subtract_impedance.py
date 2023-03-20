@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,25 +17,31 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from pyimpspec import (
-    Circuit,
-    ParsingError,
-)
+from pyimpspec import Circuit
 from typing import (
     Callable,
+    Dict,
     List,
     Optional,
+    Tuple,
 )
 from numpy import (
     allclose,
     array,
     ndarray,
 )
-import pyimpspec
 import dearpygui.dearpygui as dpg
-from deareis.gui.plots import Nyquist
+from deareis.gui.plots import (
+    BodeMagnitude,
+    BodePhase,
+    Nyquist,
+)
 import deareis.themes as themes
-from deareis.utility import calculate_window_position_dimensions
+from deareis.utility import (
+    calculate_window_position_dimensions,
+    pad_tab_labels,
+    process_cdc,
+)
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
 from deareis.gui.circuit_editor import CircuitEditor
@@ -45,9 +51,11 @@ from deareis.data import (
     DataSet,
     FitResult,
 )
+from deareis.state import STATE
+from deareis.enums import Action
 from deareis.keybindings import (
-    is_alt_down,
-    is_control_down,
+    Keybinding,
+    TemporaryKeybindingHandler,
 )
 
 
@@ -83,18 +91,146 @@ class SubtractImpedance:
             for _ in sorted(data_sets, key=lambda _: _.get_label())
             if _ != data
             and data.get_num_points(masked=None) == _.get_num_points(masked=None)
-            and allclose(data.get_frequency(masked=None), _.get_frequency(masked=None))
+            and allclose(
+                data.get_frequencies(masked=None), _.get_frequencies(masked=None)
+            )
         ]
         self.data_labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
         self.fits: List[FitResult] = fits
         self.fit_labels: List[str] = format_fit_labels(fits)
         self.preview_data: DataSet = DataSet.from_dict(data.to_dict())
         self.callback: Callable = callback
+        self.create_window()
+        self.register_keybindings()
+        self.editing_circuit: bool = False
+        self.select_option(self.radio_buttons, self.options[0])
+
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Return,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
+            )
+        callbacks[kb] = self.accept
+        # Previous option
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_options(step=-1)
+        # Next option
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PRIMARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=False,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_PRIMARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_options(step=1)
+        # Previous fit/data set
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_SECONDARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PREVIOUS_SECONDARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_results(step=-1)
+        # Next fit/data set
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_SECONDARY_RESULT:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.NEXT_SECONDARY_RESULT,
+            )
+        callbacks[kb] = lambda: self.cycle_results(step=1)
+        # Previous plot tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PREVIOUS_PLOT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Prior,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=True,
+                action=Action.PREVIOUS_PLOT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_plot_tab(step=-1)
+        # Next plot tab
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.NEXT_PLOT_TAB:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Next,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=True,
+                action=Action.NEXT_PLOT_TAB,
+            )
+        callbacks[kb] = lambda: self.cycle_plot_tab(step=1)
+        # Open circuit editor
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.SHOW_CIRCUIT_EDITOR:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_E,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.SHOW_CIRCUIT_EDITOR,
+            )
+        callbacks[kb] = self.edit_circuit
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
+
+    def create_window(self):
         self.options: List[str] = [
             "Constant:",
             " Circuit:",
             "     Fit:",
-            "Spectrum:",
+            "Data set:",
         ]
         self.circuit_editor_window: int = -1
         x: int
@@ -117,117 +253,7 @@ class SubtractImpedance:
         ):
             self.preview_window: int = dpg.generate_uuid()
             with dpg.child_window(border=False, tag=self.preview_window):
-                with dpg.child_window(
-                    width=-1,
-                    height=104,
-                ):
-                    self.radio_buttons: int = dpg.generate_uuid()
-                    with dpg.group(horizontal=True):
-                        dpg.add_radio_button(
-                            items=self.options,
-                            default_value=self.options[0],
-                            callback=self.select_option,
-                            tag=self.radio_buttons,
-                        )
-                        with dpg.group():
-                            self.constant_group: int = dpg.generate_uuid()
-                            with dpg.group(horizontal=True, tag=self.constant_group):
-                                dpg.add_text("Z' = ")
-                                self.constant_real: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    label="ohm,",
-                                    default_value=0.0,
-                                    step=0.0,
-                                    format="%.3g",
-                                    on_enter=True,
-                                    width=100,
-                                    tag=self.constant_real,
-                                    callback=self.update_preview,
-                                )
-                                dpg.add_text('-Z" = ')
-                                self.constant_imag: int = dpg.generate_uuid()
-                                dpg.add_input_float(
-                                    label="ohm",
-                                    default_value=0.0,
-                                    step=0.0,
-                                    format="%.3g",
-                                    on_enter=True,
-                                    width=100,
-                                    tag=self.constant_imag,
-                                    callback=self.update_preview,
-                                )
-                            self.circuit_group: int = dpg.generate_uuid()
-                            with dpg.group(horizontal=True, tag=self.circuit_group):
-                                self.circuit_cdc: int = dpg.generate_uuid()
-                                dpg.add_input_text(
-                                    hint="Input CDC",
-                                    on_enter=True,
-                                    width=314,
-                                    tag=self.circuit_cdc,
-                                    callback=self.update_preview,
-                                )
-                                dpg.add_button(
-                                    label="Edit",
-                                    callback=self.edit_circuit,
-                                )
-                                attach_tooltip(tooltips.general.open_circuit_editor)
-                            self.fit_group: int = dpg.generate_uuid()
-                            with dpg.group(horizontal=True, tag=self.fit_group):
-                                self.fit_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=self.fit_labels,
-                                    default_value=self.fit_labels[0]
-                                    if self.fit_labels
-                                    else "",
-                                    width=358,
-                                    tag=self.fit_combo,
-                                    callback=self.update_preview,
-                                )
-                            self.spectrum_group: int = dpg.generate_uuid()
-                            with dpg.group(horizontal=True, tag=self.spectrum_group):
-                                self.spectrum_combo: int = dpg.generate_uuid()
-                                dpg.add_combo(
-                                    items=self.data_labels,
-                                    default_value=self.data_labels[0]
-                                    if self.data_labels
-                                    else "",
-                                    width=358,
-                                    tag=self.spectrum_combo,
-                                    callback=self.update_preview,
-                                )
-                self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
-                self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
-                    label="Before",
-                    theme=themes.nyquist.data,
-                    show_label=False,
-                )
-                self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
-                    label="Before",
-                    line=True,
-                    theme=themes.nyquist.data,
-                )
-                self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
-                    label="After",
-                    theme=themes.bode.phase_data,
-                    show_label=False,
-                )
-                self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
-                    label="After",
-                    line=True,
-                    theme=themes.bode.phase_data,
-                )
-                dpg.add_button(
-                    label="Accept",
-                    callback=self.accept,
-                )
+                self.create_preview_window()
             self.circuit_editor_window = dpg.generate_uuid()
             with dpg.child_window(
                 border=False,
@@ -237,59 +263,194 @@ class SubtractImpedance:
                 self.circuit_editor: CircuitEditor = CircuitEditor(
                     window=self.circuit_editor_window,
                     callback=self.accept_circuit,
+                    keybindings=STATE.config.keybindings,
                 )
-        self.key_handler: int = dpg.generate_uuid()
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.close,
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Return,
-                callback=lambda: self.accept(keybinding=True),
-            )
-        self.select_option(self.radio_buttons, self.options[0])
+
+    def create_preview_window(self):
+        with dpg.child_window(
+            width=-1,
+            height=104,
+        ):
+            self.radio_buttons: int = dpg.generate_uuid()
+            with dpg.group(horizontal=True):
+                dpg.add_radio_button(
+                    items=self.options,
+                    default_value=self.options[0],
+                    callback=self.select_option,
+                    tag=self.radio_buttons,
+                )
+                with dpg.group():
+                    self.constant_group: int = dpg.generate_uuid()
+                    with dpg.group(horizontal=True, tag=self.constant_group):
+                        dpg.add_text("Re(Z) = ")
+                        self.constant_real: int = dpg.generate_uuid()
+                        dpg.add_input_float(
+                            label="ohm,",
+                            default_value=0.0,
+                            step=0.0,
+                            format="%.3g",
+                            on_enter=True,
+                            width=100,
+                            tag=self.constant_real,
+                            callback=self.update_preview,
+                        )
+                        dpg.add_text("-Im(Z) = ")
+                        self.constant_imag: int = dpg.generate_uuid()
+                        dpg.add_input_float(
+                            label="ohm",
+                            default_value=0.0,
+                            step=0.0,
+                            format="%.3g",
+                            on_enter=True,
+                            width=100,
+                            tag=self.constant_imag,
+                            callback=self.update_preview,
+                        )
+                    self.circuit_group: int = dpg.generate_uuid()
+                    with dpg.group(horizontal=True, tag=self.circuit_group):
+                        self.circuit_cdc: int = dpg.generate_uuid()
+                        dpg.add_input_text(
+                            hint="Input CDC",
+                            on_enter=True,
+                            width=361,
+                            tag=self.circuit_cdc,
+                            callback=self.update_preview,
+                        )
+                        self.circuit_editor_button: int = dpg.generate_uuid()
+                        dpg.add_button(
+                            label="Edit",
+                            callback=self.edit_circuit,
+                            tag=self.circuit_editor_button,
+                        )
+                        attach_tooltip(tooltips.general.open_circuit_editor)
+                    self.fit_group: int = dpg.generate_uuid()
+                    with dpg.group(horizontal=True, tag=self.fit_group):
+                        self.fit_combo: int = dpg.generate_uuid()
+                        dpg.add_combo(
+                            items=self.fit_labels,
+                            default_value=self.fit_labels[0] if self.fit_labels else "",
+                            width=405,
+                            tag=self.fit_combo,
+                            callback=self.update_preview,
+                        )
+                    self.spectrum_group: int = dpg.generate_uuid()
+                    with dpg.group(horizontal=True, tag=self.spectrum_group):
+                        self.spectrum_combo: int = dpg.generate_uuid()
+                        dpg.add_combo(
+                            items=self.data_labels,
+                            default_value=self.data_labels[0]
+                            if self.data_labels
+                            else "",
+                            width=405,
+                            tag=self.spectrum_combo,
+                            callback=self.update_preview,
+                        )
+        self.create_plots()
+        dpg.add_button(
+            label="Accept".ljust(12),
+            callback=self.accept,
+        )
+
+    def create_plots(self):
+        settings: List[dict] = [
+            {
+                "label": "Before",
+                "theme": themes.nyquist.data,
+                "show_label": False,
+            },
+            {
+                "label": "Before",
+                "line": True,
+                "theme": themes.nyquist.data,
+            },
+            {
+                "label": "After",
+                "theme": themes.bode.phase_data,
+                "show_label": False,
+            },
+            {
+                "label": "After",
+                "line": True,
+                "theme": themes.bode.phase_data,
+            },
+        ]
+        self.plot_tab_bar: int = dpg.generate_uuid()
+        with dpg.tab_bar(tag=self.plot_tab_bar):
+            self.create_nyquist_plot(settings)
+            self.create_magnitude_plot(settings)
+            self.create_phase_plot(settings)
+        pad_tab_labels(self.plot_tab_bar)
+
+    def create_nyquist_plot(self, settings: List[dict]):
+        with dpg.tab(label="Nyquist"):
+            self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
+            for kwargs in settings:
+                self.nyquist_plot.plot(
+                    real=array([]),
+                    imaginary=array([]),
+                    **kwargs,
+                )
+
+    def create_magnitude_plot(self, settings: List[dict]):
+        with dpg.tab(label="Bode - magnitude"):
+            self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-24)
+            for kwargs in settings:
+                self.magnitude_plot.plot(
+                    frequency=array([]),
+                    magnitude=array([]),
+                    **kwargs,
+                )
+
+    def create_phase_plot(self, settings: List[dict]):
+        with dpg.tab(label="Bode - phase"):
+            self.phase_plot: BodePhase = BodePhase(width=-1, height=-24)
+            for kwargs in settings:
+                self.phase_plot.plot(
+                    frequency=array([]),
+                    phase=array([]),
+                    **kwargs,
+                )
 
     def close(self):
         if not dpg.is_item_visible(self.constant_real):
             return
-        self.circuit_editor.hide()
+        elif self.circuit_editor.is_shown():
+            return
+        elif self.editing_circuit is True:
+            self.editing_circuit = False
+            return
+        self.circuit_editor.keybinding_handler.delete()
         dpg.hide_item(self.window)
         dpg.delete_item(self.window)
-        dpg.delete_item(self.key_handler)
+        self.keybinding_handler.delete()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def accept(self, keybinding: bool = False):
+    def accept(self):
         if not dpg.is_item_visible(self.constant_real):
             return
-        elif (
-            self.circuit_editor_window > 0
-            and dpg.does_item_exist(self.circuit_editor_window)
-            and dpg.is_item_shown(self.circuit_editor_window)
-        ):
+        elif self.circuit_editor.is_shown():
             return
-        elif keybinding is True and not (
-            is_control_down()
-            if dpg.get_platform() == dpg.mvPlatform_Windows
-            else is_alt_down()
-        ):
+        elif self.editing_circuit is True:
+            self.editing_circuit = False
             return
         self.close()
-        self.callback(DataSet.from_dict(self.preview_data.to_dict()))
+        dictionary: dict = self.preview_data.to_dict()
+        del dictionary["uuid"]
+        data: DataSet = DataSet.from_dict(dictionary)
+        data.set_label(f"{self.preview_data.get_label()} - subtracted")
+        self.callback(data)
 
     def select_option(self, sender: int, value: str):
-        item_type: str
-
         def disable_group(group: int):
             for item in dpg.get_item_children(group, slot=1):
-                item_type = dpg.get_item_type(item)
+                item_type: str = dpg.get_item_type(item)
                 if item_type.endswith("mvText") or item_type.endswith("mvTooltip"):
                     continue
                 dpg.disable_item(item)
 
         def enable_group(group: int):
             for item in dpg.get_item_children(group, slot=1):
-                item_type = dpg.get_item_type(item)
+                item_type: str = dpg.get_item_type(item)
                 if item_type.endswith("mvText") or item_type.endswith("mvTooltip"):
                     continue
                 dpg.enable_item(item)
@@ -321,8 +482,8 @@ class SubtractImpedance:
 
     def update_preview(self):
         index: int = self.options.index(dpg.get_value(self.radio_buttons))
-        f: ndarray = self.data.get_frequency(masked=None)
-        Z: ndarray = self.data.get_impedance(masked=None)
+        f: ndarray = self.data.get_frequencies(masked=None)
+        Z: ndarray = self.data.get_impedances(masked=None)
         if index == 0:
             Z_const: complex = complex(
                 dpg.get_value(self.constant_real),
@@ -330,87 +491,161 @@ class SubtractImpedance:
             )
             Z = Z - Z_const
         elif index == 1:
-            try:
-                circuit: Circuit = pyimpspec.parse_cdc(dpg.get_value(self.circuit_cdc))
-            except Exception:
+            cdc: str = dpg.get_value(self.circuit_cdc)
+            circuit: Optional[Circuit] = dpg.get_item_user_data(self.circuit_cdc)
+            if circuit is None or circuit.to_string() != cdc:
+                try:
+                    circuit, _ = process_cdc(cdc)
+                except Exception:
+                    return
+            if circuit is None:
                 return
-            Z = Z - circuit.impedances(f)
+            Z = Z - circuit.get_impedances(f)
         elif index == 2:
             if len(self.fits) > 0:
                 fit: FitResult
                 fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
-                Z = Z - fit.circuit.impedances(f)
+                Z = Z - fit.circuit.get_impedances(f)
         elif index == 3:
             if len(self.data_sets) > 0:
                 spectrum: DataSet
                 spectrum = self.data_sets[
                     self.data_labels.index(dpg.get_value(self.spectrum_combo))
                 ]
-                Z = Z - spectrum.get_impedance(masked=None)
+                Z = Z - spectrum.get_impedances(masked=None)
         else:
             raise Exception("Unsupported option!")
         dictionary: dict = self.preview_data.to_dict()
         dictionary.update(
             {
-                "real": list(Z.real),
-                "imaginary": list(Z.imag),
+                "real_impedances": list(Z.real),
+                "imaginary_impedances": list(Z.imag),
             }
         )
         self.preview_data = DataSet.from_dict(dictionary)
-        self.update_plot()
+        self.update_plots()
 
-    def update_plot(self):
+    def update_plots(self):
+        self.update_nyquist_plot(self.data, self.preview_data)
+        self.update_magnitude_plot(self.data, self.preview_data)
+        self.update_phase_plot(self.data, self.preview_data)
+
+    def update_nyquist_plot(self, original: DataSet, preview: DataSet):
+        data: List[Tuple[ndarray, ndarray]] = [
+            original.get_nyquist_data(masked=None),
+            original.get_nyquist_data(masked=None),
+            preview.get_nyquist_data(masked=None),
+            preview.get_nyquist_data(masked=None),
+        ]
+        i: int
         real: ndarray
         imag: ndarray
-        real, imag = self.data.get_nyquist_data(masked=None)
-        self.nyquist_plot.update(
-            index=0,
-            real=real,
-            imaginary=imag,
-        )
-        self.nyquist_plot.update(
-            index=1,
-            real=real,
-            imaginary=imag,
-        )
-        real, imag = self.preview_data.get_nyquist_data(masked=None)
-        self.nyquist_plot.update(
-            index=2,
-            real=real,
-            imaginary=imag,
-        )
-        self.nyquist_plot.update(
-            index=3,
-            real=real,
-            imaginary=imag,
-        )
+        for i, (real, imag) in enumerate(data):
+            self.nyquist_plot.update(
+                index=i,
+                real=real,
+                imaginary=imag,
+            )
         self.nyquist_plot.queue_limits_adjustment()
 
+    def update_magnitude_plot(self, original: DataSet, preview: DataSet):
+        data: List[Tuple[ndarray, ndarray, ndarray]] = [
+            original.get_bode_data(masked=None),
+            original.get_bode_data(masked=None),
+            preview.get_bode_data(masked=None),
+            preview.get_bode_data(masked=None),
+        ]
+        i: int
+        freq: ndarray
+        mag: ndarray
+        for i, (freq, mag, _) in enumerate(data):
+            self.magnitude_plot.update(
+                index=i,
+                frequency=freq,
+                magnitude=mag,
+            )
+        self.magnitude_plot.queue_limits_adjustment()
+
+    def update_phase_plot(self, original: DataSet, preview: DataSet):
+        data: List[Tuple[ndarray, ndarray, ndarray]] = [
+            original.get_bode_data(masked=None),
+            original.get_bode_data(masked=None),
+            preview.get_bode_data(masked=None),
+            preview.get_bode_data(masked=None),
+        ]
+        i: int
+        freq: ndarray
+        phase: ndarray
+        for i, (freq, _, phase) in enumerate(data):
+            self.phase_plot.update(
+                index=i,
+                frequency=freq,
+                phase=phase,
+            )
+        self.phase_plot.queue_limits_adjustment()
+
     def edit_circuit(self):
+        if not dpg.is_item_enabled(self.circuit_editor_button):
+            return
+        self.editing_circuit = True
+        self.keybinding_handler.block()
         dpg.hide_item(self.preview_window)
-        circuit: Optional[Circuit] = None
-        try:
-            circuit = pyimpspec.parse_cdc(dpg.get_value(self.circuit_cdc) or "[]")
-        except ParsingError:
-            pass
+        circuit: Optional[Circuit]
+        circuit, _ = process_cdc(dpg.get_value(self.circuit_cdc) or "[]")
         self.circuit_editor.show(circuit)
 
     def accept_circuit(self, circuit: Optional[Circuit]):
         self.circuit_editor.hide()
         dpg.show_item(self.preview_window)
         self.update_cdc(circuit)
+        self.keybinding_handler.unblock()
 
     def update_cdc(self, circuit: Optional[Circuit]):
         if circuit is not None:
             for element in circuit.get_elements():
                 element.set_label("")
-                for param in element.get_parameters():
+                for param in element.get_values():
                     element.set_fixed(param, True)
         assert dpg.does_item_exist(self.circuit_cdc)
-        dpg.set_value(
+        dpg.configure_item(
             self.circuit_cdc,
-            circuit.to_string(6) if circuit is not None else "",
+            default_value=circuit.to_string() if circuit is not None else "",
+            user_data=circuit,
         )
         dpg.show_item(self.preview_window)
         dpg.split_frame(delay=33)
         self.update_preview()
+
+    def cycle_options(self, step: int):
+        if self.has_active_input():
+            return
+        index: int = self.options.index(dpg.get_value(self.radio_buttons)) + step
+        dpg.set_value(self.radio_buttons, self.options[index % len(self.options)])
+        self.select_option(self.radio_buttons, self.options[index % len(self.options)])
+
+    def cycle_results(self, step: int):
+        index: int
+        if dpg.is_item_enabled(self.fit_combo):
+            index = self.fit_labels.index(dpg.get_value(self.fit_combo)) + step
+            dpg.set_value(self.fit_combo, self.fit_labels[index % len(self.fit_labels)])
+            self.update_preview()
+        elif dpg.is_item_enabled(self.spectrum_combo):
+            index = self.data_labels.index(dpg.get_value(self.spectrum_combo)) + step
+            dpg.set_value(
+                self.spectrum_combo, self.data_labels[index % len(self.data_labels)]
+            )
+            self.update_preview()
+        else:
+            return
+
+    def cycle_plot_tab(self, step: int):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + step
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
+
+    def has_active_input(self) -> bool:
+        return (
+            dpg.is_item_active(self.constant_real)
+            or dpg.is_item_active(self.constant_imag)
+            or dpg.is_item_active(self.circuit_cdc)
+        )

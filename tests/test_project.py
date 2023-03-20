@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,552 +17,447 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from os.path import dirname, exists, join
+from os.path import (
+    dirname,
+    exists,
+    join,
+)
 from typing import (
+    Callable,
     Dict,
     List,
 )
 from unittest import TestCase
-from numpy import ndarray
 import deareis
 from deareis import (
+    DRTResult,
     DataSet,
     FitResult,
-    Project,
-    TestResult,
-    SimulationResult,
-    PlotSettings,
     PlotSeries,
-    PlotType,
+    PlotSettings,
+    Project,
+    SimulationResult,
+    TestResult,
+    ZHITResult,
 )
 
 
-TEST_PROJECT_PATHS: List[str] = list(
-    map(
-        lambda _: join(dirname(__file__), _),
-        [
-            "example-project-v1.json",
-            "example-project-v2.json",
-            "example-project-v3.json",
-            "example-project-v4.json",
-        ],
-    )
-)
+class TestProject(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.example_data_paths: List[str] = list(
+            map(
+                lambda _: join(dirname(__file__), _),
+                [
+                    "data-1.idf",
+                    "data-2.csv",
+                ],
+            )
+        )
+        cls.example_project_paths: List[str] = list(
+            map(
+                lambda _: join(dirname(__file__), _),
+                [
+                    "example-project-v1.json",
+                    "example-project-v2.json",
+                    "example-project-v3.json",
+                    "example-project-v4.json",
+                    "example-project-v5.json",
+                ],
+            )
+        )
+        cls.project: Project = Project.from_file(cls.example_project_paths[-1])
 
-
-TEST_DATA_PATHS: List[str] = list(
-    map(
-        lambda _: join(dirname(__file__), _),
-        [
-            "data-1.idf",
-            "data-2.csv",
-        ],
-    )
-)
-
-
-# TODO: Refactor tests
-
-
-class TestUtility(TestCase):
-    def test_01_instantiation(self):
+    def test_new_project(self):
         project: Project = Project()
         self.assertEqual(len(project.get_data_sets()), 0)
         self.assertEqual(len(project.get_all_tests()), 0)
+        self.assertEqual(len(project.get_all_zhits()), 0)
+        self.assertEqual(len(project.get_all_drts()), 0)
         self.assertEqual(len(project.get_all_fits()), 0)
         self.assertEqual(len(project.get_simulations()), 0)
         self.assertEqual(len(project.get_plots()), 1)
+
+    def test_parse_different_versions(self):
         path: str
-        for path in TEST_PROJECT_PATHS:
+        for path in self.example_project_paths:
             self.assertTrue(exists(path))
-            project = Project.from_file(path)
+            Project.from_file(path)
 
-    def test_02_merge(self):
-        project: Project = Project.merge(
-            list(map(lambda _: Project.from_file(_), TEST_PROJECT_PATHS))
-        )
+    def test_merge(self):
+        methods: Dict[str, Callable] = {
+            "data_sets": lambda _: _.get_data_sets(),
+            "tests": lambda _: _.get_all_tests(),
+            "zhits": lambda _: _.get_all_zhits(),
+            "drts": lambda _: _.get_all_drts(),
+            "fits": lambda _: _.get_all_fits(),
+            "simulations": lambda _: _.get_simulations(),
+            "plots": lambda _: _.get_plots(),
+        }
+        num_assets: Dict[str, int] = {_: 0 for _ in methods}
+        projects: List[Project] = []
+        path: str
+        for path in self.example_project_paths:
+            project: Project = Project.from_file(path)
+            key: str
+            func: Callable
+            for key, func in methods.items():
+                num_assets[key] += len(func(project))
+            projects.append(project)
+        num_assets["plots"] += 1  # Every project starts with one
+        project = Project.merge(projects)
+        for key, func in methods.items():
+            self.assertEqual(len(func(project)), num_assets[key], msg=key)
 
-    def test_03_label(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        old_label: str = project.get_label()
-        self.assertEqual(old_label, "Example project - Version 4")
+    def test_label(self):
+        old_label: str = self.project.get_label()
+        self.assertEqual(old_label, "Example project - Version 5")
         new_label: str = "Test label"
-        project.set_label(new_label)
-        self.assertEqual(project.get_label(), new_label)
-        self.assertRaises(AssertionError, lambda: project.set_label(""))
-        self.assertRaises(AssertionError, lambda: project.set_label("  \t"))
+        self.project.set_label(new_label)
+        self.assertEqual(self.project.get_label(), new_label)
+        with self.assertRaises(AssertionError):
+            self.project.set_label("")
+        with self.assertRaises(AssertionError):
+            self.project.set_label("  \t")
 
-    def test_04_path(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        old_path: str = project.get_path()
-        self.assertTrue(old_path.endswith("example-project-v4.json"))
+    def test_path(self):
+        old_path: str = self.project.get_path()
+        self.assertTrue(old_path.endswith("example-project-v5.json"))
         new_path: str = "Testing"
-        project.set_path(new_path)
-        self.assertEqual(project.get_path(), new_path)
+        self.project.set_path(new_path)
+        self.assertEqual(self.project.get_path(), new_path)
 
-    def test_05_notes(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        old_notes: str = project.get_notes()
+    def test_get_notes(self):
+        old_notes: str = self.project.get_notes()
         self.assertEqual(old_notes, "This is for keeping notes about the project.")
+
+    def test_set_notes(self):
         new_notes: str = "Lorem ipsum"
-        project.set_notes(new_notes)
-        self.assertEqual(project.get_notes(), new_notes)
+        self.project.set_notes(new_notes)
+        self.assertEqual(self.project.get_notes(), new_notes)
 
-    def test_06_data_set(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        data_sets: List[DataSet] = project.get_data_sets()
-        self.assertEqual(type(data_sets), list)
-        self.assertTrue(all(map(lambda _: type(_) is DataSet, data_sets)))
-        self.assertEqual(len(data_sets), 2)
-        data: DataSet = deareis.parse_data(TEST_DATA_PATHS[0])[0]
-        project.add_data_set(data)
-        data_sets = project.get_data_sets()
-        self.assertEqual(len(data_sets), 3)
-        self.assertEqual(data_sets[2].get_label(), "Test")
+    def test_get_data_sets(self):
+        data_sets: List[DataSet] = self.project.get_data_sets()
+        self.assertIsInstance(data_sets, list)
+        self.assertTrue(all([isinstance(_, DataSet) for _ in data_sets]))
+
+    def test_add_data_set(self):
+        num_data_sets: int = len(self.project.get_data_sets())
+        data: DataSet = deareis.parse_data(self.example_data_paths[0])[0]
+        self.project.add_data_set(data)
+        data_sets: List[DataSet] = self.project.get_data_sets()
+        self.assertEqual(len(data_sets), num_data_sets + 1)
+
+    def test_edit_data_set_label(self):
+        data: DataSet = self.project.get_data_sets()[0]
         new_label: str = "ABC"
-        project.edit_data_set_label(data, new_label)
+        self.assertNotEqual(data.get_label(), new_label)
+        self.project.edit_data_set_label(data, new_label)
         self.assertEqual(data.get_label(), new_label)
-        data_sets = project.get_data_sets()
-        self.assertEqual(len(data_sets), 3)
-        self.assertTrue(data.get_label() == data_sets[0].get_label() == new_label)
+
+    def test_edit_data_set_path(self):
+        data: DataSet = self.project.get_data_sets()[0]
         new_path: str = "XYZ"
-        project.edit_data_set_path(data, new_path)
-        self.assertTrue(data.get_path() == data_sets[0].get_path() == new_path)
-        old_data: DataSet = data
-        new_data: DataSet = deareis.parse_data(TEST_DATA_PATHS[1])[0]
-        self.assertRaises(
-            AssertionError, lambda: project.replace_data_set(old_data, new_data)
-        )
-        new_data.uuid = old_data.uuid
-        project.replace_data_set(old_data, new_data)
-        data_sets = project.get_data_sets()
-        self.assertEqual(len(data_sets), 3)
-        self.assertTrue(new_data.get_label() == data_sets[2].get_label() == "data-2")
-        project.delete_data_set(new_data)
-        data_sets = project.get_data_sets()
-        self.assertEqual(len(data_sets), 2)
+        self.assertNotEqual(data.get_path(), new_path)
+        self.project.edit_data_set_path(data, new_path)
+        self.assertEqual(data.get_path(), new_path)
 
-    def test_07_tests(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        tests: Dict[str, List[TestResult]] = project.get_all_tests()
-        self.assertEqual(type(tests), dict)
-        self.assertEqual(len(tests), 2)
-        self.assertTrue(all(map(lambda _: type(_) is list, tests.values())))
-        self.assertTrue(
-            all(map(lambda _: type(_) is TestResult, list(tests.values())[0]))
-        )
-        data_sets: List[DataSet] = project.get_data_sets()
+    def test_get_all_tests(self):
+        tests: Dict[str, List[TestResult]] = self.project.get_all_tests()
+        self.assertIsInstance(tests, dict)
+        self.assertTrue(all([isinstance(_, str) for _ in tests.keys()]))
+        self.assertTrue(all([isinstance(_, list) for _ in tests.values()]))
+        uuids: List[str] = [_.uuid for _ in self.project.get_data_sets()]
+        self.assertTrue(all([_ in uuids for _ in tests.keys()]))
+
+    def test_get_tests(self):
         data: DataSet
-        for data in data_sets:
-            self.assertTrue(data.uuid in tests)
-        data_tests: List[TestResult] = project.get_tests(data_sets[0])
-        self.assertEqual(type(data_tests), list)
-        self.assertEqual(len(data_tests), 1)
-        self.assertEqual(type(data_tests[0]), TestResult)
-        project.delete_test(data_sets[0], data_tests[0])
-        data_tests = project.get_tests(data_sets[0])
-        self.assertEqual(len(data_tests), 0)
-        project.delete_data_set(data_sets[0])
-        tests = project.get_all_tests()
-        self.assertEqual(len(tests), 1)
-        data: DataSet = deareis.parse_data(TEST_DATA_PATHS[1])[0]
-        project.add_data_set(data)
-        project.add_test(data, list(tests.values())[0][0])
-        tests = project.get_all_tests()
-        self.assertEqual(len(tests), 2)
-        self.assertEqual(len(list(tests.values())[1]), 1)
+        for data in self.project.get_data_sets():
+            tests: List[TestResult] = self.project.get_tests(data)
+            self.assertIsInstance(tests, list)
+            self.assertTrue(all([isinstance(_, TestResult) for _ in tests]))
 
-    def test_08_fits(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        fits: Dict[str, List[FitResult]] = project.get_all_fits()
-        self.assertEqual(type(fits), dict)
-        self.assertEqual(len(fits), 2)
-        self.assertTrue(all(map(lambda _: type(_) is list, fits.values())))
-        self.assertTrue(
-            all(map(lambda _: type(_) is FitResult, list(fits.values())[0]))
-        )
-        data_sets: List[DataSet] = project.get_data_sets()
+    def test_add_test(self):
         data: DataSet
-        for data in data_sets:
-            self.assertTrue(data.uuid in fits)
-        data_fits: List[FitResult] = project.get_fits(data_sets[0])
-        self.assertEqual(type(data_fits), list)
-        self.assertEqual(len(data_fits), 1)
-        self.assertEqual(type(data_fits[0]), FitResult)
-        project.delete_fit(data_sets[0], data_fits[0])
-        data_fits = project.get_fits(data_sets[0])
-        self.assertEqual(len(data_fits), 0)
-        project.delete_data_set(data_sets[0])
-        fits = project.get_all_fits()
-        self.assertEqual(len(fits), 1)
-        data: DataSet = deareis.parse_data(TEST_DATA_PATHS[1])[0]
-        project.add_data_set(data)
-        project.add_fit(data, list(fits.values())[0][0])
-        fits = project.get_all_fits()
-        self.assertEqual(len(fits), 2)
-        self.assertEqual(len(list(fits.values())[1]), 1)
+        for data in self.project.get_data_sets():
+            tests: List[TestResult] = self.project.get_tests(data)
+            if len(tests) == 0:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable test data available in the project!")
+        test: TestResult = tests[0]
+        with self.assertRaises(AssertionError):
+            # Attempt to add a duplicate (checked using the UUIDs of the tests)
+            self.project.add_test(data, test)
+        # Add the test to another data set's list of tests
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        num_tests: int = len(self.project.get_tests(data))
+        self.project.add_test(data, test)
+        tests = self.project.get_tests(data)
+        self.assertEqual(len(tests), num_tests + 1)
+        self.assertTrue(test in tests)
 
-    def test_09_simulations(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        sims: List[SimulationResult] = project.get_simulations()
-        self.assertEqual(type(sims), list)
-        self.assertEqual(len(sims), 2)
-        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, sims)))
-        sim: SimulationResult = sims[0]
-        project.delete_simulation(sim)
-        sims = project.get_simulations()
-        self.assertEqual(len(sims), 1)
-        project.add_simulation(sim)
-        sims = project.get_simulations()
-        self.assertEqual(len(sims), 2)
+    def test_delete_test(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            tests: List[TestResult] = self.project.get_tests(data)
+            if len(tests) < 2:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable test data available in the project!")
+        test: TestResult = tests[0]
+        num_tests: int = len(tests)
+        self.project.delete_test(data, test)
+        tests = self.project.get_tests(data)
+        self.assertEqual(len(tests), num_tests - 1)
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        self.assertTrue(test not in tests)
+        with self.assertRaises(AssertionError):
+            # Attempt to remove test from a data set that the test does not belong to
+            self.project.delete_test(data, tests[0])
 
-    def test_10_plots(self):
-        project: Project = Project.from_file(TEST_PROJECT_PATHS[-1])
-        plots: List[PlotSettings] = project.get_plots()
-        self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 5)
-        self.assertTrue(all(map(lambda _: type(_) is PlotSettings, plots)))
+    def test_get_all_zhits(self):
+        zhits: Dict[str, List[ZHITResult]] = self.project.get_all_zhits()
+        self.assertIsInstance(zhits, dict)
+        self.assertTrue(all([isinstance(_, str) for _ in zhits.keys()]))
+        self.assertTrue(all([isinstance(_, list) for _ in zhits.values()]))
+        uuids: List[str] = [_.uuid for _ in self.project.get_data_sets()]
+        self.assertTrue(all([_ in uuids for _ in zhits.keys()]))
+
+    def test_get_zhits(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            zhits: List[ZHITResult] = self.project.get_zhits(data)
+            self.assertIsInstance(zhits, list)
+            self.assertTrue(all([isinstance(_, ZHITResult) for _ in zhits]))
+
+    def test_add_zhit(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            zhits: List[ZHITResult] = self.project.get_zhits(data)
+            if len(zhits) == 0:
+                continue
+            break
+        else:
+            raise NotImplementedError(
+                "No suitable Z-HIT data available in the project!"
+            )
+        zhit: ZHITResult = zhits[0]
+        with self.assertRaises(AssertionError):
+            # Attempt to add a duplicate (checked using the UUIDs of the Z-HITs)
+            self.project.add_zhit(data, zhit)
+        # Add the Z-HIT to another data set's list of Z-HITs
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        num_zhits: int = len(self.project.get_zhits(data))
+        self.project.add_zhit(data, zhit)
+        zhits = self.project.get_zhits(data)
+        self.assertEqual(len(zhits), num_zhits + 1)
+        self.assertTrue(zhit in zhits)
+
+    def test_delete_zhit(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            zhits: List[ZHITResult] = self.project.get_zhits(data)
+            if len(zhits) < 2:
+                continue
+            break
+        else:
+            raise NotImplementedError(
+                "No suitable Z-HIT data available in the project!"
+            )
+        zhit: ZHITResult = zhits[0]
+        num_zhits: int = len(zhits)
+        self.project.delete_zhit(data, zhit)
+        zhits = self.project.get_zhits(data)
+        self.assertEqual(len(zhits), num_zhits - 1)
+        self.assertTrue(zhit not in zhits)
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        with self.assertRaises(AssertionError):
+            # Attempt to remove Z-HIT from a data set that the Z-HIT does not belong to
+            self.project.delete_zhit(data, zhits[0])
+
+    def test_get_all_drts(self):
+        drts: Dict[str, List[DRTResult]] = self.project.get_all_drts()
+        self.assertIsInstance(drts, dict)
+        self.assertTrue(all([isinstance(_, str) for _ in drts.keys()]))
+        self.assertTrue(all([isinstance(_, list) for _ in drts.values()]))
+        uuids: List[str] = [_.uuid for _ in self.project.get_data_sets()]
+        self.assertTrue(all([_ in uuids for _ in drts.keys()]))
+
+    def test_get_drts(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            drts: List[DRTResult] = self.project.get_drts(data)
+            self.assertIsInstance(drts, list)
+            self.assertTrue(all([isinstance(_, DRTResult) for _ in drts]))
+
+    def test_add_drt(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            drts: List[DRTResult] = self.project.get_drts(data)
+            if len(drts) == 0:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable DRT data available in the project!")
+        drt: DRTResult = drts[0]
+        with self.assertRaises(AssertionError):
+            # Attempt to add a duplicate (checked using the UUIDs of the DRTs)
+            self.project.add_drt(data, drt)
+        # Add the DRT to another data set's list of DRTs
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        num_drts: int = len(self.project.get_drts(data))
+        self.project.add_drt(data, drt)
+        drts = self.project.get_drts(data)
+        self.assertEqual(len(drts), num_drts + 1)
+        self.assertTrue(drt in drts)
+
+    def test_delete_drt(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            drts: List[DRTResult] = self.project.get_drts(data)
+            if len(drts) < 2:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable DRT data available in the project!")
+        drt: DRTResult = drts[0]
+        num_drts: int = len(drts)
+        self.project.delete_drt(data, drt)
+        drts = self.project.get_drts(data)
+        self.assertEqual(len(drts), num_drts - 1)
+        self.assertTrue(drt not in drts)
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        with self.assertRaises(AssertionError):
+            # Attempt to remove DRT from a data set that the DRT does not belong to
+            self.project.delete_drt(data, drts[0])
+
+    def test_get_all_fits(self):
+        fits: Dict[str, List[FitResult]] = self.project.get_all_fits()
+        self.assertIsInstance(fits, dict)
+        self.assertTrue(all([isinstance(_, str) for _ in fits.keys()]))
+        self.assertTrue(all([isinstance(_, list) for _ in fits.values()]))
+        uuids: List[str] = [_.uuid for _ in self.project.get_data_sets()]
+        self.assertTrue(all([_ in uuids for _ in fits.keys()]))
+
+    def test_get_fits(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            fits: List[FitResult] = self.project.get_fits(data)
+            self.assertIsInstance(fits, list)
+            self.assertTrue(all([isinstance(_, FitResult) for _ in fits]))
+
+    def test_add_fit(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            fits: List[FitResult] = self.project.get_fits(data)
+            if len(fits) == 0:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable fit data available in the project!")
+        fit: FitResult = fits[0]
+        with self.assertRaises(AssertionError):
+            # Attempt to add a duplicate (checked using the UUIDs of the fits)
+            self.project.add_fit(data, fit)
+        # Add the fit to another data set's list of fits
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        num_fits: int = len(self.project.get_fits(data))
+        self.project.add_fit(data, fit)
+        fits = self.project.get_fits(data)
+        self.assertEqual(len(fits), num_fits + 1)
+        self.assertTrue(fit in fits)
+
+    def test_delete_fit(self):
+        data: DataSet
+        for data in self.project.get_data_sets():
+            fits: List[FitResult] = self.project.get_fits(data)
+            if len(fits) < 2:
+                continue
+            break
+        else:
+            raise NotImplementedError("No suitable fit data available in the project!")
+        fit: FitResult = fits[0]
+        num_fits: int = len(fits)
+        self.project.delete_fit(data, fit)
+        fits = self.project.get_fits(data)
+        self.assertEqual(len(fits), num_fits - 1)
+        self.assertTrue(fit not in fits)
+        data = [_ for _ in self.project.get_data_sets() if _ != data][0]
+        with self.assertRaises(AssertionError):
+            # Attempt to remove fit from a data set that the fit does not belong to
+            self.project.delete_fit(data, fits[0])
+
+    def test_get_simulations(self):
+        simulations: List[SimulationResult] = self.project.get_simulations()
+        self.assertIsInstance(simulations, list)
+        self.assertTrue(all([isinstance(_, SimulationResult) for _ in simulations]))
+
+    def test_add_simulation(self):
+        simulations: List[SimulationResult] = self.project.get_simulations()
+        num_simulations: int = len(simulations)
+        sim: SimulationResult = simulations[0]
+        dictionary = sim.to_dict()
+        dictionary["uuid"] += "_test"
+        sim = SimulationResult.from_dict(dictionary)
+        self.project.add_simulation(sim)
+        simulations = self.project.get_simulations()
+        self.assertEqual(len(simulations), num_simulations + 1)
+        self.assertTrue(sim in simulations)
+        with self.assertRaises(AssertionError):
+            self.project.add_simulation(sim)
+
+    def test_delete_simulation(self):
+        simulations: List[SimulationResult] = self.project.get_simulations()
+        sim: SimulationResult = simulations[0]
+        num_simulations: int = len(simulations)
+        self.project.delete_simulation(sim)
+        simulations = self.project.get_simulations()
+        self.assertEqual(len(simulations), num_simulations - 1)
+        self.assertTrue(sim not in simulations)
+        with self.assertRaises(AssertionError):
+            self.project.delete_simulation(sim)
+
+    def test_get_plots(self):
+        plots: List[PlotSettings] = self.project.get_plots()
+        self.assertIsInstance(plots, list)
+        self.assertTrue(all([isinstance(_, PlotSettings) for _ in plots]))
+
+    def test_edit_plot_label(self):
+        plot: PlotSettings = self.project.get_plots()[0]
         new_label: str = "Test"
-        project.edit_plot_label(plots[0], new_label)
-        plots = project.get_plots()
-        plot: PlotSettings = plots[4]
+        self.assertNotEqual(plot.get_label(), new_label)
+        self.project.edit_plot_label(plot, new_label)
         self.assertEqual(plot.get_label(), new_label)
-        project.delete_plot(plot)
-        plots = project.get_plots()
-        self.assertEqual(len(plots), 4)
-        self.assertTrue(not any(map(lambda _: _.get_label() == new_label, plots)))
-        project.add_plot(plot)
-        plots = project.get_plots()
-        self.assertEqual(len(plots), 5)
-        self.assertEqual(plots[4].get_label(), new_label)
-        series: List[PlotSeries] = project.get_plot_series(plot)
-        self.assertEqual(type(series), list)
-        self.assertEqual(len(series), 16)
-        self.assertTrue(all(map(lambda _: type(_) is PlotSeries, series)))
 
-    def test_11_version_1(self):
-        # TODO: Add more detailed tests
-        path: str = TEST_PROJECT_PATHS[0]
-        project: Project = Project.from_file(path)
-        self.assertEqual(project.get_path(), path)
-        self.assertEqual(project.get_label(), "Example project - Version 1")
-        # - data sets
-        datasets: List[DataSet] = project.get_data_sets()
-        self.assertEqual(type(datasets), list)
-        self.assertEqual(len(datasets), 2)
-        self.assertTrue(all(map(lambda _: type(_) is DataSet, datasets)))
-        # - tests
-        tests: List[TestResult] = project.get_tests(datasets[0])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        tests = project.get_tests(datasets[1])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        # - fits
-        fits: List[FitResult] = project.get_fits(datasets[0])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        fits = project.get_fits(datasets[1])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        # - simulations
-        simulations: List[SimulationResult] = project.get_simulations()
-        self.assertEqual(type(simulations), list)
-        self.assertEqual(len(simulations), 2)
-        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, simulations)))
-        # - plots
-        plots: List[PlotSettings] = project.get_plots()
-        self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 1)
-
-    def test_12_version_2(self):
-        # TODO: Add more detailed tests
-        path: str = TEST_PROJECT_PATHS[1]
-        project: Project = Project.from_file(path)
-        self.assertEqual(project.get_path(), path)
-        self.assertEqual(project.get_label(), "Example project - Version 2")
-        # - data sets
-        datasets: List[DataSet] = project.get_data_sets()
-        self.assertEqual(type(datasets), list)
-        self.assertEqual(len(datasets), 2)
-        self.assertTrue(all(map(lambda _: type(_) is DataSet, datasets)))
-        # - tests
-        tests: List[TestResult] = project.get_tests(datasets[0])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        tests = project.get_tests(datasets[1])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        # - fits
-        fits: List[FitResult] = project.get_fits(datasets[0])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        fits = project.get_fits(datasets[1])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        # - simulations
-        simulations: List[SimulationResult] = project.get_simulations()
-        self.assertEqual(type(simulations), list)
-        self.assertEqual(len(simulations), 2)
-        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, simulations)))
-        # - plots
-        plots: List[PlotSettings] = project.get_plots()
-        self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 3)
-        #
+    def test_add_plot(self):
+        plots: List[PlotSettings] = self.project.get_plots()
+        num_plots: int = len(plots)
         plot: PlotSettings = plots[0]
-        self.assertEqual(plot.get_label(), "Appearance template")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series: List[PlotSeries] = project.get_plot_series(plot)
-        series: PlotSeries = plot_series[0]
-        self.assertEqual(series.get_label(), "Ideal data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[1]
-        self.assertEqual(series.get_label(), "Noisy data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[2]
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        #
-        plot = plots[1]
-        self.assertEqual(plot.get_label(), "Ideal")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        #
-        plot = plots[2]
-        self.assertEqual(plot.get_label(), "Noisy")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series = project.get_plot_series(plot)
-        series = plot_series[0]
-        label: str = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), False)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[1]
-        label = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[2]
-        self.assertEqual(series.get_label(), "Noisy data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
+        with self.assertRaises(AssertionError):
+            self.project.add_plot(plot)
+        dictionary = plot.to_dict(session=False)
+        dictionary["uuid"] += "_test"
+        plot = PlotSettings.from_dict(dictionary)
+        self.project.add_plot(plot)
+        plots = self.project.get_plots()
+        self.assertEqual(len(plots), num_plots + 1)
+        self.assertTrue(plot in plots)
 
-    def test_13_version_3(self):
-        # TODO: Add more detailed tests
-        path: str = TEST_PROJECT_PATHS[2]
-        project: Project = Project.from_file(path)
-        self.assertEqual(project.get_path(), path)
-        self.assertEqual(project.get_label(), "Example project - Version 3")
-        # - data sets
-        datasets: List[DataSet] = project.get_data_sets()
-        self.assertEqual(type(datasets), list)
-        self.assertEqual(len(datasets), 2)
-        self.assertTrue(all(map(lambda _: type(_) is DataSet, datasets)))
-        # - tests
-        tests: List[TestResult] = project.get_tests(datasets[0])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        tests = project.get_tests(datasets[1])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        # - fits
-        fits: List[FitResult] = project.get_fits(datasets[0])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        fits = project.get_fits(datasets[1])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        # - simulations
-        simulations: List[SimulationResult] = project.get_simulations()
-        self.assertEqual(type(simulations), list)
-        self.assertEqual(len(simulations), 2)
-        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, simulations)))
-        # - plots
-        plots: List[PlotSettings] = project.get_plots()
-        self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 3)
-        #
+    def test_delete_plot(self):
+        plots: List[PlotSettings] = self.project.get_plots()
+        num_plots: int = len(plots)
         plot: PlotSettings = plots[0]
-        self.assertEqual(plot.get_label(), "Appearance template")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series: List[PlotSeries] = project.get_plot_series(plot)
-        series: PlotSeries = plot_series[0]
-        self.assertEqual(series.get_label(), "Ideal data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[1]
-        self.assertEqual(series.get_label(), "Noisy data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[2]
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        #
-        plot = plots[1]
-        self.assertEqual(plot.get_label(), "Ideal")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        #
-        plot = plots[2]
-        self.assertEqual(plot.get_label(), "Noisy")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series = project.get_plot_series(plot)
-        series = plot_series[0]
-        label: str = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), False)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[1]
-        label = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[2]
-        self.assertEqual(series.get_label(), "Noisy data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
+        self.project.delete_plot(plot)
+        plots = self.project.get_plots()
+        self.assertEqual(len(plots), num_plots - 1)
+        self.assertTrue(plot not in plots)
 
-    def test_14_version_4(self):
-        # TODO: Add more detailed tests
-        path: str = TEST_PROJECT_PATHS[3]
-        project: Project = Project.from_file(path)
-        self.assertEqual(project.get_path(), path)
-        self.assertEqual(project.get_label(), "Example project - Version 4")
-        # - data sets
-        datasets: List[DataSet] = project.get_data_sets()
-        self.assertEqual(type(datasets), list)
-        self.assertEqual(len(datasets), 2)
-        self.assertTrue(all(map(lambda _: type(_) is DataSet, datasets)))
-        # - tests
-        tests: List[TestResult] = project.get_tests(datasets[0])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        tests = project.get_tests(datasets[1])
-        self.assertEqual(type(tests), list)
-        self.assertEqual(len(tests), 1)
-        self.assertTrue(all(map(lambda _: type(_) is TestResult, tests)))
-        # - fits
-        fits: List[FitResult] = project.get_fits(datasets[0])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        fits = project.get_fits(datasets[1])
-        self.assertEqual(type(fits), list)
-        self.assertEqual(len(fits), 1)
-        self.assertTrue(all(map(lambda _: type(_) is FitResult, fits)))
-        # - simulations
-        simulations: List[SimulationResult] = project.get_simulations()
-        self.assertEqual(type(simulations), list)
-        self.assertEqual(len(simulations), 2)
-        self.assertTrue(all(map(lambda _: type(_) is SimulationResult, simulations)))
-        # - plots
-        plots: List[PlotSettings] = project.get_plots()
-        self.assertEqual(type(plots), list)
-        self.assertEqual(len(plots), 5)
-        #
-        plot: PlotSettings = plots[0]
-        self.assertEqual(plot.get_label(), "Appearance template")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series: List[PlotSeries] = project.get_plot_series(plot)
-        series: PlotSeries = plot_series[0]
-        self.assertEqual(series.get_label(), "Ideal")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[1]
-        self.assertEqual(series.get_label(), "Noisy")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
-        series = plot_series[2]
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        #
-        plot = plots[1]
-        self.assertEqual(plot.get_label(), "Ideal")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        #
-        plot = plots[3]
-        self.assertEqual(plot.get_label(), "Noisy")
-        self.assertEqual(plot.get_type(), PlotType.NYQUIST)
-        plot_series = project.get_plot_series(plot)
-        series = plot_series[0]
-        label: str = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), False)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[1]
-        label = series.get_label()
-        self.assertEqual(label[: label.find(" (")], "R(RC)(RW)")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), True)
-        series = plot_series[2]
-        self.assertEqual(series.get_label(), "Noisy data")
-        # TODO: Implement tests for getting data (e.g., for Nyquist plots)
-        self.assertEqual(type(series.get_color()), tuple)
-        self.assertEqual(len(series.get_color()), 4)
-        self.assertEqual(series.has_markers(), True)
-        self.assertEqual(series.has_line(), False)
+    def test_get_plot_series(self):
+        plot: PlotSettings
+        for plot in self.project.get_plots():
+            series: List[PlotSeries] = self.project.get_plot_series(plot)
+            self.assertIsInstance(series, list)
+            self.assertTrue(all([isinstance(_, PlotSeries) for _ in series]))

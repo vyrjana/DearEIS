@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,19 +19,14 @@
 
 from typing import List, Optional
 import pyimpspec
-from pyimpspec.data import (
-    UnsupportedFileFormat,
-)
 from deareis.api._utility import _copy_docstring
-from deareis.data import (
-    DataSet,
-)
+from deareis.data import DataSet
 
 
 @_copy_docstring(pyimpspec.parse_data)
 def parse_data(
     path: str,
-    file_format: Optional[str] = None,
+    file_format: str = "",
     **kwargs,
 ) -> List[DataSet]:
     return list(

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,17 +17,23 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from json import dumps
 from math import isclose
-from os import getcwd
+from os import (
+    getcwd,
+    remove,
+    walk,
+)
 from os.path import (
+    abspath,
+    basename,
+    dirname,
     exists,
     join,
 )
+from tempfile import gettempdir
 from threading import Timer
-from time import (
-    sleep,
-    time,
-)
+from time import time
 from traceback import format_exc
 from typing import (
     Callable,
@@ -35,7 +41,16 @@ from typing import (
     List,
     Optional,
 )
+from pyimpspec.analysis.zhit.weights import (
+    _WINDOW_FUNCTIONS,
+    _initialize_window_functions,
+)
+from pyimpspec import (
+    get_elements,
+    parse_cdc,
+)
 import dearpygui.dearpygui as dpg
+from deareis.utility import calculate_window_position_dimensions
 import deareis.signals as signals
 from deareis.signals import Signal
 from deareis.state import STATE
@@ -45,13 +60,20 @@ from deareis.enums import (
     Context,
     DRTMethod,
     DRTMode,
-    TestMode,
     PlotType,
     RBFShape,
     RBFType,
     Test,
+    TestMode,
     Weight,
+    ZHITInterpolation,
+    ZHITSmoothing,
+    ZHITWindow,
+    label_to_drt_output,
+    label_to_fit_sim_output,
+    value_to_zhit_window,
 )
+from deareis.gui.settings import refresh_user_defined_elements
 from deareis.data import (
     DRTResult,
     DRTSettings,
@@ -64,65 +86,84 @@ from deareis.data import (
     SimulationSettings,
     TestResult,
     TestSettings,
+    ZHITSettings,
 )
 from deareis.gui import ProjectTab
 
 
-"""
-Signal.AVERAGE_DATA_SETS
-Signal.BLOCK_KEYBINDINGS
-Signal.CLEAR_RECENT_PROJECTS
-Signal.COPY_OUTPUT
-Signal.COPY_PLOT_APPEARANCE_SETTINGS
-Signal.COPY_PLOT_DATA
-Signal.CREATE_PROJECT_SNAPSHOT
-Signal.MODIFY_DATA_SET_PATH
-Signal.MODIFY_PLOT_SERIES_THEME
-Signal.NEW_PROJECT
-Signal.PERFORM_SIMULATION
-Signal.REDO_PROJECT_ACTION
-Signal.RESTORE_PROJECT_STATE
-Signal.SAVE_PROJECT
-Signal.SAVE_PROJECT_AS
-Signal.SELECT_DATA_POINTS_TO_TOGGLE
-Signal.SELECT_DATA_SETS_TO_AVERAGE
-Signal.SELECT_DATA_SET_FILES
-Signal.SELECT_DATA_SET_MASK_TO_COPY
-Signal.SELECT_FIT_RESULT
-Signal.SELECT_HOME_TAB
-Signal.SELECT_IMPEDANCE_TO_SUBTRACT
-Signal.SELECT_PLOT_APPEARANCE_SETTINGS
-Signal.SELECT_PLOT_SETTINGS
-Signal.SELECT_PROJECT_FILES
-Signal.SELECT_PROJECT_TAB
-Signal.SELECT_SIMULATION_RESULT
-Signal.SELECT_TEST_RESULT
-Signal.SHOW_BUSY_MESSAGE
-Signal.SHOW_COMMAND_PALETTE
-Signal.SHOW_ENLARGED_PLOT
-Signal.SHOW_ERROR_MESSAGE
-Signal.SHOW_HELP_ABOUT
-Signal.SHOW_HELP_LICENSES
-Signal.SHOW_SETTINGS_APPEARANCE
-Signal.SHOW_SETTINGS_DEFAULTS
-Signal.SHOW_SETTINGS_KEYBINDINGS
-Signal.TOGGLE_DATA_POINT
-Signal.UNBLOCK_KEYBINDINGS
-Signal.UNDO_PROJECT_ACTION
-Signal.VIEWPORT_RESIZED
-"""
-
-# TODO
-# - Tests copying plot data as CSV
-# - (Un)select groups of plottable series
-# - Edit plot series appearance
-# - Adjust limits checkbox and its impact on modal plot windows
+PARENT_FOLDER: str = dirname(__file__)
+TMP_FOLDER: str = gettempdir()
 
 
 START_TIME: float = 0.0
 
 
-def next_step(next_func: Callable, delay: float = 1.0) -> Callable:
+def sleep(delay):
+    dpg.split_frame(delay=round(delay * 1000))
+
+
+def selection_window():
+    window = dpg.generate_uuid()
+
+    def start_tests(function):
+        signals.emit(Signal.UNBLOCK_KEYBINDINGS)
+        sleep(0.2)
+        dpg.delete_item(window)
+        sleep(0.2)
+        global START_TIME
+        START_TIME = time()
+        Timer(1.0, function).start()
+        # function()
+
+    options = {
+        "Overlay": test_overlay,
+        "Ancillary windows": test_ancillary_windows,
+        "User-defined elements": test_user_defined_elements,
+        "Project versions": test_project_versions,
+        "Project": test_project,
+    }
+    x, y, w, h = calculate_window_position_dimensions(
+        400, len(options) * 24 + 2 * 8 + len(options) * 2
+    )
+    with dpg.window(
+        label="Automated tests",
+        modal=True,
+        pos=(x, y),
+        width=w,
+        height=h,
+        no_resize=True,
+        tag=window,
+    ):
+        for label, function in options.items():
+            dpg.add_button(
+                label=label,
+                callback=lambda s, a, u: start_tests(u),
+                user_data=function,
+                width=-1,
+            )
+    signals.emit(
+        Signal.BLOCK_KEYBINDINGS,
+        window=window,
+        window_object=None,
+    )
+
+
+def finish_tests():
+    project: Optional[Project] = STATE.get_active_project()
+    if project is not None and project.get_label() == "Test project":
+        path: str = project.get_path()
+        signals.emit(Signal.CLOSE_PROJECT, force=True)
+        if exists(path):
+            remove(path)
+        assert not exists(path)
+    else:
+        signals.emit(Signal.CLOSE_PROJECT, force=True)
+    print(f"\nFinished in {time() - START_TIME:.2f} s")
+    sleep(1.0)
+    selection_window()
+
+
+def next_step(next_func: Callable = finish_tests, delay: float = 1.0) -> Callable:
     def outer_wrapper(func: Callable) -> Callable:
         def inner_wrapper():
             func()
@@ -136,1045 +177,2641 @@ def next_step(next_func: Callable, delay: float = 1.0) -> Callable:
     return outer_wrapper
 
 
-def finish_tests():
-    signals.emit(Signal.CLOSE_PROJECT, force=True)
-    print(f"\nFinished in {time() - START_TIME:.2f} s")
-    Timer(1.0, dpg.stop_dearpygui).start()
-
-
 def test_undo_redo():
+    def count_results(project) -> int:
+        counter: int = 0
+        for data in project.get_data_sets():
+            counter += len(project.get_tests(data))
+            counter += len(project.get_zhits(data))
+            counter += len(project.get_drts(data))
+            counter += len(project.get_fits(data))
+        counter += len(project.get_simulations())
+        counter += len(project.get_plots())
+        return counter
+
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
-    tests: Dict[str, List[TestResult]]
-    drts: Dict[str, List[DRTResult]]
-    fits: Dict[str, List[FitResult]]
-    sims: List[SimulationResult]
-    plots: List[PlotSettings]
-    undo_steps: int = 0
+    num_undo_steps: int = 0
+    num_results: int = count_results(STATE.get_active_project())
+    expected_final_state: str = dumps(STATE.get_active_project().to_dict(session=False))
 
-    @next_step(finish_tests)
+    @next_step()
     def validate_redo():
-        assert project.get_label() == "New project label"
-        data_sets: List[DataSet] = project.get_data_sets()
-        assert len(data_sets) == 1
-        assert data_sets[0].get_label() == "Noisier data"
-        assert sum(data_sets[0].get_mask().values()) == 14
-        tests = project.get_all_tests()
-        assert len(tests) == 1
-        assert sum(map(len, tests.values())) == 2
-        drts = project.get_all_drts()
-        assert len(drts) == 1
-        assert sum(map(len, drts.values())) == 4
-        fits = project.get_all_fits()
-        assert len(fits) == 1
-        assert sum(map(len, fits.values())) == 2
-        sims = project.get_simulations()
-        assert len(sims) == 1
-        plots = project.get_plots()
-        assert len(plots) == 5
-        assert plots[0].get_label() == "Ideal"
-        assert plots[1].get_label() == "Ideal - DRT"
-        assert plots[2].get_label() == "Noisy"
-        assert plots[3].get_label() == "Noisy - DRT"
-        assert plots[4].get_label() == "Test plot"
+        project = STATE.get_active_project()
+        assert num_results == count_results(project)
+        num_data_sets = len(project.get_data_sets())
+        assert num_data_sets > 0
+        assert len(project.get_all_tests()) == num_data_sets
+        assert len(project.get_all_zhits()) == num_data_sets
+        assert len(project.get_all_drts()) == num_data_sets
+        assert len(project.get_all_fits()) == num_data_sets
+        assert len(project.get_simulations()) > 0
+        assert len(project.get_plots()) > 1
+        final_state: str = dumps(project.to_dict(session=False))
+        assert final_state == expected_final_state
 
+    @next_step(validate_redo)
     def redo():
-        nonlocal undo_steps
-        print(f"  - Redo ({undo_steps})")
-        undo_steps -= 1
-        signals.emit(Signal.REDO_PROJECT_ACTION)
-        Timer(
-            1.0,
-            redo if undo_steps > 0 else validate_redo,
-        ).start()
+        nonlocal num_undo_steps
+        while num_undo_steps > 0:
+            signals.emit(Signal.REDO_PROJECT_ACTION)
+            sleep(1.0)
+            num_undo_steps -= 1
+            print(f"  - Redo ({num_undo_steps})")
 
     @next_step(redo)
     def validate_undo():
-        assert project.get_label() == "Example project - Version 4"
-        data_sets: List[DataSet] = project.get_data_sets()
-        assert len(data_sets) == 2
-        assert data_sets[0].get_label() == "Ideal data"
-        assert not any(data_sets[0].get_mask().values())
-        assert data_sets[1].get_label() == "Noisy data"
-        assert not any(data_sets[1].get_mask().values())
-        tests = project.get_all_tests()
-        assert len(tests) == 2
-        assert sum(map(len, tests.values())) == 2
-        drts = project.get_all_drts()
-        assert len(drts) == 2
-        assert sum(map(len, drts.values())) == 8
-        fits = project.get_all_fits()
-        assert len(fits) == 2
-        assert sum(map(len, fits.values())) == 2
-        sims = project.get_simulations()
-        assert len(sims) == 2
-        plots = project.get_plots()
-        assert len(plots) == 5
-        assert plots[0].get_label() == "Appearance template"
-        assert plots[1].get_label() == "Ideal"
-        assert plots[2].get_label() == "Ideal - DRT"
-        assert plots[3].get_label() == "Noisy"
-        assert plots[4].get_label() == "Noisy - DRT"
+        num_data_sets = len(project.get_data_sets())
+        assert num_data_sets == 0
+        assert len(project.get_all_tests()) == num_data_sets
+        assert len(project.get_all_zhits()) == num_data_sets
+        assert len(project.get_all_drts()) == num_data_sets
+        assert len(project.get_all_fits()) == num_data_sets
+        assert len(project.get_simulations()) == 0
+        assert len(project.get_plots()) == 1
 
+    @next_step(validate_undo)
     def undo():
-        nonlocal undo_steps
-        undo_steps += 1
-        print(f"  - Undo ({undo_steps})")
-        signals.emit(Signal.UNDO_PROJECT_ACTION)
-        Timer(
-            1.0,
-            undo if STATE.is_project_dirty(project) else validate_undo,
-        ).start()
+        nonlocal num_undo_steps
+        while STATE.get_active_project().get_label() == "Test project":
+            signals.emit(Signal.UNDO_PROJECT_ACTION)
+            sleep(1.0)
+            num_undo_steps += 1
+            print(f"  - Undo ({num_undo_steps})")
+
+    @next_step(undo)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_OVERVIEW_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
 
     print("\n- Undo/redo")
-    assert STATE.is_project_dirty(project) is True
-    undo()
+    switch_tab()
 
 
-def test_plotting():
+def test_plotting_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.PLOTTING_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
 
     @next_step(test_undo_redo)
-    def validate_unselect_all():
-        assert len(project_tab.get_active_plot().series_order) == 0
-
-    @next_step(validate_unselect_all)
-    def unselect_all():
-        print("  - Unselect all")
-        signals.emit(
-            Signal.TOGGLE_PLOT_SERIES,
-            enabled=False,
-            **dpg.get_item_user_data(project_tab.plotting_tab.select_all_button),
-        )
-
-    @next_step(unselect_all)
-    def export_plot_2():
-        assert STATE.active_modal_window_object is not None
-        STATE.active_modal_window_object.close()
-
-    @next_step(export_plot_2)
-    def export_plot_1():
-        print("  - Export plot")
-        signals.emit(
-            Signal.EXPORT_PLOT,
-            **dpg.get_item_user_data(project_tab.plotting_tab.export_button),
-        )
-
-    @next_step(export_plot_1)
-    def validate_reorder_series():
-        data: DataSet = project.get_data_sets()[0]
-        assert data is not None
-        settings: PlotSettings = project_tab.get_active_plot()
-        assert settings.series_order.index(data.uuid) == 1
-        series: int = dpg.get_item_children(
-            project_tab.plotting_tab.plot_types[PlotType.BODE_PHASE]._y_axis, slot=1
-        )[
-            2
-        ]  # 2 because 0 and 1 are for a Kramers-Kronig test result (scatter and line)
-        assert dpg.get_item_label(series) == data.get_label(), (
-            data.get_label(),
-            dpg.get_item_label(series),
-        )
-
-    @next_step(validate_reorder_series)
-    def reorder_series():
-        print("  - Reorder series")
-        settings: PlotSettings = project_tab.get_active_plot()
-        signals.emit(
-            Signal.REORDER_PLOT_SERIES,
-            settings=settings,
-            **{
-                "uuid": settings.series_order[0],
-                "step": 1,
-            },
-        )
-
-    @next_step(reorder_series)
-    def validate_select_plot_type():
-        assert project_tab.get_active_plot().get_type() == PlotType.BODE_PHASE
-        assert dpg.get_value(project_tab.plotting_tab.type_combo) == "Bode - phase"
-
-    @next_step(validate_select_plot_type)
-    def select_plot_type():
-        print("  - Select plot type")
-        settings: PlotSettings = project_tab.get_active_plot()
-        signals.emit(
-            Signal.SELECT_PLOT_TYPE, settings=settings, plot_type=PlotType.BODE_PHASE
-        )
-
-    @next_step(select_plot_type)
-    def validate_copy_appearance():
-        # TODO: Implement
-        pass
-
-    @next_step(validate_copy_appearance)
-    def copy_appearance_2():
-        assert STATE.active_modal_window_object is not None
-        STATE.active_modal_window_object.accept()
-
-    @next_step(copy_appearance_2)
-    def copy_appearance_1():
-        print("  - Copy appearance")
-        signals.emit(
-            Signal.SELECT_PLOT_APPEARANCE_SETTINGS,
-            settings=dpg.get_item_user_data(project_tab.plotting_tab.delete_button),
-        )
-
-    @next_step(copy_appearance_1)
-    def validate_select_all():
-        assert len(project_tab.get_active_plot().series_order) == 10
-
-    @next_step(validate_select_all)
-    def select_all():
-        print("  - Select all")
-        signals.emit(
-            Signal.TOGGLE_PLOT_SERIES,
-            enabled=True,
-            **dpg.get_item_user_data(project_tab.plotting_tab.select_all_button),
-        )
-
-    @next_step(select_all)
-    def validate_rename_plot():
-        assert len(project.get_plots()) == 5
-        assert project_tab.get_active_plot().get_label() == "Test plot"
-        assert dpg.get_value(project_tab.plotting_tab.label_input) == "Test plot"
-        assert (
-            dpg.get_item_label(
-                project_tab.plotting_tab.plot_types[PlotType.NYQUIST]._plot
-            )
-            == "Test plot"
-        )
-
-    @next_step(validate_rename_plot)
-    def rename_plot():
-        print("  - Rename plot")
-        settings: PlotSettings = project_tab.get_active_plot()
-        signals.emit(Signal.RENAME_PLOT_SETTINGS, settings=settings, label="Test plot")
-
-    @next_step(rename_plot)
-    def validate_new_plot():
-        plot: PlotSettings = project_tab.get_active_plot()
-        assert len(project.get_plots()) == 5
-        assert plot.get_label() == "Plot"
-        assert len(plot.series_order) == 0
-        assert dpg.get_value(project_tab.plotting_tab.label_input) == "Plot"
-        assert (
-            dpg.get_item_label(
-                project_tab.plotting_tab.plot_types[PlotType.NYQUIST]._plot
-            )
-            == "Plot"
-        )
-
-    @next_step(validate_new_plot)
-    def new_plot():
-        print("  - New plot")
-        signals.emit(Signal.NEW_PLOT_SETTINGS)
-
-    @next_step(new_plot)
     def validate_delete_plot():
-        assert len(project.get_plots()) == 4
-        assert project_tab.get_active_plot().get_label() == "Ideal"
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 2
+        settings = project_tab.get_active_plot()
+        assert settings.get_num_series() > 0
+        signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_delete_plot)
     def delete_plot():
         print("  - Delete plot")
-        settings: PlotSettings = project_tab.get_active_plot()
-        signals.emit(Signal.DELETE_PLOT_SETTINGS, settings=settings)
+        perform_action(action=Action.DELETE_RESULT)
 
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_PLOTTING_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- Plotting")
-    Timer(1.0, delete_plot).start()
+    @next_step(delete_plot)
+    def validate_copy_plot_appearance():
+        assert STATE.is_project_dirty(project) is True
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.accept()
 
+    @next_step(validate_copy_plot_appearance)
+    def copy_plot_appearance():
+        print("  - Copy plot appearance")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SELECT_ALL_PLOT_SERIES)
+        sleep(0.5)
+        perform_action(action=Action.COPY_PLOT_APPEARANCE)
 
-def test_simulation():
-    project: Optional[Project] = STATE.get_active_project()
-    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    @next_step(copy_plot_appearance)
+    def validate_new_plot():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 3
+        settings = project_tab.get_active_plot()
+        assert settings.get_num_series() == 0
+        signals.emit(Signal.SAVE_PROJECT)
 
-    @next_step(test_plotting)
-    def validate_select_previous_data_set():
-        assert project_tab.get_active_data_set() is not None
+    @next_step(validate_new_plot)
+    def new_plot():
+        print("  - New plot")
+        perform_action(action=Action.PERFORM_ACTION)
 
-    @next_step(validate_select_previous_data_set)
-    def select_previous_data_set():
-        print("  - Select previous data set")
+    @next_step(new_plot)
+    def cycle_plot_types():
+        print("  - Cycle plot types, preview export, and copy as CSV")
+        settings = project_tab.get_active_plot()
+        seen_types = []
+        while True:
+            perform_action(action=Action.EXPORT_PLOT)
+            sleep(0.5)
+            assert STATE.active_modal_window_object is not None
+            STATE.active_modal_window_object.close()
+            sleep(0.5)
+            perform_action(action=Action.COPY_PLOT_DATA)
+            sleep(0.5)
+            text = dpg.get_clipboard_text().strip()
+            assert text != ""
+            perform_action(action=Action.NEXT_SECONDARY_RESULT)
+            sleep(0.5)
+            seen_types.append(settings.get_type())
+            if len(set(seen_types)) < len(seen_types):
+                break
+
+    @next_step(cycle_plot_types)
+    def cycle_plots():
+        print("  - Cycle plots")
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_plots)
+    def validate_unselect_all():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 2
+        settings = project_tab.get_active_plot()
+        assert settings.get_num_series() == 0
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_unselect_all)
+    def unselect_all():
+        print("  - Unselect all")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.UNSELECT_ALL_PLOT_SERIES)
+
+    @next_step(unselect_all)
+    def validate_duplicate_plot():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_duplicate_plot)
+    def duplicate_plot():
+        print("  - Duplicate plot")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.DUPLICATE_PLOT)
+
+    @next_step(duplicate_plot)
+    def validate_select_all():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 1
+        settings = project_tab.get_active_plot()
+        assert settings.get_num_series() > 0
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_select_all)
+    def select_all():
+        print("  - Select all")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SELECT_ALL_PLOT_SERIES)
+
+    @next_step(select_all)
+    def expand_collapse_sidebar():
+        print("  - Expand/collapse sidebar")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.EXPAND_COLLAPSE_SIDEBAR)
+        sleep(0.5)
+        perform_action(action=Action.EXPAND_COLLAPSE_SIDEBAR)
+
+    @next_step(expand_collapse_sidebar)
+    def switch_tab():
         STATE.keybinding_handler.perform_action(
-            Action.PREVIOUS_PRIMARY_RESULT,
-            Context.SIMULATION_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
+            action=Action.SELECT_PLOTTING_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
         )
 
-    @next_step(select_previous_data_set)
-    def validate_perform_simulation():
-        assert len(project.get_simulations()) == 1
-        assert project_tab.get_active_simulation() is not None
+    print("\n- Plotting tab")
+    switch_tab()
 
-    @next_step(validate_perform_simulation)
-    def perform_simulation():
-        print("  - Perform simulation")
-        settings: SimulationSettings = project_tab.simulation_tab.get_settings()
-        signals.emit(Signal.PERFORM_SIMULATION, settings=settings)
 
-    @next_step(perform_simulation)
+def test_simulation_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.SIMULATION_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+    outputs: List[str] = list(
+        [_ for _ in label_to_fit_sim_output.keys() if "statistics" not in _]
+    )
+
+    @next_step(test_plotting_tab)
+    def validate_copy_sympy_expression_with_values():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            """expr = sympify("R_0 + 1/(2*I*pi*C_2*f + 1/R_1)")
+C_2, R_0, R_1, f = sorted(expr.free_symbols, key=str)
+parameters = {"""
+        ), text
+        assert len(outputs) == 0, outputs
+
+    @next_step(validate_copy_sympy_expression_with_values)
+    def copy_sympy_expression_with_values():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_sympy_expression_with_values)
+    def validate_copy_sympy_expression():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text == "R_0 + 1/(2*I*pi*C_2*f + 1/R_1)", text
+
+    @next_step(validate_copy_sympy_expression)
+    def copy_sympy_expression():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_sympy_expression)
+    def validate_copy_svg_circuit_without_labels():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert "<svg xmlns:xlink" in text and r"$R_{\rm 1}$" not in text, text
+
+    @next_step(validate_copy_svg_circuit_without_labels)
+    def copy_svg_circuit_without_labels():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_svg_circuit_without_labels)
+    def validate_copy_svg_circuit():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert "<svg xmlns:xlink" in text, text
+
+    @next_step(validate_copy_svg_circuit)
+    def copy_svg_circuit():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_svg_circuit)
+    def validate_copy_markdown_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            """| Element   | Parameter   |   Value | Unit   |
+|:----------|:------------|--------:|:-------|"""
+        ), text
+
+    @next_step(validate_copy_markdown_parameters)
+    def copy_markdown_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_markdown_parameters)
+    def validate_copy_latex_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            r"""\begin{tabular}{llrl}
+\toprule
+Element & Parameter & Value & Unit \\
+\midrule"""
+        )
+        assert text.endswith(
+            r"""\bottomrule
+\end{tabular}"""
+        ), text
+
+    @next_step(validate_copy_latex_parameters)
+    def copy_latex_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_parameters)
+    def validate_copy_latex_expression():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text == r"R_{0} + \frac{1}{2 i \pi C_{2} f + \frac{1}{R_{1}}}", text
+
+    @next_step(validate_copy_latex_expression)
+    def copy_latex_expression():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_expression)
+    def validate_copy_latex_circuit():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(r"\begin{circuitikz}") and text.endswith(
+            r"\end{circuitikz}"
+        ), text
+
+    @next_step(validate_copy_latex_circuit)
+    def copy_latex_circuit():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_circuit)
+    def validate_copy_json_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith('{"Element":{"0":"') and text.endswith('"}}'), text
+
+    @next_step(validate_copy_json_parameters)
+    def copy_json_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_json_parameters)
+    def validate_copy_csv_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("Element,Parameter,Value,Unit"), text
+
+    @next_step(validate_copy_csv_parameters)
+    def copy_csv_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_parameters)
+    def validate_copy_csv_impedance():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("f (Hz),Re(Z) (ohm) - Sim.,Im(Z) (ohm) - Sim."), text
+
+    @next_step(validate_copy_csv_impedance)
+    def copy_csv_impedance():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_impedance)
+    def validate_copy_extended_cdc():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("[R{R=") and text.endswith("})]"), text
+
+    @next_step(validate_copy_extended_cdc)
+    def copy_extended_cdc():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_extended_cdc)
+    def validate_copy_basic_cdc():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text == "[R(RC)]", text
+
+    @next_step(validate_copy_basic_cdc)
+    def copy_basic_cdc():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_basic_cdc)
+    def validate_copy_bode():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "f (Hz) - Data (scatter),Mod(Z) (ohm) - Data (scatter),-Phase(Z) (°) - Data (scatter),f (Hz) - Sim. (scatter),Mod(Z) (ohm) - Sim. (scatter),-Phase(Z) (°) - Sim. (scatter),f (Hz) - Sim. (line),Mod(Z) (ohm) - Sim. (line),-Phase(Z) (°) - Sim. (line)"
+        ), headers
+
+    @next_step(validate_copy_bode)
+    def copy_bode():
+        print("  - Copy Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_BODE_DATA)
+
+    @next_step(copy_bode)
+    def validate_copy_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "Re(Z) (ohm) - Data (scatter),-Im(Z) (ohm) - Data (scatter),Re(Z) (ohm) - Sim. (scatter),-Im(Z) (ohm) - Sim. (scatter),Re(Z) (ohm) - Sim. (line),-Im(Z) (ohm) - Sim. (line)"
+        ), headers
+
+    @next_step(validate_copy_nyquist)
+    def copy_nyquist():
+        print("  - Copy Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_NYQUIST_DATA)
+
+    @next_step(copy_nyquist)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_impedance)
+    def enlarge_impedance():
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
+
+    @next_step(enlarge_impedance)
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_bode)
+    def enlarge_bode():
+        print("  - Enlarge Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
+
+    @next_step(enlarge_bode)
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_nyquist)
+    def enlarge_nyquist():
+        print("  - Enlarge Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
+
+    @next_step(enlarge_nyquist)
+    def validate_load_as_data_set():
+        assert STATE.is_project_dirty(project) is True
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_DATA_SETS_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+        sleep(1.0)
+        assert len(project.get_data_sets()) == 3
+        data = project_tab.get_active_data_set(context=Context.DATA_SETS_TAB)
+        # If the following assertion fails, then it may be because the state
+        # has not finished updating (e.g., the table in the GUI might be in
+        # the process of being updated). Try increasing the amount of time
+        # spent sleeping after switching tabs.
+        assert data.get_label().startswith("R(RC)"), data.get_label()
+        signals.emit(
+            Signal.DELETE_DATA_SET,
+            data=project_tab.get_active_data_set(),
+        )
+        signals.emit(Signal.SAVE_PROJECT)
+        assert len(project.get_data_sets()) == 2
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_SIMULATION_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    @next_step(validate_load_as_data_set)
+    def load_as_data_set():
+        perform_action(action=Action.LOAD_SIMULATION_AS_DATA_SET)
+
+    @next_step(load_as_data_set)
+    def validate_apply_settings():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_simulation_settings()
+        assert parse_cdc(settings.cdc).to_string() == "[R(RC)]"
+        assert isclose(settings.min_frequency, 1e-3, abs_tol=1e-6)
+        assert isclose(settings.max_frequency, 1e3, abs_tol=1e-6)
+        assert settings.num_per_decade == 20
+
+    @next_step(validate_apply_settings)
+    def apply_settings():
+        print("  - Apply setting")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_SIMULATION_SETTINGS,
+            settings=project_tab.get_active_simulation().settings,
+        )
+
+    @next_step(apply_settings)
     def validate_delete_result():
-        assert len(project.get_simulations()) == 0
-        assert project_tab.get_active_simulation() is None
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_simulations()) == 1
+        signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_delete_result)
     def delete_result():
         print("  - Delete result")
-        simulation: Optional[SimulationResult] = project_tab.get_active_simulation()
-        signals.emit(Signal.DELETE_SIMULATION_RESULT, simulation=simulation)
-        sleep(1.0)
-        simulation = project_tab.get_active_simulation()
-        signals.emit(Signal.DELETE_SIMULATION_RESULT, simulation=simulation)
+        perform_action(action=Action.DELETE_RESULT)
 
     @next_step(delete_result)
-    def validate_apply_settings():
-        assert (
-            dpg.get_value(project_tab.simulation_tab.settings_menu.cdc_input)
-            == "[R(RC)(RW)]"
-        )
-        assert isclose(
-            dpg.get_value(project_tab.simulation_tab.settings_menu.max_freq_input),
-            1e5,
-            rel_tol=1e-6,
-        ), dpg.get_value(project_tab.simulation_tab.settings_menu.max_freq_input)
-        assert isclose(
-            dpg.get_value(project_tab.simulation_tab.settings_menu.min_freq_input),
-            1e-2,
-            rel_tol=1e-6,
-        ), dpg.get_value(project_tab.simulation_tab.settings_menu.min_freq_input)
-        assert (
-            dpg.get_value(project_tab.simulation_tab.settings_menu.per_decade_input)
-            == 1
-        )
+    def cycle_results():
+        print("  - Cycle results")
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+        sleep(0.5)
 
-    @next_step(validate_apply_settings)
-    def apply_settings():
-        print("  - Apply settings")
-        simulation: Optional[SimulationResult] = project_tab.get_active_simulation()
-        signals.emit(Signal.APPLY_SIMULATION_SETTINGS, settings=simulation.settings)
-
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_SIMULATION_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- Simulation")
-    Timer(1.0, apply_settings).start()
-
-
-def test_fitting():
-    project: Optional[Project] = STATE.get_active_project()
-    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
-    data: Optional[DataSet]
-    fit: Optional[FitResult]
-    fits: List[FitResult]
-
-    @next_step(test_simulation)
-    def validate_select_next_result():
+    @next_step(cycle_results)
+    def validate_perform_simulation():
+        assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
-        assert data is not None
-        fits = project.get_fits(data)
-        assert len(fits) == 2
-        assert project_tab.get_active_fit() == fits[1]
+        assert len(project.get_simulations()) == 2
+        signals.emit(Signal.SAVE_PROJECT)
 
-    @next_step(validate_select_next_result)
-    def select_next_result():
-        print("  - Select next result")
+    @next_step(validate_perform_simulation)
+    def perform_simulation():
+        print("  - Perform simulation")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_SIMULATION_SETTINGS,
+            settings=SimulationSettings(
+                cdc=parse_cdc("R(RL)").to_string(),
+                min_frequency=1e-2,
+                max_frequency=1e4,
+                num_per_decade=15,
+            ),
+        )
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_simulation)
+    def validate_parameter_adjustment():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_simulation_settings()
+        circuit = parse_cdc(settings.cdc)
+        assert isclose(circuit.get_elements()[0].get_value("R"), 850.15)
+
+    @next_step(validate_parameter_adjustment)
+    def parameter_adjustment():
+        print("  - Parameter adjustment")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.ADJUST_PARAMETERS)
+        sleep(0.5)
+        STATE.active_modal_window_object.circuit.get_elements()[0].set_values(R=850.15)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(parameter_adjustment)
+    def validate_circuit_editor():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_simulation_settings()
+        assert parse_cdc(settings.cdc).to_string() == "[R(RC)]"
+
+    @next_step(validate_circuit_editor)
+    def circuit_editor():
+        print("  - Circuit editor")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_SIMULATION_SETTINGS,
+            settings=SimulationSettings(
+                cdc=parse_cdc("R(RC)").to_string(),
+                min_frequency=1e-3,
+                max_frequency=1e3,
+                num_per_decade=20,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.SHOW_CIRCUIT_EDITOR)
+        sleep(0.5)
+        editor = STATE.active_modal_window_object
+        editor.node_clicked(editor.node_handler, (0, editor.parser.nodes[0].tag))
+        sleep(0.5)
+        editor.callback(dpg.get_item_user_data(editor.accept_button))
+
+    @next_step(circuit_editor)
+    def cycle_data_sets():
+        print("  - Cycle data sets")
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_data_sets)
+    def switch_tab():
         STATE.keybinding_handler.perform_action(
-            Action.NEXT_SECONDARY_RESULT,
-            Context.FITTING_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
+            action=Action.SELECT_SIMULATION_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
         )
 
-    @next_step(select_next_result)
-    def validate_perform_fit():
-        data = project_tab.get_active_data_set()
-        assert data is not None
-        assert project_tab.get_active_fit() is not None
-        assert len(project.get_fits(data)) == 2
-
-    @next_step(validate_perform_fit)
-    def perform_fit(*args, **kwargs):
-        print("  - Perform fit")
-        data = project_tab.get_active_data_set()
-        settings: FitSettings = FitSettings(
-            "[(RC)]",
-            CNLSMethod.LEAST_SQUARES,
-            Weight.BOUKAMP,
-            1000,
-        )
-        signals.emit(Signal.PERFORM_FIT, data=data, settings=settings)
-        sleep(1.0)
-        settings = FitSettings(
-            "[R(RC)(RW)]",
-            CNLSMethod.LEAST_SQUARES,
-            Weight.BOUKAMP,
-            1000,
-        )
-        signals.emit(Signal.PERFORM_FIT, data=data, settings=settings)
-
-    @next_step(perform_fit)
-    def validate_delete_result():
-        data = project_tab.get_active_data_set()
-        assert data is not None
-        assert project_tab.get_active_fit() is None
-        assert len(project.get_fits(data)) == 0
-
-    @next_step(validate_delete_result)
-    def delete_result(*args, **kwargs):
-        print("  - Delete settings")
-        data = project_tab.get_active_data_set()
-        fit = project_tab.get_active_fit()
-        signals.emit(Signal.DELETE_FIT_RESULT, data=data, fit=fit)
-
-    @next_step(delete_result)
-    def validate_apply_settings():
-        assert (
-            dpg.get_value(project_tab.fitting_tab.settings_menu.cdc_input)
-            == "[R(RC)(RW)]"
-        )
-        assert (
-            dpg.get_value(project_tab.fitting_tab.settings_menu.method_combo) == "Auto"
-        )
-        assert (
-            dpg.get_value(project_tab.fitting_tab.settings_menu.weight_combo) == "Auto"
-        )
-        assert (
-            dpg.get_value(project_tab.fitting_tab.settings_menu.max_nfev_input) == 1000
-        )
-
-    @next_step(validate_apply_settings)
-    def apply_settings():
-        print("  - Apply settings")
-        fit = project_tab.get_active_fit()
-        signals.emit(Signal.APPLY_FIT_SETTINGS, settings=fit.settings)
-
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_FITTING_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- Fitting")
-    Timer(1.0, apply_settings).start()
+    print("\n- Simulation tab")
+    switch_tab()
 
 
-def test_drt_analysis():
+def test_drt_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
-    data: Optional[DataSet]
-    drt: Optional[DRTResult]
-    settings: DRTSettings
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.DRT_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+    outputs: List[str] = list(label_to_drt_output.keys())
 
-    @next_step(test_fitting)
-    def close_impedance():
+    @next_step(test_simulation_tab)
+    def validate_copy_markdown_scores():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            """| Score                   |   Real (%) |   Imag. (%) |
+|:------------------------|-----------:|------------:|"""
+        ), text
+        assert len(outputs) == 0, outputs
+
+    @next_step(validate_copy_markdown_scores)
+    def copy_markdown_scores():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_markdown_scores)
+    def validate_copy_latex_scores():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            r"""\begin{tabular}{lrr}
+\toprule
+Score & Real (\%) & Imag. (\%) \\"""
+        ), text
+        assert text.endswith(
+            r"""\bottomrule
+\end{tabular}"""
+        ), text
+
+    @next_step(validate_copy_latex_scores)
+    def copy_latex_scores():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_scores)
+    def validate_copy_json_scores():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith('{"Score":{"0":"'), text
+
+    @next_step(validate_copy_json_scores)
+    def copy_json_scores():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_json_scores)
+    def validate_copy_csv_scores():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("Score,Real (%),Imag. (%)"), text
+
+    @next_step(validate_copy_csv_scores)
+    def copy_csv_scores():
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+        sleep(0.5)
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_scores)
+    def validate_copy_complex():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "f (Hz) - Data,Re(Z) (ohm) - Data,-Im(Z) (ohm) - Data,f (Hz) - Fit,Re(Z) (ohm) - Fit,-Im(Z) (ohm) - Fit"
+        ), headers
+
+    @next_step(validate_copy_complex)
+    def copy_complex():
+        print("  - Copy complex impedance")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_IMPEDANCE_DATA)
+
+    @next_step(copy_complex)
+    def validate_copy_drt():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert headers == "tau (s),gamma (ohm)", headers
+
+    @next_step(validate_copy_drt)
+    def copy_drt():
+        print("  - Copy DRT")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_DRT_DATA)
+
+    @next_step(copy_drt)
+    def validate_copy_residuals():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert headers == "f (Hz),real_error (%),imag_error (%)", headers
+
+    @next_step(validate_copy_residuals)
+    def copy_residuals():
+        print("  - Copy residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_RESIDUALS_DATA)
+
+    @next_step(copy_residuals)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
         STATE.active_modal_window_object.close()
 
-    @next_step(close_impedance)
+    @next_step(validate_enlarge_impedance)
     def enlarge_impedance():
-        print("  - Enlarge impedance")
-        project_tab.drt_tab.show_enlarged_impedance()
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
 
     @next_step(enlarge_impedance)
-    def close_drt():
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
         STATE.active_modal_window_object.close()
 
-    @next_step(close_drt)
+    @next_step(validate_enlarge_bode)
+    def enlarge_bode():
+        print("  - Enlarge Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
+
+    @next_step(enlarge_bode)
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_nyquist)
+    def enlarge_nyquist():
+        print("  - Enlarge Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
+
+    @next_step(enlarge_nyquist)
+    def validate_enlarge_drt():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_drt)
     def enlarge_drt():
         print("  - Enlarge DRT")
-        project_tab.drt_tab.show_enlarged_drt()
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_DRT)
 
     @next_step(enlarge_drt)
-    def validate_select_next_result():
-        data = project_tab.get_active_data_set()
-        assert data is not None
-        drts = project.get_drts(data)
-        assert project_tab.get_active_drt() == drts[1]
+    def validate_enlarge_residuals():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
 
-    @next_step(validate_select_next_result)
-    def select_next_result():
-        print("  - Select next DRT result")
-        STATE.keybinding_handler.perform_action(
-            Action.NEXT_SECONDARY_RESULT,
-            Context.DRT_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
+    @next_step(validate_enlarge_residuals)
+    def enlarge_residuals():
+        print("  - Enlarge residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_RESIDUALS)
+
+    @next_step(enlarge_residuals)
+    def validate_apply_mask():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert list(data.get_mask().values()).count(True) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_apply_mask)
+    def apply_mask():
+        print("  - Apply mask")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask={},
+        )
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask=project_tab.get_active_drt().mask,
         )
 
-    @next_step(select_next_result)
-    def validate_perform_analysis():
-        data = project_tab.get_active_data_set()
-        assert len(project.get_drts(data)) == 4
+    @next_step(apply_mask)
+    def validate_apply_settings():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_drt_settings()
+        assert settings.method == DRTMethod.TR_NNLS
+        assert settings.mode == DRTMode.REAL
+        assert isclose(settings.lambda_value, -1.0, abs_tol=1e-6)
+        assert settings.rbf_type == RBFType.CAUCHY
+        assert settings.derivative_order == 1
+        assert settings.rbf_shape == RBFShape.FWHM
+        assert isclose(settings.shape_coeff, 0.5, abs_tol=1e-6)
+        assert settings.inductance is False
+        assert settings.credible_intervals is False
+        assert settings.timeout == 1
+        assert settings.num_samples == 2000
+        assert settings.num_attempts == 1
+        assert isclose(settings.maximum_symmetry, 0.5, abs_tol=1e-6)
+        assert isclose(settings.gaussian_width, 0.15, abs_tol=1e-6)
+        assert settings.num_per_decade == 30
 
-    @next_step(validate_perform_analysis)
-    def perform_analysis():
-        print("  - Perform analysis")
-        data = project_tab.get_active_data_set()
-        settings = DRTSettings(
-            method=DRTMethod.TR_NNLS,
-            mode=DRTMode.IMAGINARY,
-            lambda_value=1e-2,
-            rbf_type=RBFType.CAUCHY,
-            derivative_order=1,
-            rbf_shape=RBFShape.FACTOR,
-            shape_coeff=0.4,
-            inductance=False,
-            credible_intervals=True,
-            num_samples=3000,
-            num_attempts=12,
-            maximum_symmetry=0.4,
-            circuit=None,
-            W=0.15,
-            num_per_decade=100,
+    @next_step(validate_apply_settings)
+    def apply_settings():
+        print("  - Apply setting")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=project_tab.get_active_drt().settings,
         )
-        signals.emit(Signal.PERFORM_DRT, data=data, settings=settings)
 
-    @next_step(perform_analysis)
+    @next_step(apply_settings)
     def validate_delete_result():
+        assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
         assert len(project.get_drts(data)) == 3
+        signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_delete_result)
     def delete_result():
-        print("  - Delete DRT result")
-        data = project_tab.get_active_data_set()
-        drt = project_tab.get_active_drt()
-        signals.emit(Signal.DELETE_DRT_RESULT, data=data, drt=drt)
+        print("  - Delete result")
+        perform_action(action=Action.DELETE_RESULT)
 
     @next_step(delete_result)
-    def validate_apply_settings():
-        assert dpg.get_value(project_tab.drt_tab.settings_menu.method_combo) == "BHT"
-        assert dpg.get_value(project_tab.drt_tab.settings_menu.mode_combo) == "Complex"
-        assert dpg.get_value(project_tab.drt_tab.settings_menu.lambda_checkbox) is True
-        assert (
-            dpg.get_value(project_tab.drt_tab.settings_menu.derivative_order_combo)
-            == "1st"
+    def cycle_results():
+        print("  - Cycle results")
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+
+    @next_step(cycle_results)
+    def validate_perform_tr_rbf():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_drts(data)) == 4
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_tr_rbf)
+    def perform_tr_rbf():
+        print("  - Perform TR-RBF DRT analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=DRTSettings(
+                method=DRTMethod.TR_RBF,
+                mode=DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=RBFType.GAUSSIAN,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=1,
+                num_samples=2000,
+                num_attempts=1,
+                maximum_symmetry=0.5,
+                fit=project_tab.get_active_fit(),
+                gaussian_width=0.15,
+                num_per_decade=20,
+            ),
         )
-        assert (
-            dpg.get_value(project_tab.drt_tab.settings_menu.rbf_type_combo)
-            == "Gaussian"
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_tr_rbf)
+    def validate_perform_tr_nnls():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_drts(data)) == 3
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_tr_nnls)
+    def perform_tr_nnls():
+        print("  - Perform TR-NNLS DRT analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=DRTSettings(
+                method=DRTMethod.TR_NNLS,
+                mode=DRTMode.REAL,
+                lambda_value=-1.0,
+                rbf_type=RBFType.CAUCHY,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=1,
+                num_samples=2000,
+                num_attempts=1,
+                maximum_symmetry=0.5,
+                fit=project_tab.get_active_fit(),
+                gaussian_width=0.15,
+                num_per_decade=30,
+            ),
         )
-        assert (
-            dpg.get_value(project_tab.drt_tab.settings_menu.rbf_shape_combo) == "FWHM"
+        sleep(0.5)
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(perform_tr_nnls)
+    def validate_perform_mRQfit():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_drts(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_mRQfit)
+    def perform_mRQfit():
+        print("  - Perform m(RQ)fit DRT analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=DRTSettings(
+                method=DRTMethod.MRQ_FIT,
+                mode=DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=RBFType.CAUCHY,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=1,
+                num_samples=2000,
+                num_attempts=1,
+                maximum_symmetry=0.5,
+                fit=project_tab.get_active_fit(),
+                gaussian_width=0.15,
+                num_per_decade=20,
+            ),
         )
-        assert isclose(
-            dpg.get_value(project_tab.drt_tab.settings_menu.shape_coeff_input),
-            0.5,
-            abs_tol=1e-3,
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_mRQfit)
+    def validate_perform_bht():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_drts(data)) == 1
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_bht)
+    def perform_bht():
+        print("  - Perform BHT DRT analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=DRTSettings(
+                method=DRTMethod.BHT,
+                mode=DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=RBFType.CAUCHY,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=1,
+                num_samples=2000,
+                num_attempts=1,
+                maximum_symmetry=0.5,
+                fit=None,
+                gaussian_width=0.15,
+                num_per_decade=1,
+            ),
         )
-        assert (
-            dpg.get_value(project_tab.drt_tab.settings_menu.num_samples_input) == 10000
-        )
-        assert dpg.get_value(project_tab.drt_tab.settings_menu.num_attempts_input) == 50
-        assert isclose(
-            dpg.get_value(project_tab.drt_tab.settings_menu.maximum_symmetry_input),
-            0.5,
-            abs_tol=1e-3,
-        )
-        settings = project_tab.drt_tab.settings_menu.get_settings()
-        assert settings.method == DRTMethod.BHT
-        assert settings.mode == DRTMode.COMPLEX
-        assert settings.lambda_value <= 0.0
-        assert settings.derivative_order == 1
-        assert settings.rbf_type == RBFType.GAUSSIAN
-        assert settings.rbf_shape == RBFShape.FWHM
-        assert isclose(
-            settings.shape_coeff,
-            0.5,
-            abs_tol=1e-3,
-        )
-        assert settings.num_samples == 10000
-        assert settings.num_attempts == 50
-        assert isclose(
-            settings.maximum_symmetry,
-            0.5,
-            abs_tol=1e-3,
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_bht)
+    def cycle_data_sets():
+        print("  - Cycle data sets")
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_data_sets)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_DRT_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
         )
 
-    @next_step(validate_apply_settings)
-    def apply_settings():
-        print("  - Apply DRT settings")
-        drt = project_tab.get_active_drt()
-        assert drt is not None
-        signals.emit(Signal.APPLY_DRT_SETTINGS, settings=drt.settings)
-
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_DRT_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- DRT analysis")
-    Timer(1.0, apply_settings).start()
+    print("\n- DRT tab")
+    switch_tab()
 
 
-def test_kramers_kronig():
+def test_fitting_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
-    data: Optional[DataSet]
-    test: Optional[TestResult]
-    settings: TestSettings
-    tests: List[TestResult]
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.FITTING_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+    outputs: List[str] = list(label_to_fit_sim_output.keys())
 
-    @next_step(test_drt_analysis)
-    def close_residuals():
+    @next_step(test_drt_tab)
+    def validate_copy_sympy_expression_with_values():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            """expr = sympify("R_0 + 1/(2*I*pi*C_2*f + 1/R_1) + 1/(Y_4*(2*I*pi*f)**n_4 + 1/R_3)")
+C_2, R_0, R_1, R_3, Y_4, f, n_4 = sorted(expr.free_symbols, key=str)
+parameters = {"""
+        ), text
+        assert len(outputs) == 0, outputs
+
+    @next_step(validate_copy_sympy_expression_with_values)
+    def copy_sympy_expression_with_values():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_sympy_expression_with_values)
+    def validate_copy_sympy_expression():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert (
+            text == "R_0 + 1/(2*I*pi*C_2*f + 1/R_1) + 1/(Y_4*(2*I*pi*f)**n_4 + 1/R_3)"
+        ), text
+
+    @next_step(validate_copy_sympy_expression)
+    def copy_sympy_expression():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_sympy_expression)
+    def validate_copy_svg_circuit_without_labels():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert "<svg xmlns:xlink" in text and r"$R_{\rm 1}$" not in text, text
+
+    @next_step(validate_copy_svg_circuit_without_labels)
+    def copy_svg_circuit_without_labels():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_svg_circuit_without_labels)
+    def validate_copy_svg_circuit():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert "<svg xmlns:xlink" in text, text
+
+    @next_step(validate_copy_svg_circuit)
+    def copy_svg_circuit():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_svg_circuit)
+    def validate_copy_markdown_statistics():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0]
+        assert headers.count("|") == 3, text
+        assert 0 < headers.find("Label") < headers.find("Value"), text
+
+    @next_step(validate_copy_markdown_statistics)
+    def copy_markdown_statistics():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_markdown_statistics)
+    def validate_copy_markdown_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            """| Element   | Parameter   |      Value |   Std. err. (%) | Unit   | Fixed   |
+|:----------|:------------|-----------:|----------------:|:-------|:--------|"""
+        ), text
+
+    @next_step(validate_copy_markdown_parameters)
+    def copy_markdown_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_markdown_parameters)
+    def validate_copy_latex_statistics():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            r"""\begin{tabular}{ll}
+\toprule
+Label & Value \\
+\midrule"""
+        )
+        assert text.endswith(
+            r"""\bottomrule
+\end{tabular}"""
+        ), text
+
+    @next_step(validate_copy_latex_statistics)
+    def copy_latex_statistics():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_statistics)
+    def validate_copy_latex_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            r"""\begin{tabular}{llrrll}
+\toprule
+Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
+\midrule"""
+        )
+        assert text.endswith(
+            r"""\bottomrule
+\end{tabular}"""
+        ), text
+
+    @next_step(validate_copy_latex_parameters)
+    def copy_latex_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_parameters)
+    def validate_copy_latex_expression():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert (
+            text
+            == r"R_{0} + \frac{1}{2 i \pi C_{2} f + \frac{1}{R_{1}}} + \frac{1}{Y_{4} \left(2 i \pi f\right)^{n_{4}} + \frac{1}{R_{3}}}"
+        ), text
+
+    @next_step(validate_copy_latex_expression)
+    def copy_latex_expression():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_expression)
+    def validate_copy_latex_circuit():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(r"\begin{circuitikz}") and text.endswith(
+            r"\end{circuitikz}"
+        ), text
+
+    @next_step(validate_copy_latex_circuit)
+    def copy_latex_circuit():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_latex_circuit)
+    def validate_copy_json_statistics():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith('{"Label":{"0":"') and text.endswith('"}}'), text
+
+    @next_step(validate_copy_json_statistics)
+    def copy_json_statistics():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_json_statistics)
+    def validate_copy_json_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith('{"Element":{"0":"') and text.endswith('"}}'), text
+
+    @next_step(validate_copy_json_parameters)
+    def copy_json_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_json_parameters)
+    def validate_copy_csv_statistics():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("Label,Value"), text
+
+    @next_step(validate_copy_csv_statistics)
+    def copy_csv_statistics():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_statistics)
+    def validate_copy_csv_parameters():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("Element,Parameter,Value,Std. err. (%),Unit,Fixed"), text
+
+    @next_step(validate_copy_csv_parameters)
+    def copy_csv_parameters():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_parameters)
+    def validate_copy_csv_impedance():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith(
+            "f (Hz),Re(Z) (ohm) - Data,Im(Z) (ohm) - Data,Re(Z) (ohm) - Fit,Im(Z) (ohm) - Fit"
+        ), text
+
+    @next_step(validate_copy_csv_impedance)
+    def copy_csv_impedance():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_csv_impedance)
+    def validate_copy_extended_cdc():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text.startswith("[R{R=") and text.endswith("})]"), text
+
+    @next_step(validate_copy_extended_cdc)
+    def copy_extended_cdc():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_extended_cdc)
+    def validate_copy_basic_cdc():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        assert text == "[R(RC)(RQ)]", text
+
+    @next_step(validate_copy_basic_cdc)
+    def copy_basic_cdc():
+        output = outputs.pop(0)
+        print(f"  - Copy: {output}")
+        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        perform_action(action=Action.COPY_OUTPUT)
+
+    @next_step(copy_basic_cdc)
+    def validate_copy_bode():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "f (Hz) - Data (scatter),Mod(Z) (ohm) - Data (scatter),-Phase(Z) (°) - Data (scatter),f (Hz) - Fit (scatter),Mod(Z) (ohm) - Fit (scatter),-Phase(Z) (°) - Fit (scatter),f (Hz) - Fit (line),Mod(Z) (ohm) - Fit (line),-Phase(Z) (°) - Fit (line)"
+        ), headers
+
+    @next_step(validate_copy_bode)
+    def copy_bode():
+        print("  - Copy Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_BODE_DATA)
+
+    @next_step(copy_bode)
+    def validate_copy_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "Re(Z) (ohm) - Data (scatter),-Im(Z) (ohm) - Data (scatter),Re(Z) (ohm) - Fit (scatter),-Im(Z) (ohm) - Fit (scatter),Re(Z) (ohm) - Fit (line),-Im(Z) (ohm) - Fit (line)"
+        ), headers
+
+    @next_step(validate_copy_nyquist)
+    def copy_nyquist():
+        print("  - Copy Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_NYQUIST_DATA)
+
+    @next_step(copy_nyquist)
+    def validate_copy_residuals():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert headers == "f (Hz),real_error (%),imag_error (%)", headers
+
+    @next_step(validate_copy_residuals)
+    def copy_residuals():
+        print("  - Copy residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_RESIDUALS_DATA)
+
+    @next_step(copy_residuals)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
         STATE.active_modal_window_object.close()
 
-    @next_step(close_residuals)
+    @next_step(validate_enlarge_impedance)
+    def enlarge_impedance():
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
+
+    @next_step(enlarge_impedance)
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_bode)
+    def enlarge_bode():
+        print("  - Enlarge Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
+
+    @next_step(enlarge_bode)
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_nyquist)
+    def enlarge_nyquist():
+        print("  - Enlarge Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
+
+    @next_step(enlarge_nyquist)
+    def validate_enlarge_residuals():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_residuals)
     def enlarge_residuals():
         print("  - Enlarge residuals")
-        project_tab.kramers_kronig_tab.show_enlarged_residuals()
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_RESIDUALS)
 
     @next_step(enlarge_residuals)
+    def validate_apply_mask():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert list(data.get_mask().values()).count(True) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_apply_mask)
+    def apply_mask():
+        print("  - Apply mask")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask={},
+        )
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask=project_tab.get_active_fit().mask,
+        )
+
+    @next_step(apply_mask)
     def validate_apply_settings():
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.test_combo)
-            == "Complex"
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.mode_combo)
-            == "Auto"
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.num_RC_slider)
-            == 15
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.add_cap_checkbox)
-            is True
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.add_ind_checkbox)
-            is True
-        )
-        assert isclose(
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.mu_crit_slider),
-            0.85,
-            rel_tol=1e-6,
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.method_combo)
-            == "Auto"
-        )
-        assert (
-            dpg.get_value(project_tab.kramers_kronig_tab.settings_menu.max_nfev_input)
-            == 1000
-        )
-        settings = project_tab.kramers_kronig_tab.settings_menu.get_settings()
-        assert settings.test == Test.COMPLEX
-        assert settings.mode == TestMode.AUTO
-        assert settings.num_RC == 15
-        assert settings.add_capacitance is True
-        assert settings.add_inductance is True
-        assert isclose(
-            settings.mu_criterion,
-            0.85,
-            rel_tol=1e-6,
-        )
-        assert settings.method == CNLSMethod.AUTO
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_fit_settings()
+        assert parse_cdc(settings.cdc).to_string() == "[R(RC)(RQ)]"
+        assert settings.method == CNLSMethod.POWELL
+        assert settings.weight == Weight.PROPORTIONAL
         assert settings.max_nfev == 1000
 
     @next_step(validate_apply_settings)
     def apply_settings():
-        print("  - Apply test settings")
-        test = project_tab.get_active_test()
-        signals.emit(Signal.APPLY_TEST_SETTINGS, settings=test.settings)
+        print("  - Apply setting")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_FIT_SETTINGS,
+            settings=project_tab.get_active_fit().settings,
+        )
 
     @next_step(apply_settings)
-    def validate_select_next_result():
-        data = project_tab.get_active_data_set()
-        assert data is not None
-        tests = project.get_tests(data)
-        assert project_tab.get_active_test() == tests[1]
-
-    @next_step(validate_select_next_result)
-    def select_next_result():
-        print("  - Select next result")
-        STATE.keybinding_handler.perform_action(
-            Action.NEXT_SECONDARY_RESULT,
-            Context.KRAMERS_KRONIG_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
-        )
-
-    @next_step(select_next_result)
-    def validate_perform_test():
-        data = project_tab.get_active_data_set()
-        assert len(project.get_tests(data)) == 2
-
-    @next_step(validate_perform_test)
-    def perform_test():
-        print("  - Perform test")
-        data = project_tab.get_active_data_set()
-        settings = TestSettings(
-            Test.COMPLEX,
-            TestMode.AUTO,
-            data.get_num_points(),
-            0.85,
-            True,
-            True,
-            CNLSMethod.AUTO,
-            1000,
-        )
-        signals.emit(Signal.PERFORM_TEST, data=data, settings=settings)
-        sleep(1.0)
-        settings = TestSettings(
-            Test.COMPLEX,
-            TestMode.AUTO,
-            int(data.get_num_points() / 3),
-            0.85,
-            True,
-            True,
-            CNLSMethod.AUTO,
-            1000,
-        )
-        signals.emit(Signal.PERFORM_TEST, data=data, settings=settings)
-
-    @next_step(perform_test)
     def validate_delete_result():
+        assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
-        assert len(project.get_tests(data)) == 0
+        assert len(project.get_fits(data)) == 1
+        signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_delete_result)
     def delete_result():
-        print("  - Delete test result")
+        print("  - Delete result")
+        perform_action(action=Action.DELETE_RESULT)
+
+    @next_step(delete_result)
+    def cycle_results():
+        print("  - Cycle results")
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+
+    @next_step(cycle_results)
+    def validate_perform_fit():
+        assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
-        test = project_tab.get_active_test()
-        signals.emit(Signal.DELETE_TEST_RESULT, data=data, test=test)
+        assert len(project.get_fits(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
 
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_KRAMERS_KRONIG_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- Kramers-Kronig")
-    Timer(1.0, delete_result).start()
+    @next_step(validate_perform_fit)
+    def perform_fit():
+        print("  - Perform fit")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_FIT_SETTINGS,
+            settings=FitSettings(
+                cdc=parse_cdc("R(RC)(RW)").to_string(),
+                method=CNLSMethod.LEASTSQ,
+                weight=Weight.BOUKAMP,
+                max_nfev=1000,
+            ),
+        )
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(perform_fit)
+    def validate_parameter_adjustment():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_fit_settings()
+        circuit = parse_cdc(settings.cdc)
+        assert isclose(circuit.get_elements()[0].get_value("R"), 950.15)
+
+    @next_step(validate_parameter_adjustment)
+    def parameter_adjustment():
+        print("  - Parameter adjustment")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.ADJUST_PARAMETERS)
+        sleep(0.5)
+        STATE.active_modal_window_object.circuit.get_elements()[0].set_values(R=950.15)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(parameter_adjustment)
+    def validate_circuit_editor():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_fit_settings()
+        assert parse_cdc(settings.cdc).to_string() == "[R(RC)(RQ)]"
+
+    @next_step(validate_circuit_editor)
+    def circuit_editor():
+        print("  - Circuit editor")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_FIT_SETTINGS,
+            settings=FitSettings(
+                cdc=parse_cdc("R(RC)(RQ)").to_string(),
+                method=CNLSMethod.POWELL,
+                weight=Weight.PROPORTIONAL,
+                max_nfev=1000,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.SHOW_CIRCUIT_EDITOR)
+        sleep(0.5)
+        editor = STATE.active_modal_window_object
+        editor.node_clicked(editor.node_handler, (0, editor.parser.nodes[0].tag))
+        sleep(0.5)
+        editor.callback(dpg.get_item_user_data(editor.accept_button))
+
+    @next_step(circuit_editor)
+    def cycle_data_sets():
+        print("  - Cycle data sets")
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_data_sets)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_FITTING_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Fitting tab")
+    switch_tab()
 
 
-def test_data_sets():
+def test_zhit_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
-    data: Optional[DataSet]
-    mask: Dict[int, bool]
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.ZHIT_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
 
-    @next_step(test_kramers_kronig)
-    def close_bode():
+    @next_step(test_fitting_tab)
+    def validate_copy_bode():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "f (Hz) - Data (scatter),Mod(Z) (ohm) - Data (scatter),-Phase(Z) (°) - Data (scatter),f (Hz) - Fit (scatter),Mod(Z) (ohm) - Fit (scatter),-Phase(Z) (°) - Fit (scatter),f (Hz) - Fit (line),Mod(Z) (ohm) - Fit (line),-Phase(Z) (°) - Fit (line)"
+        ), headers
+
+    @next_step(validate_copy_bode)
+    def copy_bode():
+        print("  - Copy Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_BODE_DATA)
+
+    @next_step(copy_bode)
+    def validate_copy_residuals():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert headers == "f (Hz),real_error (%),imag_error (%)", headers
+
+    @next_step(validate_copy_residuals)
+    def copy_residuals():
+        print("  - Copy residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_RESIDUALS_DATA)
+
+    @next_step(copy_residuals)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
         STATE.active_modal_window_object.close()
 
-    @next_step(close_bode)
+    @next_step(validate_enlarge_impedance)
+    def enlarge_impedance():
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
+
+    @next_step(enlarge_impedance)
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_bode)
     def enlarge_bode():
         print("  - Enlarge Bode")
-        project_tab.data_sets_tab.show_enlarged_bode()
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
 
     @next_step(enlarge_bode)
-    def close_nyquist():
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
         STATE.active_modal_window_object.close()
 
-    @next_step(close_nyquist)
+    @next_step(validate_enlarge_nyquist)
     def enlarge_nyquist():
         print("  - Enlarge Nyquist")
-        project_tab.data_sets_tab.show_enlarged_nyquist()
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
 
     @next_step(enlarge_nyquist)
-    def validate_delete_data_set():
-        data = project_tab.get_active_data_set()
-        assert len(project.get_data_sets()) == 1
-        assert len(project.get_all_tests()) == 1
-        assert len(project.get_all_fits()) == 1
-        assert data.get_label() == "Noisier data"
-
-    @next_step(validate_delete_data_set)
-    def delete_data_set():
-        print("  - Delete data set")
-        data = project_tab.get_active_data_set()
-        signals.emit(Signal.DELETE_DATA_SET, data=data)
-
-    @next_step(delete_data_set)
-    def validate_copy_mask():
-        data = project_tab.get_active_data_set()
-        assert data.get_num_points() == 15
-
-    @next_step(validate_copy_mask)
-    def copy_mask_2():
+    def validate_enlarge_residuals():
+        assert STATE.is_project_dirty(project) is False
         assert STATE.active_modal_window_object is not None
-        STATE.active_modal_window_object.accept()
+        STATE.active_modal_window_object.close()
 
-    @next_step(copy_mask_2)
-    def copy_mask_1():
-        print("  - Copy mask")
+    @next_step(validate_enlarge_residuals)
+    def enlarge_residuals():
+        print("  - Enlarge residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_RESIDUALS)
+
+    @next_step(enlarge_residuals)
+    def validate_load_as_data_set():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 3
         signals.emit(
-            Signal.SELECT_DATA_SET_MASK_TO_COPY,
+            Signal.DELETE_DATA_SET,
             data=project_tab.get_active_data_set(),
         )
+        signals.emit(Signal.SAVE_PROJECT)
+        assert len(project.get_data_sets()) == 2
 
-    @next_step(copy_mask_1)
-    def validate_toggle_data_points():
-        data = project_tab.get_active_data_set()
-        assert data.get_num_points() == 0
+    @next_step(validate_load_as_data_set)
+    def load_as_data_set():
+        print("  - Load as data set")
+        perform_action(action=Action.LOAD_ZHIT_AS_DATA_SET)
 
-    @next_step(validate_toggle_data_points)
-    def toggle_data_points_2():
-        assert STATE.active_modal_window_object is not None
-        STATE.active_modal_window_object.accept()
-
-    @next_step(toggle_data_points_2)
-    def toggle_data_points_1():
-        print("  - Toggle data points")
-        signals.emit(
-            Signal.SELECT_DATA_POINTS_TO_TOGGLE,
-            data=project_tab.get_active_data_set(),
-        )
-
-    @next_step(toggle_data_points_1)
-    def validate_subtract_impedance():
-        data = project_tab.get_active_data_set()
-        assert isclose(data.get_impedance()[0].real, 59, abs_tol=1e-1)
-
-    @next_step(validate_subtract_impedance)
-    def subtract_impedance_4():
-        STATE.active_modal_window_object.accept()
-
-    @next_step(subtract_impedance_4)
-    def subtract_impedance_3():
-        assert STATE.active_modal_window_object is not None
-        dpg.set_value(STATE.active_modal_window_object.constant_real, 50)
-        STATE.active_modal_window_object.update_preview()
-
-    @next_step(subtract_impedance_3)
-    def subtract_impedance_2():
-        signals.emit(
-            Signal.SELECT_IMPEDANCE_TO_SUBTRACT,
-            data=project_tab.get_active_data_set(),
-        )
-
-    @next_step(subtract_impedance_2)
-    def subtract_impedance_1():
-        print("  - Subtract impedance")
-        STATE.keybinding_handler.perform_action(
-            Action.NEXT_PRIMARY_RESULT,
-            Context.DATA_SETS_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
-        )
-
-    @next_step(subtract_impedance_1)
+    @next_step(load_as_data_set)
     def validate_apply_mask():
+        assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
-        assert len(data.get_impedance(masked=None)) == 29
-        assert len(data.get_impedance(masked=False)) == len(data.get_impedance()) == 15
-        assert len(data.get_impedance(masked=True)) == 14
+        assert list(data.get_mask().values()).count(True) == 2
+        signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_apply_mask)
     def apply_mask():
-        print("  - Apply data set mask")
+        print("  - Apply mask")
+        assert STATE.is_project_dirty(project) is False
         data = project_tab.get_active_data_set()
-        mask = {_: _ % 2 == 1 for _ in range(0, data.get_num_points())}
-        signals.emit(Signal.APPLY_DATA_SET_MASK, data=data, mask=mask)
-
-    @next_step(apply_mask)
-    def validate_rename_data_set():
-        data = project_tab.get_active_data_set()
-        assert data.get_label() == "Noisier data"
-
-    @next_step(validate_rename_data_set)
-    def rename_data_set():
-        print("  - Rename data set")
-        data = project_tab.get_active_data_set()
-        signals.emit(Signal.RENAME_DATA_SET, label="Noisier data", data=data)
-
-    @next_step(rename_data_set)
-    def validate_select_data_set():
-        data = project_tab.get_active_data_set()
-        assert data.get_label() == "Noisy data"
-
-    @next_step(validate_select_data_set)
-    def select_data_set():
-        print("  - Select data set")
-        data = project_tab.get_active_data_set()
-        signals.emit(Signal.SELECT_DATA_SET, data=data)
-
-    @next_step(select_data_set)
-    def validate_modify_path():
-        data = project_tab.get_active_data_set()
-        assert data.get_path() == "A path"
-
-    @next_step(validate_modify_path)
-    def modify_path():
-        print("  - Modify data set path")
-        data = project_tab.get_active_data_set()
-        signals.emit(Signal.MODIFY_DATA_SET_PATH, path="A path", data=data)
-
-    @next_step(modify_path)
-    def validate_select_next_data_set():
-        data = project_tab.get_active_data_set()
-        assert data.get_label() == "Noisy data"
-
-    @next_step(validate_select_next_data_set)
-    def select_next_data_set():
-        print("  - Select next data set")
-        STATE.keybinding_handler.perform_action(
-            Action.NEXT_PRIMARY_RESULT,
-            Context.DATA_SETS_TAB,
-            STATE.get_active_project(),
-            STATE.get_active_project_tab(),
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask={},
+        )
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask=project_tab.get_active_zhit().mask,
         )
 
-    @next_step(select_next_data_set)
-    def validate_average_data_sets():
-        data = project_tab.get_active_data_set()
-        assert data.get_label() == "Average"
-        assert len(project.get_data_sets()) == 3
-        signals.emit(Signal.DELETE_DATA_SET, data=data)
+    @next_step(apply_mask)
+    def validate_apply_settings():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_zhit_settings()
+        assert settings.smoothing == ZHITSmoothing.LOWESS
+        assert settings.num_points == 3, settings.num_points
+        assert settings.polynomial_order == 1, settings.polynomial_order
+        assert settings.num_iterations == 3, settings.num_iterations
+        assert settings.interpolation == ZHITInterpolation.AKIMA
+        assert settings.window == ZHITWindow.HAMMING
+        assert isclose(
+            settings.window_center, 1.6, abs_tol=1e-6
+        ), settings.window_center
+        assert isclose(settings.window_width, 2.0, abs_tol=1e-6), settings.window_width
 
-    @next_step(validate_average_data_sets)
-    def average_data_sets_3():
+    @next_step(validate_apply_settings)
+    def apply_settings():
+        print("  - Apply setting")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_ZHIT_SETTINGS,
+            settings=project_tab.get_active_zhit().settings,
+        )
+
+    @next_step(apply_settings)
+    def validate_delete_result():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_zhits(data)) == 1
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_delete_result)
+    def delete_result():
+        print("  - Delete result")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.DELETE_RESULT)
+
+    @next_step(delete_result)
+    def cycle_results():
+        print("  - Cycle results")
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+        sleep(0.5)
+
+    @next_step(cycle_results)
+    def validate_perform_nonsmoothed_analysis():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_zhits(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_nonsmoothed_analysis)
+    def perform_nonsmoothed_analysis():
+        print("  - Perform nonsmoothed analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_ZHIT_SETTINGS,
+            settings=ZHITSettings(
+                smoothing=ZHITSmoothing.NONE,
+                num_points=5,
+                polynomial_order=2,
+                num_iterations=3,
+                interpolation=ZHITInterpolation.CUBIC,
+                window=ZHITWindow.BOXCAR,
+                window_center=1.5,
+                window_width=2.0,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
         STATE.active_modal_window_object.accept()
 
-    @next_step(average_data_sets_3)
-    def average_data_sets_2():
+    @next_step(perform_nonsmoothed_analysis)
+    def validate_perform_smoothed_analysis():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_zhits(data)) == 1
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_smoothed_analysis)
+    def perform_smoothed_analysis():
+        print("  - Perform smoothed analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_ZHIT_SETTINGS,
+            settings=ZHITSettings(
+                smoothing=ZHITSmoothing.LOWESS,
+                num_points=3,
+                polynomial_order=1,
+                num_iterations=3,
+                interpolation=ZHITInterpolation.AKIMA,
+                window=ZHITWindow.HAMMING,
+                window_center=1.6,
+                window_width=2.0,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_smoothed_analysis)
+    def preview_weights():
+        print("  - Preview weights")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.PREVIEW_ZHIT_WEIGHTS)
+        sleep(0.5)
+        STATE.active_modal_window_object.cycle(index=0)
+        sleep(0.5)
+        STATE.active_modal_window_object.cycle(step=-1)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(preview_weights)
+    def cycle_data_sets():
+        print("  - Cycle data sets")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_data_sets)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_ZHIT_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Z-HIT tab")
+    switch_tab()
+
+
+def test_kramers_kronig_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.KRAMERS_KRONIG_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step(test_zhit_tab)
+    def validate_copy_bode():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "f (Hz) - Data (scatter),Mod(Z) (ohm) - Data (scatter),-Phase(Z) (°) - Data (scatter),f (Hz) - Fit (scatter),Mod(Z) (ohm) - Fit (scatter),-Phase(Z) (°) - Fit (scatter),f (Hz) - Fit (line),Mod(Z) (ohm) - Fit (line),-Phase(Z) (°) - Fit (line)"
+        ), headers
+
+    @next_step(validate_copy_bode)
+    def copy_bode():
+        print("  - Copy Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_BODE_DATA)
+
+    @next_step(copy_bode)
+    def validate_copy_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert (
+            headers
+            == "Re(Z) (ohm) - Data (scatter),-Im(Z) (ohm) - Data (scatter),Re(Z) (ohm) - Fit (scatter),-Im(Z) (ohm) - Fit (scatter),Re(Z) (ohm) - Fit (line),-Im(Z) (ohm) - Fit (line)"
+        ), headers
+
+    @next_step(validate_copy_nyquist)
+    def copy_nyquist():
+        print("  - Copy Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_NYQUIST_DATA)
+
+    @next_step(copy_nyquist)
+    def validate_copy_residuals():
+        assert STATE.is_project_dirty(project) is False
+        text = dpg.get_clipboard_text().strip()
+        headers = text.split("\n")[0].strip()
+        assert headers == "f (Hz),real_error (%),imag_error (%)", headers
+
+    @next_step(validate_copy_residuals)
+    def copy_residuals():
+        print("  - Copy residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_RESIDUALS_DATA)
+
+    @next_step(copy_residuals)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_impedance)
+    def enlarge_impedance():
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
+
+    @next_step(enlarge_impedance)
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_bode)
+    def enlarge_bode():
+        print("  - Enlarge Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
+
+    @next_step(enlarge_bode)
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_nyquist)
+    def enlarge_nyquist():
+        print("  - Enlarge Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
+
+    @next_step(enlarge_nyquist)
+    def validate_enlarge_residuals():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_residuals)
+    def enlarge_residuals():
+        print("  - Enlarge residuals")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_RESIDUALS)
+
+    @next_step(enlarge_residuals)
+    def validate_apply_mask():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert list(data.get_mask().values()).count(True) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_apply_mask)
+    def apply_mask():
+        print("  - Apply mask")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask={},
+        )
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_DATA_SET_MASK,
+            data=data,
+            mask=project_tab.get_active_test().mask,
+        )
+
+    @next_step(apply_mask)
+    def validate_apply_settings():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_test_settings()
+        assert settings.test == Test.REAL
+        assert settings.mode == TestMode.AUTO
+
+    @next_step(validate_apply_settings)
+    def apply_settings():
+        print("  - Apply setting")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_TEST_SETTINGS,
+            settings=project_tab.get_active_test().settings,
+        )
+
+    @next_step(apply_settings)
+    def validate_delete_result():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_tests(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_delete_result)
+    def delete_result():
+        print("  - Delete result")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.DELETE_RESULT)
+
+    @next_step(delete_result)
+    def cycle_results():
+        print("  - Cycle results")
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_SECONDARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_SECONDARY_RESULT)
+        sleep(0.5)
+
+    @next_step(cycle_results)
+    def validate_perform_exploratory_complex():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_tests(data)) == 3
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_exploratory_complex)
+    def perform_exploratory_complex():
+        print("  - Perform exploratory complex test")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_TEST_SETTINGS,
+            settings=TestSettings(
+                test=Test.COMPLEX,
+                mode=TestMode.EXPLORATORY,
+                num_RC=25,
+                mu_criterion=0.8,
+                add_capacitance=True,
+                add_inductance=True,
+                method=CNLSMethod.LEASTSQ,
+                max_nfev=1,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept(
+            result=dpg.get_item_user_data(
+                STATE.active_modal_window_object.accept_button
+            )
+        )
+
+    @next_step(perform_exploratory_complex)
+    def validate_perform_automatic_real():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_tests(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_automatic_real)
+    def perform_automatic_real():
+        print("  - Perform automatic real test")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_TEST_SETTINGS,
+            settings=TestSettings(
+                test=Test.REAL,
+                mode=TestMode.AUTO,
+                num_RC=16,
+                mu_criterion=0.7,
+                add_capacitance=True,
+                add_inductance=True,
+                method=CNLSMethod.LEASTSQ,
+                max_nfev=1,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(perform_automatic_real)
+    def validate_perform_manual_cnls():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_tests(data)) == 1
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_manual_cnls)
+    def perform_manual_cnls():
+        print("  - Perform manual CNLS test")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_TEST_SETTINGS,
+            settings=TestSettings(
+                test=Test.CNLS,
+                mode=TestMode.MANUAL,
+                num_RC=7,
+                mu_criterion=0.0,
+                add_capacitance=True,
+                add_inductance=True,
+                method=CNLSMethod.LEASTSQ,
+                max_nfev=100,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+
+    @next_step(perform_manual_cnls)
+    def cycle_data_sets():
+        print("  - Cycle data sets")
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(action=Action.PREVIOUS_PRIMARY_RESULT)
+
+    @next_step(cycle_data_sets)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_KRAMERS_KRONIG_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Kramers-Kronig tab")
+    switch_tab()
+
+
+def test_data_sets_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.DATA_SETS_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step(test_kramers_kronig_tab)
+    def validate_mask_points():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert data.get_num_points() == data.get_num_points(masked=None) - 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_mask_points)
+    def mask_points():
+        print("  - Mask points")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        signals.emit(Signal.TOGGLE_DATA_POINT, state=True, index=1, data=data)
+        sleep(0.5)
+        signals.emit(Signal.TOGGLE_DATA_POINT, state=True, index=7, data=data)
+        sleep(0.5)
+        signals.emit(Signal.TOGGLE_DATA_POINT, state=True, index=8, data=data)
+        sleep(0.5)
+        signals.emit(Signal.TOGGLE_DATA_POINT, state=False, index=8, data=data)
+
+    @next_step(mask_points)
+    def validate_delete_data_sets():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_delete_data_sets)
+    def delete_data_sets():
+        print("  - Delete data sets")
+        assert STATE.is_project_dirty(project) is False
+        data_sets = [
+            _ for _ in project.get_data_sets() if _.get_label() not in ("Foo", "Baz")
+        ]
+        for data in data_sets:
+            signals.emit(Signal.DELETE_DATA_SET, data=data)
+            sleep(0.5)
+
+    @next_step(delete_data_sets)
+    def validate_enlarge_impedance():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_impedance)
+    def enlarge_impedance():
+        print("  - Enlarge Real & Imag.")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_IMPEDANCE)
+
+    @next_step(enlarge_impedance)
+    def validate_enlarge_bode():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_bode)
+    def enlarge_bode():
+        print("  - Enlarge Bode")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_BODE)
+
+    @next_step(enlarge_bode)
+    def validate_enlarge_nyquist():
+        assert STATE.is_project_dirty(project) is False
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(validate_enlarge_nyquist)
+    def enlarge_nyquist():
+        print("  - Enlarge Nyquist")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SHOW_ENLARGED_NYQUIST)
+
+    @next_step(enlarge_nyquist)
+    def validate_copy_mask():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert data.get_num_points() == data.get_num_points(masked=None)
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_copy_mask)
+    def copy_mask():
+        print("  - Copy mask")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.COPY_DATA_SET_MASK)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(copy_mask)
+    def validate_toggle_points():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert data.get_num_points() == 0
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_toggle_points)
+    def toggle_points():
+        print("  - Toggle points")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.TOGGLE_DATA_POINTS)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(toggle_points)
+    def validate_subtract_impedances():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 5
+        data = project_tab.get_active_data_set()
+        assert data.get_label() == "Average - interpolated - subtracted"
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_subtract_impedances)
+    def subtract_impedances():
+        print("  - Subtract")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SUBTRACT_IMPEDANCE)
+        sleep(0.5)
+        dpg.set_value(STATE.active_modal_window_object.constant_real, 150)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(subtract_impedances)
+    def validate_interpolate_data_points():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 4
+        data = project_tab.get_active_data_set()
+        assert data.get_label() == "Average - interpolated"
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_interpolate_data_points)
+    def interpolate_data_points():
+        print("  - Interpolate")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        perform_action(action=Action.INTERPOLATE_POINTS)
+        sleep(0.5)
+        for i in range(0, data.get_num_points(masked=None)):
+            if i % 2 == 0:
+                continue
+            row = STATE.active_modal_window_object.get_rows()[i]
+            checkbox = STATE.active_modal_window_object.get_checkbox(row)
+            dpg.set_value(checkbox, True)
+            STATE.active_modal_window_object.toggle_point(index=i, state=True)
+            sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(interpolate_data_points)
+    def validate_average_data_sets():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 3
+        data = project_tab.get_active_data_set()
+        assert data.get_label() == "Average"
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_average_data_sets)
+    def average_data_sets():
+        print("  - Average")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.AVERAGE_DATA_SETS)
+        sleep(0.5)
         assert STATE.active_modal_window_object is not None
         row: int
         for row in dpg.get_item_children(
-            STATE.active_modal_window_object.dataset_table,
+            STATE.active_modal_window_object.data_set_table,
             slot=1,
         ):
             dpg.set_value(dpg.get_item_children(row, slot=1)[0], True)
         STATE.active_modal_window_object.update_preview([])
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
 
-    @next_step(average_data_sets_2)
-    def average_data_sets_1():
-        print("  - Average data sets")
-        signals.emit(Signal.SELECT_DATA_SETS_TO_AVERAGE)
+    @next_step(average_data_sets)
+    def validate_cycle_rename_data_sets():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert data is project.get_data_sets()[1]
+        assert data.get_label() == "Foo"
+        assert data.get_path() == "Bar"
+        data = project.get_data_sets()[0]
+        assert data.get_label() == "Baz"
+        assert data.get_path() == "Foo"
+        signals.emit(Signal.SAVE_PROJECT)
 
-    STATE.keybinding_handler.perform_action(
-        Action.SELECT_DATA_SETS_TAB,
-        Context.PROJECT,
-        STATE.get_active_project(),
-        STATE.get_active_project_tab(),
-    )
-    print("\n- Data sets")
-    Timer(1.0, average_data_sets_1).start()
+    @next_step(validate_cycle_rename_data_sets)
+    def cycle_rename_data_sets():
+        print("  - Cycle, rename, and modify path")
+        assert STATE.is_project_dirty(project) is False
+        data = project_tab.get_active_data_set()
+        signals.emit(Signal.RENAME_DATA_SET, data=data, label="Foo")
+        sleep(0.5)
+        signals.emit(Signal.MODIFY_DATA_SET_PATH, data=data, path="Bar")
+        sleep(0.5)
+        perform_action(Action.NEXT_PRIMARY_RESULT)
+        sleep(0.5)
+        data = project_tab.get_active_data_set()
+        signals.emit(Signal.RENAME_DATA_SET, data=data, label="Baz")
+        sleep(0.5)
+        signals.emit(Signal.MODIFY_DATA_SET_PATH, data=data, path="Foo")
+        sleep(0.5)
+        perform_action(Action.PREVIOUS_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(Action.PREVIOUS_PRIMARY_RESULT)
+        sleep(0.5)
+        perform_action(Action.NEXT_PRIMARY_RESULT)
+
+    @next_step(cycle_rename_data_sets)
+    def validate_load_data():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_load_data)
+    def load_data():
+        print("  - Load")
+        assert STATE.is_project_dirty(project) is False
+        path: str = join(PARENT_FOLDER, "data-2.csv")
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=[path])
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=[path])
+
+    @next_step(load_data)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_DATA_SETS_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Data sets tab")
+    switch_tab()
+
+
+def test_overview_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+
+    @next_step(test_data_sets_tab)
+    def validate_modify_notes():
+        assert STATE.is_project_dirty(project) is True
+        assert project.get_notes() == "FOO BAR BAZ"
+        assert project_tab.get_notes() == "FOO BAR BAZ"
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_modify_notes)
+    def modify_notes():
+        print("  - Modify notes")
+        assert STATE.is_project_dirty(project) is False
+        project_tab.set_notes("FOO BAR BAZ")
+        signals.emit(Signal.MODIFY_PROJECT_NOTES, timers=[])
+
+    @next_step(modify_notes)
+    def validate_rename_project():
+        assert project.get_label() == "Test project"
+        assert dpg.get_item_label(project_tab.tab) == "Test project"
+        assert STATE.is_project_dirty(project) is True
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_rename_project)
+    def rename_project():
+        print("  - Rename project")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(Signal.RENAME_PROJECT, label="Test project")
+
+    print("\n- Overview tab")
+    rename_project()
 
 
 def test_project():
-    project: Optional[Project]
-    project_tab: Optional[ProjectTab]
-    data_sets: List[DataSet]
-    path: str
+    project: Optional[Project] = None
+    path = join(TMP_FOLDER, "deareis_temporary_test_project.json")
+    if exists(path):
+        remove(path)
 
-    # TODO: Implement, if possible
-    # print("  - Modify notes")
-    @next_step(test_data_sets)
-    def validate_rename():
+    @next_step(test_overview_tab)
+    def validate_load_project():
+        nonlocal project
+        assert len(STATE.projects) == 1
         project = STATE.get_active_project()
-        project_tab = STATE.get_active_project_tab()
-        assert (
-            project.get_label()
-            == dpg.get_item_label(project_tab.tab)
-            == "New project label"
-        )
+        assert STATE.is_project_dirty(project) is False
 
-    @next_step(validate_rename)
-    def rename():
-        print("  - Rename")
-        signals.emit(Signal.RENAME_PROJECT, label="New project label")
+    @next_step(validate_load_project)
+    def load_project():
+        print("  - Load")
+        signals.emit(Signal.CLOSE_PROJECT, force=True)
+        sleep(0.5)
+        signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
 
-    @next_step(rename)
+    @next_step(load_project)
+    def validate_saved_project():
+        assert exists(path)
+        assert STATE.is_project_dirty(project) is False
+
+    @next_step(validate_saved_project)
+    def save_project():
+        print("  - Save")
+        signals.emit(Signal.SAVE_PROJECT, path=path)
+
+    @next_step(save_project)
+    def validate_blank_project():
+        nonlocal project
+        assert len(STATE.projects) == 1
+        project = STATE.get_active_project()
+        assert project.get_label() == "Project"
+        assert STATE.is_project_dirty(project) is True
+
+    @next_step(validate_blank_project)
+    def create_project():
+        print("  - Create")
+        signals.emit(Signal.NEW_PROJECT)
+
+    print("\n- Project")
+    create_project()
+
+
+def test_project_versions():
+    project_paths: List[str] = []
+    for _, _, files in walk(PARENT_FOLDER):
+        files.sort()
+        break
+    project_paths = [
+        join(PARENT_FOLDER, _)
+        for _ in files
+        if _.startswith("example-project-v") and _.endswith(".json")
+    ]
+    assert len(project_paths) > 0
+    actions = [
+        Action.SELECT_DATA_SETS_TAB,
+        Action.SELECT_KRAMERS_KRONIG_TAB,
+        Action.SELECT_ZHIT_TAB,
+        Action.SELECT_DRT_TAB,
+        Action.SELECT_FITTING_TAB,
+        Action.SELECT_SIMULATION_TAB,
+        Action.SELECT_PLOTTING_TAB,
+        Action.SELECT_OVERVIEW_TAB,
+    ]
+
+    @next_step()
+    def close():
+        while len(STATE.projects) > 0:
+            signals.emit(Signal.CLOSE_PROJECT, force=True)
+            sleep(0.5)
+
+    @next_step(close)
+    def load():
+        num_projects = len(project_paths)
+        while project_paths:
+            path = project_paths.pop(0)
+            print(f"  - {basename(path)}")
+            signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
+            sleep(0.5)
+            project: Optional[Project] = STATE.get_active_project()
+            project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+            for action in actions:
+                STATE.keybinding_handler.perform_action(
+                    action=action,
+                    context=Context.PROJECT,
+                    project=project,
+                    project_tab=project_tab,
+                )
+                sleep(0.5)
+        assert len(STATE.projects) == num_projects, num_projects
+
+    print("\n- Project versions")
+    load()
+
+
+def test_ancillary_windows():
+    @next_step()
+    def error_message():
+        print("  - Error message")
+        signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback="FOO", message="BAR")
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(error_message)
+    def command_palette():
+        print("  - Command palette")
+        signals.emit(Signal.SHOW_COMMAND_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(command_palette)
+    def help_about():
+        print("  - About")
+        signals.emit(Signal.SHOW_HELP_ABOUT)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(help_about)
+    def help_changelog():
+        print("  - Changelog")
+        signals.emit(Signal.SHOW_CHANGELOG)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(help_changelog)
+    def help_licenses():
+        print("  - Licenses")
+        signals.emit(Signal.SHOW_HELP_LICENSES)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(help_licenses)
+    def settings_user_defined_elements():
+        print("  - User-defined elements")
+        signals.emit(Signal.SHOW_SETTINGS_USER_DEFINED_ELEMENTS)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(settings_user_defined_elements)
+    def settings_keybindings():
+        print("  - Keybindings")
+        signals.emit(Signal.SHOW_SETTINGS_KEYBINDINGS)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(settings_keybindings)
+    def settings_defaults():
+        print("  - Defaults")
+        signals.emit(Signal.SHOW_SETTINGS_DEFAULTS)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(settings_defaults)
+    def settings_appearances():
+        print("  - Appearances")
+        signals.emit(Signal.SHOW_SETTINGS_APPEARANCE)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    @next_step(settings_appearances)
+    def select_project():
+        print("  - Select project")
+        signals.emit(Signal.SELECT_PROJECT_FILES)
+        sleep(0.5)
+        STATE.active_modal_window_object.close()
+
+    print("\n- Ancillary windows")
+    select_project()
+
+
+def test_user_defined_elements():
+    @next_step()
     def validate_load():
-        project = STATE.get_active_project()
-        project_tab = STATE.get_active_project_tab()
-        assert (
-            project.get_label()
-            == dpg.get_item_label(project_tab.tab)
-            == "Example project - Version 4"
-        )
-        assert len(project.get_data_sets()) == 2
-        assert len(project.get_all_tests()) == 2
-        assert len(project.get_all_drts()) == 2
-        assert len(project.get_all_fits()) == 2
-        assert len(project.get_simulations()) == 2
+        assert "Userdefined" in get_elements().keys()
 
     @next_step(validate_load)
     def load():
         print("  - Load")
-        path: str = join(getcwd(), "example-project-v4.json")
-        assert exists(path), path
-        signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
-
-    @next_step(load)
-    def validate_close():
-        project_tab = STATE.get_active_project_tab()
-        assert project_tab is None
-
-    @next_step(validate_close)
-    def close():
-        print("  - Close")
-        signals.emit(Signal.CLOSE_PROJECT, force=True)
-
-    @next_step(close)
-    def validate_load_data():
-        project = STATE.get_active_project()
-        data_sets = project.get_data_sets()
-        assert len(data_sets) == 6
-        assert len(project.get_all_tests()) == 6
-        assert len(project.get_all_fits()) == 6
-        assert data_sets[4].get_label() == "Test", data_sets[4].get_label()
-        assert data_sets[5].get_label() == "data-2", data_sets[5].get_label()
-
-    @next_step(validate_load_data)
-    def load_data():
-        print("  - Load data")
-        signals.emit(
-            Signal.LOAD_DATA_SET_FILES,
-            paths=[
-                join(getcwd(), "data-1.idf"),
-                join(getcwd(), "data-2.csv"),
-            ],
+        refresh_user_defined_elements(
+            path=abspath(
+                join(
+                    PARENT_FOLDER,
+                    "user_defined_elements.py",
+                )
+            )
         )
 
-    def validate_merge():
-        project = STATE.get_active_project()
-        project_tab = STATE.get_active_project_tab()
-        assert (
-            project.get_label()
-            == dpg.get_item_label(project_tab.tab)
-            == "Merged project"
-        )
-        assert len(project.get_data_sets()) == 4
-        assert len(project.get_all_tests()) == 4
-        assert len(project.get_all_fits()) == 4
-        load_data()
-
-    @next_step(validate_merge)
-    def merge():
-        print("  - Merge")
-        path = join(getcwd(), "example-project-v3.json")
-        assert exists(path), path
-        signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path, path], merge=True)
-
-    print("\n- Project")
-    Timer(1.0, merge).start()
+    print("\n- User-defined elements")
+    load()
 
 
 def test_overlay():
-    @next_step(test_project)
+    @next_step()
     def progress_bar():
         print("  - Progress bar")
         i: int
@@ -1194,14 +2831,15 @@ def test_overlay():
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Just a message")
 
     print("\n- Overlay")
-    Timer(1.0, message).start()
+    message()
 
 
 def run_tests():
+    message: str
     try:
         assert len(STATE.projects) == 0
     except AssertionError:
-        message: str = "Detected open projects! Try running the tests again once all open projects have been closed."
+        message = "Detected open projects! Try running the tests again once all open projects have been closed."
         signals.emit(
             Signal.SHOW_ERROR_MESSAGE,
             traceback=format_exc(),
@@ -1209,12 +2847,25 @@ def run_tests():
         )
         print(message)
         return
-    print("\nRunning GUI tests...")
+    _initialize_window_functions()
+    try:
+        window: str
+        for window in _WINDOW_FUNCTIONS:
+            assert window in value_to_zhit_window, window
+    except AssertionError:
+        message = "Detected unsupported window function(s)!"
+        signals.emit(
+            Signal.SHOW_ERROR_MESSAGE,
+            traceback=format_exc(),
+            message=message,
+        )
+        print(message)
+        return
     project: Optional[Project] = STATE.get_active_project()
     assert project is None
     global START_TIME
     START_TIME = time()
-    test_overlay()
+    selection_window()
 
 
 def setup_tests():

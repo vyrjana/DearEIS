@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,13 +71,13 @@ def plot(
     project: Project,
     x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
     y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
-    show_title: bool = True,
-    show_legend: Optional[bool] = None,
+    title: bool = True,
+    legend: Optional[bool] = None,
     legend_loc: Union[int, str] = 0,
-    show_grid: bool = False,
+    grid: bool = False,
     tight_layout: bool = False,
-    fig: Optional[Figure] = None,
-    axis: Optional[Axes] = None,
+    figure: Optional[Figure] = None,
+    axes: List[Axes] = None,
     num_per_decade: int = 100,
 ) -> Tuple[Figure, Axes]:
     """
@@ -91,35 +91,39 @@ def plot(
     project: Project
         The project that the plot is a part of.
 
-    x_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
+    x_limits: Optional[Tuple[Optional[float], Optional[float]]], optional
         The lower and upper limits of the x-axis.
 
-    y_limits: Optional[Tuple[Optional[float], Optional[float]]] = None
+    y_limits: Optional[Tuple[Optional[float], Optional[float]]], optional
         The lower and upper limits of the y-axis.
 
-    show_title: bool = True
+    title: bool, optional
         Whether or not to include the title in the figure.
 
-    show_legend: Optional[bool] = None
+    legend: Optional[bool], optional
         Whether or not to include a legend in the figure.
 
-    legend_loc: Union[int, str] = 0
+    legend_loc: Union[int, str], optional
         The position of the legend in the figure. See matplotlib's documentation for valid values.
 
-    show_grid: bool = False
+    grid: bool, optional
         Whether or not to include a grid in the figure.
 
-    tight_layout: bool = False
+    tight_layout: bool, optional
         Whether or not to apply a tight layout that the sizes of the reduces margins.
 
-    fig: Optional[Figure] = None
+    figure: Optional[|Figure|], optional
         The matplotlib.figure.Figure instance to use when plotting the data.
 
-    axis: Optional[Axes] = None
+    axes: List[Axes], optional
         The matplotlib.axes.Axes instance to use when plotting the data.
 
-    num_per_decade: int = 100
+    num_per_decade: int, optional
         If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).
+
+    Returns
+    -------
+    Tuple[|Figure|, List[|Axes|]]
     """
     assert type(settings) is PlotSettings, settings
     assert type(project) is Project, project
@@ -147,14 +151,20 @@ def plot(
             )
         )
     ), y_limits
-    assert type(show_title) is bool, show_title
-    assert type(show_legend) is bool or show_legend is None, show_legend
+    assert type(title) is bool, title
+    assert type(legend) is bool or legend is None, legend
     assert issubdtype(type(legend_loc), integer) or type(legend_loc) is str, legend_loc
-    assert type(show_grid) is bool, show_grid
+    assert type(grid) is bool, grid
     assert type(tight_layout) is bool, tight_layout
-    assert type(fig) is Figure or fig is None
-    if fig is None:
-        fig, axis = plt.subplots()
+    assert type(figure) is Figure or figure is None
+    axis: Axes
+    if figure is None:
+        assert axes is None
+        figure, axis = plt.subplots()
+        axes = [axis]
+    else:
+        assert len(axes) > 0
+        axis = axes[0]
     assert axis is not None
     assert (
         issubdtype(type(num_per_decade), integer) and num_per_decade >= 1
@@ -169,12 +179,13 @@ def plot(
             Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
         ]
         series = settings.find_series(
-            uuid,
-            project.get_data_sets(),
-            project.get_all_tests(),
-            project.get_all_drts(),
-            project.get_all_fits(),
-            project.get_simulations(),
+            uuid=uuid,
+            data_sets=project.get_data_sets(),
+            tests=project.get_all_tests(),
+            zhits=project.get_all_zhits(),
+            drts=project.get_all_drts(),
+            fits=project.get_all_fits(),
+            simulations=project.get_simulations(),
         )
         if series is None:
             continue
@@ -192,8 +203,8 @@ def plot(
         label: Optional[str] = settings.get_series_label(uuid) or series.get_label()
         if label.strip() == "" and label != "":  # type: ignore
             label = ""
-        if label is not None and show_legend is None:
-            show_legend = True
+        if label is not None and legend is None:
+            legend = True
         color: List[float] = list(
             map(lambda _: _ / 255.0, settings.get_series_color(uuid))
         )
@@ -205,144 +216,145 @@ def plot(
             if has_line:
                 mpl.plot_nyquist(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"impedance": color},
+                    markers={"impedance": marker},
                     line=True,
                     label=label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
                 )
             if marker is not None:
                 mpl.plot_nyquist(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"impedance": color},
+                    markers={"impedance": marker},
                     line=False,
                     label="" if has_line else label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
                 )
         elif plot_type == PlotType.BODE_MAGNITUDE:
             if has_line:
-                mpl.plot_impedance_magnitude(
+                mpl.plot_magnitude(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"magnitude": color},
+                    markers={"magnitude": marker},
                     line=True,
                     label=label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
                 )
             if marker is not None:
-                mpl.plot_impedance_magnitude(
+                mpl.plot_magnitude(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"magnitude": color},
+                    markers={"magnitude": marker},
                     line=False,
                     label="" if has_line else label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
                 )
         elif plot_type == PlotType.BODE_PHASE:
             if has_line:
-                mpl.plot_impedance_phase(
+                mpl.plot_phase(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"phase": color},
+                    markers={"phase": marker},
                     line=True,
                     label=label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
                 )
             if marker is not None:
-                mpl.plot_impedance_phase(
+                mpl.plot_phase(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"phase": color},
+                    markers={"phase": marker},
                     line=False,
                     label="" if has_line else label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
                 )
         elif plot_type == PlotType.DRT:
+            num_lines: int = len(axis.lines)
             mpl.plot_gamma(
                 series,
-                color=color,
+                colors={"gamma": color},
                 label=label,
                 legend=False,
-                fig=fig,
-                axis=axis,
+                figure=figure,
+                axes=[axis],
                 adjust_axes=i == num_series - 1,
             )
         elif plot_type == PlotType.IMPEDANCE_REAL:
             if has_line:
-                mpl.plot_real_impedance(
+                mpl.plot_real(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"real": color},
+                    markers={"real": marker},
                     line=True,
                     label=label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
                 )
             if marker is not None:
-                mpl.plot_real_impedance(
+                mpl.plot_real(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"real": color},
+                    markers={"real": marker},
                     line=False,
                     label="" if has_line else label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
                 )
         elif plot_type == PlotType.IMPEDANCE_IMAGINARY:
             if has_line:
-                mpl.plot_imaginary_impedance(
+                mpl.plot_imaginary(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"imaginary": color},
+                    markers={"imaginary": marker},
                     line=True,
                     label=label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
                 )
             if marker is not None:
-                mpl.plot_imaginary_impedance(
+                mpl.plot_imaginary(
                     series,
-                    color=color,
-                    marker=marker,
+                    colors={"imaginary": color},
+                    markers={"imaginary": marker},
                     line=False,
                     label="" if has_line else label,
                     legend=False,
-                    fig=fig,
-                    axis=axis,
+                    figure=figure,
+                    axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
                 )
@@ -352,14 +364,14 @@ def plot(
         axis.set_xlim(x_limits)
     if y_limits is not None:
         axis.set_ylim(y_limits)
-    if show_title and settings.get_label() != "":
-        fig.suptitle(settings.get_label())
-    if show_legend:
+    if title and settings.get_label() != "":
+        figure.suptitle(settings.get_label())
+    if legend:
         axis.legend(loc=legend_loc)
-    axis.grid(visible=show_grid)
+    axis.grid(visible=grid)
     if tight_layout:
-        fig.tight_layout()
+        figure.tight_layout()
     return (
-        fig,
-        axis,
+        figure,
+        axes,
     )

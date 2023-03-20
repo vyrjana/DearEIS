@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 from typing import (
     Optional,
 )
+import pyimpspec
 from deareis.data import (
     DataSet,
     PlotSettings,
@@ -98,6 +99,9 @@ def perform_simulation(*args, **kwargs):
     assert (
         settings.min_frequency != settings.max_frequency
     ), "The minimum and maximum frequencies cannot be the same!"
+    circuit: pyimpspec.Circuit = pyimpspec.parse_cdc(settings.cdc)
+    if len(circuit.get_elements()) == 0:
+        return
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing simulation")
     simulation: SimulationResult = api.simulate_spectrum(settings)
     project.add_simulation(simulation)

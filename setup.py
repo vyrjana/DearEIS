@@ -1,28 +1,5 @@
-from setuptools import (
-    setup,
-    find_packages,
-)
-from os import walk
-from os.path import (
-    basename,
-    exists,
-    join,
-)
-
-
-def update_file(src: str, dst: str):
-    if not exists(src):
-        return
-    src_contents = ""
-    with open(src, "r") as fp:
-        src_contents = fp.read()
-    if exists(dst):
-        with open(dst, "r") as fp:
-            if fp.read() == src_contents:
-                return
-    with open(dst, "w") as fp:
-        fp.write(src_contents)
-
+from setuptools import setup, find_packages
+from os.path import exists, join
 
 entry_points = {
     "gui_scripts": [
@@ -35,44 +12,28 @@ entry_points = {
 
 dependencies = [
     "dearpygui==1.8.0",  # Used to implement the GUI.
-    "pyimpspec~=3.2",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "pyimpspec~=4.0",  # Used for parsing, fitting, and analyzing impedance spectra.
     "requests~=2.28",  # Used to check package status on PyPI.
-    "xdg~=5.1",  # Used to figure out where to place config, state, etc. files.
 ]
 
 dev_dependencies = [
-    "flake8",
-    "setuptools",
-    "build",
+    "build~=0.10",
+    "flake8~=6.0",
+    "setuptools~=67.2",
+    "sphinx~=5.3",
+    "sphinx-rtd-theme~=1.2",
 ]
 
 optional_dependencies = {
-    "cvxpy": "cvxpy~=1.2",  # Used in the DRT calculations (TR-RBF method)
+    "cvxopt": "cvxopt~=1.3",  # Used in the DRT calculations (TR-RBF method)
     "kvxopt": "kvxopt~=1.3",  # Fork of cvxopt that may provide wheels for additional platforms
+    "cvxpy": "cvxpy~=1.3",  # Used in the DRT calculations (TR-RBF method)
     "dev": dev_dependencies,
 }
 
-licenses = []
-for _, _, files in walk("LICENSES"):
-    licenses.extend(
-        list(
-            map(
-                lambda _: join("LICENSES", _),
-                filter(lambda _: _.startswith("LICENSE-"), files),
-            )
-        )
-    )
-
-data_files = [
-    "COPYRIGHT",
-    "CONTRIBUTORS",
-    "LICENSES/README.md",
-    "src/deareis/gui/changelog/CHANGELOG.md",
-] + licenses
-
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "3.4.3"
+version = "4.0.0"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:
@@ -83,30 +44,12 @@ if __name__ == "__main__":
         fp.write(version)
     assert version.strip != ""
     copyright_notice = ""
-    with open("COPYRIGHT") as fp:
-        copyright_notice = fp.read().strip()
-    assert copyright_notice.strip() != ""
+    if exists("COPYRIGHT"):
+        with open("COPYRIGHT") as fp:
+            copyright_notice = fp.read().strip()
+        assert copyright_notice.strip() != ""
     with open(join("src", "deareis", "version.py"), "w") as fp:
         fp.write(f'{copyright_notice}\n\nPACKAGE_VERSION: str = "{version}"')
-    # The changelog bundled with the package will also be updated when running this script.
-    update_file(
-        join("CHANGELOG.md"),
-        join("src", "deareis", "gui", "changelog", "CHANGELOG.md"),
-    )
-    # The licenses bundled with the package will also be updated when running this script.
-    update_file(
-        join("LICENSE"),
-        join("src", "deareis", "gui", "licenses", "LICENSE-DearEIS.txt"),
-    )
-    list(
-        map(
-            lambda _: update_file(
-                _,
-                join("src", "deareis", "gui", "licenses", basename(_)),
-            ),
-            licenses,
-        )
-    )
     setup(
         name="deareis",
         version=version,
@@ -114,7 +57,6 @@ if __name__ == "__main__":
         packages=find_packages(where="src"),
         package_dir={"": "src"},
         include_package_data=True,
-        data_files=data_files,
         url="https://vyrjana.github.io/DearEIS",
         project_urls={
             "Documentation": "https://vyrjana.github.io/DearEIS/api/",

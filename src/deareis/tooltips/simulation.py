@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,19 +35,22 @@ The maximum frequency to simulate.
 The number of frequencies per decade in the frequency range.
     """.strip(),
         "element": """
-An element in the circuit.
+An element in the circuit. Elements marked with an asterisk, *, are nested within the subcircuit of a container element (e.g., a transmission line model (Tlm)). Hovering over the name will show a tooltip that includes information about which container element and the specific subcircuit.
     """.strip(),
         "parameter": """
-A parameter in the element.
+A parameter in the element. Hovering over the name will show a tooltip with the parameter's unit if one has been specified.
     """.strip(),
         "parameter_value": """
-The value of the parameter.
+The value of the parameter. Hovering over the value will show a tooltip that also contains the parameter's unit.
     """.strip(),
         "remove": """
 Remove the current simulation result.
     """.strip(),
         "load_as_data_set": """
 Load the current simulation as a data set.
+    """.strip(),
+        "adjust_parameters": """
+Open a window for adjusting the values of parameters with a real-time preview.
     """.strip(),
     },
 )

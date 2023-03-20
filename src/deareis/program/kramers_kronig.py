@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from multiprocessing import cpu_count
 from traceback import format_exc
 from typing import (
     List,
@@ -27,7 +26,7 @@ from numpy import (
     array,
     ndarray,
 )
-from pyimpspec import FittingError
+from pyimpspec.exceptions import FittingError
 import deareis.api.kramers_kronig as api
 from deareis.data import (
     DataSet,
@@ -161,15 +160,14 @@ def perform_test(*args, **kwargs):
     if data is None or settings is None:
         return
     assert data.get_num_points() > 0, "There are no data points to test!"
-    # Prevent the GUI from becoming unresponsive or sluggish
-    num_procs: int = max(2, cpu_count() - 1)
+    batch: bool = kwargs.get("batch", False)
     if settings.mode == TestMode.AUTO or settings.mode == TestMode.MANUAL:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test(s)")
         try:
             test: TestResult = api.perform_test(
                 data=data,
                 settings=settings,
-                num_procs=num_procs,
+                num_procs=STATE.config.num_procs or -1,
             )
         except FittingError:
             signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
@@ -185,25 +183,37 @@ def perform_test(*args, **kwargs):
             project.get_data_sets(),
             project_tab.get_active_plot(),
         )
-        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+        if batch is False:
+            signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     elif settings.mode == TestMode.EXPLORATORY:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test")
         try:
             results: List[TestResult] = api.perform_exploratory_tests(
                 data=data,
                 settings=settings,
-                num_procs=num_procs,
             )
         except FittingError:
             signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
             return
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
-        num_RCs: ndarray = array(list(range(1, settings.num_RC + 1)))
-        show_exploratory_results(
-            data,
-            results,
-            settings,
-            num_RCs,
-        )
+        if batch is False:
+            num_RCs: ndarray = array(list(range(1, settings.num_RC + 1)))
+            show_exploratory_results(
+                data,
+                results,
+                settings,
+                num_RCs,
+            )
+        else:
+            project.add_test(
+                data=data,
+                test=results[0],
+            )
+            project_tab.populate_tests(project, data)
+            project_tab.plotting_tab.populate_tests(
+                project.get_all_tests(),
+                project.get_data_sets(),
+                project_tab.get_active_plot(),
+            )
     else:
         raise Exception("Unsupported mode!")

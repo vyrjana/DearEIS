@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -118,6 +118,15 @@ Reference: {schonleber2014}
     """.strip(),
         "num_RC": """
 The number of RC elements connected in series in the equivalent circuit.
+    """.strip(),
+        "series_resistance": """
+The fitted series resistance ([R] = ohm).
+    """.strip(),
+        "series_capacitance": """
+The fitted series capacitance ([C] = F).
+    """.strip(),
+        "series_inductance": """
+The fitted series inductance ([L] = H).
     """.strip(),
     }
 )

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ from numpy import (
     array,
     ceil,
     floor,
-    isclose,
     log10 as log,
     ndarray,
 )
@@ -61,12 +60,12 @@ class Impedance(Plot):
             )
             self._y_axis_1: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="Z' (ohm)",
+                label="Re(Z) (ohm)",
                 no_gridlines=True,
             )
             self._y_axis_2: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label='-Z" (ohm)',
+                label="-Im(Z) (ohm)",
                 no_gridlines=True,
             )
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -224,15 +223,20 @@ class Impedance(Plot):
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
             dy: float = abs(y1_max - y1_min) * 0.05
-            if isclose(dy, 0):
-                dy = 0.05 * y1_max if not isclose(abs(y1_max), 0) else 5
-            y1_min = y1_min - dy
-            y1_max = y1_max + dy
+            n: int = 1
+            if dy < 1.0:
+                y1_min = floor(y1_min / n) * n - n
+                y1_max = ceil(y1_max / n) * n + n
+            else:
+                y1_min = y1_min - dy
+                y1_max = y1_max + dy
             dy = abs(y2_max - y2_min) * 0.05
-            if isclose(dy, 0):
-                dy = 0.05 * y2_max if not isclose(abs(y2_max), 0) else 5
-            y2_min = y2_min - dy
-            y2_max = y2_max + dy
+            if dy < 1.0:
+                y2_min = floor(y2_min / n) * n - n
+                y2_max = ceil(y2_max / n) * n + n
+            else:
+                y2_min = y2_min - dy
+                y2_max = y2_max + dy
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis_1, ymin=y1_min, ymax=y1_max)
@@ -415,8 +419,13 @@ class ImpedanceSingleAxis(Plot):
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
             dy: float = abs(y_max - y_min) * 0.05
-            y_min = y_min - dy
-            y_max = y_max + dy
+            n: int = 1
+            if dy < 1.0:
+                y_min = floor(y_min / n) * n - n
+                y_max = ceil(y_max / n) * n + n
+            else:
+                y_min = y_min - dy
+                y_max = y_max + dy
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis, ymin=y_min, ymax=y_max)
@@ -455,7 +464,7 @@ class ImpedanceReal(ImpedanceSingleAxis):
         super().__init__(
             width=width,
             height=height,
-            y_axis_label="Z' (ohm)",
+            y_axis_label="Re(Z) (ohm)",
             *args,
             **kwargs,
         )
@@ -472,7 +481,7 @@ class ImpedanceImaginary(ImpedanceSingleAxis):
         super().__init__(
             width=width,
             height=height,
-            y_axis_label='-Z" (ohm)',
+            y_axis_label="-Im(Z) (ohm)",
             *args,
             **kwargs,
         )

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,18 +29,16 @@ from numpy import (
     log10 as log,
     ndarray,
 )
-from pyimpspec import (
-    Circuit,
-    DRTError,
-    parse_cdc,
-)
-from pyimpspec.analysis.drt.mRQfit import _validate_circuit
-from pyimpspec.analysis.fitting import _calculate_residuals
+from pyimpspec.exceptions import DRTError
+from pyimpspec import ComplexResiduals
+from pyimpspec.analysis.drt.mrq_fit import _validate_circuit
+from pyimpspec.analysis.utility import _calculate_residuals
 import dearpygui.dearpygui as dpg
 from deareis.utility import (
     align_numbers,
     format_number,
     is_filtered_item_visible,
+    pad_tab_labels,
     render_math,
 )
 from deareis.data.drt import (
@@ -65,8 +63,11 @@ from deareis.enums import (
     rbf_type_to_label,
 )
 from deareis.gui.plots import (
-    Impedance,
+    Bode,
     DRT,
+    Impedance,
+    Nyquist,
+    Plot,
     Residuals,
 )
 from deareis.enums import (
@@ -82,6 +83,10 @@ import deareis.signals as signals
 import deareis.themes as themes
 from deareis.data import (
     DataSet,
+)
+from deareis.gui.shared import (
+    DataSetsCombo,
+    ResultsCombo,
 )
 
 
@@ -240,7 +245,9 @@ class SettingsMenu:
                 )
                 self.lambda_input: int = dpg.generate_uuid()
                 dpg.add_input_float(
-                    default_value=default_settings.lambda_value,
+                    default_value=default_settings.lambda_value
+                    if default_settings.lambda_value > 0.0
+                    else 1e-3,
                     width=-1,
                     min_value=1e-16,
                     min_clamped=True,
@@ -435,6 +442,18 @@ class SettingsMenu:
                     callback=lambda s, a, u: self.update_settings(),
                     tag=self.credible_intervals_checkbox,
                 )
+                dpg.add_text("Timeout")
+                attach_tooltip(tooltips.drt.credible_intervals_timeout)
+                self.timeout_input: int = dpg.generate_uuid()
+                dpg.add_input_int(
+                    default_value=default_settings.timeout,
+                    min_value=1,
+                    min_clamped=True,
+                    step=0,
+                    width=-1,
+                    on_enter=True,
+                    tag=self.timeout_input,
+                )
             with dpg.group(horizontal=True):
                 dpg.add_text("Number of samples".rjust(label_pad))
                 attach_tooltip(tooltips.drt.num_samples)
@@ -488,18 +507,18 @@ class SettingsMenu:
                     tag=self.circuit_combo,
                 )
             with dpg.group(horizontal=True):
-                dpg.add_text("W".rjust(label_pad))
-                attach_tooltip(tooltips.drt.W)
-                self.W_input: int = dpg.generate_uuid()
+                dpg.add_text("Gaussian width".rjust(label_pad))
+                attach_tooltip(tooltips.drt.gaussian_width)
+                self.gaussian_width_input: int = dpg.generate_uuid()
                 dpg.add_input_float(
-                    default_value=default_settings.W,
+                    default_value=default_settings.gaussian_width,
                     width=-1,
                     min_value=0.0,
                     max_value=1.0,
                     step=0.0,
                     format="%.3g",
                     on_enter=True,
-                    tag=self.W_input,
+                    tag=self.gaussian_width_input,
                 )
             with dpg.group(horizontal=True):
                 dpg.add_text("Num. points per decade".rjust(label_pad))
@@ -516,7 +535,7 @@ class SettingsMenu:
         self.update_settings()
 
     def update_valid_circuits(self, fits: Dict[str, FitResult]):
-        lookup: Dict[str, str] = {}
+        lookup: Dict[str, FitResult] = {}
         label: str
         fit: FitResult
         for label, fit in fits.items():
@@ -524,7 +543,7 @@ class SettingsMenu:
                 _validate_circuit(fit.circuit)
             except DRTError:
                 continue
-            lookup[label] = fit.circuit.to_string(12)
+            lookup[label] = fit
         if len(lookup) > 0:
             longest_cdc: int = max(
                 map(
@@ -547,12 +566,12 @@ class SettingsMenu:
         self.update_settings()
 
     def get_settings(self) -> DRTSettings:
-        cdc: str = dpg.get_item_user_data(self.circuit_combo).get(
+        fit: Optional[FitResult] = dpg.get_item_user_data(self.circuit_combo).get(
             dpg.get_value(self.circuit_combo),
-            "",
         )
+        method: DRTMethod = label_to_drt_method[dpg.get_value(self.method_combo)]
         return DRTSettings(
-            method=label_to_drt_method[dpg.get_value(self.method_combo)],
+            method=method,
             mode=label_to_drt_mode[dpg.get_value(self.mode_combo)],
             lambda_value=dpg.get_value(self.lambda_input)
             if not dpg.get_value(self.lambda_checkbox)
@@ -565,11 +584,12 @@ class SettingsMenu:
             shape_coeff=dpg.get_value(self.shape_coeff_input),
             inductance=dpg.get_value(self.inductance_checkbox),
             credible_intervals=dpg.get_value(self.credible_intervals_checkbox),
+            timeout=dpg.get_value(self.timeout_input),
             num_samples=dpg.get_value(self.num_samples_input),
             num_attempts=dpg.get_value(self.num_attempts_input),
             maximum_symmetry=dpg.get_value(self.maximum_symmetry_input),
-            circuit=parse_cdc(cdc) if cdc != "" else None,
-            W=dpg.get_value(self.W_input),
+            fit=fit if method is DRTMethod.MRQ_FIT else None,
+            gaussian_width=dpg.get_value(self.gaussian_width_input),
             num_per_decade=dpg.get_value(self.num_per_decade_input),
         )
 
@@ -578,8 +598,10 @@ class SettingsMenu:
         self.update_settings()
         dpg.set_value(self.mode_combo, drt_mode_to_label[settings.mode])
         dpg.set_value(self.lambda_checkbox, settings.lambda_value <= 0.0)
-        if settings.lambda_value > 0.0:
-            dpg.set_value(self.lambda_input, settings.lambda_value)
+        dpg.set_value(
+            self.lambda_input,
+            settings.lambda_value if settings.lambda_value > 0.0 else 1e-3,
+        )
         dpg.set_value(self.rbf_type_combo, rbf_type_to_label[settings.rbf_type])
         dpg.set_value(
             self.derivative_order_combo,
@@ -589,17 +611,17 @@ class SettingsMenu:
         dpg.set_value(self.shape_coeff_input, settings.shape_coeff)
         dpg.set_value(self.inductance_checkbox, settings.inductance)
         dpg.set_value(self.credible_intervals_checkbox, settings.credible_intervals)
+        dpg.set_value(self.timeout_input, settings.timeout)
         dpg.set_value(self.num_samples_input, settings.num_samples)
         dpg.set_value(self.num_attempts_input, settings.num_attempts)
         dpg.set_value(self.maximum_symmetry_input, settings.maximum_symmetry)
         labels: List[str] = list(dpg.get_item_user_data(self.circuit_combo).keys())
         default_value: str = ""
-        if settings.circuit is not None:
-            cdc: str = settings.circuit.to_string(12)
+        if settings.fit is not None:
             label: str
-            circuit: Circuit
-            for label, circuit in dpg.get_item_user_data(self.circuit_combo).items():
-                if circuit == cdc:
+            fit: FitResult
+            for label, fit in dpg.get_item_user_data(self.circuit_combo).items():
+                if settings.fit.uuid == fit.uuid:
                     default_value = label
                     break
             if default_value == "" and len(labels) > 0:
@@ -608,7 +630,7 @@ class SettingsMenu:
             self.circuit_combo,
             default_value=default_value,
         )
-        dpg.set_value(self.W_input, settings.W)
+        dpg.set_value(self.gaussian_width_input, settings.gaussian_width)
         dpg.set_value(self.num_per_decade_input, settings.num_per_decade)
         self.update_settings(settings)
 
@@ -645,7 +667,7 @@ class SettingsMenu:
                 items=list(label_to_drt_mode.keys()),
             )
             self.show_setting(self.mode_combo)
-        elif settings.method == DRTMethod.BHT or settings.method == DRTMethod.M_RQ_FIT:
+        elif settings.method == DRTMethod.BHT or settings.method == DRTMethod.MRQ_FIT:
             self.hide_setting(self.mode_combo)
         if settings.method == DRTMethod.TR_RBF or settings.method == DRTMethod.TR_NNLS:
             self.show_setting(self.lambda_checkbox)
@@ -672,14 +694,17 @@ class SettingsMenu:
             self.hide_setting(self.inductance_checkbox)
         if settings.method == DRTMethod.TR_RBF:
             self.show_setting(self.credible_intervals_checkbox)
+            self.show_setting(self.timeout_input)
         else:
             self.hide_setting(self.credible_intervals_checkbox)
+            self.hide_setting(self.timeout_input)
         if settings.method == DRTMethod.BHT:
             self.show_setting(self.num_samples_input)
         elif settings.method == DRTMethod.TR_RBF:
             self.show_setting(self.num_samples_input)
             if settings.credible_intervals is False:
                 dpg.disable_item(self.num_samples_input)
+                dpg.disable_item(self.timeout_input)
         else:
             self.hide_setting(self.num_samples_input)
         if settings.method == DRTMethod.BHT:
@@ -690,13 +715,14 @@ class SettingsMenu:
             self.show_setting(self.maximum_symmetry_input)
         else:
             self.hide_setting(self.maximum_symmetry_input)
-        if settings.method == DRTMethod.M_RQ_FIT:
+        if settings.method == DRTMethod.MRQ_FIT:
             self.show_setting(self.circuit_combo)
-            self.show_setting(self.W_input)
+            self.show_setting(self.gaussian_width_input)
             self.show_setting(self.num_per_decade_input)
+            dpg.enable_item(self.num_per_decade_input)
         else:
             self.hide_setting(self.circuit_combo)
-            self.hide_setting(self.W_input)
+            self.hide_setting(self.gaussian_width_input)
             self.hide_setting(self.num_per_decade_input)
 
     def has_active_input(self) -> bool:
@@ -740,8 +766,8 @@ class StatisticsTable:
                 )
                 for label, tooltip, filter_key in [
                     (
-                        "log X²",
-                        tooltips.fitting.chisqr,
+                        "log X² (pseudo)",
+                        tooltips.fitting.pseudo_chisqr,
                         ",".join(drt_method_to_label.values()),
                     ),
                     (
@@ -761,7 +787,8 @@ class StatisticsTable:
                     with dpg.table_row(filter_key=filter_key):
                         dpg.add_text(label.rjust(label_pad))
                         attach_tooltip(tooltip)
-                        dpg.add_text("")
+                        cell: int = dpg.add_text("")
+                        dpg.set_item_user_data(cell, attach_tooltip("", parent=cell))
             dpg.add_spacer(height=8)
 
     def clear(self, hide: bool):
@@ -777,7 +804,7 @@ class StatisticsTable:
         filter_key: str = drt_method_to_label[drt.settings.method]
         dpg.set_value(self._table, filter_key)
         statistics: List[str] = [
-            f"{log(drt.chisqr):.3g}",
+            f"{log(drt.pseudo_chisqr):.3g}",
             f"{drt.lambda_value:.3e}",
         ]
         visible_items: List[bool] = []
@@ -786,6 +813,7 @@ class StatisticsTable:
         for i, row in enumerate(dpg.get_item_children(self._table, slot=1)):
             cell: int = dpg.get_item_children(row, slot=1)[2]
             dpg.set_value(cell, statistics[i])
+            update_tooltip(tag=dpg.get_item_user_data(cell), msg=statistics[i])
             visible_items.append(is_filtered_item_visible(row, filter_key))
         dpg.set_item_height(
             self._table,
@@ -1046,6 +1074,7 @@ class SettingsTable:
                         tooltip_tag: int = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
+            dpg.add_spacer(height=8)
             with dpg.group(horizontal=True):
                 self._apply_settings_button: int = dpg.generate_uuid()
                 dpg.add_button(
@@ -1055,6 +1084,7 @@ class SettingsTable:
                         **u,
                     ),
                     tag=self._apply_settings_button,
+                    width=154,
                 )
                 attach_tooltip(tooltips.general.apply_settings)
                 self._apply_mask_button: int = dpg.generate_uuid()
@@ -1065,6 +1095,7 @@ class SettingsTable:
                         **u,
                     ),
                     tag=self._apply_mask_button,
+                    width=-1,
                 )
                 attach_tooltip(tooltips.general.apply_mask)
 
@@ -1128,381 +1159,444 @@ class SettingsTable:
         )
 
 
-class DataSetsCombo:
-    def __init__(self, label: str, width: int):
-        self.labels: List[str] = []
-        dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
-        dpg.add_combo(
-            callback=lambda s, a, u: signals.emit(
-                Signal.SELECT_DATA_SET,
-                data=u.get(a),
-            ),
-            user_data={},
-            width=width,
-            tag=self.tag,
+class DRTResultsCombo(ResultsCombo):
+    def selection_callback(self, sender: int, app_data: str, user_data: tuple):
+        signals.emit(
+            Signal.SELECT_DRT_RESULT,
+            drt=user_data[0].get(app_data),
+            data=user_data[1],
         )
 
-    def populate(self, labels: List[str], lookup: Dict[str, DataSet]):
-        self.labels.clear()
-        self.labels.extend(labels)
-        label: str = dpg.get_value(self.tag) or ""
-        if labels and label not in labels:
-            label = labels[0]
-        dpg.configure_item(
-            self.tag,
-            default_value=label,
-            items=labels,
-            user_data=lookup,
+    def adjust_label(self, old: str, longest: int) -> str:
+        label: str
+        timestamp: str
+        label, timestamp = (
+            old[: old.find(" ")],
+            old[old.find(" ") + 1 :],
         )
-
-    def get(self) -> Optional[DataSet]:
-        return dpg.get_item_user_data(self.tag).get(dpg.get_value(self.tag))
-
-    def set(self, label: str):
-        assert type(label) is str, label
-        assert label in self.labels, (
-            label,
-            self.labels,
-        )
-        dpg.set_value(self.tag, label)
-
-    def clear(self):
-        dpg.configure_item(
-            self.tag,
-            default_value="",
-        )
-
-
-class ResultsCombo:
-    def __init__(self, label: str, width: int):
-        self.labels: Dict[str, str] = {}
-        dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
-        dpg.add_combo(
-            callback=lambda s, a, u: signals.emit(
-                Signal.SELECT_DRT_RESULT,
-                drt=u[0].get(a),
-                data=u[1],
-            ),
-            user_data=(
-                {},
-                None,
-            ),
-            width=width,
-            tag=self.tag,
-        )
-
-    def populate(self, lookup: Dict[str, DRTResult], data: Optional[DataSet]):
-        self.labels.clear()
-        labels: List[str] = list(lookup.keys())
-        longest_cdc: int = max(list(map(lambda _: len(_[: _.find(" ")]), labels)) + [1])
-        old_key: str
-        for old_key in labels:
-            drt: DRTResult = lookup[old_key]
-            del lookup[old_key]
-            cdc, timestamp = (
-                old_key[: old_key.find(" ")],
-                old_key[old_key.find(" ") + 1 :],
-            )
-            new_key: str = f"{cdc.ljust(longest_cdc)} {timestamp}"
-            self.labels[old_key] = new_key
-            lookup[new_key] = drt
-        labels = list(lookup.keys())
-        dpg.configure_item(
-            self.tag,
-            default_value=labels[0] if labels else "",
-            items=labels,
-            user_data=(
-                lookup,
-                data,
-            ),
-        )
-
-    def get(self) -> Optional[DRTResult]:
-        return dpg.get_item_user_data(self.tag)[0].get(dpg.get_value(self.tag))
-
-    def set(self, label: str):
-        assert type(label) is str, label
-        assert label in self.labels, (
-            label,
-            list(self.labels.keys()),
-        )
-        dpg.set_value(self.tag, self.labels[label])
-
-    def clear(self):
-        dpg.configure_item(
-            self.tag,
-            default_value="",
-        )
-
-    def get_next_result(self) -> Optional[DRTResult]:
-        lookup: Dict[str, DRTResult] = dpg.get_item_user_data(self.tag)[0]
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) + 1
-        return lookup[labels[index % len(labels)]]
-
-    def get_previous_result(self) -> Optional[DRTResult]:
-        lookup: Dict[str, DRTResult] = dpg.get_item_user_data(self.tag)[0]
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.tag)) - 1
-        return lookup[labels[index % len(labels)]]
+        return f"{label.ljust(longest)} {timestamp}"
 
 
 class DRTTab:
     def __init__(self, state):
         self.state = state
         self.queued_update: Optional[Callable] = None
+        self.create_tab(state)
+
+    def create_tab(self, state):
         label_pad: int = 24
         self.tab: int = dpg.generate_uuid()
         with dpg.tab(label="DRT analysis", tag=self.tab):
             with dpg.group(horizontal=True):
-                self.sidebar_width: int = 350
-                self.sidebar_window: int = dpg.generate_uuid()
-                with dpg.child_window(
-                    border=False,
-                    width=self.sidebar_width,
-                    tag=self.sidebar_window,
-                ):
-                    # Settings
-                    with dpg.child_window(
-                        border=True,
-                        width=-1,
-                        height=290,
-                    ):
-                        self.settings_menu: SettingsMenu = SettingsMenu(
-                            state.config.default_drt_settings, label_pad
-                        )
-                        with dpg.group(horizontal=True):
-                            self.visibility_item: int = dpg.generate_uuid()
-                            dpg.add_text("?".rjust(label_pad), tag=self.visibility_item)
-                            attach_tooltip(tooltips.drt.perform)
-                            self.perform_drt_button: int = dpg.generate_uuid()
-                            dpg.add_button(
-                                label="Perform analysis",
-                                callback=lambda s, a, u: signals.emit(
-                                    Signal.PERFORM_DRT,
-                                    data=u,
-                                    settings=self.get_settings(),
-                                ),
-                                user_data=None,
-                                width=-1,
-                                tag=self.perform_drt_button,
-                            )
-                    # Results
-                    with dpg.child_window(width=-1, height=82):
-                        label_pad = 8
-                        with dpg.group(horizontal=True):
-                            self.data_sets_combo: DataSetsCombo = DataSetsCombo(
-                                label="Data set".rjust(label_pad),
-                                width=-60,
-                            )
-                        with dpg.group(horizontal=True):
-                            self.results_combo: ResultsCombo = ResultsCombo(
-                                label="Result".rjust(label_pad),
-                                width=-60,
-                            )
-                            self.delete_button: int = dpg.generate_uuid()
-                            dpg.add_button(
-                                label="Delete",
-                                callback=lambda s, a, u: signals.emit(
-                                    Signal.DELETE_DRT_RESULT,
-                                    **u,
-                                ),
-                                user_data={},
-                                width=-1,
-                                tag=self.delete_button,
-                            )
-                            attach_tooltip(tooltips.drt.delete)
-                        with dpg.group(horizontal=True):
-                            dpg.add_text("Output".rjust(label_pad))
-                            # TODO: Split into combo class?
-                            self.output_combo: int = dpg.generate_uuid()
-                            dpg.add_combo(
-                                default_value=list(label_to_drt_output.keys())[0],
-                                items=list(label_to_drt_output.keys()),
-                                tag=self.output_combo,
-                                width=-60,
-                            )
-                            self.copy_output_button: int = dpg.generate_uuid()
-                            dpg.add_button(
-                                label="Copy",
-                                callback=lambda s, a, u: signals.emit(
-                                    Signal.COPY_OUTPUT,
-                                    output=self.get_active_output(),
-                                    **u,
-                                ),
-                                user_data={},
-                                width=-1,
-                                tag=self.copy_output_button,
-                            )
-                            attach_tooltip(tooltips.general.copy_output)
-                    # Results/settings tables
-                    with dpg.child_window(width=-1, height=-1):
-                        self.result_group: int = dpg.generate_uuid()
-                        with dpg.group(tag=self.result_group):
-                            with dpg.group(show=False):
-                                self.validity_text: int = dpg.generate_uuid()
-                                dpg.bind_item_theme(
-                                    dpg.add_text(
-                                        "",
-                                        wrap=self.sidebar_width - 24,
-                                        tag=self.validity_text,
-                                    ),
-                                    themes.result.invalid,
-                                )
-                                dpg.add_spacer(height=8)
-                            self.statistics_table: StatisticsTable = StatisticsTable()
-                            self.scores_table: ScoresTable = ScoresTable()
-                            self.settings_table: SettingsTable = SettingsTable()
-                # Plots window
-                self.plot_window: int = dpg.generate_uuid()
-                with dpg.child_window(
-                    border=False,
+                self.create_sidebar(state, label_pad)
+                self.create_plots()
+
+    def create_sidebar(self, state, label_pad: int):
+        self.sidebar_width: int = 350
+        self.sidebar_window: int = dpg.generate_uuid()
+        with dpg.child_window(
+            border=False,
+            width=self.sidebar_width,
+            tag=self.sidebar_window,
+        ):
+            self.create_settings_menu(state, label_pad)
+            self.create_results_menu()
+            self.create_results_tables()
+
+    def create_settings_menu(self, state, label_pad: int):
+        with dpg.child_window(
+            border=True,
+            width=-1,
+            height=290,
+        ):
+            self.settings_menu: SettingsMenu = SettingsMenu(
+                state.config.default_drt_settings, label_pad
+            )
+            with dpg.group(horizontal=True):
+                self.visibility_item: int = dpg.generate_uuid()
+                dpg.add_text("?".rjust(label_pad), tag=self.visibility_item)
+                attach_tooltip(tooltips.drt.perform)
+                self.perform_drt_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Perform",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.PERFORM_DRT,
+                        data=u,
+                        settings=self.get_settings(),
+                    ),
+                    user_data=None,
+                    width=-70,
+                    tag=self.perform_drt_button,
+                )
+                dpg.add_button(
+                    label="Batch",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.BATCH_PERFORM_ANALYSIS,
+                        settings=self.get_settings(),
+                    ),
                     width=-1,
-                    height=-1,
-                    tag=self.plot_window,
-                ):
-                    self.minimum_plot_side: int = 400
-                    # Gamma (or real gamma if BHT)
-                    self.drt_plot: DRT = DRT(
-                        width=-1,
-                        height=self.minimum_plot_side,
-                    )
-                    self.drt_plot.plot(
-                        tau=array([]),
-                        gamma=array([]),
-                        label="gamma",
-                        theme=themes.drt.real_gamma,
-                    )
-                    with dpg.group(horizontal=True):
-                        self.enlarge_drt_button: int = dpg.generate_uuid()
-                        self.adjust_drt_limits_checkbox: int = dpg.generate_uuid()
-                        dpg.add_button(
-                            label="Enlarge DRT",
-                            callback=self.show_enlarged_drt,
-                            tag=self.enlarge_drt_button,
-                        )
-                        dpg.add_checkbox(
-                            default_value=True,
-                            tag=self.adjust_drt_limits_checkbox,
-                        )
-                        attach_tooltip(tooltips.general.adjust_drt_limits)
-                        dpg.add_button(
-                            label="Copy as CSV",
-                            callback=lambda s, a, u: signals.emit(
-                                Signal.COPY_PLOT_DATA,
-                                plot=self.drt_plot,
-                                context=Context.DRT_TAB,
-                            ),
-                        )
-                        attach_tooltip(tooltips.general.copy_plot_data_as_csv)
-                    # Impedance plot
-                    self.impedance_plot: Impedance = Impedance(
-                        width=-1,
-                        height=self.minimum_plot_side,
-                    )
-                    self.impedance_plot.plot(
-                        frequency=array([]),
-                        real=array([]),
-                        imaginary=array([]),
-                        labels=(
-                            "Z' (d)",
-                            'Z" (d)',
+                )
+
+    def create_results_menu(self):
+        with dpg.child_window(width=-1, height=82):
+            label_pad = 8
+            with dpg.group(horizontal=True):
+                self.data_sets_combo: DataSetsCombo = DataSetsCombo(
+                    label="Data set".rjust(label_pad),
+                    width=-60,
+                )
+            with dpg.group(horizontal=True):
+                self.results_combo: DRTResultsCombo = DRTResultsCombo(
+                    label="Result".rjust(label_pad),
+                    width=-60,
+                )
+                self.delete_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Delete",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.DELETE_DRT_RESULT,
+                        **u,
+                    ),
+                    user_data={},
+                    width=-1,
+                    tag=self.delete_button,
+                )
+                attach_tooltip(tooltips.drt.delete)
+            with dpg.group(horizontal=True):
+                dpg.add_text("Output".rjust(label_pad))
+                # TODO: Split into combo class?
+                self.output_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    default_value=list(label_to_drt_output.keys())[0],
+                    items=list(label_to_drt_output.keys()),
+                    tag=self.output_combo,
+                    width=-60,
+                )
+                self.copy_output_button: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Copy",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_OUTPUT,
+                        output=self.get_active_output(),
+                        **u,
+                    ),
+                    user_data={},
+                    width=-1,
+                    tag=self.copy_output_button,
+                )
+                attach_tooltip(tooltips.general.copy_output)
+
+    def create_results_tables(self):
+        with dpg.child_window(width=-1, height=-1):
+            self.result_group: int = dpg.generate_uuid()
+            with dpg.group(tag=self.result_group):
+                with dpg.group(show=False):
+                    self.validity_text: int = dpg.generate_uuid()
+                    dpg.bind_item_theme(
+                        dpg.add_text(
+                            "",
+                            wrap=self.sidebar_width - 24,
+                            tag=self.validity_text,
                         ),
-                        themes=(
-                            themes.impedance.real_data,
-                            themes.impedance.imaginary_data,
-                        ),
+                        themes.result.invalid,
                     )
-                    self.impedance_plot.plot(
-                        frequency=array([]),
-                        real=array([]),
-                        imaginary=array([]),
-                        labels=(
-                            "Z' (f)",
-                            'Z" (f)',
-                        ),
-                        fit=True,
-                        themes=(
-                            themes.impedance.real_simulation,
-                            themes.impedance.imaginary_simulation,
-                        ),
-                    )
-                    self.impedance_plot.plot(
-                        frequency=array([]),
-                        real=array([]),
-                        imaginary=array([]),
-                        labels=(
-                            "Z' (f)",
-                            'Z" (f)',
-                        ),
-                        fit=True,
-                        line=True,
-                        themes=(
-                            themes.impedance.real_simulation,
-                            themes.impedance.imaginary_simulation,
-                        ),
-                        show_labels=False,
-                    )
-                    with dpg.group(horizontal=True):
-                        self.enlarge_impedance_button: int = dpg.generate_uuid()
-                        self.adjust_impedance_limits_checkbox: int = dpg.generate_uuid()
-                        dpg.add_button(
-                            label="Enlarge impedance",
-                            callback=self.show_enlarged_impedance,
-                            tag=self.enlarge_impedance_button,
-                        )
-                        dpg.add_checkbox(
-                            default_value=True,
-                            tag=self.adjust_impedance_limits_checkbox,
-                        )
-                        attach_tooltip(tooltips.general.adjust_impedance_limits)
-                        dpg.add_button(
-                            label="Copy as CSV",
-                            callback=lambda s, a, u: signals.emit(
-                                Signal.COPY_PLOT_DATA,
-                                plot=self.impedance_plot,
-                                context=Context.DRT_TAB,
-                            ),
-                        )
-                        attach_tooltip(tooltips.general.copy_plot_data_as_csv)
-                    # Residuals
-                    self.residuals_plot: Residuals = Residuals(
-                        width=-1,
-                        height=300,
-                    )
-                    self.residuals_plot.plot(
-                        frequency=array([]),
-                        real=array([]),
-                        imaginary=array([]),
-                    )
-                    with dpg.group(horizontal=True):
-                        self.enlarge_residuals_button: int = dpg.generate_uuid()
-                        self.adjust_residuals_limits_checkbox: int = dpg.generate_uuid()
-                        dpg.add_button(
-                            label="Enlarge residuals",
-                            callback=self.show_enlarged_residuals,
-                            tag=self.enlarge_residuals_button,
-                        )
-                        dpg.add_checkbox(
-                            default_value=True,
-                            tag=self.adjust_residuals_limits_checkbox,
-                        )
-                        attach_tooltip(tooltips.general.adjust_residuals_limits)
-                        dpg.add_button(
-                            label="Copy as CSV",
-                            callback=lambda s, a, u: signals.emit(
-                                Signal.COPY_PLOT_DATA,
-                                plot=self.residuals_plot,
-                                context=Context.DRT_TAB,
-                            ),
-                        )
-                        attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                    dpg.add_spacer(height=8)
+                self.statistics_table: StatisticsTable = StatisticsTable()
+                self.scores_table: ScoresTable = ScoresTable()
+                self.settings_table: SettingsTable = SettingsTable()
+
+    def create_plots(self):
+        self.plot_window: int = dpg.generate_uuid()
+        with dpg.child_window(
+            border=False,
+            width=-1,
+            height=-1,
+            tag=self.plot_window,
+        ):
+            self.create_gamma_plot()
+            dpg.add_spacer(height=4)
+            dpg.add_separator()
+            dpg.add_spacer(height=4)
+            self.plot_tab_bar: int = dpg.generate_uuid()
+            self.minimum_plot_height: int = -24
+            with dpg.tab_bar(tag=self.plot_tab_bar):
+                self.create_nyquist_plot()
+                self.create_bode_plot()
+                impedance_tab: int = self.create_impedance_plot()
+                self.create_residuals_plot()
+            pad_tab_labels(self.plot_tab_bar)
+            dpg.set_value(self.plot_tab_bar, impedance_tab)
+
+    def create_gamma_plot(self):
+        self.drt_plot: DRT = DRT(width=-1, height=400)
+        self.drt_plot.plot(
+            tau=array([]),
+            gamma=array([]),
+            label="gamma",
+            theme=themes.drt.real_gamma,
+        )
+        with dpg.group(horizontal=True):
+            self.enlarge_drt_button: int = dpg.generate_uuid()
+            self.adjust_drt_limits_checkbox: int = dpg.generate_uuid()
+            dpg.add_button(
+                label="Enlarge plot",
+                callback=self.show_enlarged_drt,
+                tag=self.enlarge_drt_button,
+            )
+            dpg.add_button(
+                label="Copy as CSV",
+                callback=lambda s, a, u: signals.emit(
+                    Signal.COPY_PLOT_DATA,
+                    plot=self.drt_plot,
+                    context=Context.DRT_TAB,
+                ),
+            )
+            attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+            dpg.add_checkbox(
+                label="Adjust limits",
+                default_value=True,
+                tag=self.adjust_drt_limits_checkbox,
+            )
+            attach_tooltip(tooltips.general.adjust_drt_limits)
+
+    def create_nyquist_plot(self):
+        with dpg.tab(label="Nyquist"):
+            self.nyquist_plot: Nyquist = Nyquist(
+                width=-1,
+                height=self.minimum_plot_height,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Data",
+                line=False,
+                theme=themes.nyquist.data,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Fit",
+                line=False,
+                fit=True,
+                theme=themes.nyquist.simulation,
+            )
+            self.nyquist_plot.plot(
+                real=array([]),
+                imaginary=array([]),
+                label="Fit",
+                line=True,
+                fit=True,
+                theme=themes.nyquist.simulation,
+                show_label=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_nyquist_button: int = dpg.generate_uuid()
+                self.adjust_nyquist_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_nyquist,
+                    tag=self.enlarge_nyquist_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.nyquist_plot,
+                        context=Context.DRT_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_nyquist_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_nyquist_limits)
+
+    def create_bode_plot(self):
+        with dpg.tab(label="Bode"):
+            self.bode_plot: Bode = Bode(
+                width=-1,
+                height=self.minimum_plot_height,
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), d.",
+                    "Phase(Z), d.",
+                ),
+                line=False,
+                themes=(
+                    themes.bode.magnitude_data,
+                    themes.bode.phase_data,
+                ),
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), f.",
+                    "Phase(Z), f.",
+                ),
+                line=False,
+                fit=True,
+                themes=(
+                    themes.bode.magnitude_simulation,
+                    themes.bode.phase_simulation,
+                ),
+            )
+            self.bode_plot.plot(
+                frequency=array([]),
+                magnitude=array([]),
+                phase=array([]),
+                labels=(
+                    "Mod(Z), f.",
+                    "Phase(Z), f.",
+                ),
+                line=True,
+                fit=True,
+                themes=(
+                    themes.bode.magnitude_simulation,
+                    themes.bode.phase_simulation,
+                ),
+                show_labels=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_bode_button: int = dpg.generate_uuid()
+                self.adjust_bode_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_bode,
+                    tag=self.enlarge_bode_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.bode_plot,
+                        context=Context.DRT_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_bode_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_bode_limits)
+
+    def create_impedance_plot(self) -> int:
+        tab: int
+        with dpg.tab(label="Real & Imag.") as tab:
+            self.impedance_plot: Impedance = Impedance(
+                width=-1,
+                height=self.minimum_plot_height,
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), d.",
+                    "Im(Z), d.",
+                ),
+                themes=(
+                    themes.impedance.real_data,
+                    themes.impedance.imaginary_data,
+                ),
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), f.",
+                    "Im(Z), f.",
+                ),
+                fit=True,
+                themes=(
+                    themes.impedance.real_simulation,
+                    themes.impedance.imaginary_simulation,
+                ),
+            )
+            self.impedance_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+                labels=(
+                    "Re(Z), f.",
+                    "Im(Z), f.",
+                ),
+                fit=True,
+                line=True,
+                themes=(
+                    themes.impedance.real_simulation,
+                    themes.impedance.imaginary_simulation,
+                ),
+                show_labels=False,
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_impedance_button: int = dpg.generate_uuid()
+                self.adjust_impedance_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_impedance,
+                    tag=self.enlarge_impedance_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.impedance_plot,
+                        context=Context.DRT_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_impedance_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_impedance_limits)
+        return tab
+
+    def create_residuals_plot(self):
+        with dpg.tab(label="Residuals"):
+            self.residuals_plot: Residuals = Residuals(
+                width=-1,
+                height=self.minimum_plot_height,
+            )
+            self.residuals_plot.plot(
+                frequency=array([]),
+                real=array([]),
+                imaginary=array([]),
+            )
+            with dpg.group(horizontal=True):
+                self.enlarge_residuals_button: int = dpg.generate_uuid()
+                self.adjust_residuals_limits_checkbox: int = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Enlarge plot",
+                    callback=self.show_enlarged_residuals,
+                    tag=self.enlarge_residuals_button,
+                )
+                dpg.add_button(
+                    label="Copy as CSV",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.COPY_PLOT_DATA,
+                        plot=self.residuals_plot,
+                        context=Context.DRT_TAB,
+                    ),
+                )
+                attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+                dpg.add_checkbox(
+                    label="Adjust limits",
+                    default_value=True,
+                    tag=self.adjust_residuals_limits_checkbox,
+                )
+                attach_tooltip(tooltips.general.adjust_residuals_limits)
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
@@ -1522,9 +1616,15 @@ class DRTTab:
         if not self.is_visible():
             return
         width, height = dpg.get_item_rect_size(self.plot_window)
-        height = round(height / 2) - 24 * 2
+        height = round(height / 2) - 24 * 2 + 1
         self.drt_plot.resize(-1, height)
-        self.impedance_plot.resize(-1, height)
+        plots: List[Plot] = [
+            self.nyquist_plot,
+            self.bode_plot,
+            self.impedance_plot,
+        ]
+        for plot in plots:
+            plot.resize(-1, height)
 
     def clear(self, hide: bool = True):
         self.data_sets_combo.clear()
@@ -1539,14 +1639,40 @@ class DRTTab:
             label="gamma",
         )
         self.drt_plot.delete_series(from_index=1)
+        self.nyquist_plot.clear(delete=False)
+        self.bode_plot.clear(delete=False)
         self.impedance_plot.clear(delete=False)
         self.residuals_plot.clear(delete=False)
+
+    def next_plot_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + 1
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
+
+    def previous_plot_tab(self):
+        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) - 1
+        dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
     def show_enlarged_drt(self):
         signals.emit(
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.drt_plot,
             adjust_limits=dpg.get_value(self.adjust_drt_limits_checkbox),
+        )
+
+    def show_enlarged_nyquist(self):
+        signals.emit(
+            Signal.SHOW_ENLARGED_PLOT,
+            plot=self.nyquist_plot,
+            adjust_limits=dpg.get_value(self.adjust_nyquist_limits_checkbox),
+        )
+
+    def show_enlarged_bode(self):
+        signals.emit(
+            Signal.SHOW_ENLARGED_PLOT,
+            plot=self.bode_plot,
+            adjust_limits=dpg.get_value(self.adjust_bode_limits_checkbox),
         )
 
     def show_enlarged_impedance(self):
@@ -1590,26 +1716,16 @@ class DRTTab:
             )
 
     def get_next_data_set(self) -> Optional[DataSet]:
-        lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.data_sets_combo.tag)
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.data_sets_combo.tag)) + 1
-        return lookup[labels[index % len(labels)]]
+        return self.data_sets_combo.get_next()
 
     def get_previous_data_set(self) -> Optional[DataSet]:
-        lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.data_sets_combo.tag)
-        if not lookup:
-            return None
-        labels: List[str] = list(lookup.keys())
-        index: int = labels.index(dpg.get_value(self.data_sets_combo.tag)) - 1
-        return lookup[labels[index % len(labels)]]
+        return self.data_sets_combo.get_previous()
 
     def get_next_result(self) -> Optional[DRTResult]:
-        return self.results_combo.get_next_result()
+        return self.results_combo.get_next()
 
     def get_previous_result(self) -> Optional[DRTResult]:
-        return self.results_combo.get_previous_result()
+        return self.results_combo.get_previous()
 
     def populate_fits(self, fits: List[FitResult]):
         assert type(fits) is dict, fits
@@ -1622,19 +1738,35 @@ class DRTTab:
         if data is None:
             return
         self.data_sets_combo.set(data.get_label())
-        f: ndarray = data.get_frequency()
-        Z: ndarray = data.get_impedance()
+        real: ndarray
+        imag: ndarray
+        real, imag = data.get_nyquist_data()
+        self.nyquist_plot.update(
+            index=0,
+            real=real,
+            imaginary=imag,
+        )
+        freq: ndarray
+        mag: ndarray
+        phase: ndarray
+        freq, mag, phase = data.get_bode_data()
+        self.bode_plot.update(
+            index=0,
+            frequency=freq,
+            magnitude=mag,
+            phase=phase,
+        )
         self.impedance_plot.update(
             index=0,
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequency=freq,
+            real=real,
+            imaginary=imag,
         )
 
     def assert_drt_up_to_date(self, drt: DRTResult, data: DataSet):
         # Check if the number of unmasked points is the same
-        Z_exp: ndarray = data.get_impedance()
-        Z_drt: ndarray = drt.get_impedance()
+        Z_exp: ndarray = data.get_impedances()
+        Z_drt: ndarray = drt.get_impedances()
         assert Z_exp.shape == Z_drt.shape, "The number of data points differ!"
         # Check if the masks are the same
         mask_exp: Dict[int, bool] = data.get_mask()
@@ -1654,13 +1786,11 @@ class DRTTab:
             ), f"The data set's mask differs at index {i + 1}!"
         # Check if the frequencies and impedances are the same
         assert allclose(
-            drt.get_frequency(), data.get_frequency()
+            drt.get_frequencies(), data.get_frequencies()
         ), "The frequencies differ!"
-        real_residual: ndarray
-        imaginary_residual: ndarray
-        real_residual, imaginary_residual = _calculate_residuals(Z_exp, Z_drt)
-        assert allclose(drt.real_residual, real_residual) and allclose(
-            drt.imaginary_residual, imaginary_residual
+        residuals: ComplexResiduals = _calculate_residuals(Z_exp, Z_drt)
+        assert allclose(drt.residuals.real, residuals.real) and allclose(
+            drt.residuals.imag, residuals.imag
         ), "The data set's impedances differ from what they were when the DRT analysis was performed!"
 
     def select_drt_result(
@@ -1692,10 +1822,14 @@ class DRTTab:
         if drt is None or data is None:
             if dpg.get_value(self.adjust_drt_limits_checkbox):
                 self.drt_plot.queue_limits_adjustment()
-            if dpg.get_value(self.adjust_residuals_limits_checkbox):
-                self.residuals_plot.queue_limits_adjustment()
+            if dpg.get_value(self.adjust_nyquist_limits_checkbox):
+                self.nyquist_plot.queue_limits_adjustment()
+            if dpg.get_value(self.adjust_bode_limits_checkbox):
+                self.bode_plot.queue_limits_adjustment()
             if dpg.get_value(self.adjust_impedance_limits_checkbox):
                 self.impedance_plot.queue_limits_adjustment()
+            if dpg.get_value(self.adjust_residuals_limits_checkbox):
+                self.residuals_plot.queue_limits_adjustment()
             return
         self.results_combo.set(drt.get_label())
         message: str
@@ -1712,12 +1846,13 @@ class DRTTab:
         self.scores_table.populate(drt)
         self.settings_table.populate(drt, data)
         tau: ndarray
-        gamma: ndarray
-        tau, gamma = drt.get_drt_data()
+        real_gamma: ndarray
+        imaginary_gamma: ndarray
+        tau, real_gamma, imaginary_gamma = drt.get_drt_data()
         self.drt_plot.update(
             index=0,
             tau=tau,
-            gamma=gamma,
+            gamma=real_gamma,
             label="real" if drt.settings.method == DRTMethod.BHT else "gamma",
         )
         if (
@@ -1727,10 +1862,10 @@ class DRTTab:
             mean: ndarray
             lower: ndarray
             upper: ndarray
-            tau, gamma, lower, upper = drt.get_drt_credible_intervals()
+            tau, mean, lower, upper = drt.get_drt_credible_intervals_data()
             self.drt_plot.plot(
                 tau=tau,
-                mean=gamma,
+                gamma=mean,
                 label="mean",
                 theme=themes.drt.mean_gamma,
             )
@@ -1741,37 +1876,67 @@ class DRTTab:
                 label="3-sigma CI",
                 theme=themes.drt.credible_intervals,
             )
-        if drt.settings.method == DRTMethod.BHT:
-            tau, gamma = drt.get_drt_data(imaginary=True)
+        elif drt.settings.method == DRTMethod.BHT:
             self.drt_plot.plot(
                 tau=tau,
-                imaginary=gamma,
+                gamma=imaginary_gamma,
                 label="imag.",
                 theme=themes.drt.imaginary_gamma,
             )
-        f: ndarray = drt.get_frequency()
-        Z: ndarray = drt.get_impedance()
+        real: ndarray
+        imag: ndarray
+        real, imag = drt.get_nyquist_data()
+        self.nyquist_plot.update(
+            index=1,
+            real=real,
+            imaginary=imag,
+        )
+        self.nyquist_plot.update(
+            index=2,
+            real=real,
+            imaginary=imag,
+        )
+        freq: ndarray
+        mag: ndarray
+        phase: ndarray
+        freq, mag, phase = drt.get_bode_data()
+        self.bode_plot.update(
+            index=1,
+            frequency=freq,
+            magnitude=mag,
+            phase=phase,
+        )
+        self.bode_plot.update(
+            index=2,
+            frequency=freq,
+            magnitude=mag,
+            phase=phase,
+        )
         self.impedance_plot.update(
             index=1,
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequency=freq,
+            real=real,
+            imaginary=imag,
         )
         self.impedance_plot.update(
             index=2,
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequency=freq,
+            real=real,
+            imaginary=imag,
         )
         real: ndarray
         imaginary: ndarray
-        f, real, imaginary = drt.get_residual_data()
+        f, real, imaginary = drt.get_residuals_data()
         self.residuals_plot.update(
             index=0,
             frequency=f,
             real=real,
             imaginary=imaginary,
         )
+        if dpg.get_value(self.adjust_nyquist_limits_checkbox):
+            self.nyquist_plot.queue_limits_adjustment()
+        if dpg.get_value(self.adjust_bode_limits_checkbox):
+            self.bode_plot.queue_limits_adjustment()
         if dpg.get_value(self.adjust_drt_limits_checkbox):
             self.drt_plot.queue_limits_adjustment()
         if dpg.get_value(self.adjust_impedance_limits_checkbox):

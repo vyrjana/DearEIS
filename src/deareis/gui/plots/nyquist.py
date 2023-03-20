@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,12 +44,12 @@ class Nyquist(Plot):
             )
             self._x_axis: int = dpg.add_plot_axis(
                 dpg.mvXAxis,
-                label="Z' (ohm)",
+                label="Re(Z) (ohm)",
                 no_gridlines=True,
             )
             self._y_axis: int = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label='-Z" (ohm)',
+                label='-Im(Z) (ohm)',
                 no_gridlines=True,
             )
         dpg.bind_item_theme(self._plot, themes.plot)

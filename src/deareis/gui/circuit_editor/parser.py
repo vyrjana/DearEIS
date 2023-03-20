@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,9 +17,24 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 import dearpygui.dearpygui as dpg
-from pyimpspec import Circuit, Connection, Element, Parallel, Series, ParsingError
+from pyimpspec.exceptions import ParsingError
+from pyimpspec import (
+    Circuit,
+    Connection,
+    Element,
+    Parallel,
+    Series,
+)
 import pyimpspec
 import deareis.themes as themes
 
@@ -46,6 +61,8 @@ class Node:
         assert isinstance(element, Element) or element is None
         assert type(input_attribute) is bool
         assert type(output_attribute) is bool
+        self.selected: bool = False
+        self.invalid: bool = False
         self.tag: int = dpg.generate_uuid()
         self.id: int = node_id
         self.label: str = ""
@@ -64,6 +81,7 @@ class Node:
                     attribute_type=dpg.mvNode_Attr_Output, tag=self.output_attribute
                 )
         self.set_label(label)
+        self.set_unselected()
 
     def __repr__(self) -> str:
         return self.label.strip()
@@ -116,11 +134,37 @@ class Node:
         return link
 
     def set_valid(self):
-        dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_node)
+        if self.selected is True:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_selected_node)
+        else:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_unselected_node)
+        self.invalid = False
 
     def set_invalid(self, msg: str) -> str:
-        dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_node)
+        if self.selected is True:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_selected_node)
+        else:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_unselected_node)
+        self.invalid = True
+        # msg is returned to be used as an assertion message
         return msg
+
+    def set_selected(self):
+        if self.invalid is True:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_selected_node)
+        else:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_selected_node)
+        self.selected = True
+
+    def set_unselected(self):
+        if self.invalid is True:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_unselected_node)
+        else:
+            dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_unselected_node)
+        self.selected = False
+
+    def set_preview(self):
+        dpg.bind_item_theme(self.tag, themes.circuit_editor.preview_node)
 
 
 class Parser:
@@ -150,11 +194,24 @@ class Parser:
         self.elements: Dict[str, Element] = {
             _.get_description(): _ for _ in pyimpspec.get_elements().values()
         }
+        self.blocked_linking: bool = False
 
-    def circuit_to_nodes(self, circuit: Circuit):
+    def circuit_to_nodes(self, circuit: Circuit, y_step: int = -1):
         assert type(circuit) is Circuit, circuit
+        assert isinstance(y_step, int), y_step
+        if y_step >= 0:
+            self.y_step = y_step
         input_stack: List[Tuple[str, Union[Element, Connection]]] = circuit.to_stack()
         assert circuit.to_string() == "".join(map(lambda _: _[0], input_stack))
+        self.element_identifiers: Dict[
+            Element, int
+        ] = circuit.generate_element_identifiers(running=False)
+        self.element_counts: Dict[str, int] = {}
+        for element in self.element_identifiers:
+            symbol: str = element.get_symbol()
+            if symbol not in self.element_counts:
+                self.element_counts[symbol] = 0
+            self.element_counts[symbol] += 1
         self.clear_nodes()
         if circuit.to_string() not in ["[]", "()"]:
             self.generate_nodes(input_stack)
@@ -204,6 +261,12 @@ class Parser:
             return self.cere_node
         raise Exception("Node does not exist!")
 
+    def block_linking(self):
+        self.blocked_linking = True
+
+    def unblock_linking(self):
+        self.blocked_linking = False
+
     def link(self, sender: int, attributes: Tuple[int, int]):
         assert type(sender) is int
         assert (
@@ -211,6 +274,8 @@ class Parser:
             and len(attributes) == 2
             and all(map(lambda _: type(_) is int, attributes))
         )
+        if self.blocked_linking is True:
+            return
         link: int = dpg.add_node_link(*attributes, parent=sender)
         src: Node = self.find_node(attribute=attributes[0])
         dst: Node = self.find_node(attribute=attributes[1])
@@ -221,6 +286,8 @@ class Parser:
     def delink(self, sender: int, link: int):
         assert type(sender) is int
         assert type(link) is int
+        if self.blocked_linking is True:
+            return
         src: Node = self.find_node(link_to=link)
         dst: Node = self.find_node(link_from=link)
         # print(f"Delink: {src.label=}, {dst.label=}, {link=}")
@@ -265,16 +332,24 @@ class Parser:
 
     def add_element_node(self, element: Element, **kwargs) -> Node:
         assert isinstance(element, Element)
+        name: str = element.get_name()
+        symbol: str = element.get_symbol()
+        if name == symbol:
+            if element not in self.element_identifiers:
+                if symbol not in self.element_counts:
+                    self.element_counts[symbol] = 0
+                self.element_counts[symbol] += 1
+                self.element_identifiers[element] = self.element_counts[symbol]
+            name = f"{name}_{self.element_identifiers[element]}"
         kwargs["element"] = element
         if "label" not in kwargs:
-            kwargs["label"] = element.get_label()
+            kwargs["label"] = name
         node_id: int = kwargs.get("node_id", -1)
         if node_id < 0:
             node_id = self.next_element()
             kwargs["node_id"] = node_id
-        element._assign_identifier(node_id)
         node: Node = self.add_node(**kwargs)
-        node.set_label(element.get_label())
+        node.set_label(name)
         return node
 
     def add_dummy_node(self, **kwargs) -> Node:
@@ -369,9 +444,7 @@ class Parser:
             assert num_links_out > 0, self.we_node.set_invalid(
                 "WE is not connected to anything!"
             )
-            assert (
-                self.cere_node.id not in node.output_links
-            ), self.we_node.set_invalid(
+            assert self.cere_node.id not in node.output_links, self.we_node.set_invalid(
                 self.cere_node.set_invalid("WE is shorted to CE+RE!")
             )
             stack.append("[")
@@ -463,9 +536,9 @@ class Parser:
             visited_nodes.add(node.id)
             if element is not None:
                 assert num_links_out > 0, node.set_invalid(
-                    f"{element.get_label()} is missing a connection!"
+                    f"{node.label.strip()} is missing a connection!"
                 )
-                stack.append(node.element.to_string(12))  # type: ignore
+                stack.append(node.element.serialize())  # type: ignore
                 # stack.append(node.element.to_string())  # DEBUGGING
             else:
                 assert (num_links_in > 0 and num_links_out > 1) or (
@@ -570,10 +643,7 @@ class Parser:
             nonlocal symbol_stack
             node = self.add_element_node(
                 this,
-                pos=(
-                    x,
-                    y,
-                ),
+                pos=(x, y),
             )
             if type(node_stack[-1]) is list:
                 if len(element_stack) > 2 and type(element_stack[-3]) is Parallel:
@@ -605,10 +675,7 @@ class Parser:
                 self.link_nodes(other, node)  # type: ignore
             node_stack.append(node)
             element_stack.pop()
-            return (
-                1,
-                0,
-            )
+            return (1, 0)
 
         def process_series_dummy(x: int, y: int) -> Tuple[int, int]:
             assert type(x) is int
@@ -620,23 +687,12 @@ class Parser:
                 and symbol_stack[-2] == ")"
                 and symbol_stack[-1] == "]"
             ):
-                node = self.add_dummy_node(
-                    pos=(
-                        x,
-                        y,
-                    )
-                )
+                node = self.add_dummy_node(pos=(x, y))
                 for other in node_stack.pop():  # type: ignore
                     self.link_nodes(other, node)
                 node_stack.append(node)
-                return (
-                    1,
-                    0,
-                )
-            return (
-                0,
-                0,
-            )
+                return (1, 0)
+            return (0, 0)
 
         def process_series(this: Series, x: int, y: int) -> Tuple[int, int]:
             assert type(this) is Series
@@ -671,10 +727,7 @@ class Parser:
             if len(node_stack) > 1 and type(node_stack[-2]) is list:
                 assert type(node_stack[-1]) is Node
                 node_stack[-2].append(node_stack.pop())  # type: ignore
-            return (
-                max(1, width),
-                max(1, height),
-            )
+            return (max(1, width), max(1, height))
 
         def process_parallel_element(this: Element, x: int, y: int) -> Tuple[int, int]:
             assert isinstance(this, Element), type(element)
@@ -683,32 +736,21 @@ class Parser:
             nonlocal symbol_stack
             node = self.add_element_node(
                 this,
-                pos=(
-                    x,
-                    y,
-                ),
+                pos=(x, y),
             )
             assert type(node_stack[-2]) is Node
             self.link_nodes(node_stack[-2], node)  # type: ignore
             assert type(node_stack[-1]) is list
             node_stack[-1].append(node)  # type: ignore
             element_stack.pop()
-            return (
-                1,
-                1,
-            )
+            return (1, 1)
 
         def process_parallel_dummy(x: int, y: int) -> Tuple[int, int]:
             assert type(x) is int
             assert type(y) is int
             if type(node_stack[-1]) is list:
                 if len(element_stack) > 2 and type(element_stack[-2]) is Series:
-                    node = self.add_dummy_node(
-                        pos=(
-                            x,
-                            y,
-                        )
-                    )
+                    node = self.add_dummy_node(pos=(x, y))
                     if type(node_stack[-1]) is list:
                         if symbol_stack[-2] == "[" and symbol_stack[-1] == "(":
                             assert type(node_stack[-2]) is Node
@@ -724,28 +766,14 @@ class Parser:
                     symbol_stack[-2] == ")"
                     or (symbol_stack[-2] == "]" and symbol_stack[-3] == ")")
                 ):
-                    node = self.add_dummy_node(
-                        pos=(
-                            x,
-                            y,
-                        )
-                    )
+                    node = self.add_dummy_node(pos=(x, y))
                     for other in node_stack.pop():  # type: ignore
                         self.link_nodes(other, node)
                     node_stack.append(node)
                 else:
-                    return (
-                        0,
-                        0,
-                    )
-                return (
-                    1,
-                    0,
-                )
-            return (
-                0,
-                0,
-            )
+                    return (0, 0)
+                return (1, 0)
+            return (0, 0)
 
         def process_parallel(this: Parallel, x: int, y: int) -> Tuple[int, int]:
             assert type(this) is Parallel
@@ -788,10 +816,7 @@ class Parser:
                 and node_stack[-2] != self.we_node
             ):
                 node_stack.pop(-2)
-            return (
-                max(1, width + dummy_width),
-                max(1, height),
-            )
+            return (max(1, width + dummy_width), max(1, height))
 
         input_length: int = len(input_stack)
         symbol, element = pop_input()

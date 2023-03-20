@@ -131,6 +131,12 @@ dmypy.json
 docs/API*.md
 docs/API*.pdf
 docs/documentation
+examples/example-2.json
+src/deareis/CHANGELOG.md
+src/deareis/CONTRIBUTORS
+src/deareis/COPYRIGHT
+src/deareis/LICENSE
+src/deareis/LICENSES/*
+src/deareis/README.md
 src/deareis/gui/changelog/*.md
 src/deareis/gui/licenses/*.txt
-examples/example-2.json

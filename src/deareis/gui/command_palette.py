@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -112,10 +112,7 @@ class CommandPalette:
         x, y, w, h = calculate_window_position_dimensions(720, h)
         dpg.configure_item(
             self.window,
-            pos=(
-                x,
-                y,
-            ),
+            pos=(x, y),
             width=w,
             height=h,
         )

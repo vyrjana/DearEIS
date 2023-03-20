@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@ from dataclasses import dataclass
 from typing import (
     Callable,
     Dict,
+    Optional,
     Tuple,
+    Union,
 )
 from numpy import (
     angle,
@@ -30,35 +32,45 @@ from numpy import (
     integer,
     issubdtype,
     log10 as log,
-    ndarray,
+    nan,
 )
+from pandas import DataFrame
 import pyimpspec
-from pyimpspec import Circuit
-from deareis.data.data_sets import DataSet
-from pyimpspec.analysis.fitting import _interpolate
+from pyimpspec import (
+    Capacitor,
+    Circuit,
+    ComplexImpedances,
+    ComplexResiduals,
+    Frequencies,
+    Impedances,
+    Inductor,
+    Phases,
+    Residuals,
+    Resistor,
+    Series,
+)
+from pyimpspec.analysis.utility import _interpolate
 from deareis.enums import (
     CNLSMethod,
     TestMode,
     Test,
 )
-from deareis.utility import format_timestamp
+from deareis.utility import (
+    format_timestamp,
+    rename_dict_entry,
+)
+from deareis.data import DataSet
 
 
-VERSION: int = 1
+VERSION: int = 2
+
+
+def _parse_settings_v2(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_settings_v1(dictionary: dict) -> dict:
-    assert type(dictionary) is dict
-    return {
-        "test": Test(dictionary["test"]),
-        "mode": TestMode(dictionary["mode"]),
-        "num_RC": dictionary["num_RC"],
-        "mu_criterion": dictionary["mu_criterion"],
-        "add_capacitance": dictionary["add_capacitance"],
-        "add_inductance": dictionary["add_inductance"],
-        "method": CNLSMethod(dictionary["method"]),
-        "max_nfev": dictionary["max_nfev"],
-    }
+    return dictionary
 
 
 @dataclass(frozen=True)
@@ -124,13 +136,27 @@ class TestSettings:
         )
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
+            2: _parse_settings_v2,
         }
-        assert version in parsers, (
-            version,
-            parsers,
-        )
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
-        return Class(**parsers[version](dictionary))
+        v: int
+        p: Callable
+        for v, p in parsers.items():
+            if v < version:
+                continue
+            dictionary = p(dictionary)
+        assert "test" in dictionary
+        assert "mode" in dictionary
+        assert "num_RC" in dictionary
+        assert "mu_criterion" in dictionary
+        assert "add_capacitance" in dictionary
+        assert "add_inductance" in dictionary
+        assert "method" in dictionary
+        assert "max_nfev" in dictionary
+        dictionary["test"] = Test(dictionary["test"])
+        dictionary["mode"] = TestMode(dictionary["mode"])
+        dictionary["method"] = CNLSMethod(dictionary["method"])
+        return Class(**dictionary)
 
     def to_dict(self) -> dict:
         """
@@ -149,32 +175,24 @@ class TestSettings:
         }
 
 
+def _parse_result_v2(dictionary: dict) -> dict:
+    if "chisqr" in dictionary:
+        dictionary["pseudo_chisqr"] = dictionary["chisqr"]
+        del dictionary["chisqr"]
+    if "pseudo_chisqr" not in dictionary:
+        dictionary["pseudo_chisqr"] = nan
+    return dictionary
+
+
 def _parse_result_v1(dictionary: dict) -> dict:
-    assert type(dictionary) is dict
-    return {
-        "uuid": dictionary["uuid"],
-        "timestamp": dictionary["timestamp"],
-        "circuit": pyimpspec.parse_cdc(dictionary["circuit"]),
-        "num_RC": dictionary["num_RC"],
-        "mu": dictionary["mu"],
-        "pseudo_chisqr": dictionary["pseudo_chisqr"],
-        "frequency": array(dictionary["frequency"]),
-        "real_residual": array(dictionary["real_residual"]),
-        "imaginary_residual": array(dictionary["imaginary_residual"]),
-        "mask": {int(k): v for k, v in dictionary.get("mask", {}).items()},
-        "impedance": array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_impedance"],
-                        dictionary["imaginary_impedance"],
-                    ),
-                )
-            )
-        ),
-        "settings": TestSettings.from_dict(dictionary["settings"]),
-    }
+    rename_dict_entry(dictionary, "frequency", "frequencies")
+    if "real_impedance" in dictionary:
+        rename_dict_entry(dictionary, "real_impedance", "real_impedances")
+    if "imaginary_impedance" in dictionary:
+        rename_dict_entry(dictionary, "imaginary_impedance", "imaginary_impedances")
+    rename_dict_entry(dictionary, "real_residual", "real_residuals")
+    rename_dict_entry(dictionary, "imaginary_residual", "imaginary_residuals")
+    return dictionary
 
 
 @dataclass
@@ -197,22 +215,19 @@ class TestResult:
         The final number of parallel RC circuits connected in series.
 
     mu: float
-        The mu-value that was calculated for the result.
+        The |mu| that was calculated for the result (eq. 21 in Schönleber et al., 2014).
 
     pseudo_chisqr: float
-        The pseudo chi-squared value calculated according to eq. N in Boukamp (1995).
+        The calculated |pseudo chi-squared| (eq. 14 in Boukamp, 1995).
 
-    frequency: ndarray
+    frequencies: Frequencies
         The frequencies used to perform the test.
 
-    impedance: ndarray
+    impedances: ComplexImpedances
         The complex impedances of the fitted circuit at each of the frequencies.
 
-    real_residual: ndarray
-        The residuals of the real part of the complex impedances.
-
-    imaginary_residual: ndarray
-        The residuals of the imaginary part of the complex impedances.
+    residuals: ComplexResiduals
+        The residuals of the real and the imaginary parts of the fit.
 
     mask: Dict[int, bool]
         The mask that was applied to the DataSet that was tested.
@@ -227,73 +242,139 @@ class TestResult:
     num_RC: int
     mu: float
     pseudo_chisqr: float
-    frequency: ndarray
-    impedance: ndarray
-    real_residual: ndarray
-    imaginary_residual: ndarray
+    frequencies: Frequencies
+    impedances: ComplexImpedances
+    residuals: ComplexResiduals
     mask: Dict[int, bool]
     settings: TestSettings
 
     def __post_init__(self):
-        self._cached_frequency: Dict[int, ndarray] = {}
-        self._cached_impedance: Dict[int, ndarray] = {}
+        self._cached_frequencies: Dict[int, Frequencies] = {}
+        self._cached_impedances: Dict[int, ComplexImpedances] = {}
 
     def __repr__(self) -> str:
         return f"TestResult ({self.get_label()}, {hex(id(self))})"
 
     @classmethod
-    def from_dict(Class, dictionary: dict) -> "TestResult":
+    def from_dict(Class, dictionary: dict, data: Optional[DataSet] = None) -> "TestResult":
         """
         Create an instance from a dictionary.
+
+        Parameters
+        ----------
+        dictionary: dict
+            The dictionary to turn into a TestResult object.
+
+        data: Optional[DataSet], optional
+            The DataSet object that this result is for.
+
+        Returns
+        -------
+        TestResult
         """
-        assert type(dictionary) is dict
+        assert isinstance(dictionary, dict), dict
+        assert data is None or isinstance(data, DataSet), data
         assert "version" in dictionary
         version: int = dictionary["version"]
+        del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
+            2: _parse_result_v2,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+        v: int
+        p: Callable
+        for v, p in parsers.items():
+            if v < version:
+                continue
+            dictionary = p(dictionary)
+
+        assert "uuid" in dictionary
+        assert "timestamp" in dictionary
+        assert "circuit" in dictionary
+        assert "num_RC" in dictionary
+        assert "mu" in dictionary
+        assert "pseudo_chisqr" in dictionary
+        assert "frequencies" in dictionary
+        assert "real_residuals" in dictionary
+        assert "imaginary_residuals" in dictionary
+        assert "settings" in dictionary
+        dictionary["circuit"] = pyimpspec.parse_cdc(dictionary["circuit"])
+        dictionary["frequencies"] = array(dictionary["frequencies"])
+        dictionary["settings"] = TestSettings.from_dict(dictionary["settings"])
         mask: Dict[str, bool] = dictionary["mask"]
-        if len(mask) < len(dictionary["frequency"]):
-            i: int
-            for i in range(0, len(dictionary["frequency"])):
-                if mask.get(str(i)) is not True:
-                    mask[str(i)] = False
+        dictionary["mask"] = {
+            i: mask.get(str(i), False) for i in range(0, len(dictionary["frequencies"]))
+        }
         if (
-            "real_impedance" not in dictionary
-            or "imaginary_impedance" not in dictionary
+            "real_impedances" not in dictionary
+            or "imaginary_impedances" not in dictionary
         ):
-            Z: ndarray = pyimpspec.parse_cdc(dictionary["circuit"]).impedances(
-                dictionary["frequency"]
+            dictionary["impedances"] = dictionary["circuit"].get_impedances(
+                dictionary["frequencies"]
             )
-            dictionary["real_impedance"] = list(Z.real)
-            dictionary["imaginary_impedance"] = list(Z.imag)
-        return Class(**parsers[version](dictionary))
+        else:
+            dictionary["impedances"] = array(
+                list(
+                    map(
+                        lambda _: complex(*_),
+                        zip(
+                            dictionary["real_impedances"],
+                            dictionary["imaginary_impedances"],
+                        ),
+                    )
+                )
+            )
+            del dictionary["real_impedances"]
+            del dictionary["imaginary_impedances"]
+        dictionary["residuals"] = array(
+            list(
+                map(
+                    lambda _: complex(*_),
+                    zip(
+                        dictionary["real_residuals"],
+                        dictionary["imaginary_residuals"],
+                    ),
+                )
+            )
+        )
+        del dictionary["real_residuals"]
+        del dictionary["imaginary_residuals"]
+        return Class(**dictionary)
 
     def to_dict(self, session: bool) -> dict:
         """
         Return a dictionary that can be used to recreate an instance.
+
+        Parameters
+        ----------
+        session: bool
+            If False, then a minimal dictionary will be generated to reduce file size.
+
+        Returns
+        -------
+        dict
         """
         dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
             "timestamp": self.timestamp,
-            "circuit": self.circuit.to_string(12),
+            "circuit": self.circuit.serialize(),
             "num_RC": self.num_RC,
             "mu": self.mu,
             "pseudo_chisqr": self.pseudo_chisqr,
-            "frequency": list(self.frequency),
-            "real_residual": list(self.real_residual),
-            "imaginary_residual": list(self.imaginary_residual),
+            "frequencies": list(self.frequencies),
+            "real_residuals": list(self.residuals.real),
+            "imaginary_residuals": list(self.residuals.imag),
             "mask": {k: True for k, v in self.mask.items() if v is True},
             "settings": self.settings.to_dict(),
         }
         if session:
             dictionary.update(
                 {
-                    "real_impedance": list(self.impedance.real),
-                    "imaginary_impedance": list(self.impedance.imag),
+                    "real_impedances": list(self.impedances.real),
+                    "imaginary_impedances": list(self.impedances.imag),
                 }
             )
         return dictionary
@@ -301,119 +382,148 @@ class TestResult:
     def get_label(self) -> str:
         """
         Generate a label for the result.
-        """
-        circuit: str = f"R(RC){self.num_RC}"
-        if self.settings.add_capacitance:
-            circuit += "C"
-        if self.settings.add_inductance:
-            circuit += "L"
-        timestamp: str = format_timestamp(self.timestamp)
-        return f"{circuit} ({timestamp})"
 
-    def get_frequency(self, num_per_decade: int = -1) -> ndarray:
+        Returns
+        -------
+        str
+        """
+        label: str = f"#(RC)={self.num_RC}"
+        if self.settings.add_capacitance:
+            label += ", C"
+            if self.settings.add_inductance:
+                label += "+L"
+        elif self.settings.add_inductance:
+            label += ", L"
+        timestamp: str = format_timestamp(self.timestamp)
+        return f"{label} ({timestamp})"
+
+    def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
         """
         Get an array of frequencies within the range of tested frequencies.
 
         Parameters
         ----------
-        num_per_decade: int = -1
+        num_per_decade: int, optional
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies.
+
+        Returns
+        -------
+        Frequencies
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            if num_per_decade not in self._cached_frequency:
-                self._cached_frequency.clear()
-                self._cached_frequency[num_per_decade] = _interpolate(
-                    self.frequency, num_per_decade
+            if num_per_decade not in self._cached_frequencies:
+                self._cached_frequencies.clear()
+                self._cached_frequencies[num_per_decade] = _interpolate(
+                    self.frequencies, num_per_decade
                 )
-            return self._cached_frequency[num_per_decade]
-        return self.frequency
+            return self._cached_frequencies[num_per_decade]
+        return self.frequencies
 
-    def get_impedance(self, num_per_decade: int = -1) -> ndarray:
+    def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
         """
         Get the complex impedances produced by the fitted circuit within the range of tested frequencies.
 
         Parameters
         ----------
-        num_per_decade: int = -1
+        num_per_decade: int, optional
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+
+        Returns
+        -------
+        Frequencies
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            if num_per_decade not in self._cached_impedance:
-                self._cached_impedance.clear()
-                self._cached_impedance[num_per_decade] = self.circuit.impedances(
-                    self.get_frequency(num_per_decade)
+            if num_per_decade not in self._cached_impedances:
+                self._cached_impedances.clear()
+                self._cached_impedances[num_per_decade] = self.circuit.get_impedances(
+                    self.get_frequencies(num_per_decade)
                 )
-            return self._cached_impedance[num_per_decade]
-        return self.impedance
+            return self._cached_impedances[num_per_decade]
+        return self.impedances
 
-    def get_nyquist_data(self, num_per_decade: int = -1) -> Tuple[ndarray, ndarray]:
+    def get_nyquist_data(
+        self, num_per_decade: int = -1
+    ) -> Tuple[Impedances, Impedances]:
         """
-        Get the data required to plot the results as a Nyquist plot (-Z\" vs Z').
+        Get the data required to plot the results as a Nyquist plot (-Im(Z) vs Re(Z)).
 
         Parameters
         ----------
-        num_per_decade: int = -1
+        num_per_decade: int, optional
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+
+        Returns
+        -------
+        Tuple[Impedances, Impedances]
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            Z: ndarray = self.get_impedance(num_per_decade)
+            Z: ComplexImpedances = self.get_impedances(num_per_decade)
             return (
                 Z.real,
                 -Z.imag,
             )
         return (
-            self.impedance.real,
-            -self.impedance.imag,
+            self.impedances.real,
+            -self.impedances.imag,
         )
 
     def get_bode_data(
-        self, num_per_decade: int = -1
-    ) -> Tuple[ndarray, ndarray, ndarray]:
+        self,
+        num_per_decade: int = -1,
+    ) -> Tuple[Frequencies, Impedances, Phases]:
         """
-        Get the data required to plot the results as a Bode plot (|Z| and phi vs f).
+        Get the data required to plot the results as a Bode plot (Mode(Z) and -Phase(Z) vs f).
 
         Parameters
         ----------
-        num_per_decade: int = -1
+        num_per_decade: int, optional
             If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.
+
+        Returns
+        -------
+        Tuple[Frequencies, Impedances, Phases]
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
         if num_per_decade > 0:
-            freq: ndarray = self.get_frequency(num_per_decade)
-            Z: ndarray = self.get_impedance(num_per_decade)
+            f: Frequencies = self.get_frequencies(num_per_decade)
+            Z: ComplexImpedances = self.get_impedances(num_per_decade)
             return (
-                freq,
+                f,
                 abs(Z),
                 -angle(Z, deg=True),
             )
         return (
-            self.frequency,
-            abs(self.impedance),
-            -angle(self.impedance, deg=True),
+            self.frequencies,
+            abs(self.impedances),
+            -angle(self.impedances, deg=True),
         )
 
-    def get_residual_data(self) -> Tuple[ndarray, ndarray, ndarray]:
+    def get_residuals_data(self) -> Tuple[Frequencies, Residuals, Residuals]:
         """
         Get the data required to plot the residuals (real and imaginary vs f).
+
+        Returns
+        -------
+        Tuple[Frequencies, Residuals, Residuals]
         """
         return (
-            self.frequency,
-            self.real_residual * 100,
-            self.imaginary_residual * 100,
+            self.frequencies,
+            self.residuals.real * 100,
+            self.residuals.imag * 100,
         )
 
     def calculate_score(self, mu_criterion: float) -> float:
         """
-        Calculate a score based on the provided mu-criterion and the statistics of the result.
-        A result with a mu-value greater than or equal to the mu-criterion will get a score of -numpy.inf.
+        Calculate a score based on the provided |mu|-criterion and the statistics of the result.
+        A result with a |mu| greater than or equal to the |mu|-criterion will get a score of -numpy.inf.
 
         Parameters
         ----------
         mu_criterion: float
-            The mu-criterion to apply.
+            The |mu|-criterion to apply.
             See perform_test for details.
 
         Returns
@@ -424,4 +534,72 @@ class TestResult:
             -inf
             if self.mu >= mu_criterion
             else -log(self.pseudo_chisqr) / (abs(mu_criterion - self.mu) ** 0.75)
+        )
+
+    def get_series_resistance(self) -> float:
+        """
+        Get the value of the series resistance.
+
+        Returns
+        -------
+        float
+        """
+        series: Series = self.circuit.get_elements(flattened=False)[0]
+        assert isinstance(series, Series)
+        for elem_con in series.get_elements(flattened=False):
+            if isinstance(elem_con, Resistor):
+                return elem_con.get_value("R")
+        return nan
+
+    def get_series_capacitance(self) -> float:
+        """
+        Get the value of the series capacitance (or numpy.nan if not included in the circuit).
+
+        Returns
+        -------
+        float
+        """
+        series: Series = self.circuit.get_elements(flattened=False)[0]
+        assert isinstance(series, Series)
+        for elem_con in series.get_elements(flattened=False):
+            if isinstance(elem_con, Capacitor):
+                return elem_con.get_value("C")
+        return nan
+
+    def get_series_inductance(self) -> float:
+        """
+        Get the value of the series inductance (or numpy.nan if not included in the circuit).
+
+        Returns
+        -------
+        float
+        """
+        series: Series = self.circuit.get_elements(flattened=False)[0]
+        assert isinstance(series, Series)
+        for elem_con in series.get_elements(flattened=False):
+            if isinstance(elem_con, Inductor):
+                return elem_con.get_value("L")
+        return nan
+
+    def to_statistics_dataframe(self) -> DataFrame:
+        """
+        Get the statistics related to the test as a pandas.DataFrame object.
+
+        Returns
+        -------
+        DataFrame
+        """
+        statistics: Dict[str, Union[int, float, str]] = {
+            "Log pseudo chi-squared": log(self.pseudo_chisqr),
+            "Mu": self.mu,
+            "Number of parallel RC elements": self.num_RC,
+            "Series resistance (ohm)": self.get_series_resistance(),
+            "Series capacitance (F)": self.get_series_capacitance(),
+            "Series inductance (H)": self.get_series_inductance(),
+        }
+        return DataFrame.from_dict(
+            {
+                "Label": list(statistics.keys()),
+                "Value": list(statistics.values()),
+            }
         )

@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2022 DearEIS developers
+# Copyright 2023 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,12 +43,15 @@ from typing import (
 )
 from uuid import uuid4
 from numpy import (
+    inf,
     ndarray,
 )
+from pyimpspec.circuit.parser import Parser
 from deareis.data import DataSet
 from deareis.data.fitting import FitResult
 from deareis.data.drt import DRTResult
 from deareis.data.kramers_kronig import TestResult
+from deareis.data.zhit import ZHITResult
 from deareis.data.simulation import SimulationResult
 from deareis.data.plotting import (
     PlotSettings,
@@ -57,17 +60,41 @@ from deareis.data.plotting import (
 from deareis.enums import PlotType
 
 
-VERSION: int = 4
+VERSION: int = 5
+
+
+def _parse_v5(state: dict) -> dict:
+    # TODO: Update implementation when VERSION is incremented
+    return state
 
 
 def _parse_v4(state: dict) -> dict:
-    # TODO: Update implementation when VERSION is incremented
+    def update_cdcs(dictionary: dict, tests: bool):
+        for k, v in dictionary.items():
+            if isinstance(v, dict):
+                update_cdcs(v, tests=tests or k == "tests")
+            elif isinstance(v, list):
+                for i in v:
+                    if isinstance(i, dict):
+                        update_cdcs(i, tests or k == "tests")
+            elif (k == "circuit" or k == "cdc") and isinstance(v, str):
+                circuit = Parser().process(v, version=0)
+                if tests is True:
+                    for element in circuit.get_elements():
+                        keys = element.get_values().keys()
+                        element.set_lower_limits(**{_: -inf for _ in keys})
+                        element.set_upper_limits(**{_: inf for _ in keys})
+                dictionary[k] = circuit.serialize()
+
+    update_cdcs(state, tests=False)
+    if "zhits" not in state:
+        state["zhits"] = {}
     return state
 
 
 def _parse_v3(state: dict) -> dict:
     state["drts"] = {_["uuid"]: [] for _ in state["data_sets"]}
-    return _parse_v4(state)
+    return state
 
 
 def _parse_v2(state: dict) -> dict:
@@ -100,22 +127,23 @@ def _parse_v2(state: dict) -> dict:
                 uuid4().hex,
             ).to_dict(session=False)
         )
-    return _parse_v3(state)
+    return state
 
 
 def _parse_v1(state: dict) -> dict:
     state["active_plot_uuid"] = ""
     state["plots"] = []
-    return _parse_v2(state)
+    return state
 
 
 class Project:
     """
-    A class representing a collection of notes, data sets, test results, fit results, simulation results, and complex plots.
+    A class representing a collection of notes, data sets, analysis results, simulation results, and complex plots.
     """
 
     def __init__(self, *args, **kwargs):
         self._path: str = ""
+        self._is_new: bool = False
         self.update(*args, **kwargs)
 
     def __repr(self) -> str:
@@ -130,14 +158,35 @@ class Project:
         self._data_sets: List[DataSet] = list(
             map(DataSet.from_dict, kwargs.get("data_sets", []))
         )
-        self._drts: Dict[str, List[DRTResult]] = {
-            k: list(map(DRTResult.from_dict, v))
-            for k, v in kwargs.get("drts", {}).items()
-        }
-        self._fits: Dict[str, List[FitResult]] = {
-            k: list(map(FitResult.from_dict, v))
-            for k, v in kwargs.get("fits", {}).items()
-        }
+        uuid: str
+        data_lookup: Dict[str, DataSet] = {_.uuid: _ for _ in self._data_sets}
+        self._drts: Dict[str, List[DRTResult]] = {}
+        for uuid, results in kwargs.get("drts", {}).items():
+            data = data_lookup[uuid]
+            self._drts[uuid] = list(
+                map(
+                    lambda _: DRTResult.from_dict(_, data=data),
+                    results,
+                )
+            )
+        self._fits: Dict[str, List[FitResult]] = {}
+        for uuid, results in kwargs.get("fits", {}).items():
+            data = data_lookup[uuid]
+            self._fits[uuid] = list(
+                map(
+                    lambda _: FitResult.from_dict(_, data=data),
+                    results,
+                )
+            )
+        self._zhits: Dict[str, List[ZHITResult]] = {}
+        for uuid, results in kwargs.get("zhits", {}).items():
+            data = data_lookup[uuid]
+            self._zhits[uuid] = list(
+                map(
+                    lambda _: ZHITResult.from_dict(_, data=data),
+                    results,
+                )
+            )
         self._label: str = kwargs.get("label", "Project")
         self._notes: str = kwargs.get("notes", "")
         path: str = kwargs.get("path", "").strip()
@@ -164,15 +213,21 @@ class Project:
             map(SimulationResult.from_dict, kwargs.get("simulations", []))
         )
         self._tests: Dict[str, List[TestResult]] = {
-            k: list(map(TestResult.from_dict, v))
+            k: list(map(lambda _: TestResult.from_dict(_, data=None), v))
             for k, v in kwargs.get("tests", {}).items()
         }
+        for uuid in data_lookup:
+            if uuid not in self._drts:
+                self._drts[uuid] = []
+            if uuid not in self._fits:
+                self._fits[uuid] = []
+            if uuid not in self._zhits:
+                self._zhits[uuid] = []
+            if uuid not in self._tests:
+                self._tests[uuid] = []
 
     @staticmethod
-    def parse(state: dict) -> dict:
-        """
-        Used when deserializing project files.
-        """
+    def _parse(state: dict) -> dict:
         assert type(state) is dict, type(state)
         if "version" in state:
             version: int = state["version"]
@@ -187,17 +242,22 @@ class Project:
                 2: _parse_v2,
                 3: _parse_v3,
                 4: _parse_v4,
+                5: _parse_v5,
             }
             assert version in parsers, (
                 version,
                 parsers,
             )
-            state = parsers[version](state)
+            for v, p in parsers.items():
+                if v < version:
+                    continue
+                state = p(state)
             assert type(state["uuid"]) is str
         # Basic validation
         assert type(state["data_sets"]) is list
         assert type(state["fits"]) is dict
         assert type(state["drts"]) is dict
+        assert type(state["zhits"]) is dict
         assert type(state["label"]) is str
         assert type(state["notes"]) is str
         assert type(state["plots"]) is list
@@ -214,8 +274,12 @@ class Project:
         ----------
         state: dict
             A dictionary-based representation of a project state.
+
+        Returns
+        -------
+        Project
         """
-        return Class(**Class.parse(state))
+        return Class(**Class._parse(state))
 
     @classmethod
     def from_file(Class, path: str) -> "Project":
@@ -226,6 +290,10 @@ class Project:
         ----------
         path: str
             The path to a file containing a serialized project state.
+
+        Returns
+        -------
+        Project
         """
         assert type(path) is str and exists(path)
         fp: IO
@@ -243,6 +311,10 @@ class Project:
         ----------
         json: str
             A JSON representation of a project state.
+
+        Returns
+        -------
+        Project
         """
         assert type(json) is str
         return Class.from_dict(parse_json(json))
@@ -253,6 +325,15 @@ class Project:
         Create an instance by merging multiple Project instances.
         All UUIDs are replaced to avoid collisions.
         The labels of some objects are also replaced to avoid collisions.
+
+        Parameters
+        ----------
+        projects: List[Project]
+            A list of the Project instances to merge.
+
+        Returns
+        -------
+        Project
         """
         assert type(projects) is list and all(
             map(lambda _: type(_) is Class, projects)
@@ -297,6 +378,7 @@ class Project:
             state["plots"].extend(other["plots"])
             state["simulations"].extend(other["simulations"])
             state["tests"].update(other["tests"])
+            state["zhits"].update(other["zhits"])
             state["label"] = other["label"]
         state["notes"] = state["notes"].strip()
         # Check for UUID collisions.
@@ -306,6 +388,8 @@ class Project:
             uuids.extend(list(map(lambda _: _["uuid"], fits)))
         for drts in state["drts"].values():
             uuids.extend(list(map(lambda _: _["uuid"], drts)))
+        for zhits in state["zhits"].values():
+            uuids.extend(list(map(lambda _: _["uuid"], zhits)))
         uuids.extend(list(map(lambda _: _["uuid"], state["plots"])))
         uuids.extend(list(map(lambda _: _["uuid"], state["simulations"])))
         for tests in state["tests"].values():
@@ -350,6 +434,10 @@ class Project:
         ----------
         session: bool
             If true, then data minimization is not performed.
+
+        Returns
+        -------
+        dict
         """
         return {
             "data_sets": list(
@@ -361,6 +449,9 @@ class Project:
             },
             "drts": {
                 k: list(map(lambda _: _.to_dict(), v)) for k, v in self._drts.items()
+            },
+            "zhits": {
+                k: list(map(lambda _: _.to_dict(), v)) for k, v in self._zhits.items()
             },
             "label": self._label,
             "notes": self._notes,
@@ -377,6 +468,10 @@ class Project:
     def get_label(self) -> str:
         """
         Get the project's label.
+
+        Returns
+        -------
+        str
         """
         return self._label
 
@@ -409,12 +504,20 @@ class Project:
         """
         Get the project's currrent path.
         An empty string signifies that no path has been set previously.
+
+        Returns
+        -------
+        str
         """
         return self._path
 
     def get_notes(self) -> str:
         """
         Get the project's notes.
+
+        Returns
+        -------
+        str
         """
         return self._notes
 
@@ -436,7 +539,7 @@ class Project:
 
         Parameters
         ----------
-        path: Optional[str] = None
+        path: Optional[str], optional
             The path to write the project state to.
             If this is None, then the most recently defined path is used.
         """
@@ -459,10 +562,15 @@ class Project:
             fp.write(dump_json(dictionary, sort_keys=True, indent=1))
         if exists(tmp_path):
             remove(tmp_path)
+        self._is_new = False
 
     def get_data_sets(self) -> List[DataSet]:
         """
         Get the project's data sets.
+
+        Returns
+        -------
+        List[DataSet]
         """
         return self._data_sets
 
@@ -487,6 +595,7 @@ class Project:
             data.set_label(label)
         self._data_sets.append(data)
         self._fits[data.uuid] = []
+        self._zhits[data.uuid] = []
         self._drts[data.uuid] = []
         self._tests[data.uuid] = []
         self._data_sets.sort(key=lambda _: _.get_label())
@@ -548,34 +657,16 @@ class Project:
         del self._fits[data.uuid]
         del self._drts[data.uuid]
         del self._tests[data.uuid]
+        del self._zhits[data.uuid]
         list(map(lambda _: _.remove_series(data.uuid), self._plots))
-
-    def replace_data_set(self, old: DataSet, new: DataSet):
-        """
-        Replace a data set in the project with another one.
-
-        Parameters
-        ----------
-        old: DataSet
-            The data set to be replaced.
-
-        new: DataSet
-            The replacement data set.
-        """
-        assert type(old) is DataSet, old
-        assert type(new) is DataSet, new
-        assert old.uuid in list(map(lambda _: _.uuid, self._data_sets))
-        assert old.uuid == new.uuid, (
-            old.uuid,
-            new.uuid,
-        )
-        self._data_sets.remove(old)
-        self._data_sets.append(new)
-        self._data_sets.sort(key=lambda _: _.get_label())
 
     def get_all_tests(self) -> Dict[str, List[TestResult]]:
         """
         Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results of those data sets.
+
+        Returns
+        -------
+        Dict[str, List[TestResult]]
         """
         return self._tests
 
@@ -587,6 +678,10 @@ class Project:
         ----------
         data: DataSet
             The data set whose tests to get.
+
+        Returns
+        -------
+        List[TestResult]
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
@@ -629,9 +724,77 @@ class Project:
         self._tests[data.uuid].remove(test)
         list(map(lambda _: _.remove_series(test.uuid), self._plots))
 
+    def get_all_zhits(self) -> Dict[str, List[ZHITResult]]:
+        """
+        Get a mapping of data set UUIDs to the corresponding Z-HIT analysis results.
+
+        Returns
+        -------
+        Dict[str, List[ZHITResult]]
+        """
+        return self._zhits
+
+    def get_zhits(self, data: DataSet) -> List[ZHITResult]:
+        """
+        Get the Z-HIT analysis results associated with a specific data set.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set whose tests to get.
+
+        Returns
+        -------
+        List[ZHITResult]
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        return self._zhits[data.uuid]
+
+    def add_zhit(self, data: DataSet, zhit: ZHITResult):
+        """
+        Add the provided Z-HIT analysis result result to the provided data set's list of Z-HIT analysis results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set that was tested.
+
+        zhit: ZHITResult
+            The result of the analysis.
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        assert type(zhit) is ZHITResult, zhit
+        assert zhit.uuid not in list(map(lambda _: _.uuid, self._zhits[data.uuid]))
+        self._zhits[data.uuid].insert(0, zhit)
+
+    def delete_zhit(self, data: DataSet, zhit: ZHITResult):
+        """
+        Delete the provided Z-HIT analysis result from the provided data set's list of Z-HIT analysis results.
+
+        Parameters
+        ----------
+        data: DataSet
+            The data set associated with the test result.
+
+        zhit: ZHITResult
+            The analysis result to delete.
+        """
+        assert type(data) is DataSet, data
+        assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        assert type(zhit) is ZHITResult, zhit
+        assert zhit in self._zhits[data.uuid], zhit
+        self._zhits[data.uuid].remove(zhit)
+        list(map(lambda _: _.remove_series(zhit.uuid), self._plots))
+
     def get_all_drts(self) -> Dict[str, List[DRTResult]]:
         """
         Get a mapping of data set UUIDs to the corresponding DRT analysis results of those data sets.
+
+        Returns
+        -------
+        Dict[str, List[DRTResult]]
         """
         return self._drts
 
@@ -643,6 +806,10 @@ class Project:
         ----------
         data: DataSet
             The data set whose analyses to get.
+
+        Returns
+        -------
+        List[DRTResult]
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
@@ -688,6 +855,10 @@ class Project:
     def get_all_fits(self) -> Dict[str, List[FitResult]]:
         """
         Get a mapping of data set UUIDs to the corresponding list of fit results of those data sets.
+
+        Returns
+        -------
+        Dict[str, List[FitResult]]
         """
         return self._fits
 
@@ -699,6 +870,10 @@ class Project:
         ----------
         data: DataSet
             The data set whose fits to get.
+
+        Returns
+        -------
+        List[FitResult]
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
@@ -744,6 +919,10 @@ class Project:
     def get_simulations(self) -> List[SimulationResult]:
         """
         Get all of the simulation results.
+
+        Returns
+        -------
+        List[SimulationResult]
         """
         return self._simulations
 
@@ -777,6 +956,10 @@ class Project:
     def get_plots(self) -> List[PlotSettings]:
         """
         Get all of the plots.
+
+        Returns
+        -------
+        List[PlotSettings]
         """
         return self._plots
 
@@ -843,10 +1026,15 @@ class Project:
         ----------
         plot: PlotSettings
             The plot whose items/series to get.
+
+        Returns
+        -------
+        List[PlotSeries]
         """
         assert type(plot) is PlotSettings, plot
         data_sets: List[DataSet] = self.get_data_sets()
         tests: Dict[str, List[TestResult]] = self.get_all_tests()
+        zhits: Dict[str, List[TestResult]] = self.get_all_zhits()
         drts: Dict[str, List[DRTResult]] = self.get_all_drts()
         fits: Dict[str, List[FitResult]] = self.get_all_fits()
         simulations: List[SimulationResult] = self.get_simulations()
@@ -854,9 +1042,24 @@ class Project:
         uuid: str
         for uuid in plot.series_order:
             series: Optional[
-                Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+                Union[
+                    DataSet,
+                    TestResult,
+                    ZHITResult,
+                    DRTResult,
+                    FitResult,
+                    SimulationResult,
+                ]
             ]
-            series = plot.find_series(uuid, data_sets, tests, drts, fits, simulations)
+            series = plot.find_series(
+                uuid=uuid,
+                data_sets=data_sets,
+                tests=tests,
+                zhits=zhits,
+                drts=drts,
+                fits=fits,
+                simulations=simulations,
+            )
             if series is None:
                 continue
             label: str = plot.get_series_label(uuid) or series.get_label()
