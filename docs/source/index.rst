@@ -5,8 +5,8 @@
 
 .. include:: ./substitutions.rst
 
-Welcome to DearEIS's documentation!
-=====================================
+Welcome to DearEIS' documentation!
+==================================
 
 .. only:: html
 
