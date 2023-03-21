@@ -74,7 +74,7 @@ User-defined elements
 
 Both pyimpspec and DearEIS include support for user-defined elements since version 4.0.0.
 The support has been implemented in DearEIS by providing a setting where the user can specify a Python script that defines one or more new elements.
-See the source code and the documentation for pyimpspec (specifically the **User-defined elements** section of the **Equivalent circuits** subchapter) for examples.
+See `the source code (e.g., for the constant phase element) <https://github.com/vyrjana/pyimpspec/blob/main/src/pyimpspec/circuit/constant_phase_element.py>`_ and `the documentation <https://vyrjana.github.io/pyimpspec/guide_circuit.html#user-defined-elements>`_ for pyimpspec for examples.
 The relevant functions and classes are available via the APIs of both DearEIS (:doc:`/apidocs_circuit`) and pyimpspec.
 
 .. warning::
