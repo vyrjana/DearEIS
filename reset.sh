@@ -1,3 +1,3 @@
 #!/bin/bash
-# Undo most reset commit
+# Undo most recent commit
 git reset --hard HEAD~1
