@@ -21,7 +21,7 @@ Multiple impedance spectra (or *data sets*) can be loaded and processed in the *
 
 
 .. _data_tab:
-.. figure:: images/data-sets-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab.png
    :alt: The Data sets tab of a project
 
    The data point around 50 Hz has been omitted from this rather noisy data set as an outlier.
@@ -75,7 +75,7 @@ Middle-mouse clicking and dragging a region in a plot in that window can also be
 
 
 .. _toggle_figure:
-.. figure:: images/data-sets-tab-toggle.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-toggle.png
    :alt: Masking multiple points
 
    The **Toggle points** can be used to (un)mask multiple data points in several ways.
@@ -91,7 +91,7 @@ If multiple data sets will need to have the same (or very similar) masks, then t
 
 
 .. _mask_figure:
-.. figure:: images/data-sets-tab-copy.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-copy.png
    :alt: Copying masks from another data set
 
    The **Copy mask** includes a preview of what the current data set would look like with the mask that was applied to another data set in :numref:`toggle_figure`.
@@ -121,7 +121,7 @@ Only data sets with the same frequencies can be averaged.
    Make sure that the measurements differ due to random noise rather than, e.g., drift before using this feature.
 
 .. _averaging_figure:
-.. figure:: images/data-sets-tab-averaging.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-averaging.png
    :alt: Averaging of multiple data sets
 
    Two data sets have been chosen (markers) and an average data set has been generated (line).
@@ -143,7 +143,7 @@ Alternatively, if the smoothing and interpolation cannot provide a reasonable re
 
 
 .. _interpolation_figure:
-.. figure:: images/data-sets-tab-interpolation.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-interpolation.png
    :alt: Interpolation of data points
 
    The outlier (red marker), which was masked in :numref:`data_tab`, has been replaced with a value (orange marker) along the interpolated spline (green line).
@@ -163,10 +163,10 @@ The recorded impedances can also be corrected by subtracting one of the followin
 - a fitted circuit
 - another data set
 
-This feature can be used to correct for some aspect of a measurement setup that is independent of the sample itself.
+This feature can be used to, e.g., correct for some aspect of a measurement setup that is independent of the sample itself.
 
 .. _subtraction_figure:
-.. figure:: images/data-sets-tab-subtraction.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-subtraction.png
    :alt: Subtraction of impedances from a recorded spectrum
 
    A resistance of 100 ohm is subtracted from a data set.

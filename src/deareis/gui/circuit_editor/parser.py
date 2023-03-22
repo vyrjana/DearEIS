@@ -165,6 +165,11 @@ class Node:
 
     def set_preview(self):
         dpg.bind_item_theme(self.tag, themes.circuit_editor.preview_node)
+        link: int
+        for link in self.output_links.values():
+            dpg.bind_item_theme(link, themes.circuit_editor.preview_node)
+        for link in self.input_links.values():
+            dpg.bind_item_theme(link, themes.circuit_editor.preview_node)
 
 
 class Parser:

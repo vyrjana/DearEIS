@@ -228,10 +228,12 @@ class SubtractImpedance:
     def create_window(self):
         self.options: List[str] = [
             "Constant:",
-            " Circuit:",
-            "     Fit:",
+            "Circuit:",
+            "Fit:",
             "Data set:",
         ]
+        label_pad: int = max(map(len, self.options))
+        self.options = list(map(lambda _: _.rjust(label_pad), self.options))
         self.circuit_editor_window: int = -1
         x: int
         y: int
@@ -329,10 +331,17 @@ class SubtractImpedance:
                         dpg.add_combo(
                             items=self.fit_labels,
                             default_value=self.fit_labels[0] if self.fit_labels else "",
-                            width=405,
+                            width=361,
                             tag=self.fit_combo,
                             callback=self.update_preview,
                         )
+                        self.copy_circuit_button: int = dpg.generate_uuid()
+                        dpg.add_button(
+                            label="Copy",
+                            callback=self.copy_circuit,
+                            tag=self.copy_circuit_button,
+                        )
+                        attach_tooltip(tooltips.data_sets.copy_circuit)
                     self.spectrum_group: int = dpg.generate_uuid()
                     with dpg.group(horizontal=True, tag=self.spectrum_group):
                         self.spectrum_combo: int = dpg.generate_uuid()
@@ -345,6 +354,12 @@ class SubtractImpedance:
                             tag=self.spectrum_combo,
                             callback=self.update_preview,
                         )
+                    self.groups: List[int] = [
+                        self.constant_group,
+                        self.circuit_group,
+                        self.fit_group,
+                        self.spectrum_group,
+                    ]
         self.create_plots()
         dpg.add_button(
             label="Accept".ljust(12),
@@ -457,41 +472,27 @@ class SubtractImpedance:
                 dpg.enable_item(item)
 
         index: int = self.options.index(value)
-        if index == 0:
-            enable_group(self.constant_group)
-            disable_group(self.circuit_group)
-            disable_group(self.fit_group)
-            disable_group(self.spectrum_group)
-        elif index == 1:
-            disable_group(self.constant_group)
-            enable_group(self.circuit_group)
-            disable_group(self.fit_group)
-            disable_group(self.spectrum_group)
-        elif index == 2:
-            disable_group(self.constant_group)
-            disable_group(self.circuit_group)
-            enable_group(self.fit_group)
-            disable_group(self.spectrum_group)
-        elif index == 3:
-            disable_group(self.constant_group)
-            disable_group(self.circuit_group)
-            disable_group(self.fit_group)
-            enable_group(self.spectrum_group)
-        else:
-            raise Exception(f"Unsupported option: {value}")
+        assert 0 <= index < len(self.groups), "Unsupported option!"
+        i: int
+        group: int
+        for i, group in enumerate(self.groups):
+            if i == index:
+                enable_group(group)
+            else:
+                disable_group(group)
         self.update_preview()
 
     def update_preview(self):
         index: int = self.options.index(dpg.get_value(self.radio_buttons))
         f: ndarray = self.data.get_frequencies(masked=None)
         Z: ndarray = self.data.get_impedances(masked=None)
-        if index == 0:
+        if index == 0:  # Constant
             Z_const: complex = complex(
                 dpg.get_value(self.constant_real),
                 -dpg.get_value(self.constant_imag),
             )
             Z = Z - Z_const
-        elif index == 1:
+        elif index == 1:  # Circuit
             cdc: str = dpg.get_value(self.circuit_cdc)
             circuit: Optional[Circuit] = dpg.get_item_user_data(self.circuit_cdc)
             if circuit is None or circuit.to_string() != cdc:
@@ -502,12 +503,12 @@ class SubtractImpedance:
             if circuit is None:
                 return
             Z = Z - circuit.get_impedances(f)
-        elif index == 2:
+        elif index == 2:  # Fit
             if len(self.fits) > 0:
                 fit: FitResult
                 fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
                 Z = Z - fit.circuit.get_impedances(f)
-        elif index == 3:
+        elif index == 3:  # Data set
             if len(self.data_sets) > 0:
                 spectrum: DataSet
                 spectrum = self.data_sets[
@@ -584,6 +585,17 @@ class SubtractImpedance:
                 phase=phase,
             )
         self.phase_plot.queue_limits_adjustment()
+
+    def copy_circuit(self):
+        if len(self.fits) == 0:
+            return
+        fit: FitResult
+        fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
+        self.cycle_options(step=-1)
+        self.editing_circuit = True
+        self.keybinding_handler.block()
+        dpg.hide_item(self.preview_window)
+        self.circuit_editor.show(fit.circuit)
 
     def edit_circuit(self):
         if not dpg.is_item_enabled(self.circuit_editor_button):

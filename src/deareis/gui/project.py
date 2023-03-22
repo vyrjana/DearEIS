@@ -72,11 +72,11 @@ class ProjectTab:
             tag=self.tab,
             parent=tab_bar,
         ):
-            tab_lookup: dict = {}
+            self.tab_lookup: dict = {}
             self.context_lookup: Dict[int, Context] = {}
 
             def select_tab(tab_id: int):
-                tab = tab_lookup.get(tab_id)
+                tab = self.tab_lookup.get(tab_id)
                 assert tab is not None
                 tab.resize(
                     width=dpg.get_viewport_width(),
@@ -99,7 +99,7 @@ class ProjectTab:
                 self.simulation_tab: SimulationTab = SimulationTab(state)
                 self.plotting_tab: PlottingTab = PlottingTab(state)
             pad_tab_labels(self.tab_bar)
-            tab_lookup.update(
+            self.tab_lookup.update(
                 {
                     self.overview_tab.tab: self.overview_tab,
                     self.data_sets_tab.tab: self.data_sets_tab,
@@ -132,7 +132,7 @@ class ProjectTab:
                 elif hasattr(tab, "queued_update") and tab.queued_update is not None:
                     tab.queued_update()
 
-            for tab in tab_lookup.values():
+            for tab in self.tab_lookup.values():
                 if not (hasattr(tab, "is_visible") and hasattr(tab, "visibility_item")):
                     continue
                 item_handler: int = dpg.generate_uuid()
@@ -146,13 +146,7 @@ class ProjectTab:
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0, width
         assert type(height) is int and height > 0, height
-        self.data_sets_tab.resize(width, height)
-        self.kramers_kronig_tab.resize(width, height)
-        self.zhit_tab.resize(width, height)
-        self.drt_tab.resize(width, height)
-        self.fitting_tab.resize(width, height)
-        self.simulation_tab.resize(width, height)
-        self.plotting_tab.resize(width, height)
+        self.tab_lookup[dpg.get_value(self.tab_bar)].resize(width, height)
 
     def select_next_tab(self):
         current_tab: int = dpg.get_value(self.tab_bar)

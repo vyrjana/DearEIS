@@ -1,6 +1,15 @@
+# 4.1.0 (2023/03/22)
+
+- Added a `Copy` button next to the fit results in the `Subtract impedance` window. This button can be used to copy a fitted circuit to the `Circuit` option above.
+- Updated appearance of nodes and links of fitted/simulated circuits in the `Fitting`/`Simulation` tab.
+- Updated how plots are resized in various tabs.
+- Refactored some parts of the `Subtract impedance` window.
+- Fixed a bug where selecting a data set in the `Simulation` tab by using the mouse caused the current simulation result to become deselected.
+
+
 # 4.0.1 (2023/03/21)
 
-- Fixed bug that caused the mask that was applied to the original data to also be applied to the new data set when subtracting impedances.
+- Fixed a bug that caused the mask that was applied to the original data to also be applied to the new data set when subtracting impedances.
 - Fixed bugs related to keybindings in the file dialog window.
 - Fixed bugs causing plots in the `Fitting` and `Simulation` tabs to have incorrect heights on Windows.
 

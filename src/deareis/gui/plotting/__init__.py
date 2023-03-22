@@ -1998,7 +1998,13 @@ class PlottingTab:
                                     width=-1,
                                 )
                                 attach_tooltip(tooltips.plotting.export_plot)
-                    with dpg.child_window(border=False, width=-1, height=-1):
+                    self.plot_window: int = dpg.generate_uuid()
+                    with dpg.child_window(
+                        border=False,
+                        width=-1,
+                        height=-1,
+                        tag=self.plot_window,
+                    ):
                         self.plots_group: int = dpg.generate_uuid()
                         self.plot_height: int = -24
                         with dpg.group(tag=self.plots_group):
@@ -2085,11 +2091,18 @@ class PlottingTab:
                                 attach_tooltip(tooltips.general.adjust_limits)
 
     def resize(self, width: int, height: int):
-        assert type(width) is int and width > 0
-        assert type(height) is int and height > 0
+        if not self.is_visible():
+            return
+        width, height = dpg.get_item_rect_size(self.plot_window)
+        height -= 24
+        for plot in self.plot_types.values():
+            plot.resize(-1, height)
 
     def is_visible(self) -> bool:
-        return dpg.is_item_visible(self.visibility_item)
+        for plot in self.plot_types.values():
+            if plot.is_visible():
+                return True
+        return False
 
     def collapse_expand_sidebar(self):
         if self.is_sidebar_shown():

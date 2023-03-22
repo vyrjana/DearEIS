@@ -1313,7 +1313,7 @@ class DRTTab:
             height=-1,
             tag=self.plot_window,
         ):
-            self.create_gamma_plot()
+            self.create_drt_plot()
             dpg.add_spacer(height=4)
             dpg.add_separator()
             dpg.add_spacer(height=4)
@@ -1326,8 +1326,13 @@ class DRTTab:
                 self.create_residuals_plot()
             pad_tab_labels(self.plot_tab_bar)
             dpg.set_value(self.plot_tab_bar, impedance_tab)
+            self.plots: List[Plot] = [
+                self.nyquist_plot,
+                self.bode_plot,
+                self.impedance_plot,
+            ]
 
-    def create_gamma_plot(self):
+    def create_drt_plot(self):
         self.drt_plot: DRT = DRT(width=-1, height=400)
         self.drt_plot.plot(
             tau=array([]),
@@ -1611,19 +1616,12 @@ class DRTTab:
         self.settings_menu.set_settings(settings)
 
     def resize(self, width: int, height: int):
-        assert type(width) is int and width > 0
-        assert type(height) is int and height > 0
         if not self.is_visible():
             return
         width, height = dpg.get_item_rect_size(self.plot_window)
         height = round(height / 2) - 24 * 2 + 1
         self.drt_plot.resize(-1, height)
-        plots: List[Plot] = [
-            self.nyquist_plot,
-            self.bode_plot,
-            self.impedance_plot,
-        ]
-        for plot in plots:
+        for plot in self.plots:
             plot.resize(-1, height)
 
     def clear(self, hide: bool = True):

@@ -4,7 +4,6 @@ from os import (
     walk,
 )
 from os.path import (
-    basename,
     exists,
     isdir,
     join,
@@ -38,7 +37,7 @@ def copy_html(src: str, dst: str):
             ".pdf",
         )
     ]
-    dirs: List[str] = ["_images", "_static"]
+    dirs: List[str] = ["_images", "_static", "_sources"]
     if not isdir(dst):
         makedirs(dst)
     name: str
@@ -48,15 +47,13 @@ def copy_html(src: str, dst: str):
         copytree(join(src, name), join(dst, name))
 
 
-def copy_pdf(src: str, dst: str, version_path: str):
+def copy_pdf(src: str, dst: str, name: str, version_path: str):
     version: str = ""
     with open(version_path, "r") as fp:
         version = fp.read().strip().replace(".", "-")
     assert version != ""
-    name: str
-    ext: str
-    name, ext = splitext(basename(src))
-    dst = join(dst, f"{name} - {version}{ext}")
+    ext: str = splitext(src)[1]
+    dst = join(dst, f"{name}-{version}{ext}")
     if exists(dst):
         remove(dst)
     copy(src, dst)
@@ -70,5 +67,6 @@ if __name__ == "__main__":
     copy_pdf(
         src="./docs/build/latex/latex/deareis.pdf",
         dst="./dist",
+        name="DearEIS",
         version_path="./version.txt",
     )

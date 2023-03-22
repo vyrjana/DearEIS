@@ -735,7 +735,7 @@ class SimulationTab:
                     width=-60,
                     callback=lambda s, a, u: signals.emit(
                         Signal.SELECT_SIMULATION_RESULT,
-                        simulation=self.results_combo.get(),
+                        simulation=dpg.get_item_user_data(self.delete_button),
                         data=u.get(a),
                     ),
                 )
@@ -816,6 +816,11 @@ class SimulationTab:
                 self.create_bode_plot()
                 self.create_impedance_plot()
             pad_tab_labels(self.plot_tab_bar)
+            self.plots: List[Plot] = [
+                self.nyquist_plot,
+                self.bode_plot,
+                self.impedance_plot,
+            ]
 
     def create_nyquist_plot(self):
         with dpg.tab(label="Nyquist"):
@@ -1022,7 +1027,12 @@ class SimulationTab:
         self.settings_menu.set_settings(settings)
 
     def resize(self, width: int, height: int):
-        return
+        if not self.is_visible():
+            return
+        width, height = dpg.get_item_rect_size(self.plot_window)
+        height -= self.circuit_preview_height + 24 * 3 - 21
+        for plot in self.plots:
+            plot.resize(-1, height)
 
     def next_plot_tab(self):
         tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)

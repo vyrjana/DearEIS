@@ -15,7 +15,7 @@ The simulated impedance spectra can be loaded as data sets, which means that the
 The **Simulation** tab can thus be very useful for teaching, demonstration, and development purposes.
 
 .. _simulation_tab:
-.. figure:: images/simulation-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/simulation-tab.png
    :alt: The Simulation tab of a project.
 
    An example of where a fitted circuit's impedance response has been extrapolated outside of the frequency range of the original experimental data.

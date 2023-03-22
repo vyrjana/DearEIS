@@ -48,6 +48,9 @@ If checked, then the corresponding data point will be interpolated linearly betw
         "subtract": """
 Subtract some amount(s) from the impedances of the current data set.
     """.strip(),
+        "copy_circuit": """
+Copy the chosen fitted circuit to the option above and open the circuit editor.
+""".strip(),
         "toggle": """
 Toggle a range of points.
     """.strip(),

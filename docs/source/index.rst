@@ -36,17 +36,18 @@ Welcome to DearEIS' documentation!
 DearEIS is a Python package for processing, analyzing, and visualizing impedance spectra.
 The primary interface for using DearEIS is a graphical user interface (GUI).
 
-.. figure:: images/fitting-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab.png
    :alt: The graphical user interface of DearEIS
 
 
-The GUI can be started via the following command
+The GUI can be started via the following command:
 
 .. code:: bash
 
    deareis
 
-or by running DearEIS as a Python module
+
+The GUI can also be started by running DearEIS as a Python module:
 
 .. code:: bash
 
@@ -59,6 +60,10 @@ An application programming interface (API) is also included and it can be used t
 
    >>> import deareis
 
+
+If you would prefer to primarily use an API or are looking for a command-line interface (CLI), then check out `pyimpspec <https://vyrjana.github.io/pyimpspec>`_.
+
+The source code for DearEIS can be found `here <https://github.com/vyrjana/DearEIS>`_.
 The changelog can be found `here <https://github.com/vyrjana/DearEIS/blob/main/CHANGELOG.md>`_.
 If you encounter bugs or wish to request a feature, then please open an `issue on GitHub <https://github.com/vyrjana/DearEIS/issues>`_.
 If you wish to contribute to the project, then please read the `readme <https://github.com/vyrjana/DearEIS/blob/main/README.md>`_ before submitting a `pull request via GitHub <https://github.com/vyrjana/DearEIS/pulls>`_.

@@ -60,6 +60,7 @@ from deareis.gui.plots import (
     Bode,
     Impedance,
     Nyquist,
+    Plot,
     Residuals,
 )
 import deareis.tooltips as tooltips
@@ -648,11 +649,17 @@ class KramersKronigTab:
                 self.create_bode_plot()
                 self.create_impedance_plot()
             pad_tab_labels(self.plot_tab_bar)
+            self.plots: List[Plot] = [
+                self.nyquist_plot,
+                self.bode_plot,
+                self.impedance_plot,
+            ]
 
     def create_residuals_plot(self):
+        self.residuals_plot_height: int = 300
         self.residuals_plot: Residuals = Residuals(
             width=-1,
-            height=300,
+            height=self.residuals_plot_height,
         )
         self.residuals_plot.plot(
             frequency=array([]),
@@ -891,9 +898,12 @@ class KramersKronigTab:
         return dpg.is_item_visible(self.visibility_item)
 
     def resize(self, width: int, height: int):
-        assert type(width) is int and width > 0
-        assert type(height) is int and height > 0
-        return
+        if not self.is_visible():
+            return
+        width, height = dpg.get_item_rect_size(self.plot_window)
+        height -= self.residuals_plot_height + 24 * 4 - 1
+        for plot in self.plots:
+            plot.resize(-1, height)
 
     def clear(self, hide: bool = True):
         self.data_sets_combo.clear()

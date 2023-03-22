@@ -7,7 +7,7 @@ The various tabs dedicated to performing some form of analysis also have a **Bat
 These buttons bring up a window (:numref:`batch_window`)where multiple data sets can be selected for inclusion in a batch analysis.
 
 .. _batch_window:
-.. figure:: images/batch-analysis.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/batch-analysis.png
    :alt: The Batch analysis window
 
    An example of the **Batch analysis** window where a few data sets have been selected.

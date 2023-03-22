@@ -20,7 +20,7 @@ Data validation based on linear Kramers-Kronig testing can be performed in the *
 - different plots
 
 .. _kk_tab:
-.. figure:: images/kramers-kronig-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab.png
    :alt: The Kramers-Kronig tab of a project
 
    A Kramers-Kronig test result for the noisy data set with the omitted outlier.
@@ -46,7 +46,7 @@ However, these results are presented in a modal window for inspection (:numref:`
 - Bode plot
 
 .. _exploratory_window:
-.. figure:: images/kramers-kronig-tab-exploratory.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab-exploratory.png
    :alt: Window of exploratory test results
 
    The plot of |mu| fluctuates a bit at low numbers of parallel RC elements in this example, but wilder fluctuations can in some cases (depending on the chosen |mu|-criterion) result in a false negative when using the **Auto** mode.
@@ -82,7 +82,7 @@ Data validation using the `Z-HIT algorithm <https://en.wikipedia.org/wiki/Z-HIT>
 
 
 .. _zhit_tab:
-.. figure:: images/zhit-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/zhit-tab.png
    :alt: The Z-HIT analysis tab of a project
 
    The modulus data that is plotted in the upper plot has been reconstructed (red line) based on the phase data (orange markers and green line) of some example data that exhibits drift at low frequencies (blue markers).
@@ -103,7 +103,7 @@ The weights can also be previewed in a window (:numref:`weights_window`) that is
 This window can help with selecting a window function and appropriate parameters for it.
 
 .. _weights_window:
-.. figure:: images/zhit-tab-weights.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/zhit-tab-weights.png
    :alt: A window for previewing weights
 
    It is possible to preview the weights that could be applied when fitting the approximated modulus data to the experimental modulus data.
@@ -128,7 +128,7 @@ The settings that were used to perform the active test result are also presented
 The mask that was applied to the data set when the test was performed can be applied by pressing the **Apply mask** button.
 If the mask that is applied to the data set has changed since an earlier analysis was performed, then that will be indicated clearly above the statistics table.
 
-.. figure:: images/kramers-kronig-tab-warning.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab-warning.png
    :alt: Invalid result because the data set mask has changed
    
    An example of the warning (red text on the left-hand side) that could be shown if, e.g., the mask applied to a data set has been changed after an analysis has been performed.

@@ -25,7 +25,7 @@ DRT calculations can be performed in the **DRT analysis** tab (:numref:`drt_tab`
 - a table of the settings that were used to obtain the active result
 
 .. _drt_tab:
-.. figure:: images/drt-tab-interpolated.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-tab-interpolated.png
    :alt: The DRT analysis tab of a project
 
    An example of a result obtained with the noisy data set with the interpolated data point near 50 Hz and the TR-RBF method.
@@ -38,7 +38,7 @@ Below are some examples of this.
 The overlay plots shown below are created using the **Plotting** tab (more information about that can be found in the :doc:`/guide_plotting` subchapter).
 
 .. _drt_overlay:
-.. figure:: images/drt-overlaid.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid.png
    :alt: Three overlaid DRT spectra
 
    Three overlaid DRT spectra that were obtained with the TR-RBF method using the same settings: with outlier (original), without outlier (omitted), and with the outlier replaced (interpolated).
@@ -51,7 +51,7 @@ The overlay plots shown below are created using the **Plotting** tab (more infor
 
 
 .. _drt_overlay_2:
-.. figure:: images/drt-overlaid-2.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid-2.png
    :alt: Six overlaid DRT spectra
 
    Additional DRT spectra, which were obtained by fitting **R(RC)(RQ)** circuits and calculating the DRT using the m(RQ)fit method, overlaid on top of :numref:`drt_overlay`.
@@ -67,7 +67,7 @@ The overlay plots shown below are created using the **Plotting** tab (more infor
 One can see based on :numref:`drt_overlay_2` that different DRT methods can produce very different results, but the settings and amount of noise in the data also have a significant effect as can be seen in :numref:`drt_overlay_3`.
 
 .. _drt_overlay_3:
-.. figure:: images/drt-overlaid-3.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid-3.png
    :alt: Four overlaid DRT spectra
 
    In this example two DRT spectra are shown for each of the data sets: ideal (no noise) and interpolated (noisy with the outlier replaced).

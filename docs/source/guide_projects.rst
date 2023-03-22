@@ -12,7 +12,7 @@ The entire list can be cleared and individual entries can be also be removed.
 Two or more projects can also be merged to form a new project.
 
 .. _home_tab:
-.. figure:: images/home-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/home-tab.png
    :alt: The Home tab of the program
 
    Recent projects are easily accessible from the **Home** tab.
@@ -57,7 +57,7 @@ Multiple projects can be open at the same time as separate tabs and each project
 - The **Plotting** tab is for composing figures where multiple results can be overlaid on top of each other.
 
 .. _overview_tab:
-.. figure:: images/overview-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/overview-tab.png
    :alt: The Overview tab of a project
 
    Notes about a project can be kept in the **Overview** tab.

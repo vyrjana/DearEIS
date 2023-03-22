@@ -861,6 +861,8 @@ with dpg.theme(tag=_valid_unselected_node):
             category=dpg.mvThemeCat_Core,
         )
 _preview_node: int = dpg.generate_uuid()
+_link_color = (255, 255, 255, 200)
+_pin_color = (255, 255, 255, 0)
 with dpg.theme(tag=_preview_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -907,6 +909,31 @@ with dpg.theme(tag=_preview_node):
                 255.0,
             ),
             category=dpg.mvThemeCat_Core,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_Link,
+            _link_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_LinkHovered,
+            _link_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_LinkSelected,
+            _link_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_Pin,
+            _pin_color,
+            category=dpg.mvThemeCat_Nodes,
+        )
+        dpg.add_theme_color(
+            dpg.mvNodeCol_PinHovered,
+            _pin_color,
+            category=dpg.mvThemeCat_Nodes,
         )
         dpg.add_theme_style(
             dpg.mvNodeStyleVar_NodePadding,

@@ -10,7 +10,7 @@ The plot settings can also be used via the API provided by DearEIS, which means 
 This approach would also mean that a plotting library other than `matplotlib`_, which is the default backend for exporting plots using DearEIS, could be used instead.
 
 .. _plotting_tab:
-.. figure:: images/plotting-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab.png
    :alt: The Plotting tab of a project
 
    The **Plotting** tab can be used to create plots containing multiple data sets and/or results.
@@ -27,7 +27,7 @@ The **Available** tab (:numref:`available`) contains entries for all of the data
 Individual items can be selected by ticking their corresponding checkboxes.
 
 .. _available:
-.. figure:: images/plotting-tab-available.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab-available.png
    :alt: The Available tab within the Plotting tab
 
    Data sets and/or results can be selected from the **Available** tab.
@@ -57,7 +57,7 @@ An item's label, which is used in the plot's legend, can be overridden by typing
 If one or more spaces, " ", are given as the new label, then the item will not have an entry in the legend.
 
 .. _active:
-.. figure:: images/plotting-tab-active.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab-active.png
    :alt: The Active tab within the Plotting tab
 
    The label and appearance of the selected items can be modified in the **Active** tab.
@@ -67,7 +67,7 @@ An item's appearance (color, marker shape, and whether or not it should have a l
 The **U** and **D** buttons can be used to adjust the order of an item when generating a plot, which affects the legend and whether or not an item will either be covered by or be covering some other item.
 
 .. _edit:
-.. figure:: images/plotting-tab-edit.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab-edit.png
    :alt: The Edit appearance window within the Plotting tab
 
    The **Edit appearance** window that can be used to define the color associated with a plottable item.
@@ -81,7 +81,7 @@ The second approach is to use the menu that is accessible via the **Copy appeara
 One can choose which plot to copy from, which items to copy settings from, and which categories of settings to copy (label, colors, etc.).
 
 .. _copy:
-.. figure:: images/plotting-tab-copy.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab-copy.png
    :alt: The Copy appearance settings window within the Plotting tab
 
    The **Copy appearance settings** window is for copying the appearance settings for multiple items from one plot to another.
@@ -100,7 +100,7 @@ The plots (|PlotSettings|) and the items (|PlotSeries|) included in the plots ar
 This means means that one can compose a plot using the GUI and generate the final plot using the API, which allows for batch exporting and also for greater control of a plot's appearance.
 
 .. _export:
-.. figure:: images/plotting-tab-export.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/plotting-tab-export.png
    :alt: The Export plot window within the Plotting tab
 
    The **Export plot** window is for previewing and preparing to save a plot as a file.

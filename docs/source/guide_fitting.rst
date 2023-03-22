@@ -13,7 +13,7 @@ The **Fitting** tab is where equivalent circuits can be fitted to data sets (:nu
 
 
 .. _fitting_tab:
-.. figure:: images/fitting-tab.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab.png
    :alt: The Fitting tab of a project.
 
    An example of an **R(RC)(RW)** circuit that has been fitted to a data set.
@@ -88,13 +88,13 @@ One can also set a parameter to have a fixed value.
 
 
 .. _circuit_editor:
-.. figure:: images/fitting-tab-editor.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor.png
    :alt: Example of the circuit editor window
 
    The graphical circuit editor can be used to construct equivalent circuits and to define the initial values and limits of parameters.
 
 .. _container_elements:
-.. figure:: images/fitting-tab-container.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-container.png
    :alt: Example of the parameters and subcircuits of a container element
 
    Container elements such as the general transmission line model have subcircuits that can also be modified.
@@ -104,7 +104,7 @@ If there is an issue with the equivalent circuit (e.g., a missing or invalid con
 The **Status** field at the bottom of the window should offer some help regarding the nature of the issue and the affected node should be highlighted with a red label (:numref:`invalid_circuit`).
 
 .. _invalid_circuit:
-.. figure:: images/fitting-tab-invalid.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-invalid.png
    :alt: Example of a status message for an invalid circuit (e.g., missing connection)
 
    If the circuit is invalid because of, e.g., a missing connection, then that is indicated by highlighting the affected node and by showing a relevant error message in the status field near the bottom of the window.
@@ -117,7 +117,7 @@ The parameters of each circuit element can be adjusted via the circuit editor.
 However, there is also a separate parameter adjustment window that provides a real-time preview of the impedance spectrum produced by the circuit.
 This window is accessible from the **Fitting** tab (i.e., not from the circuit editor).
 
-.. figure:: images/fitting-tab-adjustment.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-adjustment.png
    :alt: The parameter adjustment window in the Fitting tab
 
    The parameter adjustment window provides a convenient way of dialing in the initial values before performing a fit.

@@ -28,7 +28,7 @@ Some aspects of the appearances of various plots can be defined (:numref:`appear
 Some of these settings are also mixed and matched in some plots when there are more items to plot than shown in the plots in this window (e.g., see the plots in the window for interpolating data points in the **Data sets** tab).
 
 .. _appearance:
-.. figure:: images/settings-appearance.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-appearance.png
    :alt: The Appearance settings window
 
    Most changes made to plot appearances should take effect immediately.
@@ -41,7 +41,7 @@ Defaults
 The default settings that are used in, e.g., the tabs for performing analyses can be defined here (:numref:`defaults`).
 
 .. _defaults:
-.. figure:: images/settings-defaults.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-defaults.png
    :alt: The Default settings window
 
    Changes made to defaults should take effect immediately.
@@ -59,7 +59,7 @@ If an update to DearEIS changes or adds keybindings for actions, then those keyb
 In such cases it may be necessary to manually assign keybindings to those actions or to simply reset the keybindings.
 
 .. _keybindings:
-.. figure:: images/settings-keybindings.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-keybindings.png
    :alt: The Keybinding settings window
 
    The keybindings defined in this window apply to a great extent also to modal/popup windows with similar functionality (e.g., for cycling results or plot types).
@@ -91,7 +91,7 @@ The relevant functions and classes are available via the APIs of both DearEIS (:
    So keep track of your script(s) that define user-defined elements and consider creating new elements when changes have to be made.
 
 .. _user_defined_elements:
-.. figure:: images/settings-user-defined-elements.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-user-defined-elements.png
    :alt: The User-defined elements window
 
    Specify the path to a Python script and then click the **Refresh** button.

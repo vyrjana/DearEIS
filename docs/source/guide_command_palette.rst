@@ -11,7 +11,7 @@ When there isn't a modal/popup window open, then it is possible to perform actio
 The contents of the list of actions depends upon the context (e.g., which tab is currently open).
 
 .. _command_palette:
-.. figure:: images/command-palette.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/command-palette.png
    :alt: The Command palette window
 
    Various actions can be performed via the **Command palette**, which only requires memorization of a single keybinding (``Ctrl+P`` by default).
