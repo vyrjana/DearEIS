@@ -40,6 +40,13 @@ The primary interface for using DearEIS is a graphical user interface (GUI).
    :alt: The graphical user interface of DearEIS
 
 
+.. only:: html
+
+   .. note::
+
+      PDF copies of the documentation are available in the `releases section <https://github.com/vyrjana/DearEIS/releases>`_.
+
+
 The GUI can be started via the following command:
 
 .. code:: bash
@@ -61,7 +68,9 @@ An application programming interface (API) is also included and it can be used t
    >>> import deareis
 
 
-If you would prefer to primarily use an API or are looking for a command-line interface (CLI), then check out `pyimpspec <https://vyrjana.github.io/pyimpspec>`_.
+.. note::
+
+   If you would prefer to primarily use an API or are looking for a command-line interface (CLI), then check out `pyimpspec <https://vyrjana.github.io/pyimpspec>`_.
 
 The source code for DearEIS can be found `here <https://github.com/vyrjana/DearEIS>`_.
 The changelog can be found `here <https://github.com/vyrjana/DearEIS/blob/main/CHANGELOG.md>`_.
@@ -69,10 +78,6 @@ If you encounter bugs or wish to request a feature, then please open an `issue o
 If you wish to contribute to the project, then please read the `readme <https://github.com/vyrjana/DearEIS/blob/main/README.md>`_ before submitting a `pull request via GitHub <https://github.com/vyrjana/DearEIS/pulls>`_.
 
 DearEIS is licensed under GPLv3_ or later.
-
-.. only:: html
-
-   PDF copies of the documentation are available in the `releases section <https://github.com/vyrjana/DearEIS/releases>`_.
 
 
 .. toctree::
