@@ -54,7 +54,7 @@ If you find bugs, wish some feature was added, or find the documentation to be l
 
 If you wish to contribute code, then start by cloning the repository:
 
-`git clone --recurse-submodules https://github.com/vyrjana/DearEIS.git`
+`git clone https://github.com/vyrjana/DearEIS.git`
 
 The development dependencies can be installed from within the repository directory:
 
