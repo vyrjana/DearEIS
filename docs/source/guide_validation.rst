@@ -34,6 +34,11 @@ An additional weight is also used in the **Exploratory** mode when suggesting th
 The test results are presented in the form of a table of statistics (e.g., |pseudo chi-squared|) and different plots such as one of the relative residuals of the fit.
 
 
+.. note::
+
+   See :ref:`parallel impedances` for information about how to process impedance data that include negative differential resistances before attempting to validate the data using the included implementations of the linear Kramers-Kronig tests.
+
+
 Exploratory mode
 ~~~~~~~~~~~~~~~~
 

@@ -36,6 +36,10 @@ exclude_patterns = []
 autodoc_typehints = "description"
 autodoc_typehints_format = "short"
 
+plot_formats = ["svg", "pdf"]
+plot_html_show_formats = False
+plot_rcparams = {"savefig.transparent": True}
+
 
 def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     module_string = str(getmodule(obj))

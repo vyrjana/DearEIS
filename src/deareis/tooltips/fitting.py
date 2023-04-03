@@ -80,9 +80,18 @@ A parameter in the element. Hovering over the name will show a tooltip with the 
     """.strip(),
         "parameter_value": """
 The fitted value of the parameter. Hovering over the value will show a tooltip that also contains the parameter's unit.
+
+Values are highlighted in red to indicate that either the lower or the upper limit is preventing further adjustment of the value.
     """.strip(),
         "error": """
 The estimated relative standard error of the fitted value. Hovering over the value will show a tooltip with the estimated absolute standard error of the fitted value.
+
+Relative errors greater than or equal to 5 % are highlighted in orange to draw attention since further action may be required.
+
+Relative errors greater than 100 % are highlighted in red to indicate that the chosen equivalent circuit clearly should be modified.
+    """.strip(),
+        "statistics": """
+Some values may be highlighted to indicate a possible issue. For example, if the number of function evaluations is equal to the chosen limit, then this may result in a poor fit.
     """.strip(),
         "delete": """
 Delete the current fit result.

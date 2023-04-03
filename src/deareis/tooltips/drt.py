@@ -26,6 +26,7 @@ effat2017: str = "DOI:10.1016/j.electacta.2017.07.050"
 liu2020: str = "DOI:10.1016/j.electacta.2020.136864"
 boukamp2015: str = "DOI:10.1016/j.electacta.2014.12.059"
 boukamp2017: str = "DOI:10.1016/j.ssi.2016.10.009"
+cultrera2020: str = "DOI:10.1088/2633-1357/abad0d"
 
 drt = SimpleNamespace(
     **{
@@ -57,8 +58,10 @@ The data to use when performing the calculations:
 
 This is only used when the method setting is set to TR-NNLS or TR-RBF.
     """.strip(),
-        "lambda_value": """
+        "lambda_value": f"""
 The regularization parameter to use as part of the Tikhonov regularization. If the checkbox next to the input field is ticked, then an attempt will be made to automatically find a suitable value. However, further tweaking of the value manually is recommended.
+
+More than one approach for suggesting a suitable regularization parameter may be available (e.g., 'L-curve corner search' from {cultrera2020}). It may be necessary to use a lower value for the 'Maximum symmetry' setting (e.g., 0.1) when using the TR-RBF method and the 'L-curve corner search' algorithm to suggest a suitable regularization parameter.
 
 This is only used when the method setting is set to TR-NNLS or TR-RBF.
     """.strip(),

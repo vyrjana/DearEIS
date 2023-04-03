@@ -181,6 +181,9 @@ class SimulationResult:
             num_per_decade=self.settings.num_per_decade
         )
 
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
+
     def __repr__(self) -> str:
         return f"SimulationResult ({self.get_label()}, {hex(id(self))})"
 

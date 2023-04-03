@@ -214,6 +214,10 @@ class KeybindingHandler:
             signals.emit(Signal.SHOW_SETTINGS_KEYBINDINGS)
         elif action == Action.SHOW_COMMAND_PALETTE:
             signals.emit(Signal.SHOW_COMMAND_PALETTE)
+        elif action == Action.SHOW_DATA_SET_PALETTE:
+            signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        elif action == Action.SHOW_RESULT_PALETTE:
+            signals.emit(Signal.SHOW_RESULT_PALETTE)
         elif action == Action.SHOW_CHANGELOG:
             signals.emit(Signal.SHOW_CHANGELOG)
         elif action == Action.CHECK_UPDATES:
@@ -693,6 +697,11 @@ class KeybindingHandler:
                 elif action == Action.INTERPOLATE_POINTS:
                     signals.emit(
                         Signal.SELECT_POINTS_TO_INTERPOLATE,
+                        data=data,
+                    )
+                elif action == Action.PARALLEL_IMPEDANCE:
+                    signals.emit(
+                        Signal.SELECT_PARALLEL_IMPEDANCE,
                         data=data,
                     )
                 elif action == Action.SUBTRACT_IMPEDANCE:

@@ -146,7 +146,10 @@ class ProjectTab:
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0, width
         assert type(height) is int and height > 0, height
-        self.tab_lookup[dpg.get_value(self.tab_bar)].resize(width, height)
+        tab: int = dpg.get_value(self.tab_bar)
+        if tab not in self.tab_lookup:
+            return
+        self.tab_lookup[tab].resize(width, height)
 
     def select_next_tab(self):
         current_tab: int = dpg.get_value(self.tab_bar)
@@ -677,23 +680,16 @@ class ProjectTab:
         )
 
     def has_active_input(self, context: Optional[Context] = None) -> bool:
-        assert type(context) is Context or context is None, context
         if context is None:
             context = self.get_active_context()
-        if context == Context.OVERVIEW_TAB:
-            return self.overview_tab.has_active_input()
-        elif context == Context.DATA_SETS_TAB:
-            return self.data_sets_tab.has_active_input()
-        elif context == Context.KRAMERS_KRONIG_TAB:
-            return self.kramers_kronig_tab.has_active_input()
-        elif context == Context.ZHIT_TAB:
-            return self.zhit_tab.has_active_input()
-        elif context == Context.DRT_TAB:
-            return self.drt_tab.has_active_input()
-        elif context == Context.FITTING_TAB:
-            return self.fitting_tab.has_active_input()
-        elif context == Context.SIMULATION_TAB:
-            return self.simulation_tab.has_active_input()
-        elif context == Context.PLOTTING_TAB:
-            return self.plotting_tab.has_active_input()
-        return False
+        assert type(context) is Context, context
+        return {
+            Context.OVERVIEW_TAB: self.overview_tab.has_active_input,
+            Context.DATA_SETS_TAB: self.data_sets_tab.has_active_input,
+            Context.KRAMERS_KRONIG_TAB: self.kramers_kronig_tab.has_active_input,
+            Context.ZHIT_TAB: self.zhit_tab.has_active_input,
+            Context.DRT_TAB: self.drt_tab.has_active_input,
+            Context.FITTING_TAB: self.fitting_tab.has_active_input,
+            Context.SIMULATION_TAB: self.simulation_tab.has_active_input,
+            Context.PLOTTING_TAB: self.plotting_tab.has_active_input,
+        }.get(context, lambda: False)()

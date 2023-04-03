@@ -128,6 +128,20 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         action=Action.SHOW_COMMAND_PALETTE,
     ),
     Keybinding(
+        key=dpg.mvKey_P,
+        mod_alt=False,
+        mod_ctrl=True,
+        mod_shift=True,
+        action=Action.SHOW_DATA_SET_PALETTE,
+    ),
+    Keybinding(
+        key=dpg.mvKey_P,
+        mod_alt=True,
+        mod_ctrl=True,
+        mod_shift=True,
+        action=Action.SHOW_RESULT_PALETTE,
+    ),
+    Keybinding(
         key=dpg.mvKey_S,
         mod_alt=False,
         mod_ctrl=True,

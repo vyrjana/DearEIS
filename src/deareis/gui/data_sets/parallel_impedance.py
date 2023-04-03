@@ -17,6 +17,10 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from warnings import (
+    catch_warnings,
+    filterwarnings,
+)
 from pyimpspec import Circuit
 from threading import Timer
 from typing import (
@@ -27,7 +31,6 @@ from typing import (
     Tuple,
 )
 from numpy import (
-    allclose,
     array,
     ndarray,
 )
@@ -48,10 +51,7 @@ import deareis.tooltips as tooltips
 from deareis.gui.circuit_editor import CircuitEditor
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.data import (
-    DataSet,
-    FitResult,
-)
+from deareis.data import DataSet
 from deareis.state import STATE
 from deareis.enums import Action
 from deareis.keybindings import (
@@ -60,45 +60,14 @@ from deareis.keybindings import (
 )
 
 
-def format_fit_labels(fits: List[FitResult]) -> List[str]:
-    old_labels: List[str] = list(map(lambda _: _.get_label(), fits))
-    longest_cdc: int = max(list(map(lambda _: len(_[: _.find(" ")]), old_labels)) + [1])
-    new_labels: List[str] = []
-    old_key: str
-    for old_key in old_labels:
-        cdc, timestamp = (
-            old_key[: old_key.find(" ")],
-            old_key[old_key.find(" ") + 1 :],
-        )
-        new_labels.append(f"{cdc.ljust(longest_cdc)} {timestamp}")
-    return new_labels
-
-
-class SubtractImpedance:
+class ParallelImpedance:
     def __init__(
         self,
         data: DataSet,
-        data_sets: List[DataSet],
-        fits: List[FitResult],
         callback: Callable,
     ):
         assert type(data) is DataSet, data
-        assert type(data_sets) is list and all(
-            map(lambda _: type(_) is DataSet, data_sets)
-        ), data_sets
         self.data: DataSet = data
-        self.data_sets: List[DataSet] = [
-            _
-            for _ in sorted(data_sets, key=lambda _: _.get_label())
-            if _ != data
-            and data.get_num_points(masked=None) == _.get_num_points(masked=None)
-            and allclose(
-                data.get_frequencies(masked=None), _.get_frequencies(masked=None)
-            )
-        ]
-        self.data_labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
-        self.fits: List[FitResult] = fits
-        self.fit_labels: List[str] = format_fit_labels(fits)
         self.preview_data: DataSet = DataSet.from_dict(data.to_dict())
         self.callback: Callable = callback
         self.create_window()
@@ -158,32 +127,6 @@ class SubtractImpedance:
                 action=Action.NEXT_PRIMARY_RESULT,
             )
         callbacks[kb] = lambda: self.cycle_options(step=1)
-        # Previous fit/data set
-        for kb in STATE.config.keybindings:
-            if kb.action is Action.PREVIOUS_SECONDARY_RESULT:
-                break
-        else:
-            kb = Keybinding(
-                key=dpg.mvKey_Prior,
-                mod_alt=True,
-                mod_ctrl=False,
-                mod_shift=False,
-                action=Action.PREVIOUS_SECONDARY_RESULT,
-            )
-        callbacks[kb] = lambda: self.cycle_results(step=-1)
-        # Next fit/data set
-        for kb in STATE.config.keybindings:
-            if kb.action is Action.NEXT_SECONDARY_RESULT:
-                break
-        else:
-            kb = Keybinding(
-                key=dpg.mvKey_Next,
-                mod_alt=True,
-                mod_ctrl=False,
-                mod_shift=False,
-                action=Action.NEXT_SECONDARY_RESULT,
-            )
-        callbacks[kb] = lambda: self.cycle_results(step=1)
         # Previous plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.PREVIOUS_PLOT_TAB:
@@ -232,8 +175,6 @@ class SubtractImpedance:
         self.options: List[str] = [
             "Constant:",
             "Circuit:",
-            "Fit:",
-            "Data set:",
         ]
         label_pad: int = max(map(len, self.options))
         self.options = list(map(lambda _: _.rjust(label_pad), self.options))
@@ -245,12 +186,9 @@ class SubtractImpedance:
         x, y, w, h = calculate_window_position_dimensions()
         self.window: int = dpg.generate_uuid()
         with dpg.window(
-            label="Subtract impedance",
+            label="Add parallel impedance",
             modal=True,
-            pos=(
-                x,
-                y,
-            ),
+            pos=(x, y),
             width=w,
             height=h,
             tag=self.window,
@@ -274,7 +212,7 @@ class SubtractImpedance:
     def create_preview_window(self):
         with dpg.child_window(
             width=-1,
-            height=104,
+            height=58,
         ):
             self.radio_buttons: int = dpg.generate_uuid()
             with dpg.group(horizontal=True):
@@ -328,40 +266,9 @@ class SubtractImpedance:
                             tag=self.circuit_editor_button,
                         )
                         attach_tooltip(tooltips.general.open_circuit_editor)
-                    self.fit_group: int = dpg.generate_uuid()
-                    with dpg.group(horizontal=True, tag=self.fit_group):
-                        self.fit_combo: int = dpg.generate_uuid()
-                        dpg.add_combo(
-                            items=self.fit_labels,
-                            default_value=self.fit_labels[0] if self.fit_labels else "",
-                            width=361,
-                            tag=self.fit_combo,
-                            callback=self.update_preview,
-                        )
-                        self.copy_circuit_button: int = dpg.generate_uuid()
-                        dpg.add_button(
-                            label="Copy",
-                            callback=self.copy_circuit,
-                            tag=self.copy_circuit_button,
-                        )
-                        attach_tooltip(tooltips.data_sets.copy_circuit)
-                    self.spectrum_group: int = dpg.generate_uuid()
-                    with dpg.group(horizontal=True, tag=self.spectrum_group):
-                        self.spectrum_combo: int = dpg.generate_uuid()
-                        dpg.add_combo(
-                            items=self.data_labels,
-                            default_value=self.data_labels[0]
-                            if self.data_labels
-                            else "",
-                            width=405,
-                            tag=self.spectrum_combo,
-                            callback=self.update_preview,
-                        )
                     self.groups: List[int] = [
                         self.constant_group,
                         self.circuit_group,
-                        self.fit_group,
-                        self.spectrum_group,
                     ]
         self.create_plots()
         dpg.add_button(
@@ -457,7 +364,7 @@ class SubtractImpedance:
         del dictionary["uuid"]
         data: DataSet = DataSet.from_dict(dictionary)
         data.set_mask({})
-        data.set_label(f"{self.preview_data.get_label()} - subtracted")
+        data.set_label(f"{self.preview_data.get_label()} - added parallel impedance")
         self.callback(data)
 
     def select_option(self, sender: int, value: str):
@@ -495,7 +402,10 @@ class SubtractImpedance:
                 dpg.get_value(self.constant_real),
                 -dpg.get_value(self.constant_imag),
             )
-            Z = Z - Z_const
+            try:
+                Z = 1 / (1 / Z + 1 / Z_const)
+            except ZeroDivisionError:
+                pass
         elif index == 1:  # Circuit
             cdc: str = dpg.get_value(self.circuit_cdc)
             circuit: Optional[Circuit] = dpg.get_item_user_data(self.circuit_cdc)
@@ -506,19 +416,12 @@ class SubtractImpedance:
                     return
             if circuit is None:
                 return
-            Z = Z - circuit.get_impedances(f)
-        elif index == 2:  # Fit
-            if len(self.fits) > 0:
-                fit: FitResult
-                fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
-                Z = Z - fit.circuit.get_impedances(f)
-        elif index == 3:  # Data set
-            if len(self.data_sets) > 0:
-                spectrum: DataSet
-                spectrum = self.data_sets[
-                    self.data_labels.index(dpg.get_value(self.spectrum_combo))
-                ]
-                Z = Z - spectrum.get_impedances(masked=None)
+            with catch_warnings():
+                filterwarnings("error", message="divide by zero encountered in divide")
+                try:
+                    Z = 1 / (1 / Z + 1 / circuit.get_impedances(f))
+                except RuntimeWarning:
+                    pass
         else:
             raise Exception("Unsupported option!")
         dictionary: dict = self.preview_data.to_dict()
@@ -590,17 +493,6 @@ class SubtractImpedance:
             )
         self.phase_plot.queue_limits_adjustment()
 
-    def copy_circuit(self):
-        if len(self.fits) == 0:
-            return
-        fit: FitResult
-        fit = self.fits[self.fit_labels.index(dpg.get_value(self.fit_combo))]
-        self.cycle_options(step=-1)
-        self.editing_circuit = True
-        self.keybinding_handler.block()
-        dpg.hide_item(self.preview_window)
-        self.circuit_editor.show(fit.circuit)
-
     def edit_circuit(self):
         if not dpg.is_item_enabled(self.circuit_editor_button):
             return
@@ -644,21 +536,6 @@ class SubtractImpedance:
         index: int = self.options.index(dpg.get_value(self.radio_buttons)) + step
         dpg.set_value(self.radio_buttons, self.options[index % len(self.options)])
         self.select_option(self.radio_buttons, self.options[index % len(self.options)])
-
-    def cycle_results(self, step: int):
-        index: int
-        if dpg.is_item_enabled(self.fit_combo):
-            index = self.fit_labels.index(dpg.get_value(self.fit_combo)) + step
-            dpg.set_value(self.fit_combo, self.fit_labels[index % len(self.fit_labels)])
-            self.update_preview()
-        elif dpg.is_item_enabled(self.spectrum_combo):
-            index = self.data_labels.index(dpg.get_value(self.spectrum_combo)) + step
-            dpg.set_value(
-                self.spectrum_combo, self.data_labels[index % len(self.data_labels)]
-            )
-            self.update_preview()
-        else:
-            return
 
     def cycle_plot_tab(self, step: int):
         tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)

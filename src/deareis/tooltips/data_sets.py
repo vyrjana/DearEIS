@@ -45,8 +45,11 @@ The smoothing is performed using locally weighted scatterplot smoothing (LOWESS)
         "interpolation_toggle": """
 If checked, then the corresponding data point will be interpolated linearly between the two neighboring points.
     """.strip(),
+        "parallel": """
+Add an impedance (typically a resistance) in parallel with the current data set.
+    """.strip(),
         "subtract": """
-Subtract some amount(s) from the impedances of the current data set.
+Subtract impedances from the current data set.
     """.strip(),
         "copy_circuit": """
 Copy the chosen fitted circuit to the option above and open the circuit editor.

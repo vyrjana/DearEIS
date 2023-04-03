@@ -26,6 +26,8 @@
 .. |lambda| replace:: :math:`\lambda`
 .. |chi-squared| replace:: :math:`\chi^2`
 .. |pseudo chi-squared| replace:: :math:`\chi^2_{ps.}`
+.. |ohm| replace:: :math:`\Omega`
+.. |degrees| replace:: :math:`^{\circ}`
 
 .. functions
 .. |get_default_num_procs| replace:: :func:`~deareis.get_default_num_procs`

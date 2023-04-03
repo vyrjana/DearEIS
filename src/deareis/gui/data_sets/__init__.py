@@ -347,7 +347,7 @@ class DataSetsTab:
         attach_tooltip(tooltips.data_sets.process)
         process_popup_dimensions: Tuple[int, int] = (
             110,
-            82,
+            104,
         )
         process_popup: int
         with dpg.popup(
@@ -380,6 +380,19 @@ class DataSetsTab:
                 tag=self.interpolation_button,
             )
             attach_tooltip(tooltips.data_sets.interpolate)
+            #
+            self.parallel_impedance_button: int = dpg.generate_uuid()
+            dpg.add_button(
+                label="Parallel",
+                callback=lambda s, a, u: signals.emit(
+                    Signal.SELECT_PARALLEL_IMPEDANCE,
+                    data=u,
+                    popup=process_popup,
+                ),
+                width=-1,
+                tag=self.parallel_impedance_button,
+            )
+            attach_tooltip(tooltips.data_sets.parallel)
             #
             self.subtract_impedance_button: int = dpg.generate_uuid()
             dpg.add_button(
@@ -662,6 +675,7 @@ class DataSetsTab:
         dpg.set_item_user_data(self.delete_button, None)
         dpg.set_item_user_data(self.toggle_points_button, None)
         dpg.set_item_user_data(self.copy_mask_button, None)
+        dpg.set_item_user_data(self.parallel_impedance_button, None)
         dpg.set_item_user_data(self.subtract_impedance_button, None)
         dpg.set_item_user_data(self.interpolation_button, None)
         self.data_table.clear()
@@ -724,6 +738,7 @@ class DataSetsTab:
         dpg.set_item_user_data(self.delete_button, data)
         dpg.set_item_user_data(self.toggle_points_button, data)
         dpg.set_item_user_data(self.copy_mask_button, data)
+        dpg.set_item_user_data(self.parallel_impedance_button, data)
         dpg.set_item_user_data(self.subtract_impedance_button, data)
         dpg.set_item_user_data(self.interpolation_button, data)
         real: ndarray

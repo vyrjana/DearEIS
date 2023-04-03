@@ -1,3 +1,20 @@
+# 4.2.0 (2023/04/03)
+
+- Added support for choosing between multiple approaches to suggesting the regularization parameter (lambda) in DRT methods utilizing Tikhonov regularization.
+- Added a `Data set palette` for searching and selecting data sets via a window similar to the `Command palette`.
+- Added a `Result palette` for searching and selecting various results (depending on the context) via a window similar to the `Command palette`.
+- Added an `Add parallel impedance` window, which is accessible via the `Process` button in the `Data sets` tab. This is useful for, e.g., Kramers-Kronig testing impedance data that include negative differential resistances.
+- Updated the table of fitted parameters in the `Fitting` tab to highlight parameters with large estimated errors.
+- Updated the table of statistics in the `Fitting` tab to highlight values that may be indicative of issues.
+- Updated tooltips.
+- Refactored code.
+- Fixed a bug that caused two click of the `Accept` button in the `Subtract impedance` window after opening and closing the circuit editor.
+- Fixed a bug that caused an exception when opening and closing the circuit editor in the `Subtract impedance` window two or more times in a row.
+- Fixed a bug where loading a simulation result as a data set would also cause the `Simulation` tab to switch to the latest simulation result.
+- Fixed a mistake in the docstring of the DRTResult class.
+- Possibly fixed a bug where resizing signals could sometimes cause an exception to occur while launching the program.
+
+
 # 4.1.0 (2023/03/22)
 
 - Added a `Copy` button next to the fit results in the `Subtract impedance` window. This button can be used to copy a fitted circuit to the `Circuit` option above.

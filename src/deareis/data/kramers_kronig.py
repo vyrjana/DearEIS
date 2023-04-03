@@ -252,6 +252,9 @@ class TestResult:
         self._cached_frequencies: Dict[int, Frequencies] = {}
         self._cached_impedances: Dict[int, ComplexImpedances] = {}
 
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
+
     def __repr__(self) -> str:
         return f"TestResult ({self.get_label()}, {hex(id(self))})"
 

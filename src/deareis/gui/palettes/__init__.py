@@ -17,4 +17,6 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-PACKAGE_VERSION: str = "4.2.0"
+from .command import CommandPalette
+from .data_set import DataSetPalette
+from .result import ResultPalette

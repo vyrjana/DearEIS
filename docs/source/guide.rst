@@ -22,5 +22,5 @@ Here are some quick guides to getting started with DearEIS.
    guide_plotting
    guide_batch
    guide_settings
-   guide_command_palette
+   guide_palettes
    guide_api

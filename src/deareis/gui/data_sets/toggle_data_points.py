@@ -323,17 +323,18 @@ class ToggleDataPoints:
                 "theme": themes.bode.phase_data,
             },
         ]
-        self.plot_tab_bar: int = dpg.generate_uuid()
-        with dpg.tab_bar(tag=self.plot_tab_bar):
-            self.create_nyquist_plot(settings)
-            self.create_magnitude_plot(settings)
-            self.create_phase_plot(settings)
-        pad_tab_labels(self.plot_tab_bar)
+        with dpg.child_window(height=-24, border=False):
+            self.plot_tab_bar: int = dpg.generate_uuid()
+            with dpg.tab_bar(tag=self.plot_tab_bar):
+                self.create_nyquist_plot(settings)
+                self.create_magnitude_plot(settings)
+                self.create_phase_plot(settings)
+            pad_tab_labels(self.plot_tab_bar)
 
     def create_nyquist_plot(self, settings: List[dict]):
         tab: int
         with dpg.tab(label="Nyquist") as tab:
-            self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
+            self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-1)
             self.plot_tabs[tab] = self.nyquist_plot
             for kwargs in settings:
                 self.nyquist_plot.plot(
@@ -346,7 +347,7 @@ class ToggleDataPoints:
     def create_magnitude_plot(self, settings: List[dict]):
         tab: int
         with dpg.tab(label="Bode - magnitude") as tab:
-            self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-24)
+            self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-1)
             self.plot_tabs[tab] = self.magnitude_plot
             for kwargs in settings:
                 self.magnitude_plot.plot(
@@ -359,7 +360,7 @@ class ToggleDataPoints:
     def create_phase_plot(self, settings: List[dict]):
         tab: int
         with dpg.tab(label="Bode - phase") as tab:
-            self.phase_plot: BodePhase = BodePhase(width=-1, height=-24)
+            self.phase_plot: BodePhase = BodePhase(width=-1, height=-1)
             self.plot_tabs[tab] = self.phase_plot
             for kwargs in settings:
                 self.phase_plot.plot(

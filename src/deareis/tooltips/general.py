@@ -58,16 +58,17 @@ Automatically adjust the limits of the impedance plot to fit the data.
         "adjust_limits": """
 Automatically adjust the limits of the plots to fit the data.
     """.strip(),
-        "command_palette": """
-Search for an action to perform based on its description. Results can be navigated using the following keys:
-- Home - first result
+        "palette": """
+The options can be navigated using the following keys:
+
+- Home - first option
 - Page up - five steps up
 - Up arrow - one step up
 - Down arrow - one step down
 - Page down - five steps down
-- End - last result
+- End - last option
 
-The highlighted result can be executed by pressing Enter. The window can be closed by pressing Esc.
+The highlighted option can be selected by pressing Enter. The window can be closed by pressing Esc.
     """.strip(),
         "auto_backup_interval": """
 The number of actions between automatically saving a backup of the current state of a project in case of, e.g., crashes or power outages.

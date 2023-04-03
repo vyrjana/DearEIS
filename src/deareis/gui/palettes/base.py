@@ -17,35 +17,40 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from typing import Dict, List, Set, Tuple, Optional
+from dataclasses import dataclass
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 import dearpygui.dearpygui as dpg
-from numpy import array, ndarray
 from deareis.signals import Signal
 import deareis.signals as signals
-from deareis.enums import Action, Context, action_contexts, action_descriptions
 from deareis.utility import calculate_window_position_dimensions
-from deareis.data.project import Project
-from deareis.gui.project import ProjectTab
-from deareis.keybindings import KeybindingHandler
 import deareis.themes as themes
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
 
 
-class CommandPalette:
-    def __init__(self, keybinding_handler: KeybindingHandler):
-        assert type(keybinding_handler), keybinding_handler
-        self.keybinding_handler: KeybindingHandler = keybinding_handler
-        self.action_contexts: Dict[Action, Set[Context]] = {
-            k: set(v)
-            for k, v in action_contexts.items()
-            if k != Action.SHOW_COMMAND_PALETTE
-        }
-        self.valid_actions: List[Tuple[Action, str]] = []
-        self.action_history: List[Action] = []
+@dataclass(frozen=True)
+class Option:
+    description: str
+    rank: int
+    data: Any
+
+
+class BasePalette:
+    def __init__(self, title: str, tooltip: str):
+        self.create_window(title=title, tooltip=tooltip)
+        self.options: List[Option] = []
+        self.options_history: List[Option] = []
+
+    def create_window(self, title: str, tooltip: str):
         self.window: int = dpg.generate_uuid()
         with dpg.window(
-            label="Command palette",
+            label=title,
             no_close=True,
             modal=True,
             no_resize=True,
@@ -54,13 +59,12 @@ class CommandPalette:
         ):
             self.filter_input: int = dpg.generate_uuid()
             dpg.add_input_text(
-                hint="Search...",
                 tag=self.filter_input,
                 width=-1,
-                callback=lambda s, a, u: self.filter_results(a.strip().lower()),
+                callback=lambda s, a, u: self.filter_options(a.strip().lower()),
             )
-            attach_tooltip(tooltips.general.command_palette)
-            self.results_table: int = dpg.generate_uuid()
+            attach_tooltip(tooltip + tooltips.general.palette)
+            self.options_table: int = dpg.generate_uuid()
             self.num_rows: int = 9
             with dpg.table(
                 borders_outerV=True,
@@ -69,39 +73,56 @@ class CommandPalette:
                 borders_innerH=True,
                 header_row=False,
                 height=self.num_rows * 23,
-                tag=self.results_table,
+                tag=self.options_table,
             ):
                 dpg.add_table_column()
                 for i in range(0, self.num_rows):
                     with dpg.table_row():
                         dpg.add_button(
                             label="",
-                            callback=lambda s, a, u: self.perform_action(u, True),
+                            callback=lambda s, a, u: self.select_option(u, click=True),
                             width=-1,
                         )
 
-    def show(self, contexts: List[Context], project: Project, tab: ProjectTab):
-        self.current_contexts = contexts
-        self.current_project: Project = project
-        self.current_tab: ProjectTab = tab
-        self.valid_actions = []
-        contexts_set: Set[Context] = set(contexts)
-        action: Action
-        cons: Set[Context]
-        for action, cons in self.action_contexts.items():
-            if len(cons.intersection(contexts_set)) == 0:
-                continue
-            description: str = action_descriptions[action].split("\n")[0]
-            if description.endswith(":"):
-                description = description[:-1]
-            elif description.endswith("."):
-                description = description[:-1]
-            self.valid_actions.append(
-                (
-                    action,
-                    description,
-                )
+    def register_keybindings(self):
+        self.key_handler: int = dpg.generate_uuid()
+        with dpg.handler_registry(tag=self.key_handler):
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Escape,
+                callback=self.hide,
             )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Return,
+                callback=lambda s, a, u: self.select_option(
+                    option=self.options[self.option_index]
+                ),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Up,
+                callback=lambda: self.navigate_option(step=-1),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Prior,
+                callback=lambda: self.navigate_option(step=-5),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Home,
+                callback=lambda: self.navigate_option(index=0),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Down,
+                callback=lambda: self.navigate_option(step=1),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_Next,
+                callback=lambda: self.navigate_option(step=5),
+            )
+            dpg.add_key_release_handler(
+                key=dpg.mvKey_End,
+                callback=lambda: self.navigate_option(index=len(self.options) - 1),
+            )
+
+    def show(self):
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
         dpg.show_item(self.window)
         dpg.split_frame()
@@ -116,44 +137,15 @@ class CommandPalette:
             width=w,
             height=h,
         )
-        dpg.set_value(self.filter_input, "")
-        self.filter_results("")
-        self.key_handler: int = dpg.generate_uuid()
-        with dpg.handler_registry(tag=self.key_handler):
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Escape,
-                callback=self.hide,
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Return,
-                callback=lambda s, a, u: self.perform_action(),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Up,
-                callback=lambda: self.navigate_result(step=-1),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Prior,
-                callback=lambda: self.navigate_result(step=-5),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Home,
-                callback=lambda: self.navigate_result(index=0),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Down,
-                callback=lambda: self.navigate_result(step=1),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_Next,
-                callback=lambda: self.navigate_result(step=5),
-            )
-            dpg.add_key_release_handler(
-                key=dpg.mvKey_End,
-                callback=lambda: self.navigate_result(
-                    index=len(self.valid_actions) - 1
-                ),
-            )
+        self.register_keybindings()
+        dpg.configure_item(
+            self.filter_input,
+            default_value="",
+            hint="Search..."
+            if len(self.options) > 0
+            else "No (other) options to select!",
+        )
+        self.filter_options("")
         dpg.split_frame()
         dpg.focus_item(self.filter_input)
 
@@ -163,7 +155,11 @@ class CommandPalette:
         dpg.split_frame()
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
-    def get_consecutive_letter_indices(self, source: str, target: str) -> List[int]:
+    def get_consecutive_letter_indices(
+        self,
+        source: str,
+        target: str,
+    ) -> List[int]:
         indices: List[int] = []
         letter: str
         for letter in source:
@@ -174,7 +170,9 @@ class CommandPalette:
         return indices
 
     def get_distances_from_word_beginning(
-        self, letter_indices: List[int], target: str
+        self,
+        letter_indices: List[int],
+        target: str,
     ) -> Tuple[List[int], List[int]]:
         if not letter_indices:
             return (
@@ -207,16 +205,22 @@ class CommandPalette:
             word_lengths,
         )
 
-    def score_result(self, source: str, target: str, action: Action) -> float:
+    def score_option(
+        self,
+        source: str,
+        option: Option,
+    ) -> float:
+        assert isinstance(source, str), source
+        assert isinstance(option, Option), option
+        target: str = option.description.lower()
         score: float = 0.0
-        num_valid_actions: int = len(self.valid_actions)
         if source == "":
-            score -= int(action) + 1
-            if action in self.action_history:
-                recency_bonus: float = float(num_valid_actions)
+            score -= option.rank + 1
+            if option in self.options_history:
+                recency_bonus: float = float(len(self.options))
                 score += (
-                    len(self.action_history) - self.action_history.index(action)
-                ) * recency_bonus
+                    len(self.options_history) - self.options_history.index(option)
+                ) * recency_bonus * 2
         else:
             if source in target:
                 score += 100
@@ -226,7 +230,8 @@ class CommandPalette:
             num_matches: int = len(list(filter(lambda _: _ >= 0, indices)))
             # Penalize for source letters not found in the target
             score -= abs(sum(filter(lambda _: _ < 0, indices))) * 25.0
-            # Reward for source letters found in the target based on proximity to the beginning
+            # Reward for source letters found in the target based on proximity
+            # to the beginning
             score += (
                 sum(
                     map(
@@ -236,11 +241,12 @@ class CommandPalette:
                 )
                 * 100.0
             )
-            # Penalize the difference between the number of found source letters and the length
-            # of the target and normalize using the length of the source
+            # Penalize the difference between the number of found source
+            # letters and the length of the target and normalize using the
+            # length of the source
             score -= (len_target - num_matches) / len_source * 10.0
-            # Reward for the proximity of found source letters to the beginning of the word in
-            # which the letter was found
+            # Reward for the proximity of found source letters to the beginning
+            # of the word in which the letter was found
             distances: List[int]
             word_lengths: List[int]
             distances, word_lengths = self.get_distances_from_word_beginning(
@@ -250,93 +256,75 @@ class CommandPalette:
                 score += (word_length - distance) / word_length * 15.0
         return score
 
-    def filter_results(self, string: str):
-        self.result_index = 0
-        scores: Dict[Action, float] = {}
-        for (action, description) in self.valid_actions:
-            scores[action] = self.score_result(
+    def filter_options(self, string: str):
+        self.option_index = 0
+        scores: Dict[Option, float] = {}
+        for option in self.options:
+            scores[option] = self.score_option(
                 string,
-                description.lower(),
-                action,
+                option,
             )
-        self.valid_actions.sort(key=lambda _: scores[_[0]], reverse=True)
-        self.update_results()
+        self.options.sort(key=lambda _: scores[_], reverse=True)
+        self.update_options()
 
-    def update_results(self):
+    def update_options(self):
         i: int
         row: int
         cell: int
-        action: Optional[Action]
-        description: str
+        option: Optional[Option]
         index: int
-        for i, row in enumerate(dpg.get_item_children(self.results_table, slot=1)):
+        for i, row in enumerate(dpg.get_item_children(self.options_table, slot=1)):
             cell = dpg.get_item_children(row, slot=1)[0]
-            action = None
-            description = ""
-            if self.result_index < 4:
+            option = None
+            if len(self.options) < self.num_rows or self.option_index < 4:
                 # A row in the upper half
                 index = i
                 dpg.bind_item_theme(
                     cell,
-                    themes.command_palette.result_highlighted
-                    if i == self.result_index
-                    else themes.command_palette.result,
+                    themes.palette.option_highlighted
+                    if i == self.option_index
+                    else themes.palette.option,
                 )
-            elif len(self.valid_actions) - self.result_index < 5:
+            elif len(self.options) - self.option_index < 5:
                 # A row in the lower half
-                index = len(self.valid_actions) + i - self.num_rows
+                index = len(self.options) + i - self.num_rows
                 dpg.bind_item_theme(
                     cell,
-                    themes.command_palette.result_highlighted
-                    if i
-                    == self.num_rows - (len(self.valid_actions) - self.result_index)
-                    else themes.command_palette.result,
+                    themes.palette.option_highlighted
+                    if i == self.num_rows - (len(self.options) - self.option_index)
+                    else themes.palette.option,
                 )
             else:
                 # The row in the middle
-                index = self.result_index + i - 4
+                index = self.option_index + i - 4
                 dpg.bind_item_theme(
                     cell,
-                    themes.command_palette.result_highlighted
+                    themes.palette.option_highlighted
                     if i == 4
-                    else themes.command_palette.result,
+                    else themes.palette.option,
                 )
-            if index >= 0 and index < len(self.valid_actions):
-                action, description = self.valid_actions[index]
-            dpg.set_item_label(cell, description)
-            dpg.set_item_user_data(cell, action)
+            if index >= 0 and index < len(self.options):
+                option = self.options[index]
+            dpg.set_item_label(cell, option.description if option is not None else "")
+            dpg.set_item_user_data(cell, option)
 
-    def navigate_result(self, index: Optional[int] = None, step: Optional[int] = None):
+    def navigate_option(self, index: Optional[int] = None, step: Optional[int] = None):
         assert type(index) is int or index is None, index
         assert type(step) is int or step is None, step
         if index is None and step is None:
             return
         elif index is not None:
-            if index >= len(self.valid_actions):
+            if index >= len(self.options):
                 return
         elif step is not None:
-            index = self.result_index + step
+            index = self.option_index + step
             if index < 0:
                 index = 0
-            elif index >= len(self.valid_actions):
-                index = len(self.valid_actions) - 1
+            elif index >= len(self.options):
+                index = len(self.options) - 1
         assert index is not None
-        self.result_index = index
-        self.update_results()
+        self.option_index = index
+        self.update_options()
 
-    def perform_action(self, action: Optional[Action] = None, click: bool = False):
-        if click and action is None:
-            return
-        self.hide()
-        if not click:
-            action = self.valid_actions[self.result_index][0]
-        assert type(action) is Action, action
-        if action in self.action_history:
-            self.action_history.remove(action)
-        self.action_history.insert(0, action)
-        self.keybinding_handler.perform_action(
-            action,
-            self.current_contexts[-1],
-            self.current_project,
-            self.current_tab,
-        )
+    def select_option(self, option: Optional[Option] = None, click: bool = False):
+        raise NotImplementedError("NOT YET IMPLEMENTED FOR THIS PALETTE")

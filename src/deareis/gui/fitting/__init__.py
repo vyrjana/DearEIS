@@ -383,7 +383,10 @@ class ParametersTable:
         dpg.delete_item(self._table, children_only=True, slot=1)
 
     def limited_parameter(
-        self, key: str, value: float, element: Element
+        self,
+        key: str,
+        value: float,
+        element: Element,
     ) -> Tuple[str, int]:
         lower_limit: float = element.get_lower_limit(key)
         upper_limit: float = element.get_upper_limit(key)
@@ -427,6 +430,7 @@ class ParametersTable:
         value_themes: List[int] = []
         error_values: List[str] = []
         error_tooltips: List[str] = []
+        error_themes: List[int] = []
         internal_identifiers: Dict[int, Element] = {
             v: k
             for k, v in fit.circuit.generate_element_identifiers(running=True).items()
@@ -499,24 +503,29 @@ class ParametersTable:
                     f"{format_number(parameter.value, decimals=6).strip()} {unit}".strip()
                 )
                 value_tooltip_appendix: str
-                value_theme: int
-                value_tooltip_appendix, value_theme = self.limited_parameter(
-                    parameter_label,
-                    parameter.value,
-                    element,
-                )
-                value_tooltips[-1] += value_tooltip_appendix
+                value_theme: int = -1
+                if not parameter.fixed:
+                    value_tooltip_appendix, value_theme = self.limited_parameter(
+                        parameter_label,
+                        parameter.value,
+                        element,
+                    )
+                    value_tooltips[-1] += value_tooltip_appendix
                 value_themes.append(value_theme)
+                error_theme: int = -1
                 if not isnan(parameter.stderr):
                     error: float = parameter.get_relative_error() * 100
                     if error > 100.0:
                         error_value = ">100"
+                        error_theme = themes.fitting.huge_error
                     elif error < 0.01:
                         error_value = "<0.01"
                     else:
                         error_value = (
                             f"{format_number(error, exponent=False, significants=3)}"
                         )
+                        if error >= 5.0:
+                            error_theme = themes.fitting.large_error
                     error_tooltip = f"±{format_number(parameter.stderr, decimals=6).strip()} {parameter.unit}".strip()
                 else:
                     error_value = "-"
@@ -526,6 +535,7 @@ class ParametersTable:
                         error_tooltip = "Fixed parameter."
                 error_values.append(error_value)
                 error_tooltips.append(error_tooltip)
+                error_themes.append(error_theme)
         values = align_numbers(values)
         error_values = align_numbers(error_values)
         num_rows: int = 0
@@ -539,6 +549,7 @@ class ParametersTable:
             value_theme,
             error_value,
             error_tooltip,
+            error_theme,
         ) in zip(
             element_names,
             element_tooltips,
@@ -549,6 +560,7 @@ class ParametersTable:
             value_themes,
             error_values,
             error_tooltips,
+            error_themes,
         ):
             with dpg.table_row(parent=self._table):
                 dpg.add_text(element_name.ljust(column_pads[0]))
@@ -559,9 +571,11 @@ class ParametersTable:
                 attach_tooltip(value_tooltip)
                 if value_theme > 0:
                     dpg.bind_item_theme(value_widget, value_theme)
-                dpg.add_text(error_value.ljust(column_pads[3]))
+                error_widget: int = dpg.add_text(error_value.ljust(column_pads[3]))
                 if error_tooltip != "":
                     attach_tooltip(error_tooltip)
+                if error_theme > 0:
+                    dpg.bind_item_theme(error_widget, error_theme)
                 num_rows += 1
         dpg.set_item_height(self._table, 18 + 23 * max(1, num_rows))
 
@@ -590,6 +604,7 @@ class StatisticsTable:
                     label="Value",
                     width_fixed=True,
                 )
+                attach_tooltip(tooltips.fitting.statistics)
                 label: str
                 tooltip: str
                 for (label, tooltip) in [
@@ -659,51 +674,68 @@ class StatisticsTable:
         assert len(cells) == 10, cells
         tag: int
         value: str
-        for (tag, value) in [
+        theme: int
+        for (tag, value, theme) in [
             (
                 cells[0],
                 f"{log(fit.pseudo_chisqr):.3f}",
+                -1,
             ),
             (
                 cells[1],
                 f"{log(fit.chisqr):.3f}",
+                -1,
             ),
             (
                 cells[2],
                 f"{log(fit.red_chisqr):.3f}",
+                -1,
             ),
             (
                 cells[3],
                 format_number(fit.aic, decimals=3),
+                -1,
             ),
             (
                 cells[4],
                 format_number(fit.bic, decimals=3),
+                -1,
             ),
             (
                 cells[5],
                 f"{fit.nfree}",
+                -1,
             ),
             (
                 cells[6],
                 f"{fit.ndata}",
+                -1,
             ),
             (
                 cells[7],
                 f"{fit.nfev}",
+                themes.fitting.highlighted_statistc
+                if fit.settings.max_nfev > 0 and fit.nfev >= fit.settings.max_nfev
+                else -1,
             ),
             (
                 cells[8],
                 cnls_method_to_label.get(fit.method, ""),
+                -1,
             ),
             (
                 cells[9],
                 weight_to_label.get(fit.weight, ""),
+                -1,
             ),
         ]:
             dpg.set_value(tag, value)
             update_tooltip(dpg.get_item_user_data(tag), value)
             dpg.show_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
+            dpg.bind_item_theme(
+                tag,
+                theme if theme > 0 else themes.fitting.default_statistic,
+            )
         dpg.set_item_height(self._table, 18 + 23 * len(cells))
 
 
@@ -841,12 +873,10 @@ class FitResultsCombo(ResultsCombo):
         )
 
     def adjust_label(self, old: str, longest: int) -> str:
+        i: int = old.rfind(" (")
         cdc: str
         timestamp: str
-        cdc, timestamp = (
-            old[: old.find(" ")],
-            old[old.find(" ") + 1 :],
-        )
+        cdc, timestamp = (old[:i], old[i + 1 :])
         return f"{cdc.ljust(longest)} {timestamp}"
 
 

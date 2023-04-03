@@ -248,6 +248,9 @@ class PlotSettings:
     themes: Dict[str, int]  # UUID: DPG UUID
     uuid: str
 
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
+
     def __eq__(self, other) -> bool:
         try:
             assert isinstance(other, type(self)), other

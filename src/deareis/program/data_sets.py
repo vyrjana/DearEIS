@@ -42,6 +42,7 @@ from deareis.gui import ProjectTab
 from deareis.gui.data_sets.average_data_sets import AverageDataSets
 from deareis.gui.data_sets.copy_mask import CopyMask
 from deareis.gui.data_sets.interpolate_points import InterpolatePoints
+from deareis.gui.data_sets.parallel_impedance import ParallelImpedance
 from deareis.gui.data_sets.subtract_impedance import SubtractImpedance
 from deareis.gui.data_sets.toggle_data_points import ToggleDataPoints
 from deareis.gui.file_dialog import FileDialog
@@ -120,6 +121,11 @@ def load_simulation_as_data_set(*args, **kwargs):
     project.add_data_set(data)
     project_tab.populate_data_sets(project)
     signals.emit(Signal.SELECT_DATA_SET, data=data)
+    signals.emit(
+        Signal.SELECT_SIMULATION_RESULT,
+        simulation=simulation,
+        data=project_tab.get_active_data_set(context=Context.SIMULATION_TAB),
+    )
     signals.emit(
         Signal.SELECT_PLOT_SETTINGS,
         settings=project_tab.get_active_plot(),
@@ -470,4 +476,37 @@ def select_points_to_interpolate(*args, **kwargs):
         Signal.BLOCK_KEYBINDINGS,
         window=interpolate_points.window,
         window_object=interpolate_points,
+    )
+
+
+def select_parallel_impedance(*args, **kwargs):
+    if "popup" in kwargs:
+        dpg.hide_item(kwargs["popup"])
+        dpg.split_frame(delay=33)
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    data: Optional[DataSet] = kwargs.get("data")
+    if project is None or project_tab is None or data is None:
+        return
+
+    def add_data(new: DataSet):
+        assert project is not None
+        assert project_tab is not None
+        project.add_data_set(new)
+        project_tab.populate_data_sets(project)
+        signals.emit(
+            Signal.SELECT_PLOT_SETTINGS,
+            settings=project_tab.get_active_plot(),
+        )
+        signals.emit(Signal.SELECT_DATA_SET, data=new)
+        signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+
+    parallel_impedance_window: ParallelImpedance = ParallelImpedance(
+        data=data,
+        callback=add_data,
+    )
+    signals.emit(
+        Signal.BLOCK_KEYBINDINGS,
+        window=parallel_impedance_window.window,
+        window_object=parallel_impedance_window,
     )

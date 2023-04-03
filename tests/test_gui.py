@@ -93,6 +93,7 @@ from deareis.gui import ProjectTab
 
 PARENT_FOLDER: str = dirname(__file__)
 TMP_FOLDER: str = gettempdir()
+TMP_PROJECT: str = join(TMP_FOLDER, "deareis_temporary_test_project.json")
 
 
 START_TIME: float = 0.0
@@ -152,10 +153,8 @@ def finish_tests():
     project: Optional[Project] = STATE.get_active_project()
     if project is not None and project.get_label() == "Test project":
         path: str = project.get_path()
+        assert path == TMP_PROJECT, (path, TMP_PROJECT)
         signals.emit(Signal.CLOSE_PROJECT, force=True)
-        if exists(path):
-            remove(path)
-        assert not exists(path)
     else:
         signals.emit(Signal.CLOSE_PROJECT, force=True)
     print(f"\nFinished in {time() - START_TIME:.2f} s")
@@ -263,6 +262,13 @@ def test_plotting_tab():
     )
 
     @next_step(test_undo_redo)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
     def validate_delete_plot():
         assert STATE.is_project_dirty(project) is True
         assert len(project.get_plots()) == 2
@@ -317,11 +323,12 @@ def test_plotting_tab():
             sleep(0.5)
             text = dpg.get_clipboard_text().strip()
             assert text != ""
-            perform_action(action=Action.NEXT_SECONDARY_RESULT)
+            perform_action(action=Action.NEXT_PLOT_TAB)
             sleep(0.5)
             seen_types.append(settings.get_type())
             if len(set(seen_types)) < len(seen_types):
                 break
+        assert len(set(seen_types)) == len(PlotType), (set(seen_types), PlotType)
 
     @next_step(cycle_plot_types)
     def cycle_plots():
@@ -391,6 +398,8 @@ def test_plotting_tab():
 
     print("\n- Plotting tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.PLOTTING_TAB, context
 
 
 def test_simulation_tab():
@@ -407,6 +416,20 @@ def test_simulation_tab():
     )
 
     @next_step(test_plotting_tab)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_copy_sympy_expression_with_values():
         assert STATE.is_project_dirty(project) is False
         text = dpg.get_clipboard_text().strip()
@@ -830,6 +853,8 @@ Element & Parameter & Value & Unit \\
 
     print("\n- Simulation tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.SIMULATION_TAB, context
 
 
 def test_drt_tab():
@@ -844,6 +869,20 @@ def test_drt_tab():
     outputs: List[str] = list(label_to_drt_output.keys())
 
     @next_step(test_simulation_tab)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_copy_markdown_scores():
         assert STATE.is_project_dirty(project) is False
         text = dpg.get_clipboard_text().strip()
@@ -1257,6 +1296,8 @@ Score & Real (\%) & Imag. (\%) \\"""
 
     print("\n- DRT tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.DRT_TAB, context
 
 
 def test_fitting_tab():
@@ -1271,6 +1312,20 @@ def test_fitting_tab():
     outputs: List[str] = list(label_to_fit_sim_output.keys())
 
     @next_step(test_drt_tab)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_copy_sympy_expression_with_values():
         assert STATE.is_project_dirty(project) is False
         text = dpg.get_clipboard_text().strip()
@@ -1780,6 +1835,8 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
 
     print("\n- Fitting tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.FITTING_TAB, context
 
 
 def test_zhit_tab():
@@ -1793,6 +1850,20 @@ def test_zhit_tab():
     )
 
     @next_step(test_fitting_tab)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_copy_bode():
         assert STATE.is_project_dirty(project) is False
         text = dpg.get_clipboard_text().strip()
@@ -2051,6 +2122,8 @@ def test_zhit_tab():
 
     print("\n- Z-HIT tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.ZHIT_TAB, context
 
 
 def test_kramers_kronig_tab():
@@ -2064,6 +2137,20 @@ def test_kramers_kronig_tab():
     )
 
     @next_step(test_zhit_tab)
+    def result_palette():
+        print("  - Result palette")
+        signals.emit(Signal.SHOW_RESULT_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(result_palette)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_copy_bode():
         assert STATE.is_project_dirty(project) is False
         text = dpg.get_clipboard_text().strip()
@@ -2336,6 +2423,8 @@ def test_kramers_kronig_tab():
 
     print("\n- Kramers-Kronig tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.KRAMERS_KRONIG_TAB, context
 
 
 def test_data_sets_tab():
@@ -2349,6 +2438,13 @@ def test_data_sets_tab():
     )
 
     @next_step(test_kramers_kronig_tab)
+    def data_set_palette():
+        print("  - Data set palette")
+        signals.emit(Signal.SHOW_DATA_SET_PALETTE)
+        sleep(0.5)
+        STATE.active_modal_window_object.hide()
+
+    @next_step(data_set_palette)
     def validate_mask_points():
         assert STATE.is_project_dirty(project) is True
         data = project_tab.get_active_data_set()
@@ -2454,9 +2550,9 @@ def test_data_sets_tab():
     @next_step(toggle_points)
     def validate_subtract_impedances():
         assert STATE.is_project_dirty(project) is True
-        assert len(project.get_data_sets()) == 5
+        assert len(project.get_data_sets()) == 6
         data = project_tab.get_active_data_set()
-        assert data.get_label() == "Average - interpolated - subtracted"
+        assert data.get_label() == "Average - interpolated - added parallel impedance - subtracted"
         signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_subtract_impedances)
@@ -2466,10 +2562,30 @@ def test_data_sets_tab():
         perform_action(action=Action.SUBTRACT_IMPEDANCE)
         sleep(0.5)
         dpg.set_value(STATE.active_modal_window_object.constant_real, 150)
+        STATE.active_modal_window_object.update_preview()
         sleep(0.5)
         STATE.active_modal_window_object.accept()
 
     @next_step(subtract_impedances)
+    def validate_parallel_impedances():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 5
+        data = project_tab.get_active_data_set()
+        assert data.get_label() == "Average - interpolated - added parallel impedance"
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_parallel_impedances)
+    def parallel_impedances():
+        print("  - Add parallel impedance")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.PARALLEL_IMPEDANCE)
+        sleep(0.5)
+        dpg.set_value(STATE.active_modal_window_object.constant_real, 500)
+        STATE.active_modal_window_object.update_preview()
+        sleep(0.5)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(parallel_impedances)
     def validate_interpolate_data_points():
         assert STATE.is_project_dirty(project) is True
         assert len(project.get_data_sets()) == 4
@@ -2578,6 +2694,8 @@ def test_data_sets_tab():
 
     print("\n- Data sets tab")
     switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.DATA_SETS_TAB, context
 
 
 def test_overview_tab():
@@ -2612,12 +2730,14 @@ def test_overview_tab():
         signals.emit(Signal.RENAME_PROJECT, label="Test project")
 
     print("\n- Overview tab")
+    context: Context = project_tab.get_active_context()
+    assert context == Context.OVERVIEW_TAB, context
     rename_project()
 
 
 def test_project():
     project: Optional[Project] = None
-    path = join(TMP_FOLDER, "deareis_temporary_test_project.json")
+    path = TMP_PROJECT
     if exists(path):
         remove(path)
 

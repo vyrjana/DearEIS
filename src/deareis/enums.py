@@ -50,6 +50,8 @@ class Action(IntEnum):
     SHOW_SETTINGS_DEFAULTS = auto()
     SHOW_SETTINGS_KEYBINDINGS = auto()
     SHOW_COMMAND_PALETTE = auto()
+    SHOW_DATA_SET_PALETTE = auto()
+    SHOW_RESULT_PALETTE = auto()
     SHOW_CHANGELOG = auto()
     CHECK_UPDATES = auto()
 
@@ -134,6 +136,7 @@ class Action(IntEnum):
     AVERAGE_DATA_SETS = auto()
     COPY_DATA_SET_MASK = auto()
     INTERPOLATE_POINTS = auto()
+    PARALLEL_IMPEDANCE = auto()
     SUBTRACT_IMPEDANCE = auto()
     TOGGLE_DATA_POINTS = auto()
 
@@ -165,6 +168,8 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.SHOW_SETTINGS_DEFAULTS: [Context.PROGRAM],
     Action.SHOW_SETTINGS_KEYBINDINGS: [Context.PROGRAM],
     Action.SHOW_COMMAND_PALETTE: [Context.PROGRAM],
+    Action.SHOW_DATA_SET_PALETTE: [Context.PROJECT],
+    Action.SHOW_RESULT_PALETTE: [Context.PROJECT],
     Action.SHOW_CHANGELOG: [Context.PROGRAM],
     Action.CHECK_UPDATES: [Context.PROGRAM],
     Action.SAVE_PROJECT: [Context.PROJECT],
@@ -340,6 +345,7 @@ action_contexts: Dict[Action, List[Context]] = {
     Action.TOGGLE_DATA_POINTS: [Context.DATA_SETS_TAB],
     Action.COPY_DATA_SET_MASK: [Context.DATA_SETS_TAB],
     Action.INTERPOLATE_POINTS: [Context.DATA_SETS_TAB],
+    Action.PARALLEL_IMPEDANCE: [Context.DATA_SETS_TAB],
     Action.SUBTRACT_IMPEDANCE: [Context.DATA_SETS_TAB],
     Action.SELECT_ALL_PLOT_SERIES: [Context.PLOTTING_TAB],
     Action.UNSELECT_ALL_PLOT_SERIES: [Context.PLOTTING_TAB],
@@ -405,6 +411,8 @@ action_to_string: Dict[Action, str] = {
     Action.SHOW_CHANGELOG: "show-changelog",
     Action.SHOW_CIRCUIT_EDITOR: "show-circuit-editor",
     Action.SHOW_COMMAND_PALETTE: "show-command-palette",
+    Action.SHOW_DATA_SET_PALETTE: "show-data-set-palette",
+    Action.SHOW_RESULT_PALETTE: "show-result-palette",
     Action.SHOW_ENLARGED_BODE: "show-enlarged-bode",
     Action.SHOW_ENLARGED_DRT: "show-enlarged-drt",
     Action.SHOW_ENLARGED_IMPEDANCE: "show-enlarged-impedance",
@@ -415,6 +423,7 @@ action_to_string: Dict[Action, str] = {
     Action.SHOW_SETTINGS_APPEARANCE: "show-settings-appearance",
     Action.SHOW_SETTINGS_DEFAULTS: "show-settings-defaults",
     Action.SHOW_SETTINGS_KEYBINDINGS: "show-settings-keybindings",
+    Action.PARALLEL_IMPEDANCE: "parallel-impedance",
     Action.SUBTRACT_IMPEDANCE: "subtract-impedance",
     Action.TOGGLE_DATA_POINTS: "toggle-data-points",
     Action.UNDO: "undo",
@@ -472,6 +481,12 @@ Show the 'Settings - keybindings' window.
 """.strip(),
     Action.SHOW_COMMAND_PALETTE: """
 Show the command palette, which can be used as an alternative to other keybindings for performing actions.
+""".strip(),
+    Action.SHOW_DATA_SET_PALETTE: """
+Show the data set palette, which can be used to switch between data sets.
+""".strip(),
+    Action.SHOW_RESULT_PALETTE: """
+Show the result palette, which can be used to switch between, e.g., Kramers-Kronig test results.
 """.strip(),
     Action.SHOW_CHANGELOG: """
 Show the changelog.
@@ -651,6 +666,9 @@ Select which data set's mask to copy.
 """.strip(),
     Action.INTERPOLATE_POINTS: """
 Interpolate one or more data points in the current data set.
+""".strip(),
+    Action.PARALLEL_IMPEDANCE: """
+Select the impedance to add in parallel to the current data set.
 """.strip(),
     Action.SUBTRACT_IMPEDANCE: """
 Select the impedance to subtract from the current data set.

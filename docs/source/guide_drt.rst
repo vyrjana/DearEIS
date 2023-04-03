@@ -57,7 +57,7 @@ The overlay plots shown below are created using the **Plotting** tab (more infor
    Additional DRT spectra, which were obtained by fitting **R(RC)(RQ)** circuits and calculating the DRT using the m(RQ)fit method, overlaid on top of :numref:`drt_overlay`.
    The presence of the outlier has shifted the peaks toward lower time constants (original).
    The m(RQ)fit method is less sensitive to the omission of the outlier as can be seen from the two DRT spectra (omitted and interpolated) that are almost identical.
-   The two latter spectra also have, e.g., their left-most peaks in the correct position of approximately 0.00016 s which is the expected value based on the known resistance and capacitance values (200 ohm and 0.8 :math:`\mathrm{\mu F}`, respectively) of the circuit that was used to generate the data sets.
+   The two latter spectra also have, e.g., their left-most peaks in the correct position of approximately 0.00016 s which is the expected value based on the known resistance and capacitance values (200 |ohm| and 0.8 :math:`\mathrm{\mu F}`, respectively) of the circuit that was used to generate the data sets.
 
 .. raw:: latex
 

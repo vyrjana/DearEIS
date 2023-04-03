@@ -228,6 +228,9 @@ class ZHITResult:
     def __repr__(self) -> str:
         return f"ZHITResult ({hex(id(self))})"
 
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
+
     @classmethod
     def from_dict(
         Class,

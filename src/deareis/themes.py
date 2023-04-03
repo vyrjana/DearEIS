@@ -965,15 +965,71 @@ with dpg.theme(tag=_limited_parameter):
             ),
             category=dpg.mvThemeCat_Core,
         )
+_huge_error: int = dpg.generate_uuid()
+with dpg.theme(tag=_huge_error):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                0.0,
+                0.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_large_error: int = dpg.generate_uuid()
+with dpg.theme(tag=_large_error):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                115.0,
+                0.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_default_statistic: int = dpg.generate_uuid()
+with dpg.theme(tag=_default_statistic):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                255.0,
+                255.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
+_highlighted_statistic: int = dpg.generate_uuid()
+with dpg.theme(tag=_highlighted_statistic):
+    with dpg.theme_component(dpg.mvAll):
+        dpg.add_theme_color(
+            dpg.mvThemeCol_Text,
+            (
+                255.0,
+                115.0,
+                0.0,
+                255.0,
+            ),
+            category=dpg.mvThemeCat_Core,
+        )
 fitting: SimpleNamespace = SimpleNamespace(
     **{
         "limited_parameter": _limited_parameter,
+        "huge_error": _huge_error,
+        "large_error": _large_error,
+        "highlighted_statistc": _highlighted_statistic,
+        "default_statistic": _default_statistic,
     }
 )
 
 
-_command_palette_result_highlighted: int
-with dpg.theme() as _command_palette_result_highlighted:
+_palette_option_highlighted: int
+with dpg.theme() as _palette_option_highlighted:
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
             dpg.mvThemeCol_Text,
@@ -992,8 +1048,8 @@ with dpg.theme() as _command_palette_result_highlighted:
             category=dpg.mvThemeCat_Core,
         )
 
-_command_palette_result: int
-with dpg.theme() as _command_palette_result:
+_palette_option: int
+with dpg.theme() as _palette_option:
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
             dpg.mvThemeCol_Text,
@@ -1013,10 +1069,10 @@ with dpg.theme() as _command_palette_result:
         )
 
 
-command_palette: SimpleNamespace = SimpleNamespace(
+palette: SimpleNamespace = SimpleNamespace(
     **{
-        "result": _command_palette_result,
-        "result_highlighted": _command_palette_result_highlighted,
+        "option": _palette_option,
+        "option_highlighted": _palette_option_highlighted,
     }
 )
 

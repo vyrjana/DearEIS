@@ -89,6 +89,7 @@ from .data_sets import (
     select_data_set_mask_to_copy,
     select_data_sets_to_average,
     select_impedance_to_subtract,
+    select_parallel_impedance,
     select_points_to_interpolate,
     toggle_data_point,
 )
@@ -842,6 +843,8 @@ def initialize_program(args: Namespace):
     )
     signals.register(Signal.SHOW_ERROR_MESSAGE, STATE.program_window.error_message.show)
     signals.register(Signal.SHOW_COMMAND_PALETTE, STATE.show_command_palette)
+    signals.register(Signal.SHOW_DATA_SET_PALETTE, STATE.show_data_set_palette)
+    signals.register(Signal.SHOW_RESULT_PALETTE, STATE.show_result_palette)
     # Settings and help windows
     signals.register(Signal.SHOW_HELP_ABOUT, show_help_about)
     signals.register(Signal.SHOW_HELP_LICENSES, show_license_window)
@@ -888,6 +891,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_DATA_POINTS_TO_TOGGLE, select_data_points_to_toggle)
     signals.register(Signal.SELECT_DATA_SET_MASK_TO_COPY, select_data_set_mask_to_copy)
     signals.register(Signal.SELECT_IMPEDANCE_TO_SUBTRACT, select_impedance_to_subtract)
+    signals.register(Signal.SELECT_PARALLEL_IMPEDANCE, select_parallel_impedance)
     signals.register(Signal.SELECT_POINTS_TO_INTERPOLATE, select_points_to_interpolate)
     signals.register(Signal.TOGGLE_DATA_POINT, toggle_data_point)
     signals.register(Signal.APPLY_DATA_SET_MASK, apply_data_set_mask)

@@ -146,6 +146,9 @@ class Project:
         self._is_new: bool = False
         self.update(*args, **kwargs)
 
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
+
     def __repr(self) -> str:
         return f"Project ({self.get_label()}, {hex(id(self))})"
 

@@ -33,6 +33,8 @@ class Plot:
     def _visibility_handler(self, sender, app):
         if not self._is_limits_adjustment_queued:
             return
+        elif not dpg.does_item_exist(self._plot):
+            return
         dpg.split_frame()
         self.adjust_limits()
         self._is_limits_adjustment_queued = False

@@ -531,12 +531,10 @@ class TestResultsCombo(ResultsCombo):
         )
 
     def adjust_label(self, old: str, longest: int) -> str:
+        i: int = old.rfind(" (")
         label: str
         timestamp: str
-        label, timestamp = (
-            old[: old.find(" (")],
-            old[old.find(" (") + 1 :],
-        )
+        label, timestamp = (old[:i], old[i + 1 :])
         return f"{label.ljust(longest)} {timestamp}"
 
 

@@ -25,7 +25,17 @@ Different iterative methods and weights are available.
 If one or both of these settings are set to **Auto**, then combinations of iterative method(s) and weight(s) are used to perform multiple fits in parallel and the best fit is returned.
 
 The results are presented in the form of a table containing the fitted parameter values (and, if possible, error estimates for the fitted parameter values), a table containing statistics pertaining to the quality of the fit, three plots (Nyquist, Bode, and relative errors of the fit), and a preview of the circuit that was fitted to the data set.
-If you hover the mouse cursor over cells in the tables, then you can get additional information (e.g., more precise values or explanations).
+If you hover the mouse cursor over the cells in the tables, then you can get additional information (e.g., more precise values or explanations).
+
+.. note::
+
+   It may not always be possible to estimate errors for fitted parameters.
+   Common causes include:
+
+   - A parameter's fitted value is close to the parameter's lower or upper limit.
+   - An inappropriate equivalent circuit has been chosen.
+   - The maximum number of function evaluations is set too low.
+   - The data contains no noise and the equivalent circuit is very good at reproducing the data.
 
 
 Equivalent circuits

@@ -309,7 +309,7 @@ class DRTResult:
 
     imaginary_gammas: Gammas
         The gamma values calculated based the imaginary part of the impedance data.
-        Only non-empty when the TR-RBF method has been used.
+        Only non-empty when the BHT method has been used.
 
     frequencies: Frequencies
         The frequencies of the analyzed data set.
@@ -369,6 +369,9 @@ class DRTResult:
 
     def __repr__(self) -> str:
         return f"DRTResult ({self.get_label()}, {hex(id(self))})"
+
+    def __hash__(self) -> int:
+        return int(self.uuid, 16)
 
     @classmethod
     def from_dict(

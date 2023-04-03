@@ -51,7 +51,11 @@ from deareis.enums import (
 )
 from deareis.gui.project import ProjectTab
 from deareis.gui.program import ProgramWindow
-from deareis.gui.command_palette import CommandPalette
+from deareis.gui.palettes import (
+    CommandPalette,
+    DataSetPalette,
+    ResultPalette,
+)
 from deareis.keybindings import KeybindingHandler
 from deareis.utility import calculate_checksum
 from deareis.gui.plotting.export import PlotExporter
@@ -90,7 +94,11 @@ class State:
         self.project_state_snapshots: Dict[str, List[str]] = {}
         self.project_state_snapshot_indices: Dict[str, int] = {}
         self.project_state_saved_indices: Dict[str, int] = {}
-        self.command_palette: CommandPalette = CommandPalette(self.keybinding_handler)
+        self.command_palette: CommandPalette = CommandPalette(
+            keybinding_handler=self.keybinding_handler
+        )
+        self.data_set_palette: DataSetPalette = DataSetPalette()
+        self.result_palette: ResultPalette = ResultPalette()
         self.plot_exporter: PlotExporter = PlotExporter(self.config)
 
     def set_active_modal_window(self, window: int, window_object: Any):
@@ -313,6 +321,20 @@ class State:
         if project is not None and project_tab is not None:
             contexts.extend([Context.PROJECT, project_tab.get_active_context()])
         self.command_palette.show(contexts, project, project_tab)
+
+    def show_data_set_palette(self):
+        project: Optional[Project] = self.get_active_project()
+        project_tab: Optional[ProjectTab] = self.get_active_project_tab()
+        if project is None or project_tab is None:
+            return
+        self.data_set_palette.show(project, project_tab)
+
+    def show_result_palette(self):
+        project: Optional[Project] = self.get_active_project()
+        project_tab: Optional[ProjectTab] = self.get_active_project_tab()
+        if project is None or project_tab is None:
+            return
+        self.result_palette.show(project, project_tab)
 
     def show_plot_exporter(self, settings: PlotSettings, project: Project):
         self.plot_exporter.show(settings, project)

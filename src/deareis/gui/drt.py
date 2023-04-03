@@ -249,12 +249,15 @@ class SettingsMenu:
                     if default_settings.lambda_value > 0.0
                     else 1e-3,
                     width=-1,
-                    min_value=1e-16,
-                    min_clamped=True,
                     step=0.0,
                     format="%.3g",
                     on_enter=True,
                     tag=self.lambda_input,
+                )
+                self.lambda_combo: int = dpg.generate_uuid()
+                dpg.add_combo(
+                    tag=self.lambda_combo,
+                    width=-1,
                 )
             with dpg.group(horizontal=True):
                 dpg.add_text("Derivative order".rjust(label_pad))
@@ -532,6 +535,16 @@ class SettingsMenu:
                     on_enter=True,
                     tag=self.num_per_decade_input,
                 )
+        self.auto_lambda_options: Dict[DRTMethod, Dict[str, float]] = {
+            DRTMethod.TR_NNLS: {
+                "Custom": -1.0,
+                "L-curve corner search": -2.0,
+            },
+            DRTMethod.TR_RBF: {
+                "Custom": -1.0,
+                "L-curve corner search": -2.0,
+            },
+        }
         self.update_settings()
 
     def update_valid_circuits(self, fits: Dict[str, FitResult]):
@@ -565,6 +578,38 @@ class SettingsMenu:
         )
         self.update_settings()
 
+    def get_lambda_value(self, method: DRTMethod) -> float:
+        if method not in (DRTMethod.TR_NNLS, DRTMethod.TR_RBF):
+            return -1.0
+        elif not dpg.get_value(self.lambda_checkbox) is True:
+            return dpg.get_value(self.lambda_input)
+        option: str = dpg.get_value(self.lambda_combo)
+        return self.auto_lambda_options[method].get(option, -1.0)
+
+    def get_lambda_label(self, lambda_value: float, method: DRTMethod) -> str:
+        if method not in (DRTMethod.TR_NNLS, DRTMethod.TR_RBF):
+            return ""
+        options: List[str] = list(self.auto_lambda_options[method].keys())
+        i: int
+        value: float
+        for i, value in enumerate(self.auto_lambda_options[method].values()):
+            if lambda_value >= value - 0.5:
+                return options[i]
+        return ""
+
+    def set_lambda_value(self, lambda_value: float, method: DRTMethod):
+        if method not in (DRTMethod.TR_NNLS, DRTMethod.TR_RBF):
+            return
+        dpg.set_value(self.lambda_checkbox, lambda_value <= 0.0)
+        if lambda_value > 0.0:
+            dpg.set_value(self.lambda_input, lambda_value)
+            return
+        dpg.configure_item(
+            self.lambda_combo,
+            default_value=self.get_lambda_label(lambda_value, method),
+            items=list(self.auto_lambda_options[method].keys()),
+        )
+
     def get_settings(self) -> DRTSettings:
         fit: Optional[FitResult] = dpg.get_item_user_data(self.circuit_combo).get(
             dpg.get_value(self.circuit_combo),
@@ -573,9 +618,7 @@ class SettingsMenu:
         return DRTSettings(
             method=method,
             mode=label_to_drt_mode[dpg.get_value(self.mode_combo)],
-            lambda_value=dpg.get_value(self.lambda_input)
-            if not dpg.get_value(self.lambda_checkbox)
-            else -1.0,
+            lambda_value=self.get_lambda_value(method),
             rbf_type=label_to_rbf_type[dpg.get_value(self.rbf_type_combo)],
             derivative_order=label_to_derivative_order[
                 dpg.get_value(self.derivative_order_combo)
@@ -597,11 +640,7 @@ class SettingsMenu:
         dpg.set_value(self.method_combo, drt_method_to_label[settings.method])
         self.update_settings()
         dpg.set_value(self.mode_combo, drt_mode_to_label[settings.mode])
-        dpg.set_value(self.lambda_checkbox, settings.lambda_value <= 0.0)
-        dpg.set_value(
-            self.lambda_input,
-            settings.lambda_value if settings.lambda_value > 0.0 else 1e-3,
-        )
+        self.set_lambda_value(settings.lambda_value, settings.method)
         dpg.set_value(self.rbf_type_combo, rbf_type_to_label[settings.rbf_type])
         dpg.set_value(
             self.derivative_order_combo,
@@ -672,9 +711,12 @@ class SettingsMenu:
         if settings.method == DRTMethod.TR_RBF or settings.method == DRTMethod.TR_NNLS:
             self.show_setting(self.lambda_checkbox)
             if dpg.get_value(self.lambda_checkbox):
-                dpg.disable_item(self.lambda_input)
+                dpg.hide_item(self.lambda_input)
+                dpg.show_item(self.lambda_combo)
+                self.set_lambda_value(settings.lambda_value, settings.method)
             else:
-                dpg.enable_item(self.lambda_input)
+                dpg.show_item(self.lambda_input)
+                dpg.hide_item(self.lambda_combo)
         else:
             self.hide_setting(self.lambda_checkbox)
             dpg.disable_item(self.lambda_input)
@@ -1112,12 +1154,18 @@ class SettingsTable:
         dpg.show_item(self._header)
         filter_key: str = drt_method_to_label[drt.settings.method]
         dpg.set_value(self._table, filter_key)
+        lambda_label: str = ""
+        if drt.settings.lambda_value > 0.0:
+            lambda_label = f"{drt.settings.lambda_value:.3e}"
+        else:
+            lambda_label = self.get_lambda_label(
+                drt.settings.lambda_value,
+                drt.settings.method,
+            )
         values: List[str] = [
             drt_method_to_label[drt.settings.method],
             drt_mode_to_label[drt.settings.mode],
-            f"{drt.settings.lambda_value:.3e}"
-            if drt.settings.lambda_value > 0.0
-            else "Automatic",
+            lambda_label,
             rbf_type_to_label[drt.settings.rbf_type],
             derivative_order_to_label[drt.settings.derivative_order],
             rbf_shape_to_label[drt.settings.rbf_shape],
@@ -1168,12 +1216,10 @@ class DRTResultsCombo(ResultsCombo):
         )
 
     def adjust_label(self, old: str, longest: int) -> str:
+        i: int = old.rfind(" (")
         label: str
         timestamp: str
-        label, timestamp = (
-            old[: old.find(" ")],
-            old[old.find(" ") + 1 :],
-        )
+        label, timestamp = (old[:i], old[i + 1 :])
         return f"{label.ljust(longest)} {timestamp}"
 
 
@@ -1304,6 +1350,12 @@ class DRTTab:
                 self.statistics_table: StatisticsTable = StatisticsTable()
                 self.scores_table: ScoresTable = ScoresTable()
                 self.settings_table: SettingsTable = SettingsTable()
+                self.settings_table.auto_lambda_options = (
+                    self.settings_menu.auto_lambda_options
+                )
+                self.settings_table.get_lambda_label = (
+                    self.settings_menu.get_lambda_label
+                )
 
     def create_plots(self):
         self.plot_window: int = dpg.generate_uuid()
