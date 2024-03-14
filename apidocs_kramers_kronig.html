@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kramers-Kronig testing &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Z-HIT analysis" href="apidocs_zhit.html" />
+    <link rel="prev" title="Projects" href="apidocs_project.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Kramers-Kronig testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.perform_exploratory_tests"><code class="docutils literal notranslate"><span class="pre">perform_exploratory_tests()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.perform_test"><code class="docutils literal notranslate"><span class="pre">perform_test()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-0">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.TestResult"><code class="docutils literal notranslate"><span class="pre">TestResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.TestSettings"><code class="docutils literal notranslate"><span class="pre">TestSettings</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-1">Enums</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.CNLSMethod"><code class="docutils literal notranslate"><span class="pre">CNLSMethod</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Test"><code class="docutils literal notranslate"><span class="pre">Test</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.TestMode"><code class="docutils literal notranslate"><span class="pre">TestMode</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Kramers-Kronig testing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_kramers_kronig.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-deareis">
+<span id="kramers-kronig-testing"></span><h1>Kramers-Kronig testing<a class="headerlink" href="#module-deareis" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.perform_exploratory_tests">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">perform_exploratory_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_procs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.perform_exploratory_tests" title="Link to this definition"></a></dt>
+<dd><p>Wrapper for the <cite>pyimpspec.perform_exploratory_tests</cite> function.</p>
+<p>Performs a batch of linear Kramers-Kronig tests, which are then scored and sorted from best to worst before they are returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set to be tested.</p></li>
+<li><p><strong>settings</strong> (<a class="reference internal" href="#deareis.TestSettings" title="deareis.TestSettings"><em>TestSettings</em></a>) – The settings that determine how the test is performed.
+Note that only <cite>Test.EXPLORATORY</cite> is supported by this function.</p></li>
+<li><p><strong>num_procs</strong> (<em>int</em><em>, </em><em>optional</em>) – See perform_test for details.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="#deareis.TestResult" title="deareis.TestResult">TestResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.perform_test">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">perform_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_procs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.perform_test" title="Link to this definition"></a></dt>
+<dd><p>Wrapper for the <cite>pyimpspec.perform_test</cite> function.</p>
+<p>Performs a linear Kramers-Kronig test as described by Boukamp (1995).
+The results can be used to check the validity of an impedance spectrum before performing equivalent circuit fitting.
+If the number of (RC) circuits is less than two, then a suitable number of (RC) circuits is determined using the procedure described by Schönleber et al. (2014) based on a criterion for the calculated <span class="math notranslate nohighlight">\({\rm \mu}\)</span> (0.0 to 1.0).
+A <span class="math notranslate nohighlight">\({\rm \mu}\)</span> of 1.0 represents underfitting and a <span class="math notranslate nohighlight">\({\rm \mu}\)</span> of 0.0 represents overfitting.</p>
+<p>References:</p>
+<ul class="simple">
+<li><p>B.A. Boukamp, 1995, J. Electrochem. Soc., 142, 1885-1894 (<a class="reference external" href="https://doi.org/10.1149/1.2044210">https://doi.org/10.1149/1.2044210</a>)</p></li>
+<li><ol class="upperalpha simple" start="13">
+<li><p>Schönleber, D. Klotz, and E. Ivers-Tiffée, 2014, Electrochim. Acta, 131, 20-27 (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2014.01.034">https://doi.org/10.1016/j.electacta.2014.01.034</a>)</p></li>
+</ol>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data to be tested.</p></li>
+<li><p><strong>settings</strong> (<a class="reference internal" href="#deareis.TestSettings" title="deareis.TestSettings"><em>TestSettings</em></a>) – The settings that determine how the test is performed.
+Note that <cite>Test.EXPLORATORY</cite> is not supported by this function.</p></li>
+<li><p><strong>num_procs</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum number of parallel processes to use when performing a test.
+A value less than 1 will result in an attempt to automatically figure out a suitable value.
+Applies only to the <cite>TestMode.CNLS</cite> test.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.TestResult" title="deareis.TestResult">TestResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="module-0">
+<span id="classes"></span><h2>Classes<a class="headerlink" href="#module-0" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.TestResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">TestResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_RC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pseudo_chisqr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impedances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult" title="Link to this definition"></a></dt>
+<dd><p>A class containing the result of a Kramers-Kronig test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uuid</strong> (<em>str</em>) – The universally unique identifier assigned to this result.</p></li>
+<li><p><strong>timestamp</strong> (<em>float</em>) – The Unix time (in seconds) for when the test was performed.</p></li>
+<li><p><strong>circuit</strong> (<a class="reference internal" href="apidocs_circuit.html#deareis.Circuit" title="deareis.Circuit"><em>Circuit</em></a>) – The final, fitted circuit.</p></li>
+<li><p><strong>num_RC</strong> (<em>int</em>) – The final number of parallel RC circuits connected in series.</p></li>
+<li><p><strong>mu</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\({\rm \mu}\)</span> that was calculated for the result (eq. 21 in Schönleber et al., 2014).</p></li>
+<li><p><strong>pseudo_chisqr</strong> (<em>float</em>) – The calculated <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span> (eq. 14 in Boukamp, 1995).</p></li>
+<li><p><strong>frequencies</strong> (<em>Frequencies</em>) – The frequencies used to perform the test.</p></li>
+<li><p><strong>impedances</strong> (<em>ComplexImpedances</em>) – The complex impedances of the fitted circuit at each of the frequencies.</p></li>
+<li><p><strong>residuals</strong> (<em>ComplexResiduals</em>) – The residuals of the real and the imaginary parts of the fit.</p></li>
+<li><p><strong>mask</strong> (<em>Dict</em><em>[</em><em>int</em><em>, </em><em>bool</em><em>]</em>) – The mask that was applied to the DataSet that was tested.</p></li>
+<li><p><strong>settings</strong> (<a class="reference internal" href="#deareis.TestSettings" title="deareis.TestSettings"><em>TestSettings</em></a>) – The settings that were used to perform the test.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.calculate_score">
+<span class="sig-name descname"><span class="pre">calculate_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu_criterion</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.calculate_score" title="Link to this definition"></a></dt>
+<dd><p>Calculate a score based on the provided <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion and the statistics of the result.
+A result with a <span class="math notranslate nohighlight">\({\rm \mu}\)</span> greater than or equal to the <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion will get a score of -numpy.inf.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mu_criterion</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion to apply.
+See perform_test for details.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create an instance from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dictionary</strong> (<em>dict</em>) – The dictionary to turn into a TestResult object.</p></li>
+<li><p><strong>data</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>]</em><em>, </em><em>optional</em>) – The DataSet object that this result is for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.TestResult" title="deareis.TestResult">TestResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_bode_data">
+<span class="sig-name descname"><span class="pre">get_bode_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_bode_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the results as a Bode plot (Mode(Z) and -Phase(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[Frequencies, Impedances, Phases]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_frequencies">
+<span class="sig-name descname"><span class="pre">get_frequencies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_frequencies" title="Link to this definition"></a></dt>
+<dd><p>Get an array of frequencies within the range of tested frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Frequencies</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Get the complex impedances produced by the fitted circuit within the range of tested frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Frequencies</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_label">
+<span class="sig-name descname"><span class="pre">get_label</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_label" title="Link to this definition"></a></dt>
+<dd><p>Generate a label for the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_nyquist_data">
+<span class="sig-name descname"><span class="pre">get_nyquist_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_nyquist_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the results as a Nyquist plot (-Im(Z) vs Re(Z)).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the value is greater than zero, then logarithmically distributed frequencies will be generated within the range of tested frequencies and used to calculate the impedance produced by the fitted circuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[Impedances, Impedances]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_residuals_data">
+<span class="sig-name descname"><span class="pre">get_residuals_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_residuals_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the residuals (real and imaginary vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Frequencies, Residuals, Residuals]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_series_capacitance">
+<span class="sig-name descname"><span class="pre">get_series_capacitance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_series_capacitance" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the series capacitance (or numpy.nan if not included in the circuit).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_series_inductance">
+<span class="sig-name descname"><span class="pre">get_series_inductance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_series_inductance" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the series inductance (or numpy.nan if not included in the circuit).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.get_series_resistance">
+<span class="sig-name descname"><span class="pre">get_series_resistance</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.get_series_resistance" title="Link to this definition"></a></dt>
+<dd><p>Get the value of the series resistance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary that can be used to recreate an instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session</strong> (<em>bool</em>) – If False, then a minimal dictionary will be generated to reduce file size.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestResult.to_statistics_dataframe">
+<span class="sig-name descname"><span class="pre">to_statistics_dataframe</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestResult.to_statistics_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Get the statistics related to the test as a pandas.DataFrame object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.TestSettings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">TestSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_RC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_criterion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_capacitance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_inductance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nfev</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestSettings" title="Link to this definition"></a></dt>
+<dd><p>A class to store the settings used to perform a Kramers-Kronig test.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>test</strong> (<a class="reference internal" href="#deareis.Test" title="deareis.Test"><em>Test</em></a>) – The type of test to perform: complex, real, imaginary, or CNLS.
+See pyimpspec and its documentation for details about the different types of tests.</p></li>
+<li><p><strong>mode</strong> (<a class="reference internal" href="#deareis.TestMode" title="deareis.TestMode"><em>TestMode</em></a>) – How to perform the test: automatic, exploratory, or manual.
+The automatic mode uses the procedure described by Schönleber et al. (2014) to determine a suitable number of parallel RC circuits connected in series.
+The exploratory mode is similar to the automatic mode except the user is allowed to choose which of the results to accept and the initial suggestion has additional weighting applied to it in an effort to reduce false negatives that would lead to the conclusion that the data is invalid.
+The manual mode requires the user to pick the number of parallel RC circuits connected in series.</p></li>
+<li><p><strong>num_RC</strong> (<em>int</em>) – The (maximum) number of parallel RC circuits connected in series.</p></li>
+<li><p><strong>mu_criterion</strong> (<em>float</em>) – The threshold value used in the procedure described by Schönleber et al. (2014).</p></li>
+<li><p><strong>add_capacitance</strong> (<em>bool</em>) – Add a capacitance in series to the Voigt circuit.</p></li>
+<li><p><strong>add_inductance</strong> (<em>bool</em>) – Add an inductance in series to the Voigt circuit.</p></li>
+<li><p><strong>method</strong> (<a class="reference internal" href="#deareis.CNLSMethod" title="deareis.CNLSMethod"><em>CNLSMethod</em></a>) – The iterative method to use if the CNLS test is chosen.</p></li>
+<li><p><strong>max_nfev</strong> (<em>int</em>) – The maximum number of function evaluations to use if the CNLS test is chosen.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestSettings.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestSettings.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create an instance from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dictionary</strong> (<em>dict</em>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.TestSettings" title="deareis.data.kramers_kronig.TestSettings"><em>TestSettings</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.TestSettings.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestSettings.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary that can be used to recreate an instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-1">
+<span id="enums"></span><h2>Enums<a class="headerlink" href="#module-1" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.CNLSMethod">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">CNLSMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CNLSMethod" title="Link to this definition"></a></dt>
+<dd><p>Iterative methods used during complex non-linear least-squares fitting:</p>
+<ul class="simple">
+<li><p>AUTO: try each method</p></li>
+<li><p>BFGS</p></li>
+<li><p>CG</p></li>
+<li><p>LBFGSB</p></li>
+<li><p>LEASTSQ</p></li>
+<li><p>LEAST_SQUARES</p></li>
+<li><p>NELDER</p></li>
+<li><p>POWELL</p></li>
+<li><p>SLSQP</p></li>
+<li><p>TNC</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Test">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Test" title="Link to this definition"></a></dt>
+<dd><p>Types of Kramers-Kronig tests:</p>
+<ul class="simple">
+<li><p>CNLS: complex non-linear least-squares fit of circuit (fig. 1, Boukamp, 1995) with a distribution of fixed time constants</p></li>
+<li><p>COMPLEX: eqs. 11 and 12, Boukamp, 1995</p></li>
+<li><p>IMAGINARY: eqs. 4, 6, and 7, Boukamp, 1995</p></li>
+<li><p>REAL: eqs. 5, 8, 9, and 10, Boukamp, 1995</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.TestMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">TestMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.TestMode" title="Link to this definition"></a></dt>
+<dd><p>Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:</p>
+<ul class="simple">
+<li><p>AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)</p></li>
+<li><p>EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion</p></li>
+<li><p>MANUAL: manually choose the number</p></li>
+</ul>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_project.html" class="btn btn-neutral float-left" title="Projects" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_zhit.html" class="btn btn-neutral float-right" title="Z-HIT analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

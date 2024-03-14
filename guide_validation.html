@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validation &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Distribution of relaxation times analysis" href="guide_drt.html" />
+    <link rel="prev" title="Processing data" href="guide_data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_data.html">Processing data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kramers-kronig-testing">Kramers-Kronig testing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#exploratory-mode">Exploratory mode</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#z-hit-analysis">Z-HIT analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applying-old-settings-and-masks">Applying old settings and masks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_fitting.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_api.html">Application programming interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Validation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_validation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="validation">
+<h1>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h1>
+<p>The two primary approaches to validating experimental data included in DearEIS are linear Kramers-Kronig testing and Z-HIT analysis.
+The former is a widely adopted approach based on attempting to fit a specific type of equivalent circuit, which is known <em>a priori</em> to be Kramers-Kronig transformable.
+The latter approach reconstructs the modulus data from the (typically) more stable phase data, which can reveal issues such as drift at low frequencies due to time invariant behavior exhibited by the measured system.</p>
+<section id="kramers-kronig-testing">
+<h2>Kramers-Kronig testing<a class="headerlink" href="#kramers-kronig-testing" title="Link to this heading"></a></h2>
+<p>Data validation based on linear Kramers-Kronig testing can be performed in the <strong>Kramers-Kronig</strong> tab (<a class="reference internal" href="#kk-tab"><span class="std std-numref">Fig. 10</span></a>) which contains the following:</p>
+<ul class="simple">
+<li><p>various settings that determine how the Kramers-Kronig test is performed</p></li>
+<li><p>combo boxes that can be used to choose the active data set and the active test result</p></li>
+<li><p>a table of statistics related to the active test result</p></li>
+<li><p>a table of settings that were used to obtain the active result</p></li>
+<li><p>different plots</p></li>
+</ul>
+<figure class="align-default" id="id1">
+<span id="kk-tab"></span><img alt="The Kramers-Kronig tab of a project" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 10 </span><span class="caption-text">A Kramers-Kronig test result for the noisy data set with the omitted outlier.
+The relative residuals are rather large, but most importantly they are randomly distributed around zero.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The three variants of the linear Kramers-Kronig test described by <a class="reference external" href="https://doi.org/10.1149/1.2044210">Boukamp (1995)</a> have been included as well as an implementation that uses complex non-linear least squares fitting.
+These tests can be performed with a fixed number of parallel RC elements (<strong>Manual</strong> mode) or that number can be determined automatically based on an algorithm described by <a class="reference external" href="https://doi.org/10.1016/j.electacta.2014.01.034">Schönleber et al. (2014)</a> (<strong>Auto</strong> mode).
+The intermediate results of the latter approach can be inspected in the <strong>Exploratory</strong> mode as a means of detecting and dealing with false negatives (i.e., cases where valid data is indicated as invalid because the algorithm stops increasing the number of parallel RC elements too early).
+An additional weight is also used in the <strong>Exploratory</strong> mode when suggesting the number of parallel RC elements as a means of increasing the probability of avoiding false negatives.</p>
+<p>The test results are presented in the form of a table of statistics (e.g., <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span>) and different plots such as one of the relative residuals of the fit.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See <a class="reference internal" href="guide_data.html#parallel-impedances"><span class="std std-ref">Adding parallel impedances</span></a> for information about how to process impedance data that include negative differential resistances before attempting to validate the data using the included implementations of the linear Kramers-Kronig tests.</p>
+</div>
+<section id="exploratory-mode">
+<h3>Exploratory mode<a class="headerlink" href="#exploratory-mode" title="Link to this heading"></a></h3>
+<p>If the <strong>Exploratory</strong> mode is used, then the Kramers-Kronig test is performed with a range of number of parallel RC elements like when using the <strong>Auto</strong> mode.
+However, these results are presented in a modal window for inspection (<a class="reference internal" href="#exploratory-window"><span class="std std-numref">Fig. 11</span></a>) in the form of the following plots:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\({\rm \mu}\)</span> and the base-10 logarithm of <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span> versus the number of parallel RC elements</p></li>
+<li><p>relative residuals of the real and imaginary impedances vs frequency</p></li>
+<li><p>Nyquist plot</p></li>
+<li><p>Bode plot</p></li>
+</ul>
+<figure class="align-default" id="id2">
+<span id="exploratory-window"></span><img alt="Window of exploratory test results" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab-exploratory.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 11 </span><span class="caption-text">The plot of <span class="math notranslate nohighlight">\({\rm \mu}\)</span> fluctuates a bit at low numbers of parallel RC elements in this example, but wilder fluctuations can in some cases (depending on the chosen <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion) result in a false negative when using the <strong>Auto</strong> mode.
+Another number of parallel RC elements could be chosen, if necessary, from this window.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The <span class="math notranslate nohighlight">\({\rm \mu}\)</span> values range from 0.0 to 1.0 and these extremes represent over- and underfitting, respectively (see Schönleber et al. (2014) for the more information about how <span class="math notranslate nohighlight">\({\rm \mu}\)</span> is calculated).
+The <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion is the threshold that is used to decide when to stop adding more parallel RC elements (i.e., when <span class="math notranslate nohighlight">\({\rm \mu}\)</span> drops below the chosen <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion).</p>
+<p>The main advantage of using the <strong>Exploratory</strong> mode is that one can see how <span class="math notranslate nohighlight">\({\rm \mu}\)</span> changes as a function of the number of parallel RC elements.
+In some cases <span class="math notranslate nohighlight">\({\rm \mu}\)</span> can fluctuate wildly at low numbers of parallel RC elements, which would otherwise lead to the algorithm stopping too early and make it seem like the data is invalid when that is not necessarily the case.</p>
+<p>References:</p>
+<ul class="simple">
+<li><p>Boukamp, B.A., 1995, J. Electrochem. Soc., 142, 1885-1894</p></li>
+<li><p>Schönleber, M., Klotz, D., and Ivers-Tiffée, E., 2014, Electrochim. Acta, 131, 20-27</p></li>
+</ul>
+</section>
+</section>
+<section id="z-hit-analysis">
+<h2>Z-HIT analysis<a class="headerlink" href="#z-hit-analysis" title="Link to this heading"></a></h2>
+<p>Data validation using the <a class="reference external" href="https://en.wikipedia.org/wiki/Z-HIT">Z-HIT algorithm</a> can be performed in the <strong>Z-HIT analysis</strong> tab (<a class="reference internal" href="#zhit-tab"><span class="std std-numref">Fig. 12</span></a>) that contains the following:</p>
+<ul class="simple">
+<li><p>the various settings that determine how the Z-HIT analysis is performed</p></li>
+<li><p>combo boxes that can be used to choose the active data set and the active analysis result</p></li>
+<li><p>a table of statistics related to the active analysis result</p></li>
+<li><p>a table of the settings that were used to obtain the active result</p></li>
+<li><p>different plots</p></li>
+</ul>
+<figure class="align-default" id="id3">
+<span id="zhit-tab"></span><img alt="The Z-HIT analysis tab of a project" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/zhit-tab.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 12 </span><span class="caption-text">The modulus data that is plotted in the upper plot has been reconstructed (red line) based on the phase data (orange markers and green line) of some example data that exhibits drift at low frequencies (blue markers).</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The Z-HIT algorithm was first described by Ehm et al. (2000) and provides a means of validating recorded impedance spectra using a modified logarithmic Hilbert transformation.
+The phase data is typically smoothed before it is interpolated using a spline, and then it is integrated and derivated to reconstruct the modulus data.
+The final step is an adjustment of the offset of the reconstructed modulus data by fitting to a subset of the experimental data that is unaffected by, e.g., drift.
+This subset of data points is typically in the range of 1 Hz to 1000 Hz.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The modulus data is not reconstructed perfectly.
+There are often minor deviations even with ideal data.</p>
+</div>
+<p>DearEIS offers a few options for smoothing algorithm and interpolation spline, and several different window functions for the weights to use during offset adjustment.
+The weights can also be previewed in a window (<a class="reference internal" href="#weights-window"><span class="std std-numref">Fig. 13</span></a>) that is accessible via the <strong>Preview weights</strong> button that is located below the section for settings.
+This window can help with selecting a window function and appropriate parameters for it.</p>
+<figure class="align-default" id="id4">
+<span id="weights-window"></span><img alt="A window for previewing weights" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/zhit-tab-weights.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 13 </span><span class="caption-text">It is possible to preview the weights that could be applied when fitting the approximated modulus data to the experimental modulus data.
+The shaded region shows the position of the window function while the orange markers show the weight (from 0.0 to 1.0) that could be applied.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The results are presented in the form of a table of statistics and different plots.</p>
+<p>References:</p>
+<ul class="simple">
+<li><p>Ehm, W., Göhr, H., Kaus, R., Röseler, B., and Schiller, C.A., 2000, Acta Chimica Hungarica, 137 (2-3), 145-157.</p></li>
+</ul>
+</section>
+<section id="applying-old-settings-and-masks">
+<h2>Applying old settings and masks<a class="headerlink" href="#applying-old-settings-and-masks" title="Link to this heading"></a></h2>
+<p>The settings that were used to perform the active test result are also presented as a table and these settings can be applied by pressing the <strong>Apply settings</strong> button.</p>
+<p>The mask that was applied to the data set when the test was performed can be applied by pressing the <strong>Apply mask</strong> button.
+If the mask that is applied to the data set has changed since an earlier analysis was performed, then that will be indicated clearly above the statistics table.</p>
+<figure class="align-default" id="id5">
+<img alt="Invalid result because the data set mask has changed" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/kramers-kronig-tab-warning.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 14 </span><span class="caption-text">An example of the warning (red text on the left-hand side) that could be shown if, e.g., the mask applied to a data set has been changed after an analysis has been performed.
+In this case, three points near the apex of the semi-circle on the left-hand side in the Nyquist plot have been omitted.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>These features make it easy to restore old settings/masks in case, e.g., DearEIS has been closed and relaunched, or after trying out different settings.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_data.html" class="btn btn-neutral float-left" title="Processing data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="guide_drt.html" class="btn btn-neutral float-right" title="Distribution of relaxation times analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

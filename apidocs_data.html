@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data parsing &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Projects" href="apidocs_project.html" />
+    <link rel="prev" title="API Documentation" href="apidocs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Data parsing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.parse_data"><code class="docutils literal notranslate"><span class="pre">parse_data()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.DataSet"><code class="docutils literal notranslate"><span class="pre">DataSet</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.average"><code class="docutils literal notranslate"><span class="pre">DataSet.average()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.duplicate"><code class="docutils literal notranslate"><span class="pre">DataSet.duplicate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.from_dict"><code class="docutils literal notranslate"><span class="pre">DataSet.from_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_bode_data"><code class="docutils literal notranslate"><span class="pre">DataSet.get_bode_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_frequencies"><code class="docutils literal notranslate"><span class="pre">DataSet.get_frequencies()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_impedances"><code class="docutils literal notranslate"><span class="pre">DataSet.get_impedances()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_label"><code class="docutils literal notranslate"><span class="pre">DataSet.get_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_magnitudes"><code class="docutils literal notranslate"><span class="pre">DataSet.get_magnitudes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_mask"><code class="docutils literal notranslate"><span class="pre">DataSet.get_mask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_num_points"><code class="docutils literal notranslate"><span class="pre">DataSet.get_num_points()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_nyquist_data"><code class="docutils literal notranslate"><span class="pre">DataSet.get_nyquist_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_path"><code class="docutils literal notranslate"><span class="pre">DataSet.get_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.get_phases"><code class="docutils literal notranslate"><span class="pre">DataSet.get_phases()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.high_pass"><code class="docutils literal notranslate"><span class="pre">DataSet.high_pass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.low_pass"><code class="docutils literal notranslate"><span class="pre">DataSet.low_pass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.set_label"><code class="docutils literal notranslate"><span class="pre">DataSet.set_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.set_mask"><code class="docutils literal notranslate"><span class="pre">DataSet.set_mask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.set_path"><code class="docutils literal notranslate"><span class="pre">DataSet.set_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.subtract_impedances"><code class="docutils literal notranslate"><span class="pre">DataSet.subtract_impedances()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.to_dataframe"><code class="docutils literal notranslate"><span class="pre">DataSet.to_dataframe()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.DataSet.to_dict"><code class="docutils literal notranslate"><span class="pre">DataSet.to_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Data parsing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-deareis">
+<span id="data-parsing"></span><h1>Data parsing<a class="headerlink" href="#module-deareis" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.parse_data">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">parse_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.parse_data" title="Link to this definition"></a></dt>
+<dd><p>Wrapper for <cite>pyimpspec.parse_data</cite>.</p>
+<p>Parse experimental data and return a list of DataSet instances.
+One or more specific sheets can be specified by name when parsing spreadsheets (e.g., .xlsx or .ods) to only return DataSet instances for those sheets.
+If no sheets are specified, then all sheets will be processed and the data from successfully parsed sheets will be returned as DataSet instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<em>str</em>) – The path to a file containing experimental data that is to be parsed.</p></li>
+<li><p><strong>file_format</strong> (<em>str</em><em>, </em><em>optional</em>) – The file format (or extension) that should be assumed when parsing the data.
+If no file format is specified, then the file format will be determined based on the file extension.
+If there is no file extension, then attempts will be made to parse the file as if it was one of the supported file formats.</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments are passed to the parser.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="#deareis.DataSet" title="deareis.DataSet">DataSet</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.DataSet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">DataSet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impedances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet" title="Link to this definition"></a></dt>
+<dd><p>Extends <cite>pyimpspec.DataSet</cite> to implement data minimization when writing to disk and to recreate the data when loading from disk.
+Equality checks between DataSet instances is also modified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>frequencies</strong> (<em>Frequencies</em>) – A 1-dimensional array of frequencies in hertz.</p></li>
+<li><p><strong>impedances</strong> (<em>ComplexImpedances</em>) – A 1-dimensional array of complex impedances in ohms.</p></li>
+<li><p><strong>mask</strong> (<em>Dict</em><em>[</em><em>int</em><em>, </em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – A mapping of integer indices to boolean values where a value of True means that the data point is to be omitted.</p></li>
+<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – The path to the file that has been parsed to generate this DataSet instance.</p></li>
+<li><p><strong>label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to this DataSet instance.</p></li>
+<li><p><strong>uuid</strong> (<em>str</em><em>, </em><em>optional</em>) – The universivally unique identifier assigned to this DataSet instance.
+If empty, then one will be automatically assigned.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.average">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_sets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Average'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.average" title="Link to this definition"></a></dt>
+<dd><p>Create a DataSet by averaging the impedances of multiple DataSet instances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_sets</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>]</em>) – The DataSet instances to average.</p></li>
+<li><p><strong>label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label that the new DataSet should have.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.DataSet" title="deareis.DataSet">DataSet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.duplicate">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">duplicate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.duplicate" title="Link to this definition"></a></dt>
+<dd><p>Create a duplicate of an existing DataSet but assign another universally unique identifier (UUID) to the copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The existing DataSet to duplicate.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The label that the copy should have.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.DataSet" title="deareis.DataSet">DataSet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a DataSet instance that has been created based off of a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dictionary</strong> (<em>dict</em>) – Create an instance from a dictionary.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.DataSet" title="deareis.data.data_sets.DataSet"><em>DataSet</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_bode_data">
+<span class="sig-name descname"><span class="pre">get_bode_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_bode_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data necessary to plot this DataSet as a Bode plot: the frequencies, the absolute magnitudes of the impedances, and the negative phase angles/shifts of the impedances in degrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[<code class="xref py py-class docutils literal notranslate"><span class="pre">Frequencies</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Impedances</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Phases</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_frequencies">
+<span class="sig-name descname"><span class="pre">get_frequencies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_frequencies" title="Link to this definition"></a></dt>
+<dd><p>Get the frequencies in this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all frequencies are returned.
+True means that only frequencies that are to be omitted are returned.
+False means that only frequencies that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Frequencies</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Get the complex impedances in this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ComplexImpedances</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_label">
+<span class="sig-name descname"><span class="pre">get_label</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_label" title="Link to this definition"></a></dt>
+<dd><p>Get the label assigned to this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_magnitudes">
+<span class="sig-name descname"><span class="pre">get_magnitudes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_magnitudes" title="Link to this definition"></a></dt>
+<dd><p>Get the absolute magnitudes of the impedances in this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Impedances</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_mask">
+<span class="sig-name descname"><span class="pre">get_mask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_mask" title="Link to this definition"></a></dt>
+<dd><p>Get the mask for this DataSet.
+True means that the data point is to be omitted and False means that the data point is to be included.
+The keys are zero-based integer indices and the values are booleans.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[int, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_num_points">
+<span class="sig-name descname"><span class="pre">get_num_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_num_points" title="Link to this definition"></a></dt>
+<dd><p>Get the number of data points in this DataSet</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_nyquist_data">
+<span class="sig-name descname"><span class="pre">get_nyquist_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_nyquist_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data necessary to plot this DataSet as a Nyquist plot: the real and the negative imaginary parts of the impedances.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple[<code class="xref py py-class docutils literal notranslate"><span class="pre">Impedances</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Impedances</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_path">
+<span class="sig-name descname"><span class="pre">get_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_path" title="Link to this definition"></a></dt>
+<dd><p>Get the path to the file that was parsed to generate this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.get_phases">
+<span class="sig-name descname"><span class="pre">get_phases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.get_phases" title="Link to this definition"></a></dt>
+<dd><p>Get the phase angles/shifts of the impedances in this DataSet in degrees.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Phases</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.high_pass">
+<span class="sig-name descname"><span class="pre">high_pass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.high_pass" title="Link to this definition"></a></dt>
+<dd><p>Mask data points by applying a high-pass filter with the provided cutoff frequency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cutoff</strong> (<em>float</em>) – The cutoff frequency to use. Data points with frequencies lower than this cutoff frequency are masked.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.low_pass">
+<span class="sig-name descname"><span class="pre">low_pass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.low_pass" title="Link to this definition"></a></dt>
+<dd><p>Mask data points by applying a low-pass filter with the provided cutoff frequency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cutoff</strong> (<em>float</em>) – The cutoff frequency to use. Data points with frequencies higher than this cutoff frequency are masked.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.set_label">
+<span class="sig-name descname"><span class="pre">set_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.set_label" title="Link to this definition"></a></dt>
+<dd><p>Set the label assigned to this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>str</em>) – The new label.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.set_mask">
+<span class="sig-name descname"><span class="pre">set_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.set_mask" title="Link to this definition"></a></dt>
+<dd><p>Set the mask for this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mask</strong> (<em>Dict</em><em>[</em><em>int</em><em>, </em><em>bool</em><em>]</em>) – The new mask that determines which data points are omitted.
+True means that the data point is to be omitted and False means that the data point is to be included.
+The keys must be zero-based integer indices and the values must be boolean values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.set_path">
+<span class="sig-name descname"><span class="pre">set_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.set_path" title="Link to this definition"></a></dt>
+<dd><p>Set the path to the file that was parsed to generate this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – The path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.subtract_impedances">
+<span class="sig-name descname"><span class="pre">subtract_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">impedances</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.subtract_impedances" title="Link to this definition"></a></dt>
+<dd><p>Subtract either the same complex value from all data points or a unique complex value for each data point in this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>impedances</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ComplexImpedances</span></code>) – The complex value(s) to subtract from this DataSet’s impedances.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.to_dataframe">
+<span class="sig-name descname"><span class="pre">to_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">masked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negative_imaginary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negative_phase</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.to_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Create a <a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame">pandas.DataFrame</a> instance from this DataSet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>masked</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – None means that all impedances are returned.
+True means that only impedances that are to be omitted are returned.
+False means that only impedances that are to be included are returned.</p></li>
+<li><p><strong>columns</strong> (<em>Optional</em><em>[</em><em>List</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The column headers to use.</p></li>
+<li><p><strong>negative_imaginary</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the sign of the imaginary part of the impedance data should be inverted.
+Note that this does not automatically add a minus sign in front of the column label.</p></li>
+<li><p><strong>negative_phase</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the sign of the phase of the impedance data should be inverted.
+Note that this does not automatically add a minus sign in front of the column label.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame">pandas.DataFrame</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.DataSet.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.DataSet.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary that can be used to recreate this data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session</strong> (<em>bool = True</em>) – If true, then no data minimization is performed.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs.html" class="btn btn-neutral float-left" title="API Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_project.html" class="btn btn-neutral float-right" title="Projects" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

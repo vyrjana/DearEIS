@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plotting - matplotlib &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Typing" href="apidocs_typing.html" />
+    <link rel="prev" title="Circuit fitting" href="apidocs_fitting.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Plotting - matplotlib</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wrappers">Wrappers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot"><code class="docutils literal notranslate"><span class="pre">plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_circuit"><code class="docutils literal notranslate"><span class="pre">plot_circuit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_data"><code class="docutils literal notranslate"><span class="pre">plot_data()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_drt"><code class="docutils literal notranslate"><span class="pre">plot_drt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_fit"><code class="docutils literal notranslate"><span class="pre">plot_fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_tests"><code class="docutils literal notranslate"><span class="pre">plot_tests()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#primitives">Primitives</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_bht_scores"><code class="docutils literal notranslate"><span class="pre">plot_bht_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_bode"><code class="docutils literal notranslate"><span class="pre">plot_bode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_complex"><code class="docutils literal notranslate"><span class="pre">plot_complex()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_gamma"><code class="docutils literal notranslate"><span class="pre">plot_gamma()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_imaginary"><code class="docutils literal notranslate"><span class="pre">plot_imaginary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_magnitude"><code class="docutils literal notranslate"><span class="pre">plot_magnitude()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_mu_xps"><code class="docutils literal notranslate"><span class="pre">plot_mu_xps()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_nyquist"><code class="docutils literal notranslate"><span class="pre">plot_nyquist()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_phase"><code class="docutils literal notranslate"><span class="pre">plot_phase()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_real"><code class="docutils literal notranslate"><span class="pre">plot_real()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.mpl.plot_residuals"><code class="docutils literal notranslate"><span class="pre">plot_residuals()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#plot">plot</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-circuit">plot_circuit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-data">plot_data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-drt">plot_drt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-fit">plot_fit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#plot-tests">plot_tests</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Plotting - matplotlib</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_plot_mpl.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="plotting-matplotlib">
+<h1>Plotting - matplotlib<a class="headerlink" href="#plotting-matplotlib" title="Link to this heading"></a></h1>
+<section id="wrappers">
+<h2>Wrappers<a class="headerlink" href="#wrappers" title="Link to this heading"></a></h2>
+<p>These functions provide a high-level API for visualizing various objects/results (e.g., <a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSet</span></code></a>).
+Most of them are the same functions included in <a class="reference external" href="https://vyrjana.github.io/pyimpspec/">pyimpspec</a> with the notable exception of <a class="reference internal" href="#deareis.mpl.plot" title="deareis.mpl.plot"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot()</span></code></a>.</p>
+<dl class="py function" id="module-deareis.mpl">
+<dt class="sig sig-object py" id="deareis.mpl.plot">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_limits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_limits</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend_loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tight_layout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot" title="Link to this definition"></a></dt>
+<dd><p>Plot a complex plot containing one or more items from a project based on the provided settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>settings</strong> (<em>PlotSettings</em>) – The settings for the plot.</p></li>
+<li><p><strong>project</strong> (<a class="reference internal" href="apidocs_project.html#deareis.Project" title="deareis.Project"><em>Project</em></a>) – The project that the plot is a part of.</p></li>
+<li><p><strong>x_limits</strong> (<em>Optional</em><em>[</em><em>Tuple</em><em>[</em><em>Optional</em><em>[</em><em>float</em><em>]</em><em>, </em><em>Optional</em><em>[</em><em>float</em><em>]</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The lower and upper limits of the x-axis.</p></li>
+<li><p><strong>y_limits</strong> (<em>Optional</em><em>[</em><em>Tuple</em><em>[</em><em>Optional</em><em>[</em><em>float</em><em>]</em><em>, </em><em>Optional</em><em>[</em><em>float</em><em>]</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The lower and upper limits of the y-axis.</p></li>
+<li><p><strong>title</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to include the title in the figure.</p></li>
+<li><p><strong>legend</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – Whether or not to include a legend in the figure.</p></li>
+<li><p><strong>legend_loc</strong> (<em>Union</em><em>[</em><em>int</em><em>, </em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The position of the legend in the figure. See matplotlib’s documentation for valid values.</p></li>
+<li><p><strong>grid</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to include a grid in the figure.</p></li>
+<li><p><strong>tight_layout</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to apply a tight layout that the sizes of the reduces margins.</p></li>
+<li><p><strong>figure</strong> (Optional[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>], optional) – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>axes</strong> (<em>List</em><em>[</em><em>Axes</em><em>]</em><em>, </em><em>optional</em>) – The matplotlib.axes.Axes instance to use when plotting the data.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If any circuit fits, circuit simulations, or Kramers-Kronig test results are included in the plot, then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_circuit">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_circuit" title="Link to this definition"></a></dt>
+<dd><p>Plot the simulated impedance response of a circuit as both a Nyquist and a Bode plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circuit</strong> (<a class="reference internal" href="apidocs_circuit.html#deareis.Circuit" title="deareis.Circuit"><em>Circuit</em></a>) – The circuit to use when simulating the impedance response.</p></li>
+<li><p><strong>frequencies</strong> (<em>Frequencies</em>) – The frequencies (in hertz) to use when simulating the impedance response.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘impedance’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘impedance’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.
+If not title is provided, then the circuit description code of the circuit is used instead.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_data">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_data" title="Link to this definition"></a></dt>
+<dd><p>Plot a DataSet instance as both a Nyquist and a Bode plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The DataSet instance to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘impedance’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘impedance’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.
+If not title is provided, then the label of the DataSet is used instead.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_drt">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_drt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_drt" title="Link to this definition"></a></dt>
+<dd><p>Plot the result of calculating the distribution of relaxation times (DRT) as a Bode plot, a DRT plot, and a plot of the residuals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>drt</strong> (<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a>) – The result to plot.</p></li>
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The DataSet instance that was used in the DRT calculations.</p></li>
+<li><p><strong>peak_threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – The threshold to use for identifying and marking peaks (0.0 to 1.0, relative to the highest peak).
+Negative values disable marking peaks.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘gamma’, ‘real’, ‘imaginary’, ‘data_real’, ‘data_imaginary’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘real’, ‘imaginary’, ‘data_real’, ‘data_imaginary’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.
+If no title is provided, then the circuit description code (and label of the DataSet) is used instead.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_fit">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_fit" title="Link to this definition"></a></dt>
+<dd><p>Plot the result of a fit as a Nyquist plot, a Bode plot, and a plot of the residuals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fit</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The circuit fit or test result.</p></li>
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The DataSet instance that a circuit was fitted to.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘real’, ‘imaginary’, ‘data_impedance’, ‘impedance’, ‘data_magnitude’, ‘data_phase’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘real’, ‘imaginary’, ‘data_impedance’, ‘data_magnitude’, ‘data_phase’.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.
+If no title is provided, then the circuit description code (and label of the DataSet) is used instead.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_tests">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_criterion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_tests" title="Link to this definition"></a></dt>
+<dd><p>Plot the results of an exploratory Kramers-Kronig test as a Nyquist plot, a Bode plot, a plot of the residuals, and a plot of the <span class="math notranslate nohighlight">\({\rm \mu}\)</span> and <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span> values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tests</strong> (<em>List</em><em>[</em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>]</em>) – The results to plot.</p></li>
+<li><p><strong>mu_criterion</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion to apply.</p></li>
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The DataSet instance that was tested.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘mu’, ‘xps’, ‘criterion’, ‘real’, ‘imaginary’, ‘data_impedance’, ‘impedance’, ‘data_magnitude’, ‘data_phase’, ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘mu’, ‘xps’, ‘real’, ‘imaginary’, ‘data_impedance’, ‘data_magnitude’, ‘data_phase’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.
+If no title is provided, then the label of the DataSet is used instead.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="primitives">
+<h2>Primitives<a class="headerlink" href="#primitives" title="Link to this heading"></a></h2>
+<p>These functions are used by the wrapper functions to make a more complex figure with multiple subplots.
+These are all the same as those included in <a class="reference external" href="https://vyrjana.github.io/pyimpspec/">pyimpspec</a>.</p>
+<dl class="py function" id="module-0">
+<dt class="sig sig-object py" id="deareis.mpl.plot_bht_scores">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_bht_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_bars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_bht_scores" title="Link to this definition"></a></dt>
+<dd><p>Plot the scores of a BHTResult as a bar chart.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>drt</strong> (<em>BHTResult</em>) – The result to plot.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘real’, ‘imaginary’.</p></li>
+<li><p><strong>label_bars</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add labels above the bars.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>title</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The title of the figure.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_bode">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_bode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_bode" title="Link to this definition"></a></dt>
+<dd><p>Plot some data as a Bode plot (Mod(Z) vs f and Phase(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘magnitude’, ‘phase’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not lines should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_complex">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_complex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_complex" title="Link to this definition"></a></dt>
+<dd><p>Plot the real and imaginary parts of the impedance of some data (Re(Z) vs f and -Im(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘real’, ‘imaginary’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘real’, ‘imaginary’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not lines should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_gamma">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_gamma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_gamma" title="Link to this definition"></a></dt>
+<dd><p>Plot the distribution of relaxation times (gamma vs tau).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>drt</strong> (<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a>) – The result to plot.</p></li>
+<li><p><strong>peak_threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – The threshold to use for identifying and marking peaks (0.0 to 1.0, relative to the highest peak).
+Negative values disable marking peaks.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>bounds_alpha</strong> (<em>float</em><em>, </em><em>optional</em>) – The alpha to use when plotting the bounds of the Bayesian credible intervals (if they are included in the data).</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the lines. Valid keys: ‘gamma’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – The matplotlib.axes.Axes instance to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_imaginary">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_imaginary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_imaginary" title="Link to this definition"></a></dt>
+<dd><p>Plot the negative imaginary impedance of some data (-Im(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘imaginary’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘imaginary’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not a line should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_magnitude">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_magnitude</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_magnitude" title="Link to this definition"></a></dt>
+<dd><p>Plot the absolute magnitude of the impedance of some data (Mod(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘magnitude’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘magnitude’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not a line should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_mu_xps">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_mu_xps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_criterion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_mu_xps" title="Link to this definition"></a></dt>
+<dd><p>Plot the <span class="math notranslate nohighlight">\({\rm \mu}\)</span> values and <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span> values of Kramers-Kronig test results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tests</strong> (<em>List</em><em>[</em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>]</em>) – The results to plot.</p></li>
+<li><p><strong>mu_criterion</strong> (<em>float</em>) – The <span class="math notranslate nohighlight">\({\rm \mu}\)</span>-criterion to apply.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘mu’, ‘xps’, ‘criterion’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘mu’, ‘xps’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_nyquist">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_nyquist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_nyquist" title="Link to this definition"></a></dt>
+<dd><p>Plot some data as a Nyquist plot (-Im(Z) vs Re(Z)).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘impedance’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘impedance’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not a line should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_phase">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_phase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_phase" title="Link to this definition"></a></dt>
+<dd><p>Plot the negative phase shift of the impedance of some data (-Phase(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘phase’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘phase’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not a line should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_real">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_real</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_per_decade</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_real" title="Link to this definition"></a></dt>
+<dd><p>Plot the real impedance of some data (Re(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>, </em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The data to plot.</p></li>
+<li><p><strong>label</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The optional label to use in the legend.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘real’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘real’.</p></li>
+<li><p><strong>line</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not a line should be used instead of markers.</p></li>
+<li><p><strong>num_per_decade</strong> (<em>int</em><em>, </em><em>optional</em>) – If the data being plotted is not a DataSet instance (e.g. a TestResult instance), then this parameter can be used to change how many points are used to draw the line (i.e. how smooth or angular the line looks).</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.mpl.plot_residuals">
+<span class="sig-prename descclassname"><span class="pre">deareis.mpl.</span></span><span class="sig-name descname"><span class="pre">plot_residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjust_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colored_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.mpl.plot_residuals" title="Link to this definition"></a></dt>
+<dd><p>Plot the residuals of a result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> (<em>Union</em><em>[</em><a class="reference internal" href="apidocs_kramers_kronig.html#deareis.TestResult" title="deareis.TestResult"><em>TestResult</em></a><em>, </em><a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a><em>, </em><a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a><em>]</em>) – The result to plot.</p></li>
+<li><p><strong>colors</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The colors of the markers or lines. Valid keys: ‘real’, ‘imaginary’.</p></li>
+<li><p><strong>markers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The markers to use when not plotting lines. Valid keys: ‘real’, ‘imaginary’.</p></li>
+<li><p><strong>figure</strong> – The matplotlib.figure.Figure instance to use when plotting the data.</p></li>
+<li><p><strong>legend</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add a legend.</p></li>
+<li><p><strong>axes</strong> – A list of matplotlib.axes.Axes instances to use when plotting the data.</p></li>
+<li><p><strong>adjust_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to adjust the axes (label, scale, limits, etc.).</p></li>
+<li><p><strong>colored_axes</strong> (<em>bool</em><em>, </em><em>optional</em>) – Color the y-axes.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Tuple[<a class="reference external" href="https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure">matplotlib.Figure</a>, List[<a class="reference external" href="https://matplotlib.org/stable/api/axes_api.html#the-axes-class">matplotlib.Axes</a>]]</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>Below are some examples of plots created using the plotting functions listed above.
+The circuit and the data set are based on test circuit 1 (TC-1) from this 1995 article by <a class="reference external" href="https://doi.org/10.1149/1.2044210">Bernard Boukamp</a>.</p>
+<p>Legends are disabled and colored axes are used instead in the figures generated by the wrapper functions (i.e., the first figure in each series).
+This has been done due to the small size of the figures in this documentation.
+However, the figures generated by the individual primitive functions are also included with the legends enabled and without colored axes.</p>
+<p>The default color scheme is based on the <em>Vibrant qualitative</em> color scheme presented in <a class="reference external" href="https://personal.sron.nl/~pault/">Paul Tol</a>’s blog.
+Colors and markers can be defined when calling any of the functions.</p>
+<section id="plot">
+<h3>plot<a class="headerlink" href="#plot" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot" title="deareis.mpl.plot"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot()</span></code></a></p>
+<p>(<a class="reference download internal" download="" href="_downloads/a98f18e5f00c4aaa4f2dfc0f03e7281d/apidocs_plot_mpl-1.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-1.svg" class="plot-directive" src="_images/apidocs_plot_mpl-1.svg" /></figure>
+</section>
+<section id="plot-circuit">
+<h3>plot_circuit<a class="headerlink" href="#plot-circuit" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot_circuit" title="deareis.mpl.plot_circuit"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_circuit()</span></code></a></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#deareis.mpl.plot_nyquist" title="deareis.mpl.plot_nyquist"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_nyquist()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_bode" title="deareis.mpl.plot_bode"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_bode()</span></code></a></p></li>
+</ul>
+<p>(<a class="reference download internal" download="" href="_downloads/8a68cec0c63222a5e9a92123ecc2d962/apidocs_plot_mpl-2.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-2_00_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-2_00_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-2_01_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-2_01_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-2_02_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-2_02_00.svg" /></figure>
+</section>
+<section id="plot-data">
+<h3>plot_data<a class="headerlink" href="#plot-data" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot_data" title="deareis.mpl.plot_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_data()</span></code></a></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#deareis.mpl.plot_nyquist" title="deareis.mpl.plot_nyquist"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_nyquist()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_bode" title="deareis.mpl.plot_bode"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_bode()</span></code></a></p></li>
+</ul>
+<p>(<a class="reference download internal" download="" href="_downloads/c42d0869b88f303de7c61504f0474dbd/apidocs_plot_mpl-3.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-3_00_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-3_00_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-3_01_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-3_01_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-3_02_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-3_02_00.svg" /></figure>
+</section>
+<section id="plot-drt">
+<h3>plot_drt<a class="headerlink" href="#plot-drt" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot_drt" title="deareis.mpl.plot_drt"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_drt()</span></code></a></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#deareis.mpl.plot_complex" title="deareis.mpl.plot_complex"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_complex()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_gamma" title="deareis.mpl.plot_gamma"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_gamma()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_residuals" title="deareis.mpl.plot_residuals"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_residuals()</span></code></a></p></li>
+</ul>
+<p>(<a class="reference download internal" download="" href="_downloads/353ad9f336f3559af894807587339a13/apidocs_plot_mpl-4.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-4_00_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-4_00_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-4_01_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-4_01_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-4_02_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-4_02_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-4_03_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-4_03_00.svg" /></figure>
+</section>
+<section id="plot-fit">
+<h3>plot_fit<a class="headerlink" href="#plot-fit" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot_fit" title="deareis.mpl.plot_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_fit()</span></code></a></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#deareis.mpl.plot_nyquist" title="deareis.mpl.plot_nyquist"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_nyquist()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_bode" title="deareis.mpl.plot_bode"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_bode()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_residuals" title="deareis.mpl.plot_residuals"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_residuals()</span></code></a></p></li>
+</ul>
+<p>(<a class="reference download internal" download="" href="_downloads/9a1944638501db8bca09f2881c8a7b86/apidocs_plot_mpl-5.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-5_00_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-5_00_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-5_01_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-5_01_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-5_02_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-5_02_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-5_03_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-5_03_00.svg" /></figure>
+</section>
+<section id="plot-tests">
+<h3>plot_tests<a class="headerlink" href="#plot-tests" title="Link to this heading"></a></h3>
+<p><a class="reference internal" href="#deareis.mpl.plot_tests" title="deareis.mpl.plot_tests"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_tests()</span></code></a></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#deareis.mpl.plot_mu_xps" title="deareis.mpl.plot_mu_xps"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_mu_xps()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_residuals" title="deareis.mpl.plot_residuals"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_residuals()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_nyquist" title="deareis.mpl.plot_nyquist"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_nyquist()</span></code></a></p></li>
+<li><p><a class="reference internal" href="#deareis.mpl.plot_bode" title="deareis.mpl.plot_bode"><code class="xref py py-func docutils literal notranslate"><span class="pre">plot_bode()</span></code></a></p></li>
+</ul>
+<p>(<a class="reference download internal" download="" href="_downloads/6cd04f7569c74463ddeb46b5a62fbf8e/apidocs_plot_mpl-6.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-6_00_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-6_00_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-6_01_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-6_01_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-6_02_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-6_02_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-6_03_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-6_03_00.svg" /></figure>
+<figure class="align-default">
+<img alt="_images/apidocs_plot_mpl-6_04_00.svg" class="plot-directive" src="_images/apidocs_plot_mpl-6_04_00.svg" /></figure>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_fitting.html" class="btn btn-neutral float-left" title="Circuit fitting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_typing.html" class="btn btn-neutral float-right" title="Typing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

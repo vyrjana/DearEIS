@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Z-HIT analysis &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Distribution of relaxation times analysis" href="apidocs_drt.html" />
+    <link rel="prev" title="Kramers-Kronig testing" href="apidocs_kramers_kronig.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Z-HIT analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.perform_zhit"><code class="docutils literal notranslate"><span class="pre">perform_zhit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-0">Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ZHITResult"><code class="docutils literal notranslate"><span class="pre">ZHITResult</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ZHITSettings"><code class="docutils literal notranslate"><span class="pre">ZHITSettings</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-1">Enums</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ZHITInterpolation"><code class="docutils literal notranslate"><span class="pre">ZHITInterpolation</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ZHITSmoothing"><code class="docutils literal notranslate"><span class="pre">ZHITSmoothing</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ZHITWindow"><code class="docutils literal notranslate"><span class="pre">ZHITWindow</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Z-HIT analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_zhit.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-deareis">
+<span id="z-hit-analysis"></span><h1>Z-HIT analysis<a class="headerlink" href="#module-deareis" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.perform_zhit">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">perform_zhit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_procs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.perform_zhit" title="Link to this definition"></a></dt>
+<dd><p>Wrapper for the <cite>pyimpspec.perform_zhit</cite> function.</p>
+<p>Performs a reconstruction of the modulus data of an impedance spectrum based on the phase data of that impedance spectrum using the Z-HIT algorithm described by Ehm et al. (2000).
+The results can be used to, e.g., check the validity of an impedance spectrum by detecting non-steady state issues like drift at low frequencies.
+See the references below for more information about the algorithm and its applications.
+The algorithm involves an offset adjustment of the reconstructed modulus data, which is done by fitting the reconstructed modulus data to the experimental modulus data in a frequency range that is unaffected (or minimally affected) by artifacts.
+This frequency range is typically around 1 Hz to 1000 Hz, which is why the default window function is a “boxcar” window that is centered around <span class="math notranslate nohighlight">\(\log{f} = 1.5\)</span> and has a width of 3.0.
+Multiple window functions are supported and a custom array of weights can also be used.</p>
+<p>References:</p>
+<ul class="simple">
+<li><ol class="upperalpha simple" start="23">
+<li><p>Ehm, H. Göhr, R. Kaus, B. Röseler, and C.A. Schiller, 2000, Acta Chimica Hungarica, 137 (2-3), 145-157.</p></li>
+</ol>
+</li>
+<li><ol class="upperalpha simple" start="23">
+<li><p>Ehm, R. Kaus, C.A. Schiller, and W. Strunz, 2001, in “New Trends in Electrochemical Impedance Spectroscopy and Electrochemical Noise Analysis”.</p></li>
+</ol>
+</li>
+<li><p>C.A. Schiller, F. Richter, E. Gülzow, and N. Wagner, 2001, 3, 374-378 (<a class="reference external" href="https://doi.org/10.1039/B007678N">https://doi.org/10.1039/B007678N</a>)</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data to be tested.</p></li>
+<li><p><strong>settings</strong> (<a class="reference internal" href="#deareis.ZHITSettings" title="deareis.ZHITSettings"><em>ZHITSettings</em></a>) – The settings that determine how the Z-HIT computation is performed.</p></li>
+<li><p><strong>num_procs</strong> (<em>int</em><em>, </em><em>optional</em>) – The maximum number of parallel processes to use when performing the computations.
+A value less than 1 will result in an attempt to automatically figure out a suitable value.
+Applies only when there are multiple possible options for smoothing, interpolation, or window function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.ZHITResult" title="deareis.ZHITResult">ZHITResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="module-0">
+<span id="classes"></span><h2>Classes<a class="headerlink" href="#module-0" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ZHITResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ZHITResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">impedances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pseudo_chisqr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult" title="Link to this definition"></a></dt>
+<dd><p>A class containing the result of a Z-HIT analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uuid</strong> (<em>str</em>) – The universally unique identifier assigned to this result.</p></li>
+<li><p><strong>timestamp</strong> (<em>float</em>) – The Unix time (in seconds) for when the test was performed.</p></li>
+<li><p><strong>frequencies</strong> (<em>Frequencies</em>) – The frequencies used to perform the analysis.</p></li>
+<li><p><strong>impedances</strong> (<em>ComplexImpedances</em>) – The reconstructed impedances.</p></li>
+<li><p><strong>residuals</strong> (<em>ComplexResiduals</em>) – The residuals of the reconstructed impedances and the original impedances.</p></li>
+<li><p><strong>mask</strong> (<em>Dict</em><em>[</em><em>int</em><em>, </em><em>bool</em><em>]</em>) – The mask that was applied to the original data set.</p></li>
+<li><p><strong>pseudo_chisqr</strong> (<em>float</em>) – The calculated <span class="math notranslate nohighlight">\(\chi^2_{ps.}\)</span> (eq. 14 in Boukamp, 1995).</p></li>
+<li><p><strong>smoothing</strong> (<em>str</em>) – The smoothing algorithm that was used (relevant if this setting was set to ‘auto’).</p></li>
+<li><p><strong>interpolation</strong> (<em>str</em>) – The spline that was used to interpolate the data (relevant if this setting was set to ‘auto’).</p></li>
+<li><p><strong>window</strong> (<em>str</em>) – The window function that was used to generate weights for the offset adjustment (relevant if this setting was set to ‘auto’).</p></li>
+<li><p><strong>settings</strong> (<a class="reference internal" href="#deareis.ZHITSettings" title="deareis.ZHITSettings"><em>ZHITSettings</em></a>) – The settings that were used to perform the analysis.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create an instance from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dictionary</strong> (<em>dict</em>) – The dictionary to turn into a FitResult object.</p></li>
+<li><p><strong>data</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a><em>]</em><em>, </em><em>optional</em>) – The DataSet object that this result is for.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.ZHITResult" title="deareis.ZHITResult">ZHITResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.get_bode_data">
+<span class="sig-name descname"><span class="pre">get_bode_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.get_bode_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the results as a Bode plot (Mod(Z) and -Phase(Z) vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Frequencies, Impedancesy, Phases]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.get_frequencies">
+<span class="sig-name descname"><span class="pre">get_frequencies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.get_frequencies" title="Link to this definition"></a></dt>
+<dd><p>Get an array of frequencies within the range of frequencies in the data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Frequencies</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Get the complex impedances produced by the fitted circuit within the range of frequencies in the data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ComplexImpedances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.get_nyquist_data">
+<span class="sig-name descname"><span class="pre">get_nyquist_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.get_nyquist_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the results as a Nyquist plot (-Im(Z) vs Re(Z)).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Impedances, Impedances]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.get_residuals_data">
+<span class="sig-name descname"><span class="pre">get_residuals_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.get_residuals_data" title="Link to this definition"></a></dt>
+<dd><p>Get the data required to plot the residuals (real and imaginary vs f).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[Frequencies, Residuals, Residuals]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary that can be used to recreate an instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITResult.to_statistics_dataframe">
+<span class="sig-name descname"><span class="pre">to_statistics_dataframe</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITResult.to_statistics_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Get the statistics related to the modulus reconstruction as a pandas.DataFrame object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ZHITSettings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ZHITSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">smoothing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iterations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_center</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_width</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITSettings" title="Link to this definition"></a></dt>
+<dd><p>A class to store the settings used to perform a Z-HIT analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>smoothing</strong> (<a class="reference internal" href="#deareis.ZHITSmoothing" title="deareis.ZHITSmoothing"><em>ZHITSmoothing</em></a>) – The smoothing algorithm to use.</p></li>
+<li><p><strong>num_points</strong> (<em>int</em>) – The number of points to consider when smoothing a point.</p></li>
+<li><p><strong>polynomial_order</strong> (<em>int</em>) – The order of the polynomial to use in the Savitzky-Golay algorithm.</p></li>
+<li><p><strong>num_iterations</strong> (<em>int</em>) – The number of iterations to use in the LOWESS algorithm.</p></li>
+<li><p><strong>interpolation</strong> (<a class="reference internal" href="#deareis.ZHITInterpolation" title="deareis.ZHITInterpolation"><em>ZHITInterpolation</em></a>) – The spline to use when interpolating the phase data.</p></li>
+<li><p><strong>window</strong> (<a class="reference internal" href="#deareis.ZHITWindow" title="deareis.ZHITWindow"><em>ZHITWindow</em></a>) – The window function to use when generating weights for the offset adjustment.</p></li>
+<li><p><strong>window_center</strong> (<em>float</em>) – The center of the window function on the logarithmic frequency scale (e.g., 100 Hz -&gt; 2.0).</p></li>
+<li><p><strong>window_width</strong> (<em>float</em>) – The width of the window function on the logarithmic frequency scale (e.g., 2.0 means 1 decade on each side of the window center).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITSettings.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITSettings.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create an instance from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dictionary</strong> (<em>dict</em>) – The dictionary to turn into a ZHITSettings object.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.ZHITSettings" title="deareis.ZHITSettings">ZHITSettings</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.ZHITSettings.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITSettings.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary that can be used to recreate an instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-1">
+<span id="enums"></span><h2>Enums<a class="headerlink" href="#module-1" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ZHITInterpolation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ZHITInterpolation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITInterpolation" title="Link to this definition"></a></dt>
+<dd><p>The spline to use for interpolating the smoothed phase data:</p>
+<ul class="simple">
+<li><p>AUTO: try all of the options</p></li>
+<li><p>AKIMA: <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html#scipy.interpolate.Akima1DInterpolator">Akima spline</a></p></li>
+<li><p>CUBIC: <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.CubicSpline.html#scipy.interpolate.CubicSpline">cubic spline</a></p></li>
+<li><p>PCHIP: <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html#scipy.interpolate.PchipInterpolator">Piecewise Cubic Hermite Interpolating Polynomial</a></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ZHITSmoothing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ZHITSmoothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITSmoothing" title="Link to this definition"></a></dt>
+<dd><p>The algorithm to use when smoothing the phase data:</p>
+<ul class="simple">
+<li><p>AUTO: try all of the options</p></li>
+<li><p>NONE: no smoothing</p></li>
+<li><p>LOWESS: <a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html#statsmodels.nonparametric.smoothers_lowess.lowess">Local Weighted Scatterplot Smoothing</a></p></li>
+<li><p>SAVGOL: <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html">Savitzky-Golay</a></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ZHITWindow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ZHITWindow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ZHITWindow" title="Link to this definition"></a></dt>
+<dd><p>The window functions to use for determining the weights when adjusting the Mod(Z) offset:</p>
+<ul class="simple">
+<li><p>AUTO: try all of the options</p></li>
+<li><p>BARTHANN</p></li>
+<li><p>BARTLETT</p></li>
+<li><p>BLACKMAN</p></li>
+<li><p>BLACKMANHARRIS</p></li>
+<li><p>BOHMAN</p></li>
+<li><p>BOXCAR</p></li>
+<li><p>COSINE</p></li>
+<li><p>FLATTOP</p></li>
+<li><p>HAMMING</p></li>
+<li><p>HANN</p></li>
+<li><p>LANCZOS</p></li>
+<li><p>NUTTALL</p></li>
+<li><p>PARZEN</p></li>
+<li><p>TRIANG</p></li>
+</ul>
+<p>See <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/signal.windows.html">scipy.signal.windows</a> for information about these.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_kramers_kronig.html" class="btn btn-neutral float-left" title="Kramers-Kronig testing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_drt.html" class="btn btn-neutral float-right" title="Distribution of relaxation times analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Equivalent circuits &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Circuit fitting" href="apidocs_fitting.html" />
+    <link rel="prev" title="Distribution of relaxation times analysis" href="apidocs_drt.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Equivalent circuits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-deareis">Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.parse_cdc"><code class="docutils literal notranslate"><span class="pre">parse_cdc()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.register_element"><code class="docutils literal notranslate"><span class="pre">register_element()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-0">Base classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Connection"><code class="docutils literal notranslate"><span class="pre">Connection</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Container"><code class="docutils literal notranslate"><span class="pre">Container</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Element"><code class="docutils literal notranslate"><span class="pre">Element</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-1">Connection classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Parallel"><code class="docutils literal notranslate"><span class="pre">Parallel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Series"><code class="docutils literal notranslate"><span class="pre">Series</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-2">Circuit classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Circuit"><code class="docutils literal notranslate"><span class="pre">Circuit</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.CircuitBuilder"><code class="docutils literal notranslate"><span class="pre">CircuitBuilder</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-deareis.api.circuit.elements">Element classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.Capacitor"><code class="docutils literal notranslate"><span class="pre">Capacitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.ConstantPhaseElement"><code class="docutils literal notranslate"><span class="pre">ConstantPhaseElement</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.DeLevieFiniteLength"><code class="docutils literal notranslate"><span class="pre">DeLevieFiniteLength</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.Gerischer"><code class="docutils literal notranslate"><span class="pre">Gerischer</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.HavriliakNegami"><code class="docutils literal notranslate"><span class="pre">HavriliakNegami</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.HavriliakNegamiAlternative"><code class="docutils literal notranslate"><span class="pre">HavriliakNegamiAlternative</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.Inductor"><code class="docutils literal notranslate"><span class="pre">Inductor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.KramersKronigRC"><code class="docutils literal notranslate"><span class="pre">KramersKronigRC</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.ModifiedInductor"><code class="docutils literal notranslate"><span class="pre">ModifiedInductor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.Resistor"><code class="docutils literal notranslate"><span class="pre">Resistor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModel"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingCPE"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelBlockingCPE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingOpen"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelBlockingOpen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingShort"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelBlockingShort</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingCPE"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelNonblockingCPE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingOpen"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelNonblockingOpen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingShort"><code class="docutils literal notranslate"><span class="pre">TransmissionLineModelNonblockingShort</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.Warburg"><code class="docutils literal notranslate"><span class="pre">Warburg</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.WarburgOpen"><code class="docutils literal notranslate"><span class="pre">WarburgOpen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.api.circuit.elements.WarburgShort"><code class="docutils literal notranslate"><span class="pre">WarburgShort</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-4">Element registration classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ContainerDefinition"><code class="docutils literal notranslate"><span class="pre">ContainerDefinition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ElementDefinition"><code class="docutils literal notranslate"><span class="pre">ElementDefinition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.ParameterDefinition"><code class="docutils literal notranslate"><span class="pre">ParameterDefinition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.SubcircuitDefinition"><code class="docutils literal notranslate"><span class="pre">SubcircuitDefinition</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Equivalent circuits</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_circuit.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="equivalent-circuits">
+<h1>Equivalent circuits<a class="headerlink" href="#equivalent-circuits" title="Link to this heading"></a></h1>
+<section id="module-deareis">
+<span id="functions"></span><h2>Functions<a class="headerlink" href="#module-deareis" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.parse_cdc">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">parse_cdc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cdc</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.parse_cdc" title="Link to this definition"></a></dt>
+<dd><p>Generate a Circuit instance from a string that contains a circuit description code (CDC).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cdc</strong> (<em>str</em>) – A circuit description code (CDC) corresponding to an equivalent circuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Circuit" title="deareis.Circuit">Circuit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="deareis.register_element">
+<span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">register_element</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">definition</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.register_element" title="Link to this definition"></a></dt>
+<dd><p>Register a circuit element so that it is supported by the <cite>parse_cdc</cite> and <cite>get_elements</cite> functions. The class definition (symbol, name, etc.) must be provided as keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>definition</strong> (<a class="reference internal" href="#deareis.ElementDefinition" title="deareis.ElementDefinition"><em>ElementDefinition</em></a>) – An ElementDefinition instance that defines a class, which inherits from the Element class and implements a method called <cite>_impedance</cite> that takes a float value (i.e., the excitation frequency in hertz) and returns a complex value.</p></li>
+<li><p><strong>**kwargs</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-0">
+<span id="base-classes"></span><h2>Base classes<a class="headerlink" href="#module-0" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Connection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elements</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.Element" title="pyimpspec.circuit.base.Element"><em>Element</em></a><em> | </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – </p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_or_connection</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.append" title="Link to this definition"></a></dt>
+<dd><p>Append an element/connection to this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>element_or_connection</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.clear" title="Link to this definition"></a></dt>
+<dd><p>Remove all elements and/or connections from this connection.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.contains">
+<span class="sig-name descname"><span class="pre">contains</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_or_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.contains" title="Link to this definition"></a></dt>
+<dd><p>Check if this connection contains a specific Element or Connection instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element_or_connection</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – The Element or Connection instance to check for.</p></li>
+<li><p><strong>top_level</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to only check in the current Connection instance instead of also checking in any nested Connection instances.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.count">
+<span class="sig-name descname"><span class="pre">count</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.count" title="Link to this definition"></a></dt>
+<dd><p>Get the number of elements and/or connections in this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements_or_connections</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.extend" title="Link to this definition"></a></dt>
+<dd><p>Extend this connection with a list of elements and/or connections.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elements_or_connections</strong> (<em>List</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em><em>]</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.generate_element_identifiers">
+<span class="sig-name descname"><span class="pre">generate_element_identifiers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">running</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.generate_element_identifiers" title="Link to this definition"></a></dt>
+<dd><p>Generate a mapping of elements to their corresponding integer identifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>running</strong> (<em>bool</em>) – If true, then the identifiers are simply a running count from 0 to N. Primarily intended for use within pyimpspec.
+If false, then the identifiers represent what number instance of a particular element type an element is (e.g., the second resistor of three resistors would have 2 as its identifier). Primarily intended for use in anything that most users would see (e.g., circuit diagrams and parameter tables).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.get_connections">
+<span class="sig-name descname"><span class="pre">get_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flattened</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.get_connections" title="Link to this definition"></a></dt>
+<dd><p>Get the connections in this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>flattened</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the connections should be returned as a list of all connections or as a list connections that may also contain more connections.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.get_element_name">
+<span class="sig-name descname"><span class="pre">get_element_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.get_element_name" title="Link to this definition"></a></dt>
+<dd><p>Get the name of the element with consideration for any overriding label assigned to the element or the type-specific count in the context of this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element</strong> (<a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a>) – The element whose name should be returned.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The identifiers to use when determining the name of the provided element.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.get_elements">
+<span class="sig-name descname"><span class="pre">get_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flattened</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.get_elements" title="Link to this definition"></a></dt>
+<dd><p>Get the elements in this circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>flattened</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the elements should be returned as a list of only elements or as a list of connections containing elements.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[Union[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, <a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Calculate the impedance of this connection at multiple frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frequencies</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Frequencies</span></code>) – The excitation frequencies in hertz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ComplexImpedances</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.index">
+<span class="sig-name descname"><span class="pre">index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_or_connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.index" title="Link to this definition"></a></dt>
+<dd><p>Get the index of an element/connection in this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element_or_connection</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – </p></li>
+<li><p><strong>start</strong> (<em>int</em><em>, </em><em>optional</em>) – </p></li>
+<li><p><strong>end</strong> (<em>int</em><em>, </em><em>optional</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.insert">
+<span class="sig-name descname"><span class="pre">insert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">element_or_connection</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.insert" title="Link to this definition"></a></dt>
+<dd><p>Insert an element/connection into position i of this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – </p></li>
+<li><p><strong>element_or_connection</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.pop">
+<span class="sig-name descname"><span class="pre">pop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.pop" title="Link to this definition"></a></dt>
+<dd><p>Pop the element/connection at position i in this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>i</strong> (<em>int</em>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Union[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, <a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_or_connection</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.remove" title="Link to this definition"></a></dt>
+<dd><p>Remove a specific element/connection from this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>element_or_connection</strong> (<em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.to_circuitikz">
+<span class="sig-name descname"><span class="pre">to_circuitikz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.to_circuitikz" title="Link to this definition"></a></dt>
+<dd><p>Get the LaTeX source needed to draw a circuit diagram for this circuit using the <a class="reference external" href="https://github.com/circuitikz/circuitikz">CircuiTikZ</a> package.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_width</strong> (<em>float</em><em>, </em><em>optional</em>) – The width of each node.</p></li>
+<li><p><strong>node_height</strong> (<em>float</em><em>, </em><em>optional</em>) – The height of each node.</p></li>
+<li><p><strong>left_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the working and working sense electrodes.</p></li>
+<li><p><strong>right_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the counter and reference electrodes.</p></li>
+<li><p><strong>hide_labels</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to hide element and terminal labels.</p></li>
+<li><p><strong>running</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to use running counts as the lower indices of elements.</p></li>
+<li><p><strong>custom_labels</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their custom labels that are used instead of the automatically generated labels.
+The labels can make use of LaTeX’s math mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.to_drawing">
+<span class="sig-name descname"><span class="pre">to_drawing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.to_drawing" title="Link to this definition"></a></dt>
+<dd><p>Get a <a class="reference external" href="https://schemdraw.readthedocs.io/en/latest/classes/drawing.html#schemdraw.Drawing">schemdraw.Drawing</a> object for drawing a circuit diagram using, e.g., the <a class="reference external" href="https://matplotlib.org/">matplotlib</a> backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_height</strong> (<em>float</em><em>, </em><em>optional</em>) – The height of each node.</p></li>
+<li><p><strong>left_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the working and working sense electrodes.</p></li>
+<li><p><strong>right_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the counter and reference electrodes.</p></li>
+<li><p><strong>hide_labels</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to hide element and terminal labels.</p></li>
+<li><p><strong>running</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to use running counts as the lower indices of elements.</p></li>
+<li><p><strong>custom_labels</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their custom labels that are used instead of the automatically generated labels.
+The labels can make use of LaTeX’s math mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://schemdraw.readthedocs.io/en/latest/classes/drawing.html#schemdraw.Drawing">schemdraw.Drawing</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.to_latex">
+<span class="sig-name descname"><span class="pre">to_latex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.to_latex" title="Link to this definition"></a></dt>
+<dd><p>Get the equation for the impedance of this connection as a LaTeX-compatible string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.to_string">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generate the circuit description code for this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals used in numeric values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Connection.to_sympy">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Connection.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a> object for the impedance of this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Substitute the numeric values for the variables.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their identifiers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Container">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Container</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container" title="Link to this definition"></a></dt>
+<dd><p>A subclass of <a class="reference internal" href="#deareis.Element" title="pyimpspec.circuit.base.Element"><code class="xref py py-class docutils literal notranslate"><span class="pre">Element</span></code></a> that adds support for subcircuits.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.generate_element_identifiers">
+<span class="sig-name descname"><span class="pre">generate_element_identifiers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">running</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.generate_element_identifiers" title="Link to this definition"></a></dt>
+<dd><p>Generate a mapping of elements to their corresponding integer identifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>running</strong> (<em>bool</em>) – If true, then the identifiers are simply a running count from 0 to N. Primarily intended for use within pyimpspec.
+If false, then the identifiers represent what number instance of a particular element type an element is (e.g., the second resistor of three resistors would have 2 as its identifier). Primarily intended for use in anything that most users would see (e.g., circuit diagrams and parameter tables).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_default_subcircuit">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_subcircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_default_subcircuit" title="Link to this definition"></a></dt>
+<dd><p>Get the default value for a specific subcircuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a subcircuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_default_subcircuits">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_subcircuits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_default_subcircuits" title="Link to this definition"></a></dt>
+<dd><p>Get the default values for this element’s parameters as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, Optional[<a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_subcircuit">
+<span class="sig-name descname"><span class="pre">get_subcircuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_subcircuit" title="Link to this definition"></a></dt>
+<dd><p>Get the current subcircuit matching the given key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a subcircuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optional[<a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_subcircuit_description">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_subcircuit_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_subcircuit_description" title="Link to this definition"></a></dt>
+<dd><p>Get the description for a specific subcircuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – String key for a subcircuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_subcircuit_descriptions">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_subcircuit_descriptions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_subcircuit_descriptions" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps subcircuit keys to their corresponding descriptions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to subcircuits.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to subcircuits.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_subcircuits">
+<span class="sig-name descname"><span class="pre">get_subcircuits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_subcircuits" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps subcircuit keys to their current values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to subcircuits.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to subcircuits.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Optional[<a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_unit">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_unit" title="Link to this definition"></a></dt>
+<dd><p>Get the unit for a specific parameter or subcircuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – String key for a parameter or subcircuit.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.get_units">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.get_units" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter and/or subcircuit keys to their corresponding units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters and/or subcircuits.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters and/or subcircuits.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.set_subcircuits">
+<span class="sig-name descname"><span class="pre">set_subcircuits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.set_subcircuits" title="Link to this definition"></a></dt>
+<dd><p>Set values for subcircuits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Pairs of string keys and numeric values corresponding to subcircuits(e.g., <cite>set_subcircuits(“X”, None, “Y”, Series([Resistor()]), “Z”, Series([]))</cite>).</p></li>
+<li><p><strong>**kwargs</strong> – String keys and numeric values corresponding to parameters (e.g., <cite>set_values(R=None, Y=Series([Resistor()]), Z=Series([]))</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generates a string representation of the element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals used when formatting the current value and the limits for the element’s parameters.
+-1 corresponds to no values being included in the output.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Container.to_sympy">
+<span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Container.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the SymPy expression for the impedance of this element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Substitute the numeric values for the variables.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their identifiers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Element">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Element</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element" title="Link to this definition"></a></dt>
+<dd><p>The base class for circuit elements.
+Classes implementing circuit elements should extend this base class and implement the <code class="docutils literal notranslate"><span class="pre">_impedance</span></code> method (note the underscore).
+The docstring for the class is generated when the class is registered via the <code class="xref py py-func docutils literal notranslate"><span class="pre">register_element()</span></code> function.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.are_fixed">
+<span class="sig-name descname"><span class="pre">are_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.are_fixed" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to whether or not those parameters currently have fixed values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.are_fixed_by_default">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">are_fixed_by_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.are_fixed_by_default" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to whether or not those parameters have fixed values by default.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_lower_limit">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_lower_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_lower_limit" title="Link to this definition"></a></dt>
+<dd><p>Get the default lower limit for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_lower_limits">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_lower_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_lower_limits" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their default lower limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_upper_limit">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_upper_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_upper_limit" title="Link to this definition"></a></dt>
+<dd><p>Get the default upper limit for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_upper_limits">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_upper_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_upper_limits" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their default upper limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_value">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_value" title="Link to this definition"></a></dt>
+<dd><p>Get the default value for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_default_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_default_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_default_values" title="Link to this definition"></a></dt>
+<dd><p>Get the default values for this element’s parameters as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_description">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_description</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_description" title="Link to this definition"></a></dt>
+<dd><p>Get a brief description of this element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_extended_description">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_extended_description</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_extended_description" title="Link to this definition"></a></dt>
+<dd><p>Get an extended description of this element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Calculate the impedance of this element at multiple frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frequencies</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Frequencies</span></code>) – The excitation frequencies in hertz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ComplexImpedances</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_label">
+<span class="sig-name descname"><span class="pre">get_label</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_label" title="Link to this definition"></a></dt>
+<dd><p>Get the label assigned to a specific instance of the element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_lower_limit">
+<span class="sig-name descname"><span class="pre">get_lower_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_lower_limit" title="Link to this definition"></a></dt>
+<dd><p>Get the current lower limit for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_lower_limits">
+<span class="sig-name descname"><span class="pre">get_lower_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_lower_limits" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their current lower limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_name">
+<span class="sig-name descname"><span class="pre">get_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_name" title="Link to this definition"></a></dt>
+<dd><p>Get the display name for this element, which consists of the element’s symbol and its optional label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_symbol">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_symbol</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_symbol" title="Link to this definition"></a></dt>
+<dd><p>Get the symbol for this element.
+The symbol is used to represent this type of element in a circuit description code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_unit">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_unit" title="Link to this definition"></a></dt>
+<dd><p>Get the unit for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – String key for a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_units">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_units" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their corresponding units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_upper_limit">
+<span class="sig-name descname"><span class="pre">get_upper_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_upper_limit" title="Link to this definition"></a></dt>
+<dd><p>Get the current upper limit for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_upper_limits">
+<span class="sig-name descname"><span class="pre">get_upper_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_upper_limits" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their current upper limits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_value">
+<span class="sig-name descname"><span class="pre">get_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_value" title="Link to this definition"></a></dt>
+<dd><p>Get the current value for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_value_description">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_value_description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_value_description" title="Link to this definition"></a></dt>
+<dd><p>Get the description for a specific parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – String key for a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_value_descriptions">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_value_descriptions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_value_descriptions" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their corresponding descriptions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.get_values">
+<span class="sig-name descname"><span class="pre">get_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.get_values" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary that maps parameter keys to their current values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – String keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.is_fixed">
+<span class="sig-name descname"><span class="pre">is_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.is_fixed" title="Link to this definition"></a></dt>
+<dd><p>Get whether or not a specific parameter currently has a fixed value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.is_fixed_by_default">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_fixed_by_default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.is_fixed_by_default" title="Link to this definition"></a></dt>
+<dd><p>Get whether or not a specific parameter has a fixed value by default.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A key corresponding to a parameter.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.reset_parameter">
+<span class="sig-name descname"><span class="pre">reset_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.reset_parameter" title="Link to this definition"></a></dt>
+<dd><p>Resets the value, lower limit, upper limit, and fixed state of one parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>str</em>) – A string key corresponding to a parameter.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.reset_parameters">
+<span class="sig-name descname"><span class="pre">reset_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.reset_parameters" title="Link to this definition"></a></dt>
+<dd><p>Resets the value, lower limit, upper limit, and fixed state of one or more parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – One or more string keys corresponding to parameters.</p></li>
+<li><p><strong>**kwargs</strong> – String keys corresponding to parameters.
+The values can be anything.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.set_fixed">
+<span class="sig-name descname"><span class="pre">set_fixed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.set_fixed" title="Link to this definition"></a></dt>
+<dd><p>Set parameters to have fixed values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Pairs of string keys and boolean values corresponding to parameters (e.g., <cite>set_fixed(“R”, True, “Y”, False)</cite>).</p></li>
+<li><p><strong>**kwargs</strong> – String keys and boolean values corresponding to parameters (e.g., <cite>set_fixed(R=True, Y=False)</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.set_label">
+<span class="sig-name descname"><span class="pre">set_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.set_label" title="Link to this definition"></a></dt>
+<dd><p>Set the label assigned to a specific instance of the element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>str</em>) – The new label.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.set_lower_limits">
+<span class="sig-name descname"><span class="pre">set_lower_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.set_lower_limits" title="Link to this definition"></a></dt>
+<dd><p>Set lower limits for parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Pairs of string keys and numeric values corresponding to parameters (e.g., <cite>set_lower_limits(“R”, 1.0, “Y”, 1e-9)</cite>).</p></li>
+<li><p><strong>**kwargs</strong> – String keys and numeric values corresponding to parameters (e.g., <cite>set_lower_limits(R=1.0, Y=1e-9)</cite>)..</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.set_upper_limits">
+<span class="sig-name descname"><span class="pre">set_upper_limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.set_upper_limits" title="Link to this definition"></a></dt>
+<dd><p>Set upper limits for parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Pairs of string keys and numeric values corresponding to parameters (e.g., <cite>set_upper_limits(“R”, 1.0, “Y”, 1e-9)</cite>).</p></li>
+<li><p><strong>**kwargs</strong> – String keys and numeric values corresponding to parameters (e.g., <cite>set_upper_limits(R=1.0, Y=1e-9)</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.set_values">
+<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.set_values" title="Link to this definition"></a></dt>
+<dd><p>Set values for parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – Pairs of string keys and numeric values corresponding to parameters (e.g., <cite>set_values(“R”, 1.0, “Y”, 1e-9)</cite>).</p></li>
+<li><p><strong>**kwargs</strong> – String keys and numeric values corresponding to parameters (e.g., <cite>set_values(R=1.0, Y=1e-9)</cite>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.to_latex">
+<span class="sig-name descname"><span class="pre">to_latex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.to_latex" title="Link to this definition"></a></dt>
+<dd><p>Get the equation for the impedance of this element as a LaTeX-compatible string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generates a string representation of the element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals used when formatting the current value and the limits for the element’s parameters.
+-1 corresponds to no values being included in the output.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Element.to_sympy">
+<span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Element.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a> object for the impedance of this element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Substitute the numeric values for the variables.</p></li>
+<li><p><strong>identifier</strong> (<em>int</em><em>, </em><em>optional</em>) – The identifier of the element.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-1">
+<span id="connection-classes"></span><h2>Connection classes<a class="headerlink" href="#module-1" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Parallel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Parallel" title="Link to this definition"></a></dt>
+<dd><p>Elements connected in parallel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elements</strong> (<em>List</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em><em>]</em>) – List of elements (and connections) that are connected in parallel.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Parallel.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Parallel.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generate the circuit description code for this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals used in numeric values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Parallel.to_sympy">
+<span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Parallel.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a> object for the impedance of this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Substitute the numeric values for the variables.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their identifiers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Series">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Series" title="Link to this definition"></a></dt>
+<dd><p>Elements connected in series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elements</strong> (<em>List</em><em>[</em><em>Union</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em><em>]</em>) – List of elements (and connections) that are connected in series.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Series.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Series.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generate the circuit description code for this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals used in numeric values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Series.to_sympy">
+<span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Series.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a> object for the impedance of this connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Substitute the numeric values for the variables.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their identifiers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-2">
+<span id="circuit-classes"></span><h2>Circuit classes<a class="headerlink" href="#module-2" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Circuit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elements</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit" title="Link to this definition"></a></dt>
+<dd><p>A class that represents an equivalent circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elements</strong> (<a class="reference internal" href="#deareis.Series" title="deareis.Series"><em>Series</em></a>) – The elements of the circuit wrapped in a Series connection.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.generate_element_identifiers">
+<span class="sig-name descname"><span class="pre">generate_element_identifiers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">running</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.generate_element_identifiers" title="Link to this definition"></a></dt>
+<dd><p>Generate a mapping of elements to their corresponding integer identifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>running</strong> (<em>bool</em>) – If true, then the identifiers are simply a running count from 0 to N. Primarily intended for use within pyimpspec.
+If false, then the identifiers represent what number instance of a particular element type an element is (e.g., the second resistor of three resistors would have 2 as its identifier). Primarily intended for use in anything that most users would see (e.g., circuit diagrams and parameter tables).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.get_connections">
+<span class="sig-name descname"><span class="pre">get_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flattened</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.get_connections" title="Link to this definition"></a></dt>
+<dd><p>Get the connections in this circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>flattened</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the connections should be returned as a list of all connections or as a list connections that may also contain more connections.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.get_element_name">
+<span class="sig-name descname"><span class="pre">get_element_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">identifiers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.get_element_name" title="Link to this definition"></a></dt>
+<dd><p>Get the name of the element with consideration for any overriding label assigned to the element or the type-specific count in the context of this circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element</strong> (<a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a>) – The element whose name should be returned.</p></li>
+<li><p><strong>identifiers</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – The identifiers to use when determining the name of the provided element.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.get_elements">
+<span class="sig-name descname"><span class="pre">get_elements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flattened</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.get_elements" title="Link to this definition"></a></dt>
+<dd><p>Get the elements in this circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>flattened</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the elements should be returned as a list of only elements or as a list of connections containing elements.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[Union[<a class="reference internal" href="#deareis.Element" title="deareis.Element">Element</a>, <a class="reference internal" href="#deareis.Connection" title="deareis.Connection">Connection</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.get_impedances">
+<span class="sig-name descname"><span class="pre">get_impedances</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequencies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.get_impedances" title="Link to this definition"></a></dt>
+<dd><p>Calculate the impedance of this circuit at multiple frequencies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frequencies</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Frequencies</span></code>) – The excitation frequencies in hertz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ComplexImpedances</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.to_circuitikz">
+<span class="sig-name descname"><span class="pre">to_circuitikz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.to_circuitikz" title="Link to this definition"></a></dt>
+<dd><p>Get the LaTeX source needed to draw a circuit diagram for this circuit using the <a class="reference external" href="https://github.com/circuitikz/circuitikz">CircuiTikZ</a> package.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_width</strong> (<em>float</em><em>, </em><em>optional</em>) – The width of each node.</p></li>
+<li><p><strong>node_height</strong> (<em>float</em><em>, </em><em>optional</em>) – The height of each node.</p></li>
+<li><p><strong>left_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the working and working sense electrodes.</p></li>
+<li><p><strong>right_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the counter and reference electrodes.</p></li>
+<li><p><strong>hide_labels</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to hide element and terminal labels.</p></li>
+<li><p><strong>running</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to use running counts as the lower indices of elements.</p></li>
+<li><p><strong>custom_labels</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their custom labels that are used instead of the automatically generated labels.
+The labels can make use of LaTeX’s math mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.to_drawing">
+<span class="sig-name descname"><span class="pre">to_drawing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">left_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">right_terminal_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hide_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">running</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.to_drawing" title="Link to this definition"></a></dt>
+<dd><p>Get a <a class="reference external" href="https://schemdraw.readthedocs.io/en/latest/classes/drawing.html#schemdraw.Drawing">schemdraw.Drawing</a> object for drawing a circuit diagram using, e.g., the <a class="reference external" href="https://matplotlib.org/">matplotlib</a> backend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_height</strong> (<em>float</em><em>, </em><em>optional</em>) – The height of each node.</p></li>
+<li><p><strong>left_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the working and working sense electrodes.</p></li>
+<li><p><strong>right_terminal_label</strong> (<em>str</em><em>, </em><em>optional</em>) – The label assigned to the terminal representing the counter and reference electrodes.</p></li>
+<li><p><strong>hide_labels</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to hide element and terminal labels.</p></li>
+<li><p><strong>running</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to use running counts as the lower indices of elements.</p></li>
+<li><p><strong>custom_labels</strong> (<em>Optional</em><em>[</em><em>Dict</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>, </em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – A mapping of elements to their custom labels that are used instead of the automatically generated labels.
+The labels can make use of LaTeX’s math mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://schemdraw.readthedocs.io/en/latest/classes/drawing.html#schemdraw.Drawing">schemdraw.Drawing</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.to_latex">
+<span class="sig-name descname"><span class="pre">to_latex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.to_latex" title="Link to this definition"></a></dt>
+<dd><p>Get the LaTeX math expression corresponding to this circuit’s impedance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generate the circuit description code (CDC) that represents this circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of decimals to include for the current element parameter values and limits.
+-1 means that the CDC is generated using the basic syntax, which omits element labels, parameter values, and parameter limits.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Circuit.to_sympy">
+<span class="sig-name descname"><span class="pre">to_sympy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">substitute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Circuit.to_sympy" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a> object corresponding to this circuit’s impedance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>substitute</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not the variables should be substituted with the current values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.expr.Expr">sympy.Expr</a></p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="module-3">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">CircuitBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder" title="Link to this definition"></a></dt>
+<dd><p>A class for building circuits using context managers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>parallel</strong> (<em>bool = False</em>) – Whether or not this context/connection is a parallel connection.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder.add" title="Link to this definition"></a></dt>
+<dd><p>Add an element to the current context (i.e., connection).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>element</strong> (<a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a>) – The element to add to the current series or parallel connection.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder.parallel">
+<span class="sig-name descname"><span class="pre">parallel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder.parallel" title="Link to this definition"></a></dt>
+<dd><p>Create a parallel connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#deareis.CircuitBuilder" title="deareis.CircuitBuilder">CircuitBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder.series">
+<span class="sig-name descname"><span class="pre">series</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder.series" title="Link to this definition"></a></dt>
+<dd><p>Create a series connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#deareis.CircuitBuilder" title="deareis.CircuitBuilder">CircuitBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder.to_circuit">
+<span class="sig-name descname"><span class="pre">to_circuit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder.to_circuit" title="Link to this definition"></a></dt>
+<dd><p>Generate a circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#deareis.Circuit" title="deareis.Circuit">Circuit</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.CircuitBuilder.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.CircuitBuilder.to_string" title="Link to this definition"></a></dt>
+<dd><p>Generate a circuit description code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>decimals</strong> (<em>int = -1</em>) – The number of decimals to include for the current element parameter values and limits.
+-1 means that the CDC is generated using the basic syntax, which omits element labels, parameter values, and parameter limits.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-deareis.api.circuit.elements">
+<span id="element-classes"></span><h2>Element classes<a class="headerlink" href="#module-deareis.api.circuit.elements" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.Capacitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">Capacitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.Capacitor" title="Link to this definition"></a></dt>
+<dd><p>Symbol: C</p>
+<p>An ideal capacitor.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{1}{2 j \pi C f}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>C</strong> (<em>float = 1e-06 F</em>) – Capacitance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.ConstantPhaseElement">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">ConstantPhaseElement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.ConstantPhaseElement" title="Link to this definition"></a></dt>
+<dd><p>Constant phase element</p>
+<p>Symbol: Q</p>
+<p>Can be used to model, e.g., non-ideal capacitance.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{1}{Y \left(2 j \pi f\right)^{n}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y</strong> (<em>float = 1e-06 S*s^n</em>) – ‘Admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.95</em>) – Phase angle in -pi/2 radians</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.DeLevieFiniteLength">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">DeLevieFiniteLength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.DeLevieFiniteLength" title="Link to this definition"></a></dt>
+<dd><p>de Levie</p>
+<p>Symbol: Ls</p>
+<p>Can be used to model porous electrodes.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{\sqrt{R_{i} R_{r}} \coth{\left(d \sqrt{\frac{R_{i}}{R_{r}}} \sqrt{Y \left(2 j \pi f\right)^{n} + 1} \right)}}{\sqrt{Y \left(2 j \pi f\right)^{n} + 1}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 10 ohm/cm</em>) – Ionic resistance</p></li>
+<li><p><strong>R_r</strong> (<em>float = 1 ohm*cm</em>) – Faradaic reaction resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.01 S*s^n/cm</em>) – ‘Admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians</p></li>
+<li><p><strong>d</strong> (<em>float = 0.2 cm</em>) – Electrode thickness</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.Gerischer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">Gerischer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.Gerischer" title="Link to this definition"></a></dt>
+<dd><p>Symbol: G</p>
+<p>The impedance associated with an electroactive species that is created by a reaction in the electrolyte solution.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{1}{Y \left(j 2 \pi f + k\right)^{n}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y</strong> (<em>float = 1 S*s^n</em>) – ‘Admittance’</p></li>
+<li><p><strong>k</strong> (<em>float = 1 s^-1</em>) – ‘Rate constant’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.5</em><em>, </em><em>fixed</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.HavriliakNegami">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">HavriliakNegami</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.HavriliakNegami" title="Link to this definition"></a></dt>
+<dd><p>Havriliak-Negami</p>
+<p>Symbol: H</p>
+<p>Havriliak-Negami, Cole-Davidson (a = 1), Cole-Cole (b = 1), or Debye (a = b = 1) relaxation.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{\left(\left(j 2 \pi f \tau\right)^{a} + 1\right)^{b}}{2 j \pi dC f}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dC</strong> (<em>float = 1e-06 F</em>) – Difference in capacitance</p></li>
+<li><p><strong>tau</strong> (<em>float = 1 s</em>) – Time constant</p></li>
+<li><p><strong>a</strong> (<em>float = 0.9</em>) – Asymmetry exponent</p></li>
+<li><p><strong>b</strong> (<em>float = 0.9</em>) – Broadness exponent</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.HavriliakNegamiAlternative">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">HavriliakNegamiAlternative</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.HavriliakNegamiAlternative" title="Link to this definition"></a></dt>
+<dd><p>Havriliak-Negami, alt.</p>
+<p>Symbol: Ha</p>
+<p>Havriliak-Negami relaxation (alternative form).</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{R}{\left(\left(j 2 \pi f \tau\right)^{a} + 1\right)^{b}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R</strong> (<em>float = 1 ohm</em>) – Resistance</p></li>
+<li><p><strong>tau</strong> (<em>float = 1 s</em>) – Time constant</p></li>
+<li><p><strong>a</strong> (<em>float = 0.7</em>) – Asymmetry exponent</p></li>
+<li><p><strong>b</strong> (<em>float = 0.8</em>) – Broadness exponent</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.Inductor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">Inductor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.Inductor" title="Link to this definition"></a></dt>
+<dd><p>Ideal inductor</p>
+<p>Symbol: L</p>
+<p>An ideal inductor.</p>
+<p><span class="math notranslate nohighlight">\(Z = j 2 \pi f L\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>L</strong> (<em>float = 1e-06 H</em>) – Inductance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.KramersKronigRC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">KramersKronigRC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.KramersKronigRC" title="Link to this definition"></a></dt>
+<dd><p>‘Parallel RC’ element</p>
+<p>Symbol: K</p>
+<p>Parallel RC element with a fixed time constant that is used in linear Kramers-Kronig tests.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{R}{j 2 \pi f \tau + 1}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R</strong> (<em>float = 1 ohm</em>) – Resistance</p></li>
+<li><p><strong>tau</strong> (<em>float = 1 s</em><em>, </em><em>fixed</em>) – Time constant</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.ModifiedInductor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">ModifiedInductor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.ModifiedInductor" title="Link to this definition"></a></dt>
+<dd><p>Modified inductor</p>
+<p>Symbol: La</p>
+<p>Can be used to model non-ideal inductance.</p>
+<p><span class="math notranslate nohighlight">\(Z = L \left(j 2 \pi f\right)^{n}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> (<em>float = 1e-06 H*s^</em><em>(</em><em>n-1</em><em>)</em>) – ‘Inductance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.95</em>) – Phase angle in pi/2 radians</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.Resistor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">Resistor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.Resistor" title="Link to this definition"></a></dt>
+<dd><p>Symbol: R</p>
+<p>An ideal resistor.</p>
+<p><span class="math notranslate nohighlight">\(Z = R\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>R</strong> (<em>float = 1e+03 ohm</em>) – Resistance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModel" title="Link to this definition"></a></dt>
+<dd><p>Transmission line model, general</p>
+<p>Symbol: Tlm</p>
+<p>A general model for a transmission line. The units of the subcircuits’ parameters vary depending on the connections. Note the pore length parameter, L, for this element and how it may affect the aforementioned units. The equation that is used depends on the configuration of subcircuits that have been chosen. See DOI:10.1039/B001708F for more information about this element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+<li><p><strong>X_1</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>] </em><em>=</em><em> [</em><em>R</em><em>]</em>) – The impedance of the liquid phase (i.e., ionic conductivity in the pore)</p></li>
+<li><p><strong>X_2</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>] </em><em>=</em><em> [</em><em>]</em>) – The impedance of the solid phase (i.e., electronic conductivity of the film)</p></li>
+<li><p><strong>Z_A</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>] </em><em>= None</em>) – The impedance at the outer boundary of the porous electrode (i.e., at the electrolyte-film interface outside of the pore)</p></li>
+<li><p><strong>Z_B</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>] </em><em>= None</em>) – The impedance at the inner boundary of the porous electrode (i.e., at the electrolyte-substrate interface in the pore)</p></li>
+<li><p><strong>Zeta</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>] </em><em>=</em><em> [</em><em>Q</em><em>]</em>) – The interfacial impedance (i.e., at the electrolyte-film interface of the pore wall)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelBlockingCPE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelBlockingCPE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingCPE" title="Link to this definition"></a></dt>
+<dd><p>Blocking porous electrode, CPE</p>
+<p>Symbol: Tlmbq</p>
+<p>Transmission line, blocking porous electrode with reflective inner boundary. Model (d) in DOI:10.1039/B001708F.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{R_{i} \left(1 + \frac{\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \coth{\left(\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \right)}}{R_{i} Y_{B} \left(j 2 \pi f\right)^{n_{B}}}\right)}{\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \coth{\left(\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \right)} + \frac{\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{n}}{R_{i} Y_{B} \left(j 2 \pi f\right)^{n_{B}}}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>Y_B</strong> (<em>float = 0.01 S*s^n/m</em>) – Inner boundary ‘admittance’</p></li>
+<li><p><strong>n_B</strong> (<em>float = 0.7</em>) – Phase angle in -pi/2 radians (inner boundary)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelBlockingOpen">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelBlockingOpen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingOpen" title="Link to this definition"></a></dt>
+<dd><p>Blocking porous electrode, open</p>
+<p>Symbol: Tlmbo</p>
+<p>Transmission line, blocking porous electrode with perfectly reflective inner boundary. Model (b) in DOI:10.1039/B001708F.</p>
+<p><span class="math notranslate nohighlight">\(Z = R_{i} \left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{\left(-1\right) n}{2}} \coth{\left(\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \right)}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelBlockingShort">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelBlockingShort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelBlockingShort" title="Link to this definition"></a></dt>
+<dd><p>Blocking porous electrode, short</p>
+<p>Symbol: Tlmbs</p>
+<p>Transmission line, blocking porous electrode with absorbing inner boundary. Model (d) in DOI:10.1039/B001708F with a shorted Z_B (i.e., Z_B == 0).</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{R_{i}}{\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \coth{\left(\left(j 2 \pi f \frac{1}{\frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \right)}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelNonblockingCPE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelNonblockingCPE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingCPE" title="Link to this definition"></a></dt>
+<dd><p>Non-blocking porous electrode, CPE</p>
+<p>Symbol: Tlmnq</p>
+<p>Transmission line, non-blocking porous electrode with reflective inner boundary. Model (g) in DOI:10.1039/B001708F.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{R_{ct} \left(R_{B} \coth{\left(\frac{L}{\sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}}} \right)} + R_{i} \sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}} \left(R_{B} Y_{B} \left(j 2 \pi f\right)^{n_{B}} + 1\right)\right)}{R_{B} \sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right) + R_{ct} \left(R_{B} Y_{B} \left(j 2 \pi f\right)^{n_{B}} + 1\right) \coth{\left(\frac{L}{\sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}}} \right)}}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>R_ct</strong> (<em>float = 3 ohm*m</em>) – Interfacial charge transfer resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>R_B</strong> (<em>float = 5 ohm*m</em>) – Inner boundary charge transfer resistance</p></li>
+<li><p><strong>Y_B</strong> (<em>float = 0.1 S*s^n/m</em>) – Inner boundary ‘admittance’</p></li>
+<li><p><strong>n_B</strong> (<em>float = 0.7</em>) – Phase angle in -pi/2 radians (inner boundary)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelNonblockingOpen">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelNonblockingOpen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingOpen" title="Link to this definition"></a></dt>
+<dd><p>Non-blocking porous electrode, open</p>
+<p>Symbol: Tlmno</p>
+<p>Transmission line, non-blocking porous electrode with perfectly reflective inner boundary. Also known as ‘Bisquert, open’. Model (f) in DOI:10.1039/B001708F with corrected form from DOI:10.1021/jp993148h.</p>
+<p><span class="math notranslate nohighlight">\(Z = \left(\frac{R_{ct} R_{i}}{\left(j 2 \pi f \frac{1}{\frac{1}{\left(R_{ct} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{n} + 1}\right)^{1 \cdot \frac{1}{2}} \coth{\left(\left(\frac{1}{\left(\frac{R_{ct} Y}{L}\right)^{1 \cdot \frac{1}{n}} \frac{1}{\left(L^{2} R_{i} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{\frac{n}{2}} \left(\left(j 2 \pi f \frac{1}{\frac{1}{\left(R_{ct} Y\right)^{1 \cdot \frac{1}{n}}}}\right)^{n} + 1\right)^{1 \cdot \frac{1}{2}} \right)}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>R_ct</strong> (<em>float = 3 ohm*m</em>) – Interfacial charge transfer resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.TransmissionLineModelNonblockingShort">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">TransmissionLineModelNonblockingShort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.TransmissionLineModelNonblockingShort" title="Link to this definition"></a></dt>
+<dd><p>Non-blocking porous electrode, short</p>
+<p>Symbol: Tlmns</p>
+<p>Transmission line, non-blocking porous electrode with absorbing inner boundary. Also known as ‘Bisquert, short’. Model (g) in DOI:10.1039/B001708F with a shorted Z_B (i.e., Z_B == 0).</p>
+<p><span class="math notranslate nohighlight">\(Z = R_{i} \sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}} \tanh{\left(\frac{L}{\sqrt{\frac{R_{ct}}{R_{i} \left(R_{ct} Y \left(j 2 \pi f\right)^{n} + 1\right)}}} \right)}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>R_i</strong> (<em>float = 1 ohm/m</em>) – Ionic resistance</p></li>
+<li><p><strong>R_ct</strong> (<em>float = 3 ohm*m</em>) – Interfacial charge transfer resistance</p></li>
+<li><p><strong>Y</strong> (<em>float = 0.005 S*s^n/m</em>) – Interfacial ‘admittance’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.8</em>) – Phase angle in -pi/2 radians (interface)</p></li>
+<li><p><strong>L</strong> (<em>float = 1 m</em><em>, </em><em>fixed</em>) – Pore length</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.Warburg">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">Warburg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">semi-infinite</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.Warburg" title="Link to this definition"></a></dt>
+<dd><p>Symbol: W</p>
+<p>Semi-infinite Warburg diffusion.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{1}{Y \sqrt{2 j \pi f}}\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(Y = \frac{1}{\sigma\sqrt{2}}\)</span> and <span class="math notranslate nohighlight">\(\sigma\)</span> is the Warburg coefficient in ohm/s^(1/2).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Y</strong> (<em>float = 0.001 S*s^</em><em>(</em><em>1/2</em><em>)</em>) – ‘Admittance’</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.WarburgOpen">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">WarburgOpen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.WarburgOpen" title="Link to this definition"></a></dt>
+<dd><p>Warburg (finite length, reflective boundary)</p>
+<p>Symbol: Wo</p>
+<p>Finite length diffusion with reflective boundary.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{\coth{\left(\left(B j 2 \pi f\right)^{n} \right)}}{\left(Y j 2 \pi f\right)^{n}}\)</span></p>
+<p>where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(Y = \frac{1}{\sigma\sqrt{2}}\)</span> and <span class="math notranslate nohighlight">\(\sigma\)</span> is the Warburg coefficient in ohm/s^(1/2)</p></li>
+<li><p><span class="math notranslate nohighlight">\(B = \frac{\delta}{\sqrt{D}}\)</span>, <span class="math notranslate nohighlight">\(\delta\)</span> is the diffusion layer thickness, and <span class="math notranslate nohighlight">\(D\)</span> is the diffusion coefficient</p></li>
+</ul>
+<p>Re(Z) approaches <span class="math notranslate nohighlight">\(\frac{(B/Y)^n}{3}\)</span> and Im(Z) exhibits capacitive-like behavior as the frequency approaches 0 Hz.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y</strong> (<em>float = 1 S</em>) – ‘Admittance’</p></li>
+<li><p><strong>B</strong> (<em>float = 1 s^n</em>) – ‘Time constant’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.5</em><em>, </em><em>fixed</em>) – Phase angle in -pi/2 radians</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.api.circuit.elements.WarburgShort">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.api.circuit.elements.</span></span><span class="sig-name descname"><span class="pre">WarburgShort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.api.circuit.elements.WarburgShort" title="Link to this definition"></a></dt>
+<dd><p>Warburg (finite length, transmissive boundary)</p>
+<p>Symbol: Ws</p>
+<p>Finite length diffusion with transmissive boundary.</p>
+<p><span class="math notranslate nohighlight">\(Z = \frac{\tanh{\left(\left(B j 2 \pi f\right)^{n} \right)}}{\left(Y j 2 \pi f\right)^{n}}\)</span></p>
+<p>where</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(Y = \frac{1}{\sigma\sqrt{2}}\)</span> and <span class="math notranslate nohighlight">\(\sigma\)</span> is the Warburg coefficient in ohm/s^(1/2)</p></li>
+<li><p><span class="math notranslate nohighlight">\(B = \frac{\delta}{\sqrt{D}}\)</span>, <span class="math notranslate nohighlight">\(\delta\)</span> is the diffusion layer thickness, and <span class="math notranslate nohighlight">\(D\)</span> is the diffusion coefficient</p></li>
+</ul>
+<p>Re(Z) and Im(Z) approach <span class="math notranslate nohighlight">\((\frac{B}{Y})^n\)</span> and 0, respectively, as the frequency approaches 0 Hz.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Y</strong> (<em>float = 1 S</em>) – ‘Admittance’</p></li>
+<li><p><strong>B</strong> (<em>float = 1 s^n</em>) – ‘Time constant’</p></li>
+<li><p><strong>n</strong> (<em>float = 0.5</em><em>, </em><em>fixed</em>) – Phase angle in -pi/2 radians</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-4">
+<span id="element-registration-classes"></span><h2>Element registration classes<a class="headerlink" href="#module-4" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ContainerDefinition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ContainerDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Class</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subcircuits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ContainerDefinition" title="Link to this definition"></a></dt>
+<dd><p>A class that defines a new circuit element and its parameters.
+The information contained in this object is also used to automatically generate a docstring for the circuit element’s class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Class</strong> (<em>Type</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>]</em>) – The class representing the circuit element.</p></li>
+<li><p><strong>symbol</strong> (<em>str</em>) – The symbol that can be used to represent the circuit element in a circuit description code (CDC).</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – The name of the circuit element.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – The description of the element.
+A placeholder, <code class="docutils literal notranslate"><span class="pre">|equation|</span></code>, for the automatically formatted equation can be included in the description in case the intention is to have more text below the equation.
+Otherwise the formatted equation will be added to the end of the description.
+Another placeholder, <code class="docutils literal notranslate"><span class="pre">|no-equation|</span></code>, can be included (e.g., at the end) in case the automatically formatted equation should be excluded for some reason (e.g., it would be too large to be properly displayed).</p></li>
+<li><p><strong>equation</strong> (<em>str</em>) – The equation (assume an implicit “Z = “ on the left-hand side) for the circuit element’s impedance.
+The string must be compatible with SymPy’s <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.sympify.sympify">sympify</a> function.
+For example, “(2*pi*f*C*I)^-1” for a capacitor is valid and will show up in the generated docstring as <span class="math notranslate nohighlight">\(Z = \frac{1}{j 2 \pi f C}\)</span>.
+This is also used to verify that the circuit element’s _impedance method outputs the same answer as the circuit element’s impedance equation.</p></li>
+<li><p><strong>parameters</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.ParameterDefinition" title="deareis.ParameterDefinition"><em>ParameterDefinition</em></a><em>]</em>) – A list of objects that define the circuit element’s parameter(s).</p></li>
+<li><p><strong>subcircuits</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.SubcircuitDefinition" title="pyimpspec.circuit.registry.SubcircuitDefinition"><em>SubcircuitDefinition</em></a><em>]</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="simple">
+<dt>subcircuits: List[SubcircuitDefinition]</dt><dd><p>A list of objects that define the circuit element’s parameter(s) that are subcircuits.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ElementDefinition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ElementDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Class</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ElementDefinition" title="Link to this definition"></a></dt>
+<dd><p>A class that defines a new circuit element and its parameters.
+The information contained in this object is also used to automatically generate a docstring for the circuit element’s class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Class</strong> (<em>Type</em><em>[</em><a class="reference internal" href="#deareis.Element" title="deareis.Element"><em>Element</em></a><em>]</em>) – The class representing the circuit element.</p></li>
+<li><p><strong>symbol</strong> (<em>str</em>) – The symbol that can be used to represent the circuit element in a circuit description code (CDC).</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – The name of the circuit element.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – The description of the element.
+A placeholder, <code class="docutils literal notranslate"><span class="pre">|equation|</span></code>, for the automatically formatted equation can be included in the description in case the intention is to have more text below the equation.
+Otherwise the formatted equation will be added to the end of the description.
+Another placeholder, <code class="docutils literal notranslate"><span class="pre">|no-equation|</span></code>, can be included (e.g., at the end) in case the automatically formatted equation should be excluded for some reason (e.g., it would be too large to be properly displayed).</p></li>
+<li><p><strong>equation</strong> (<em>str</em>) – The equation (assume an implicit “Z = “ on the left-hand side) for the circuit element’s impedance.
+The string must be compatible with SymPy’s <a class="reference external" href="https://docs.sympy.org/latest/modules/core.html#sympy.core.sympify.sympify">sympify</a> function.
+For example, “(2*pi*f*C*I)^-1” for a capacitor is valid and will show up in the generated docstring as <span class="math notranslate nohighlight">\(Z = \frac{1}{j 2 \pi f C}\)</span>.
+This is also used to verify that the circuit element’s _impedance method outputs the same answer as the circuit element’s impedance equation.</p></li>
+<li><p><strong>parameters</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.ParameterDefinition" title="deareis.ParameterDefinition"><em>ParameterDefinition</em></a><em>]</em>) – A list of objects that define the circuit element’s parameter(s).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.ParameterDefinition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">ParameterDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower_limit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_limit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fixed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.ParameterDefinition" title="Link to this definition"></a></dt>
+<dd><p>A circuit element’s parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol</strong> (<em>str</em>) – The symbol/name of the parameter that can be used when, e.g., obtaining the value for a specific parameter via <cite>Element.get_value(symbol)</cite>. Required to be a non-empty string.</p></li>
+<li><p><strong>unit</strong> (<em>str</em>) – The parameter’s unit (ohm*cm, F/cm, H, etc.). Can be an empty string.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – A description of the parameter. Can be an empty string.</p></li>
+<li><p><strong>value</strong> (<em>float</em>) – The default value for the parameter.</p></li>
+<li><p><strong>lower_limit</strong> (<em>float</em>) – The lower limit of what this parameter’s value can be during circuit fitting. A value of -numpy.inf means that there is no lower limit.</p></li>
+<li><p><strong>upper_limit</strong> (<em>float</em>) – The upper limit of what this parameter’s value can be during circuit fitting. A value of numpy.inf means that there is no upper limit.</p></li>
+<li><p><strong>fixed</strong> (<em>bool</em>) – If true, then this parameter’s value will not change during circuit fitting.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.SubcircuitDefinition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">SubcircuitDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symbol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.SubcircuitDefinition" title="Link to this definition"></a></dt>
+<dd><p>A container element’s subcircuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>symbol</strong> (<em>str</em>) – The symbol/name of the subcircuit that can be used when, e.g., obtaining a specific subcircuit belonging to a container element. Required to be a non-empty string.</p></li>
+<li><p><strong>unit</strong> (<em>str</em>) – The unit of the subcircuit’s impedance.</p></li>
+<li><p><strong>description</strong> (<em>str</em>) – A description of the subcircuit. Can be an empty string.</p></li>
+<li><p><strong>value</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="#deareis.Connection" title="deareis.Connection"><em>Connection</em></a><em>]</em>) – The default value for the parameter. Can be a connection such as Series or Parallel, or None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_drt.html" class="btn btn-neutral float-left" title="Distribution of relaxation times analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_fitting.html" class="btn btn-neutral float-right" title="Circuit fitting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

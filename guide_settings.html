@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Palettes" href="guide_palettes.html" />
+    <link rel="prev" title="Batch analysis" href="guide_batch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_data.html">Processing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_fitting.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#appearance">Appearance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#defaults">Defaults</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#keybindings">Keybindings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-defined-elements">User-defined elements</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_api.html">Application programming interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Settings</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_settings.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="settings">
+<span id="settings-page"></span><h1>Settings<a class="headerlink" href="#settings" title="Link to this heading"></a></h1>
+<p>The configuration for DearEIS is stored as <a class="reference external" href="https://en.wikipedia.org/wiki/JSON">JavaScript Object Notation (JSON)</a> that is stored in <code class="docutils literal notranslate"><span class="pre">XDG_CONFIG_HOME</span></code> paths specified by the <a class="reference external" href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">XDG Base Directory Specification</a>:</p>
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-number">Table 2 </span><span class="caption-text">Default location of the configuration file on different operating systems.</span><a class="headerlink" href="#id5" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 33.0%" />
+<col style="width: 67.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Operating system</p></th>
+<th class="head"><p>Location</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Linux</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/.config/DearEIS</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>MacOS</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">~/Library/Application</span> <span class="pre">Support/DearEIS</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Windows</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">%LOCALAPPDATA%\DearEIS</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="appearance">
+<h2>Appearance<a class="headerlink" href="#appearance" title="Link to this heading"></a></h2>
+<p>Some aspects of the appearances of various plots can be defined (<a class="reference internal" href="#id1"><span class="std std-numref">Fig. 34</span></a>).
+Some of these settings are also mixed and matched in some plots when there are more items to plot than shown in the plots in this window (e.g., see the plots in the window for interpolating data points in the <strong>Data sets</strong> tab).</p>
+<figure class="align-default" id="id6">
+<span id="id1"></span><img alt="The Appearance settings window" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-appearance.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 34 </span><span class="caption-text">Most changes made to plot appearances should take effect immediately.
+Changing the number of points in simulated lines requires switching back and forth between data sets or results to update the plots.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="defaults">
+<h2>Defaults<a class="headerlink" href="#defaults" title="Link to this heading"></a></h2>
+<p>The default settings that are used in, e.g., the tabs for performing analyses can be defined here (<a class="reference internal" href="#id2"><span class="std std-numref">Fig. 35</span></a>).</p>
+<figure class="align-default" id="id7">
+<span id="id2"></span><img alt="The Default settings window" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-defaults.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 35 </span><span class="caption-text">Changes made to defaults should take effect immediately.</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="keybindings">
+<h2>Keybindings<a class="headerlink" href="#keybindings" title="Link to this heading"></a></h2>
+<p>Many actions can be performed via keybindings.
+If an update to DearEIS changes or adds keybindings for actions, then those keybindings may not change or be assigned.
+In such cases it may be necessary to manually assign keybindings to those actions or to simply reset the keybindings.</p>
+<figure class="align-default" id="id8">
+<span id="id3"></span><img alt="The Keybinding settings window" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-keybindings.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 36 </span><span class="caption-text">The keybindings defined in this window apply to a great extent also to modal/popup windows with similar functionality (e.g., for cycling results or plot types).</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="user-defined-elements">
+<h2>User-defined elements<a class="headerlink" href="#user-defined-elements" title="Link to this heading"></a></h2>
+<p>Both pyimpspec and DearEIS include support for user-defined elements since version 4.0.0.
+The support has been implemented in DearEIS by providing a setting where the user can specify a Python script that defines one or more new elements.
+See <a class="reference external" href="https://github.com/vyrjana/pyimpspec/blob/main/src/pyimpspec/circuit/constant_phase_element.py">the source code (e.g., for the constant phase element)</a> and <a class="reference external" href="https://vyrjana.github.io/pyimpspec/guide_circuit.html#user-defined-elements">the documentation</a> for pyimpspec for examples.
+The relevant functions and classes are available via the APIs of both DearEIS (<a class="reference internal" href="apidocs_circuit.html"><span class="doc">Equivalent circuits</span></a>) and pyimpspec.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>User-defined elements are not stored in project files.
+If a project is dependent on a user-defined element, then that project cannot be opened unless the user-defined element has been loaded.
+A project is dependent on a user-defined element if it is used in, e.g., a circuit fit or a simulation.</p>
+<p>The circuits used in these types of results are stored in a project file in the form of a circuit description code (CDC), which DearEIS needs to parse when a project is loaded.
+User-defined elements are thus required at the moment of parsing and DearEIS/pyimpspec will expect to find elements that match the symbols encountered while parsing the CDC.
+Changing the symbol of a user-defined element while it is in use can thus cause issues and symbols can conflict with, e.g., new elements that have been added to pyimpspec.
+Changing the parameters/subcircuits of a user-defined element is also likely to cause issues if an older version is being used by a project.</p>
+<p>So keep track of your script(s) that define user-defined elements and consider creating new elements when changes have to be made.</p>
+</div>
+<figure class="align-default" id="id9">
+<span id="id4"></span><img alt="The User-defined elements window" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/settings-user-defined-elements.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 37 </span><span class="caption-text">Specify the path to a Python script and then click the <strong>Refresh</strong> button.
+The new circuit elements should show up in the table.
+Hovering over a row in the table should show the automatically generated extended description for a circuit element.
+If the path is left empty and then the <strong>Refresh</strong> button is clicked, then the user-defined elements are cleared.</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_batch.html" class="btn btn-neutral float-left" title="Batch analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="guide_palettes.html" class="btn btn-neutral float-right" title="Palettes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

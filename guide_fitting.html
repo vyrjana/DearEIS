@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fitting &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Simulation" href="guide_simulation.html" />
+    <link rel="prev" title="Distribution of relaxation times analysis" href="guide_drt.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_data.html">Processing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Fitting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#equivalent-circuits">Equivalent circuits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adjusting-parameters">Adjusting parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applying-old-settings-and-masks">Applying old settings and masks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#copying-results-to-the-clipboard">Copying results to the clipboard</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_api.html">Application programming interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Fitting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_fitting.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fitting">
+<h1>Fitting<a class="headerlink" href="#fitting" title="Link to this heading"></a></h1>
+<p>The <strong>Fitting</strong> tab is where equivalent circuits can be fitted to data sets (<a class="reference internal" href="#fitting-tab"><span class="std std-numref">Fig. 19</span></a>):</p>
+<ul class="simple">
+<li><p>the various settings that determine how the fitting is performed</p></li>
+<li><p>combo boxes that can be used to choose the active data set, the active fit result, and the active output</p></li>
+<li><p>a table of fitted parameter values and estimated errors (if possible to estimate)</p></li>
+<li><p>a table of statistics related to the active fit result</p></li>
+<li><p>a table of the settings that were used to obtain the active result</p></li>
+</ul>
+<figure class="align-default" id="id1">
+<span id="fitting-tab"></span><img alt="The Fitting tab of a project." src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 19 </span><span class="caption-text">An example of an <strong>R(RC)(RW)</strong> circuit that has been fitted to a data set.
+The obtained fitted parameters are close to the parameters that were used to generate the data set in the first place.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Equivalent circuits can be constructed either by typing in a corresponding <a class="reference external" href="https://www.utwente.nl/en/tnw/ims/publications/downloads/cdc-explained.pdf">circuit description code (CDC)</a> or by using the graphical circuit editor, which is accessible by pressing the <strong>Edit</strong> button.</p>
+<p>Different iterative methods and weights are available.
+If one or both of these settings are set to <strong>Auto</strong>, then combinations of iterative method(s) and weight(s) are used to perform multiple fits in parallel and the best fit is returned.</p>
+<p>The results are presented in the form of a table containing the fitted parameter values (and, if possible, error estimates for the fitted parameter values), a table containing statistics pertaining to the quality of the fit, three plots (Nyquist, Bode, and relative errors of the fit), and a preview of the circuit that was fitted to the data set.
+If you hover the mouse cursor over the cells in the tables, then you can get additional information (e.g., more precise values or explanations).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It may not always be possible to estimate errors for fitted parameters.
+Common causes include:</p>
+<ul class="simple">
+<li><p>A parameter’s fitted value is close to the parameter’s lower or upper limit.</p></li>
+<li><p>An inappropriate equivalent circuit has been chosen.</p></li>
+<li><p>The maximum number of function evaluations is set too low.</p></li>
+<li><p>The data contains no noise and the equivalent circuit is very good at reproducing the data.</p></li>
+</ul>
+</div>
+<section id="equivalent-circuits">
+<h2>Equivalent circuits<a class="headerlink" href="#equivalent-circuits" title="Link to this heading"></a></h2>
+<p>The CDC syntax is quite simple:</p>
+<ul class="simple">
+<li><p>Circuit elements are represented by one or more letter symbols such as <code class="docutils literal notranslate"><span class="pre">R</span></code> for a resistor, <code class="docutils literal notranslate"><span class="pre">C</span></code> for a capacitor, and <code class="docutils literal notranslate"><span class="pre">Wo</span></code> for a Warburg diffusion of finite-length with a reflective boundary.</p></li>
+<li><p>Two or more circuit elements enclosed in parentheses, <code class="docutils literal notranslate"><span class="pre">()</span></code>, are connected in parallel.</p></li>
+<li><p>Two  or more circuit elements enclosed in square brackets, <code class="docutils literal notranslate"><span class="pre">[]</span></code>, are connected in series. This can be used to construct, e.g., a parallel connection that contains a nested series connection (<code class="docutils literal notranslate"><span class="pre">(C[RW])</span></code> where <code class="docutils literal notranslate"><span class="pre">R</span></code> and <code class="docutils literal notranslate"><span class="pre">W</span></code> are connected together in series and that series connection is in parallel with <code class="docutils literal notranslate"><span class="pre">C</span></code>).</p></li>
+</ul>
+<p>DearEIS also supports an extended CDC syntax.
+This extended syntax allows for defining circuit elements with, e.g., labels, initial values for parameters, and parameter limits.
+Circuit elements can be followed up by curly braces and the aforementioned things can be defined within these curly braces.
+For example, <code class="docutils literal notranslate"><span class="pre">R{R=250f:ct}</span></code> defines a resistor with:</p>
+<ul class="simple">
+<li><p>an initial value of 250 ohms for the resistance <code class="docutils literal notranslate"><span class="pre">R</span></code></p></li>
+<li><p>a fixed initial value (i.e., a constant value)</p></li>
+<li><p>the label <code class="docutils literal notranslate"><span class="pre">ct</span></code>, which stands for charge transfer</p></li>
+</ul>
+<p>Engineering notation (e.g., <code class="docutils literal notranslate"><span class="pre">1e-6</span></code> or <code class="docutils literal notranslate"><span class="pre">1E-6</span></code> instead of <code class="docutils literal notranslate"><span class="pre">0.000001</span></code>) is supported by the extended syntax.
+All parameters do not need to be defined if a circuit element has multiple parameters.
+If parameters are omitted, then the default values are used (e.g., the default initial value for the <code class="docutils literal notranslate"><span class="pre">R</span></code> parameter of a resistor is 1000 ohms).
+If parameter limits are completely omitted, then the default values are used (e.g., the default lower limit for the <code class="docutils literal notranslate"><span class="pre">R</span></code> parameter of a resistor i 0 and the upper limit is infinity).
+<code class="docutils literal notranslate"><span class="pre">Q{Y=1.3e-7//1e-5,n=0.95/0.9/1.0:dl}</span></code> defines a constant phase element with:</p>
+<ul class="simple">
+<li><p>an initial value of 1.3 * 10^-7 F*s^(n-1) for the <code class="docutils literal notranslate"><span class="pre">Y</span></code> parameter (other sources may use the notation <code class="docutils literal notranslate"><span class="pre">A</span></code> or <code class="docutils literal notranslate"><span class="pre">Q0</span></code> for this parameter) with no lower limit and an upper limit of 1 * 10^-5 F*s^(n-1)</p></li>
+<li><p>an initial value of 0.95 for the <code class="docutils literal notranslate"><span class="pre">n</span></code> parameter (other sources may use the notation <code class="docutils literal notranslate"><span class="pre">alpha</span></code> or <code class="docutils literal notranslate"><span class="pre">psi</span></code> for this parameter) with a lower limit of 0.9 and an upper limit of 1.0</p></li>
+<li><p>the label <code class="docutils literal notranslate"><span class="pre">dl</span></code>, which stands for double-layer (i.e., double-layer capacitance)</p></li>
+</ul>
+<p>The valid symbols are listed in the <strong>Element</strong> combo box positioned below the <strong>CDC input</strong> field.</p>
+<p>Alternatively, nodes representing the circuit elements can be added to the node editor and connected together to form an equivalent circuit.
+This is done by choosing the type of circuit element one wants to add, clicking the <strong>Add</strong> button, and finally linking nodes together by clicking and dragging between the terminals of the nodes  (i.e., the yellow dots on either side of a node).
+If two parallel circuits are connected in series like in <a class="reference internal" href="#circuit-editor"><span class="std std-numref">Fig. 20</span></a>, then it is necessary to place a node between them.
+This node could be an element (e.g., a resistor) that is also connected in series to the two parallel circuits or it could be a dummy node.
+This dummy node, which can be added via the <strong>Add dummy</strong> button, does not affect the impedance of the system at all.
+Links between nodes can be deleted by either clicking on a link and then pressing the <strong>Delete</strong> button on the keyboard, or by holding down <strong>Ctrl</strong> when clicking on a link.
+Multiple nodes can be moved or deleted by clicking and dragging a selection box around them.</p>
+<p>Clicking a node will update the area on the left-hand side.
+This is where a label such as <code class="docutils literal notranslate"><span class="pre">ct</span></code> for charge transfer can be added to a circuit element.
+More importantly, this is where initial values and limits can be defined for the parameters of a circuit element.
+One can also set a parameter to have a fixed value.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Due to technical reasons, one must click on the upper part of a node (i.e., where the label is) that represents a circuit element in order to be able to define, e.g., custom initial values.
+Also, any values typed into the input fields must be confirmed by pressing <code class="docutils literal notranslate"><span class="pre">Enter</span></code> or the value will not actually be set.
+Click and hold on the lower part of the node to move it around.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Click and hold on a terminal/pin (yellow dot) to start creating a link and then drag and release near another terminal/pin.
+Hold down Ctrl while clicking on a link to remove the link.</p>
+</div>
+<figure class="align-default" id="id2">
+<span id="circuit-editor"></span><img alt="Example of the circuit editor window" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 20 </span><span class="caption-text">The graphical circuit editor can be used to construct equivalent circuits and to define the initial values and limits of parameters.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id3">
+<span id="container-elements"></span><img alt="Example of the parameters and subcircuits of a container element" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-container.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 21 </span><span class="caption-text">Container elements such as the general transmission line model have subcircuits that can also be modified.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Press the <strong>Accept circuit</strong> button in the bottom right-hand corner once the equivalent circuit is complete.
+If there is an issue with the equivalent circuit (e.g., a missing or invalid connection), then the button will be labeled <strong>Cancel</strong> instead.
+The <strong>Status</strong> field at the bottom of the window should offer some help regarding the nature of the issue and the affected node should be highlighted with a red label (<a class="reference internal" href="#invalid-circuit"><span class="std std-numref">Fig. 22</span></a>).</p>
+<figure class="align-default" id="id4">
+<span id="invalid-circuit"></span><img alt="Example of a status message for an invalid circuit (e.g., missing connection)" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-invalid.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 22 </span><span class="caption-text">If the circuit is invalid because of, e.g., a missing connection, then that is indicated by highlighting the affected node and by showing a relevant error message in the status field near the bottom of the window.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="adjusting-parameters">
+<h2>Adjusting parameters<a class="headerlink" href="#adjusting-parameters" title="Link to this heading"></a></h2>
+<p>The parameters of each circuit element can be adjusted via the circuit editor.
+However, there is also a separate parameter adjustment window that provides a real-time preview of the impedance spectrum produced by the circuit.
+This window is accessible from the <strong>Fitting</strong> tab (i.e., not from the circuit editor).</p>
+<figure class="align-default" id="id5">
+<img alt="The parameter adjustment window in the Fitting tab" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-adjustment.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 23 </span><span class="caption-text">The parameter adjustment window provides a convenient way of dialing in the initial values before performing a fit.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="applying-old-settings-and-masks">
+<h2>Applying old settings and masks<a class="headerlink" href="#applying-old-settings-and-masks" title="Link to this heading"></a></h2>
+<p>The settings that were used to perform the active fitting result are also presented as a table and these settings can be applied by pressing the <strong>Apply settings</strong> button.</p>
+<p>The mask that was applied to the data set when the fitting was performed can be applied by pressing the <strong>Apply mask</strong> button.
+If the mask that is applied to the data set has changed since an earlier fitting was performed, then that will be indicated clearly above the statistics table.</p>
+<p>These features make it easy to restore old settings/masks in case, e.g., DearEIS has been closed and relaunched, or after trying out different settings.</p>
+</section>
+<section id="copying-results-to-the-clipboard">
+<h2>Copying results to the clipboard<a class="headerlink" href="#copying-results-to-the-clipboard" title="Link to this heading"></a></h2>
+<p>Different aspects of the results can be copied to the clipboard in different plain-text formats via the <strong>Output</strong> combo box and the <strong>Copy</strong> button.
+For example, the following results can be copied:</p>
+<ul class="simple">
+<li><p>the basic or extended CDC of the fitted circuit</p></li>
+<li><p>a table of the impedance response of the fitted circuit as character-separated values</p></li>
+<li><p>a table of the fitted parameters as, e.g., character-separated values.</p></li>
+<li><p>a circuit diagram of the fitted circuit as, e.g., LaTeX or Scalable Vector Graphics (see example below)</p></li>
+<li><p>the <a class="reference external" href="https://www.sympy.org/en/index.html">SymPy</a> expression describing the impedance of the fitted circuit</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Variables in SymPy expressions use a different set of lower indices to avoid conflicting variable names. See <a class="reference internal" href="guide_api.html#generating-equations"><span class="std std-ref">Generating equations</span></a> for more information.</p>
+</div>
+<p>(<a class="reference download internal" download="" href="_downloads/0eab351eb47e40751464aed2adc598bc/guide_fitting-1.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default" id="id6">
+<img alt="_images/guide_fitting-1.svg" class="plot-directive" src="_images/guide_fitting-1.svg" /><figcaption>
+<p><span class="caption-number">Fig. 24 </span><span class="caption-text">Example of a circuit diagram as it would look if it was copied as Scalable Vector Graphics.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_drt.html" class="btn btn-neutral float-left" title="Distribution of relaxation times analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="guide_simulation.html" class="btn btn-neutral float-right" title="Simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

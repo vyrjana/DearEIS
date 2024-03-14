@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distribution of relaxation times analysis &mdash; DearEIS 4.2.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=74d6e94f"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Fitting" href="guide_fitting.html" />
+    <link rel="prev" title="Validation" href="guide_validation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_data.html">Processing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_validation.html">Validation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Distribution of relaxation times analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#performing-analyses">Performing analyses</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#applying-old-settings-and-masks">Applying old settings and masks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide_fitting.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_api.html">Application programming interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Distribution of relaxation times analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_drt.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="distribution-of-relaxation-times-analysis">
+<h1>Distribution of relaxation times analysis<a class="headerlink" href="#distribution-of-relaxation-times-analysis" title="Link to this heading"></a></h1>
+<section id="performing-analyses">
+<h2>Performing analyses<a class="headerlink" href="#performing-analyses" title="Link to this heading"></a></h2>
+<p>The distribution of relaxation times (DRT) can be calculated using multiple different approaches (see the corresponding publications for details):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://doi.org/10.1016/j.electacta.2020.136864">Bayesian Hilbert transform (BHT)</a></p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1039/D0CP02094J">Tikhonov regularization and non-negative least squares fitting (TR-NNLS)</a></p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1016/j.electacta.2015.09.097">Tikhonov regularization and radial basis function (or piecewise linear) discretization (TR-RBF)</a></p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1016/j.electacta.2014.12.059">multi-(RQ) fit (m(RQ)fit)</a></p></li>
+</ul>
+<p>This type of analysis can be used, e.g., as an aid when developing equivalent circuits by revealing the number of time constants.
+The peak shapes (e.g., symmetry and sharpness) can also help with identifying circuit elements that could be suitable.</p>
+<p>DRT calculations can be performed in the <strong>DRT analysis</strong> tab (<a class="reference internal" href="#drt-tab"><span class="std std-numref">Fig. 15</span></a>):</p>
+<ul class="simple">
+<li><p>the various settings that determine how the DRT calculations are performed</p></li>
+<li><p>combo boxes that can be used to choose the active data set and the active result, and a button for deleting the active result</p></li>
+<li><p>a table of statistics related to the active result</p></li>
+<li><p>a table of the settings that were used to obtain the active result</p></li>
+</ul>
+<figure class="align-default" id="id1">
+<span id="drt-tab"></span><img alt="The DRT analysis tab of a project" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-tab-interpolated.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 15 </span><span class="caption-text">An example of a result obtained with the noisy data set with the interpolated data point near 50 Hz and the TR-RBF method.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>The results are presented in the form of one or more tables (e.g., statistics, scores), a plot of gamma versus time constant, and other plots.
+Some results can be copied to the clipboard in different plain-text formats via the <strong>Output</strong> combo box and the <strong>Copy</strong> button.</p>
+<p>It was mentioned in the <a class="reference internal" href="guide_data.html"><span class="doc">Processing data</span></a> subchapter that some forms of analysis can be sensitive to the omission of a data point.
+Below are some examples of this.
+The overlay plots shown below are created using the <strong>Plotting</strong> tab (more information about that can be found in the <a class="reference internal" href="guide_plotting.html"><span class="doc">Plotting</span></a> subchapter).</p>
+<figure class="align-default" id="id2">
+<span id="drt-overlay"></span><img alt="Three overlaid DRT spectra" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 16 </span><span class="caption-text">Three overlaid DRT spectra that were obtained with the TR-RBF method using the same settings: with outlier (original), without outlier (omitted), and with the outlier replaced (interpolated).
+The presence of the outlier clearly has a significant effect on peak positions in the range above 0.001 s.
+However, omitting the outlier resulted in additional peaks appearing within the 0.01 to 0.1 s range.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id3">
+<span id="drt-overlay-2"></span><img alt="Six overlaid DRT spectra" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid-2.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 17 </span><span class="caption-text">Additional DRT spectra, which were obtained by fitting <strong>R(RC)(RQ)</strong> circuits and calculating the DRT using the m(RQ)fit method, overlaid on top of <a class="reference internal" href="#drt-overlay"><span class="std std-numref">Fig. 16</span></a>.
+The presence of the outlier has shifted the peaks toward lower time constants (original).
+The m(RQ)fit method is less sensitive to the omission of the outlier as can be seen from the two DRT spectra (omitted and interpolated) that are almost identical.
+The two latter spectra also have, e.g., their left-most peaks in the correct position of approximately 0.00016 s which is the expected value based on the known resistance and capacitance values (200 <span class="math notranslate nohighlight">\(\Omega\)</span> and 0.8 <span class="math notranslate nohighlight">\(\mathrm{\mu F}\)</span>, respectively) of the circuit that was used to generate the data sets.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>One can see based on <a class="reference internal" href="#drt-overlay-2"><span class="std std-numref">Fig. 17</span></a> that different DRT methods can produce very different results, but the settings and amount of noise in the data also have a significant effect as can be seen in <a class="reference internal" href="#drt-overlay-3"><span class="std std-numref">Fig. 18</span></a>.</p>
+<figure class="align-default" id="id4">
+<span id="drt-overlay-3"></span><img alt="Four overlaid DRT spectra" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-overlaid-3.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 18 </span><span class="caption-text">In this example two DRT spectra are shown for each of the data sets: ideal (no noise) and interpolated (noisy with the outlier replaced).
+The DRT spectra have been obtained using the TR-RBF method with otherwise identical settings apart from the regularization parameters, <span class="math notranslate nohighlight">\(\lambda\)</span>, that are indicated in the labels found in the plot legend.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>References:</p>
+<ul class="simple">
+<li><p>Boukamp, B.A., 2015, Electrochim. Acta, 154, 35-46, (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2014.12.059">https://doi.org/10.1016/j.electacta.2014.12.059</a>)</p></li>
+<li><p>Boukamp, B.A. and Rolle, A, 2017, Solid State Ionics, 302, 12-18 (<a class="reference external" href="https://doi.org/10.1016/j.ssi.2016.10.009">https://doi.org/10.1016/j.ssi.2016.10.009</a>)</p></li>
+<li><p>Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2015.03.123">https://doi.org/10.1016/j.electacta.2015.03.123</a>)</p></li>
+<li><p>Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2017.07.050">https://doi.org/10.1016/j.electacta.2017.07.050</a>)</p></li>
+<li><p>Kulikovsky, A., 2021, J. Electrochem. Soc., 168, 044512 (<a class="reference external" href="https://doi.org/10.1149/1945-7111/abf508">https://doi.org/10.1149/1945-7111/abf508</a>)</p></li>
+<li><p>Liu, J., Wan, T. H., and Ciucci, F., 2020, Electrochim. Acta, 357, 136864 (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2020.136864">https://doi.org/10.1016/j.electacta.2020.136864</a>)</p></li>
+<li><p>Wan, T. H., Saccoccio, M., Chen, C., and Ciucci, F., 2015, Electrochim. Acta, 184, 483-499 (<a class="reference external" href="https://doi.org/10.1016/j.electacta.2015.09.097">https://doi.org/10.1016/j.electacta.2015.09.097</a>)</p></li>
+</ul>
+</section>
+<section id="applying-old-settings-and-masks">
+<h2>Applying old settings and masks<a class="headerlink" href="#applying-old-settings-and-masks" title="Link to this heading"></a></h2>
+<p>The settings that were used to perform the active analysis result are also presented as a table and these settings can be applied by pressing the <strong>Apply settings</strong> button.</p>
+<p>The mask that was applied to the data set when the analysis was performed can be applied by pressing the <strong>Apply mask</strong> button.
+If the mask that is applied to the data set has changed since an earlier analysis was performed, then that will be indicated clearly above the statistics table.</p>
+<p>These features make it easy to restore old settings/masks in case, e.g., DearEIS has been closed and relaunched, or after trying out different settings.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_validation.html" class="btn btn-neutral float-left" title="Validation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="guide_fitting.html" class="btn btn-neutral float-right" title="Fitting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
