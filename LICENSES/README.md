@@ -33,6 +33,11 @@
 - License: MIT
 - _pyimpspec_ copied code to implement linear Kramers-Kronig tests using matrix solvers.
 
+# Jinja
+- https://github.com/pallets/jinja/
+- License: BSD 3-clause
+- Dependency via _pyimpspec_.
+
 # lmfit
 - https://github.com/lmfit/lmfit-py
 - License: BSD 3-clause

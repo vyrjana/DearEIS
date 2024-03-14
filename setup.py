@@ -11,29 +11,29 @@ entry_points = {
 }
 
 dependencies = [
-    "dearpygui==1.8.0",  # Used to implement the GUI.
-    "pyimpspec~=4.1",  # Used for parsing, fitting, and analyzing impedance spectra.
-    "requests~=2.28",  # Used to check package status on PyPI.
+    "dearpygui~=1.11",  # Used to implement the GUI.
+    "pyimpspec>=4.1.1, == 4.*",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "requests~=2.31",  # Used to check package status on PyPI.
 ]
 
 dev_dependencies = [
-    "build~=0.10",
+    "build~=1.1",
     "flake8~=6.0",
-    "setuptools~=67.2",
-    "sphinx~=5.3",
-    "sphinx-rtd-theme~=1.2",
+    "setuptools~=69.2",
+    "sphinx~=7.2",
+    "sphinx-rtd-theme~=2.0",
 ]
 
 optional_dependencies = {
     "cvxopt": "cvxopt~=1.3",  # Used in the DRT calculations (TR-RBF method)
     "kvxopt": "kvxopt~=1.3",  # Fork of cvxopt that may provide wheels for additional platforms
-    "cvxpy": "cvxpy~=1.3",  # Used in the DRT calculations (TR-RBF method)
+    "cvxpy": "cvxpy~=1.4",  # Used in the DRT calculations (TR-RBF method)
     "dev": dev_dependencies,
 }
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "4.2.0"
+version = "4.2.1"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:
@@ -70,16 +70,17 @@ if __name__ == "__main__":
         entry_points=entry_points,
         install_requires=dependencies,
         extras_require=optional_dependencies,
-        python_requires=">=3.8",
+        python_requires=">=3.9",
         classifiers=[
             "Intended Audience :: Science/Research",
             "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
             "Operating System :: MacOS",
             "Operating System :: Microsoft :: Windows",
             "Operating System :: POSIX :: Linux",
-            "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
             "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
             "Programming Language :: Python :: 3 :: Only",
             "Topic :: Scientific/Engineering :: Chemistry",
             "Topic :: Scientific/Engineering :: Physics",

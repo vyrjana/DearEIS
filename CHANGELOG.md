@@ -1,3 +1,10 @@
+# 4.2.1 (2024/03/14)
+
+- Maintenance release that updates the version requirements for dependencies.
+- Support for Python 3.8 has been dropped due to minimum requirements set by one or more dependencies.
+- Support for Python 3.11 and 3.12 has been added.
+
+
 # 4.2.0 (2023/04/03)
 
 - Added support for choosing between multiple approaches to suggesting the regularization parameter (lambda) in DRT methods utilizing Tikhonov regularization.

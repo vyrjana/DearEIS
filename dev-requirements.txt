@@ -1,5 +1,5 @@
-build~=0.10
+build~=1.1
 flake8~=6.0
-setuptools~=67.2
-sphinx~=5.3
-sphinx-rtd-theme~=1.2
+setuptools~=69.2
+sphinx~=7.2
+sphinx-rtd-theme~=2.0
