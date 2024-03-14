@@ -16,7 +16,7 @@ The package **may** also work on other platforms depending on whether or not tho
 Requirements
 ------------
 
-- `Python <https://www.python.org>`_ (3.8, 3.9, or 3.10)
+- `Python <https://www.python.org>`_ (3.9, 3.10, 3.11, or 3.12)
 - The following Python packages
 
   - `dearpygui <https://github.com/hoffstadt/DearPyGui>`_
