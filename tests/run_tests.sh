@@ -20,9 +20,14 @@
 
 if [ "$#" -ne 1 ]; then
 	echo "Incorrect number of arguments provided! One of the following arguments is allowed at a time:"
-	echo "- all: Run all tests."
+	echo "- all: Run all (non-headless) tests."
 	echo "- api: Run API-related tests."
 	echo "- gui: Run GUI-related tests."
+	echo "- headless: Run headless GUI-related tests."
+	exit
+fi
+if [ "$1" == "headless" ]; then
+	python3 -c "from deareis.program import main; from test_gui import setup_headless_tests; setup_headless_tests(); main()"
 	exit
 fi
 if ! [ "$1" == "gui" ]; then

@@ -36,6 +36,7 @@ from threading import Timer
 from time import time
 from traceback import format_exc
 from typing import (
+    Any,
     Callable,
     Dict,
     List,
@@ -95,6 +96,7 @@ PARENT_FOLDER: str = dirname(__file__)
 TMP_FOLDER: str = gettempdir()
 TMP_PROJECT: str = join(TMP_FOLDER, "deareis_temporary_test_project.json")
 
+HEADLESS: bool = False
 
 START_TIME: float = 0.0
 
@@ -104,6 +106,12 @@ def sleep(delay):
 
 
 def selection_window():
+    if HEADLESS:
+        global START_TIME
+        START_TIME = time()
+        Timer(1.0, test_headless_project).start()
+        return
+
     window = dpg.generate_uuid()
 
     def start_tests(function):
@@ -159,7 +167,10 @@ def finish_tests():
         signals.emit(Signal.CLOSE_PROJECT, force=True)
     print(f"\nFinished in {time() - START_TIME:.2f} s")
     sleep(1.0)
-    selection_window()
+    if HEADLESS:
+        dpg.stop_dearpygui()
+    else:
+        selection_window()
 
 
 def next_step(next_func: Callable = finish_tests, delay: float = 1.0) -> Callable:
@@ -174,6 +185,368 @@ def next_step(next_func: Callable = finish_tests, delay: float = 1.0) -> Callabl
         return inner_wrapper
 
     return outer_wrapper
+
+
+def test_headless_plotting_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.PLOTTING_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step()
+    def preview_export():
+        print("  - Preview export")
+        settings = project_tab.get_active_plot()
+        perform_action(action=Action.EXPORT_PLOT)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.close()
+
+    @next_step(preview_export)
+    def validate_select_all():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_plots()) == 1
+        settings = project_tab.get_active_plot()
+        assert settings.get_num_series() > 0
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_select_all)
+    def select_all():
+        print("  - Select all")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.SELECT_ALL_PLOT_SERIES)
+
+    @next_step(select_all)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_PLOTTING_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Plotting tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.PLOTTING_TAB, context
+
+
+def test_headless_drt_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.DRT_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+    outputs: List[str] = list(
+        [_ for _ in label_to_fit_sim_output.keys() if "statistics" not in _]
+    )
+
+    @next_step(test_headless_plotting_tab)
+    def perform_tr_nnls():
+        print("  - Perform TR-NNLS DRT analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_DRT_SETTINGS,
+            settings=DRTSettings(
+                method=DRTMethod.TR_NNLS,
+                mode=DRTMode.REAL,
+                lambda_value=-1.0,
+                rbf_type=RBFType.CAUCHY,
+                derivative_order=1,
+                rbf_shape=RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=1,
+                num_samples=2000,
+                num_attempts=1,
+                maximum_symmetry=0.5,
+                fit=project_tab.get_active_fit(),
+                gaussian_width=0.15,
+                num_per_decade=30,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
+        STATE.active_modal_window_object.accept()
+        sleep(0.5)
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(perform_tr_nnls)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_DRT_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- DRT tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.DRT_TAB, context
+
+
+def test_headless_fitting_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.FITTING_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+    outputs: List[str] = list(label_to_fit_sim_output.keys())
+
+    @next_step(test_headless_drt_tab)
+    def validate_perform_fit():
+        assert STATE.is_project_dirty(project) is True
+        data = project_tab.get_active_data_set()
+        assert len(project.get_fits(data)) == 2
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_perform_fit)
+    def perform_fit():
+        print("  - Perform fit")
+        assert STATE.is_project_dirty(project) is False
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        signals.emit(
+            Signal.APPLY_FIT_SETTINGS,
+            settings=FitSettings(
+                cdc=parse_cdc("R(RC)(RW)").to_string(),
+                method=CNLSMethod.LEASTSQ,
+                weight=Weight.BOUKAMP,
+                max_nfev=1000,
+            ),
+        )
+        perform_action(action=Action.BATCH_PERFORM_ACTION)
+        sleep(0.5)
+        assert STATE.active_modal_window_object is not None
+        STATE.active_modal_window_object.toggle(index=0)
+        STATE.active_modal_window_object.accept()
+
+    @next_step(perform_fit)
+    def validate_circuit_editor():
+        assert STATE.is_project_dirty(project) is False
+        settings = project_tab.get_fit_settings()
+        assert parse_cdc(settings.cdc).to_string() == "[R(RC)(RQ)]"
+
+    @next_step(validate_circuit_editor)
+    def circuit_editor():
+        print("  - Circuit editor")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_FIT_SETTINGS,
+            settings=FitSettings(
+                cdc=parse_cdc("R(RC)(RQ)").to_string(),
+                method=CNLSMethod.POWELL,
+                weight=Weight.PROPORTIONAL,
+                max_nfev=1000,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.SHOW_CIRCUIT_EDITOR)
+        sleep(0.5)
+        editor = STATE.active_modal_window_object
+        editor.node_clicked(editor.node_handler, (0, editor.parser.nodes[0].tag))
+        sleep(0.5)
+        editor.callback(dpg.get_item_user_data(editor.accept_button))
+
+    @next_step(circuit_editor)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_FITTING_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Fitting tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.FITTING_TAB, context
+
+
+def test_headless_zhit_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.ZHIT_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step(test_headless_fitting_tab)
+    def perform_smoothed_analysis():
+        print("  - Perform smoothed analysis")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_ZHIT_SETTINGS,
+            settings=ZHITSettings(
+                smoothing=ZHITSmoothing.LOWESS,
+                num_points=3,
+                polynomial_order=1,
+                num_iterations=3,
+                interpolation=ZHITInterpolation.AKIMA,
+                window=ZHITWindow.HAMMING,
+                window_center=1.6,
+                window_width=2.0,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(perform_smoothed_analysis)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_ZHIT_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Z-HIT tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.ZHIT_TAB, context
+
+
+def test_headless_kramers_kronig_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.KRAMERS_KRONIG_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step(test_headless_zhit_tab)
+    def perform_exploratory_complex():
+        print("  - Perform exploratory complex test")
+        assert STATE.is_project_dirty(project) is False
+        signals.emit(
+            Signal.APPLY_TEST_SETTINGS,
+            settings=TestSettings(
+                test=Test.COMPLEX,
+                mode=TestMode.EXPLORATORY,
+                num_RC=25,
+                mu_criterion=0.8,
+                add_capacitance=True,
+                add_inductance=True,
+                method=CNLSMethod.LEASTSQ,
+                max_nfev=1,
+            ),
+        )
+        sleep(0.5)
+        perform_action(action=Action.PERFORM_ACTION)
+        sleep(0.5)
+        STATE.active_modal_window_object.accept(
+            result=dpg.get_item_user_data(
+                STATE.active_modal_window_object.accept_button
+            )
+        )
+        sleep(0.5)
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(perform_exploratory_complex)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_KRAMERS_KRONIG_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Kramers-Kronig tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.KRAMERS_KRONIG_TAB, context
+
+
+def test_headless_data_sets_tab():
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    perform_action = lambda action: STATE.keybinding_handler.perform_action(
+        action=action,
+        context=Context.DATA_SETS_TAB,
+        project=project,
+        project_tab=project_tab,
+    )
+
+    @next_step(test_headless_kramers_kronig_tab)
+    def validate_load_data():
+        assert STATE.is_project_dirty(project) is True
+        assert len(project.get_data_sets()) == 1
+        signals.emit(Signal.SAVE_PROJECT)
+
+    @next_step(validate_load_data)
+    def load_data():
+        print("  - Load")
+        assert STATE.is_project_dirty(project) is False
+        path: str = join(PARENT_FOLDER, "data-2.csv")
+        signals.emit(Signal.LOAD_DATA_SET_FILES, paths=[path])
+
+    @next_step(load_data)
+    def switch_tab():
+        STATE.keybinding_handler.perform_action(
+            action=Action.SELECT_DATA_SETS_TAB,
+            context=Context.PROJECT,
+            project=project,
+            project_tab=project_tab,
+        )
+
+    print("\n- Data sets tab")
+    switch_tab()
+    context: Context = project_tab.get_active_context()
+    assert context == Context.DATA_SETS_TAB, context
+
+
+def test_headless_project():
+    project: Optional[Project] = None
+    path = TMP_PROJECT
+    if exists(path):
+        remove(path)
+
+    @next_step(test_headless_data_sets_tab)
+    def validate_saved_project():
+        assert exists(path)
+        assert STATE.is_project_dirty(project) is False
+
+    @next_step(validate_saved_project)
+    def save_project():
+        print("  - Save")
+        signals.emit(Signal.SAVE_PROJECT, path=path)
+
+    @next_step(save_project)
+    def validate_blank_project():
+        nonlocal project
+        assert len(STATE.projects) == 1
+        project = STATE.get_active_project()
+        assert project.get_label() == "Project"
+        assert STATE.is_project_dirty(project) is True
+
+    @next_step(validate_blank_project)
+    def create_project():
+        print("  - Create")
+        signals.emit(Signal.NEW_PROJECT)
+
+    print("\n- Project")
+    create_project()
 
 
 def test_undo_redo():
@@ -2552,7 +2925,10 @@ def test_data_sets_tab():
         assert STATE.is_project_dirty(project) is True
         assert len(project.get_data_sets()) == 6
         data = project_tab.get_active_data_set()
-        assert data.get_label() == "Average - interpolated - added parallel impedance - subtracted"
+        assert (
+            data.get_label()
+            == "Average - interpolated - added parallel impedance - subtracted"
+        )
         signals.emit(Signal.SAVE_PROJECT)
 
     @next_step(validate_subtract_impedances)
@@ -2989,4 +3365,10 @@ def run_tests():
 
 
 def setup_tests():
+    dpg.set_frame_callback(60, run_tests)
+
+
+def setup_headless_tests():
+    global HEADLESS
+    HEADLESS = True
     dpg.set_frame_callback(60, run_tests)
