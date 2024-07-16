@@ -17,10 +17,10 @@ dependencies = [
 ]
 
 dev_dependencies = [
-    "build~=1.1",
-    "flake8~=6.0",
+    "build~=1.2",
+    "flake8~=7.0",
     "setuptools~=70.0",
-    "sphinx~=7.2",
+    "sphinx~=7.3",
     "sphinx-rtd-theme~=2.0",
 ]
 
