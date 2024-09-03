@@ -76,7 +76,13 @@ The number of actions between automatically saving a backup of the current state
 Setting this interval to zero disables automatic backups.
     """.strip(),
         "num_procs": """
-The number of parallel processes to use when performing, e.g., circuit fitting. A value greater than 0 results in that specific number of processes being used. A value of 0 results in N-1 processes being used where N = {} at the moment. The value of N is based on the detected linear algebra libraries that are used by NumPy and by the values of some environment variables used by those libraries.
+The number of parallel processes to use when performing, e.g., circuit fitting. A value greater than 0 results in that specific number of processes being used. A value of 0 results in N-1 processes (minimum of 1) being used where N = {} at the moment. The value of N is based on the detected linear algebra libraries that are used by NumPy and by the values of some environment variables used by those libraries.
+    """.strip(),
+        "plot_admittance": """
+Plot the admittance representation of the immittance data.
+    """.strip(),
+        "plot_drt_frequency": """
+Plot the distribution of relaxation times as a function of frequency.
     """.strip(),
     }
 )

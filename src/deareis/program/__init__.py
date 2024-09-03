@@ -45,6 +45,7 @@ from typing import (
     Union,
 )
 from numpy import (
+    angle,
     array,
     ndarray,
 )
@@ -141,6 +142,7 @@ from .plotting import (
     toggle_plot_series,
 )
 from .check_updates import perform_update_check
+from deareis.typing.helpers import Tag
 from deareis.gui.about import show_help_about
 from deareis.gui.plots import show_modal_plot_window
 from deareis.gui.changelog import show_changelog
@@ -233,14 +235,17 @@ def get_sympy_expr(circuit: Circuit) -> Expr:
     return expr
 
 
+# TODO: Refactor into smaller functions
 def copy_output(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     output: Optional[Union[FitSimOutput, DRTOutput]] = kwargs.get("output")
     if output is None:
         return
+
     clipboard_content: str = ""
     if type(output) is FitSimOutput:
         fit_or_sim: Optional[Union[FitResult, SimulationResult]] = kwargs.get(
@@ -249,12 +254,15 @@ def copy_output(*args, **kwargs):
         data: Optional[DataSet] = kwargs.get("data")
         if fit_or_sim is None:
             return
+
         assert output in fit_sim_output_to_label, "Unsupported output!"
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Generating output")
         if output == FitSimOutput.CDC_BASIC:
             clipboard_content = fit_or_sim.circuit.to_string()
+
         elif output == FitSimOutput.CDC_EXTENDED:
             clipboard_content = fit_or_sim.circuit.to_string(6)
+
         elif output == FitSimOutput.CSV_DATA_TABLE:
             Z_fit_or_sim: ndarray = fit_or_sim.get_impedances()
             dictionary: dict = {}
@@ -284,6 +292,7 @@ def copy_output(*args, **kwargs):
             if dictionary:
                 dataframe = DataFrame.from_dict(dictionary)
                 clipboard_content = dataframe.to_csv(index=False)
+
         elif (
             output == FitSimOutput.CSV_PARAMETERS_TABLE
             or output == FitSimOutput.JSON_PARAMETERS_TABLE
@@ -315,6 +324,7 @@ def copy_output(*args, **kwargs):
                     index=False,
                     floatfmt=".3g",
                 )
+
         elif (
             output == FitSimOutput.CSV_STATISTICS_TABLE
             or output == FitSimOutput.JSON_STATISTICS_TABLE
@@ -338,20 +348,25 @@ def copy_output(*args, **kwargs):
                     index=False,
                     floatfmt=".3g",
                 )
+
         elif output == FitSimOutput.LATEX_DIAGRAM:
             clipboard_content = fit_or_sim.circuit.to_circuitikz()
+
         elif output == FitSimOutput.SVG_DIAGRAM:
             clipboard_content = (
                 fit_or_sim.circuit.to_drawing().get_imagedata(fmt="svg").decode()
             )
+
         elif output == FitSimOutput.SVG_DIAGRAM_NO_LABELS:
             clipboard_content = (
                 fit_or_sim.circuit.to_drawing(hide_labels=True)
                 .get_imagedata(fmt="svg")
                 .decode()
             )
+
         elif output == FitSimOutput.LATEX_EXPR:
             clipboard_content = latex(get_sympy_expr(fit_or_sim.circuit))
+
         elif (
             output == FitSimOutput.SYMPY_EXPR
             or output == FitSimOutput.SYMPY_EXPR_VALUES
@@ -366,7 +381,6 @@ def copy_output(*args, **kwargs):
                 if len(symbols) == 0:
                     clipboard_content = str(expr)
                 else:
-                    # TODO: Update to work with latest version of pyimpspec
                     identifiers: Dict[int, Element] = {
                         v: k
                         for k, v in fit_or_sim.circuit.generate_element_identifiers(
@@ -377,11 +391,13 @@ def copy_output(*args, **kwargs):
                         ", ".join(symbols) + " = sorted(expr.free_symbols, key=str)"
                     )
                     lines.append("parameters = {")
+
                     if "f" in symbols:
                         symbols.remove("f")
                     assert len(symbols) == sum(
                         map(lambda _: len(_.get_values()), identifiers.values())
                     )
+
                     sym: str
                     for sym in symbols:
                         assert "_" in sym
@@ -393,15 +409,19 @@ def copy_output(*args, **kwargs):
                         value = identifiers[ident].get_value(sym)
                         assert value is not None
                         lines.append(f"\t{sym}_{ident}: {value:.6E},")
+
                     lines.append("}")
                     clipboard_content = "\n".join(lines)
+
         else:
             raise Exception(f"Unsupported FitSimOutput: {output=}")
+
     elif type(output) is DRTOutput:
         assert output in drt_output_to_label, "Unsupported output!"
         drt: Optional[DRTResult] = kwargs.get("drt")
         if drt is None:
             return
+
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Generating output")
         if (
             output == DRTOutput.CSV_SCORES
@@ -449,8 +469,10 @@ def copy_output(*args, **kwargs):
                         index=False,
                         floatfmt=".3g",
                     )
+
     else:
         raise Exception(f"Unsupported output type: {type(output)}")
+
     dpg.set_clipboard_text(clipboard_content)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -503,9 +525,11 @@ def select_project_tab(*args, **kwargs):
 def viewport_resized(width: int, height: int):
     STATE.program_window.busy_message.resize(width, height)
     STATE.program_window.error_message.resize(width, height)
+
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project_tab is not None:
         project_tab.resize(width, height)
+    
     modal_window: Optional[int] = STATE.get_active_modal_window()
     if modal_window is None or not dpg.does_item_exist(modal_window):
         return
@@ -514,9 +538,11 @@ def viewport_resized(width: int, height: int):
         STATE.program_window.error_message.window,
     ]:
         return
+
     item_configuration: dict = dpg.get_item_configuration(modal_window)
     if item_configuration.get("no_move", False):
         return
+    
     x: int
     y: int
     w: int
@@ -527,6 +553,7 @@ def viewport_resized(width: int, height: int):
         )
     else:
         x, y, w, h = calculate_window_position_dimensions()
+    
     if "mvFileDialog" in dpg.get_item_type(modal_window):
         dpg.configure_item(
             modal_window,
@@ -548,9 +575,18 @@ def viewport_resized(width: int, height: int):
 def show_enlarged_plot(*args, **kwargs):
     plot: Optional[Plot] = kwargs.get("plot")
     adjust_limits: bool = kwargs.get("adjust_limits", True)
+    admittance: bool = kwargs.get("admittance", False)
+    frequency: bool = kwargs.get("frequency", False)
+
     if plot is None or plot.is_blank():
         return
-    show_modal_plot_window(plot, adjust_limits=adjust_limits)
+
+    show_modal_plot_window(
+        plot,
+        adjust_limits=adjust_limits,
+        admittance=admittance,
+        frequency=frequency,
+    )
 
 
 def copy_plot_data(*args, **kwargs):
@@ -558,6 +594,15 @@ def copy_plot_data(*args, **kwargs):
     context: Optional[Context] = kwargs.get("context")
     if plot is None or plot.is_blank() or context is None:
         return
+
+    admittance: bool = False
+    if hasattr(plot, "admittance"):
+        admittance = plot.admittance
+
+    frequency: bool = False
+    if hasattr(plot, "frequency"):
+        frequency = plot.frequency
+
     dictionary: dict = {}
     series: dict
     label: str
@@ -573,13 +618,22 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
+
             key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
                 key = f"f (Hz) - {label}"
-            dictionary[key] = series["frequency"]
-            dictionary[f"Mod(Z) (ohm) - {label}"] = series["magnitude"]
-            dictionary[f"-Phase(Z) (°) - {label}"] = series["phase"]
+
+            dictionary[key] = series["frequencies"]
+            if admittance is True:
+                Y = series["impedances"] ** -1
+                dictionary[f"Mod(Y) (S) - {label}"] = abs(Y)
+                dictionary[f"Phase(Y) (°) - {label}"] = -angle(Y, deg=True)
+            else:
+                Z = series["impedances"]
+                dictionary[f"Mod(Z) (ohm) - {label}"] = abs(Z)
+                dictionary[f"-Phase(Z) (°) - {label}"] = -angle(Z, deg=True)
+
     elif type(plot) is Nyquist:
         for series in plot.get_series():
             label = "Data"
@@ -594,12 +648,29 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
-            key = f"Re(Z) (ohm) - {label}"
+
+            key = (
+                f"Re(Y) (S) - {label}"
+                if admittance is True
+                else f"Re(Z) (ohm) - {label}"
+            )
             while key in dictionary:
                 label += " "
-                key = f"Re(Z) (ohm) - {label}"
-            dictionary[key] = series["real"]
-            dictionary[f"-Im(Z) (ohm) - {label}"] = series["imaginary"]
+                key = (
+                    f"Re(Y) (S) - {label}"
+                    if admittance is True
+                    else f"Re(Z) (ohm) - {label}"
+                )
+
+            if admittance is True:
+                Y = series["impedances"] ** -1
+                dictionary[key] = Y.real
+                dictionary[f"Im(Y) (S) - {label}"] = Y.imag
+            else:
+                Z = series["impedances"]
+                dictionary[key] = Z.real
+                dictionary[f"-Im(Z) (ohm) - {label}"] = -Z.imag
+
     elif type(plot) is BodeMagnitude:
         for series in plot.get_series():
             label = "Data"
@@ -614,12 +685,20 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
+
             key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
                 key = f"f (Hz) - {label}"
-            dictionary[key] = series["frequency"]
-            dictionary[f"Mod(Z) (ohm) - {label}"] = series["magnitude"]
+
+            dictionary[key] = series["frequencies"]
+            if admittance is True:
+                Y = series["impedances"] ** -1
+                dictionary[f"Mod(Y) (S) - {label}"] = abs(Y)
+            else:
+                Z = series["impedances"]
+                dictionary[f"Mod(Z) (ohm) - {label}"] = abs(Z)
+
     elif type(plot) is BodePhase:
         for series in plot.get_series():
             label = "Data"
@@ -634,17 +713,26 @@ def copy_plot_data(*args, **kwargs):
                 label += " (line)"
             else:
                 label += " (scatter)"
+
             key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
                 key = f"f (Hz) - {label}"
-            dictionary[key] = series["frequency"]
-            dictionary[f"-Phase(Z) (°) - {label}"] = series["phase"]
+
+            dictionary[key] = series["frequencies"]
+            if admittance is True:
+                Y = series["impedances"] ** -1
+                dictionary[f"Phase(Y) (°) - {label}"] = angle(Y, deg=True)
+            else:
+                Z = series["impedances"]
+                dictionary[f"-Phase(Z) (°) - {label}"] = -angle(Z, deg=True)
+
     elif type(plot) is Residuals:
         for series in plot.get_series():
-            dictionary["f (Hz)"] = series["frequency"]
+            dictionary["f (Hz)"] = series["frequencies"]
             dictionary["real_error (%)"] = series["real"]
             dictionary["imag_error (%)"] = series["imaginary"]
+
     elif type(plot) is DRT:
         for series in plot.get_series():
             label = series.get("label")
@@ -656,7 +744,11 @@ def copy_plot_data(*args, **kwargs):
                 suffix = ""
             else:
                 suffix = f" - {label}"
-            dictionary[f"tau (s){suffix}"] = series["tau"]
+
+            dictionary[
+                ("f (Hz)" if frequency else "tau (s)")
+                + suffix
+            ] = series["tau"] ** (-1 if frequency else 1)
             if "imaginary" in series:
                 if "gamma" in series:
                     dictionary[f"gamma_real (ohm){suffix}"] = series["gamma"]
@@ -668,6 +760,7 @@ def copy_plot_data(*args, **kwargs):
                 dictionary[f"gamma_upper (ohm){suffix}"] = series["lower"]
             elif "gamma" in series:
                 dictionary[f"gamma (ohm){suffix}"] = series["gamma"]
+
     elif type(plot) is Impedance:
         for series in plot.get_series():
             label = "Data"
@@ -678,10 +771,18 @@ def copy_plot_data(*args, **kwargs):
                     label = "Fit"
             else:
                 label = series.get("label") or ""
-            dictionary[f"f (Hz) - {label}"] = series["frequency"]
-            dictionary[f"Re(Z) (ohm) - {label}"] = series["real"]
-            dictionary[f"-Im(Z) (ohm) - {label}"] = series["imaginary"]
-    elif type(plot) is ImpedanceReal or type(plot) is ImpedanceImaginary:
+
+            dictionary[f"f (Hz) - {label}"] = series["frequencies"]
+            if admittance is True:
+                Y = series["impedances"] ** -1
+                dictionary[f"Re(Y) (S) - {label}"] = Y.real
+                dictionary[f"Im(Y) (S) - {label}"] = Y.imag
+            else:
+                Z = series["impedances"]
+                dictionary[f"Re(Z) (ohm) - {label}"] = Z.real
+                dictionary[f"-Im(Z) (ohm) - {label}"] = -Z.imag
+
+    elif type(plot) in (ImpedanceReal, ImpedanceImaginary):
         for series in plot.get_series():
             label = "Data"
             if context != Context.PLOTTING_TAB:
@@ -691,15 +792,28 @@ def copy_plot_data(*args, **kwargs):
                     label = "Fit"
             else:
                 label = series.get("label") or ""
+
             key = f"f (Hz) - {label}"
             while key in dictionary:
                 label += " "
                 key = f"f (Hz) - {label}"
-            dictionary[key] = series["x"]
+
+            dictionary[key] = series["frequencies"]
             if type(plot) is ImpedanceReal:
-                dictionary[f"Re(Z) (ohm) - {label}"] = series["y"]
+                if admittance is True:
+                    Y = series["impedances"] ** -1
+                    dictionary[f"Re(Y) (S) - {label}"] = Y.real
+                else:
+                    Z = series["impedances"]
+                    dictionary[f"Re(Z) (ohm) - {label}"] = Z.real
             else:
-                dictionary[f"-Im(Z) (ohm) - {label}"] = series["y"]
+                if admittance is True:
+                    Y = series["impedances"] ** -1
+                    dictionary[f"Im(Y) (S) - {label}"] = Y.imag
+                else:
+                    Z = series["impedances"]
+                    dictionary[f"-Im(Z) (ohm) - {label}"] = -Z.imag
+
     padded_dictionary: Optional[dict] = pad_dataframe_dictionary(dictionary)
     if padded_dictionary is None:
         dpg.set_clipboard_text("")
@@ -712,6 +826,7 @@ def copy_plot_data(*args, **kwargs):
 def restore_unsaved_project_snapshots():
     parsing_errors: Dict[str, str] = {}
     unsaved_project_snapshots: List[str] = STATE.get_unsaved_project_snapshots()
+    
     path: str
     for path in unsaved_project_snapshots:
         try:
@@ -721,9 +836,11 @@ def restore_unsaved_project_snapshots():
         except Exception:
             parsing_errors[path] = format_exc()
             continue
+        
         project_tab, _ = STATE.add_project(project)
         STATE.program_window.select_tab(project_tab)
         signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
+        
         STATE.snapshot_project_state(project)
         signals.emit(
             Signal.RESTORE_PROJECT_STATE,
@@ -731,14 +848,13 @@ def restore_unsaved_project_snapshots():
             project_tab=project_tab,
             state_snapshot=dump_json(project.to_dict(session=True)),
         )
-    for path in unsaved_project_snapshots:
-        if path not in parsing_errors:
-            remove(path)
+
     if parsing_errors:
         total_traceback: str = ""
         traceback: str
         for path, traceback in parsing_errors.items():
             total_traceback += f"{traceback}\nThe exception above was encountered while parsing '{path}'.\n\n"
+        
         signals.emit(
             Signal.SHOW_ERROR_MESSAGE,
             traceback=total_traceback.strip(),
@@ -749,7 +865,7 @@ Encountered error(s) while parsing project file(s). The file(s) might be malform
 
 
 def getting_started_window():
-    window: int = dpg.generate_uuid()
+    window: Tag = dpg.generate_uuid()
 
     def resize(*args, **kwargs):
         x: int
@@ -757,6 +873,7 @@ def getting_started_window():
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(640, 120)
+
         dpg.configure_item(
             window,
             pos=(
@@ -790,12 +907,14 @@ A lot of useful information is presented in this program via tooltips that can b
         """.strip(),
             wrap=620,
         )
+
     dpg.split_frame()
     resize()
 
 
 def initialize_program(args: Namespace):
     assert type(args) is Namespace
+
     signals.register(Signal.VIEWPORT_RESIZED, viewport_resized)
     dpg.set_primary_window(STATE.program_window.window, True)
     dpg.set_viewport_resize_callback(
@@ -805,12 +924,14 @@ def initialize_program(args: Namespace):
             height=dpg.get_viewport_height(),
         )
     )
+    
     signals.register(
         Signal.BLOCK_KEYBINDINGS,
         lambda *a, **k: STATE.keybinding_handler.block(),
     )
     signals.register(Signal.BLOCK_KEYBINDINGS, STATE.set_active_modal_window)
     signals.register(Signal.UNBLOCK_KEYBINDINGS, STATE.keybinding_handler.unblock)
+    
     # Signals that should cause program/project keybindings to be ignored
     # (e.g. when modal windows are shown).
     signals.register(
@@ -833,6 +954,7 @@ def initialize_program(args: Namespace):
             window_object=STATE.program_window.error_message,
         ),
     )
+    
     # Signals for showing/hiding the modal windows for error messages and for indicating when the
     # program is busy e.g. performing a fit.
     signals.register(Signal.SHOW_BUSY_MESSAGE, STATE.program_window.busy_message.show)
@@ -842,9 +964,12 @@ def initialize_program(args: Namespace):
         lambda *a, **k: STATE.program_window.busy_message.hide(),
     )
     signals.register(Signal.SHOW_ERROR_MESSAGE, STATE.program_window.error_message.show)
+
+    # Command palette windows
     signals.register(Signal.SHOW_COMMAND_PALETTE, STATE.show_command_palette)
     signals.register(Signal.SHOW_DATA_SET_PALETTE, STATE.show_data_set_palette)
     signals.register(Signal.SHOW_RESULT_PALETTE, STATE.show_result_palette)
+
     # Settings and help windows
     signals.register(Signal.SHOW_HELP_ABOUT, show_help_about)
     signals.register(Signal.SHOW_HELP_LICENSES, show_license_window)
@@ -859,12 +984,15 @@ def initialize_program(args: Namespace):
         Signal.SHOW_SETTINGS_USER_DEFINED_ELEMENTS,
         lambda: show_user_defined_elements_window(state=STATE),
     )
+
     # Home tab state
     signals.register(Signal.SELECT_HOME_TAB, select_home_tab)
     STATE.set_recent_projects(paths=STATE.get_recent_projects())
+
     # Plots
     signals.register(Signal.SHOW_ENLARGED_PLOT, show_enlarged_plot)
     signals.register(Signal.COPY_PLOT_DATA, copy_plot_data)
+
     # Signals for dealing with projects and project files.
     signals.register(Signal.NEW_PROJECT, new_project)
     signals.register(Signal.SELECT_PROJECT_FILES, select_project_files)
@@ -880,6 +1008,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.REDO_PROJECT_ACTION, redo)
     signals.register(Signal.MODIFY_PROJECT_NOTES, modify_project_notes)
     signals.register(Signal.CLEAR_RECENT_PROJECTS, STATE.clear_recent_projects)
+
     # Signals for the data sets tab
     signals.register(Signal.LOAD_DATA_SET_FILES, load_data_set_files)
     signals.register(Signal.SELECT_DATA_SET, select_data_set)
@@ -896,11 +1025,13 @@ def initialize_program(args: Namespace):
     signals.register(Signal.TOGGLE_DATA_POINT, toggle_data_point)
     signals.register(Signal.APPLY_DATA_SET_MASK, apply_data_set_mask)
     signals.register(Signal.LOAD_SIMULATION_AS_DATA_SET, load_simulation_as_data_set)
+
     # Signals for the Kramers-Kronig tab
     signals.register(Signal.PERFORM_TEST, perform_test)
     signals.register(Signal.SELECT_TEST_RESULT, select_test_result)
     signals.register(Signal.DELETE_TEST_RESULT, delete_test_result)
     signals.register(Signal.APPLY_TEST_SETTINGS, apply_test_settings)
+
     # Signals for the Z-HIT tab
     signals.register(Signal.APPLY_ZHIT_SETTINGS, apply_zhit_settings)
     signals.register(Signal.DELETE_ZHIT_RESULT, delete_zhit_result)
@@ -908,22 +1039,26 @@ def initialize_program(args: Namespace):
     signals.register(Signal.PREVIEW_ZHIT_WEIGHTS, preview_zhit_weights)
     signals.register(Signal.SELECT_ZHIT_RESULT, select_zhit_result)
     signals.register(Signal.LOAD_ZHIT_AS_DATA_SET, load_zhit_as_data_set)
+
     # Signals for the DRT tab
     signals.register(Signal.PERFORM_DRT, perform_drt)
     signals.register(Signal.SELECT_DRT_RESULT, select_drt_result)
     signals.register(Signal.DELETE_DRT_RESULT, delete_drt_result)
     signals.register(Signal.APPLY_DRT_SETTINGS, apply_drt_settings)
+
     # Signals for the fitting tab
     signals.register(Signal.PERFORM_FIT, perform_fit)
     signals.register(Signal.SELECT_FIT_RESULT, select_fit_result)
     signals.register(Signal.COPY_OUTPUT, copy_output)
     signals.register(Signal.DELETE_FIT_RESULT, delete_fit_result)
     signals.register(Signal.APPLY_FIT_SETTINGS, apply_fit_settings)
+
     # Signals for the simulation tab
     signals.register(Signal.PERFORM_SIMULATION, perform_simulation)
     signals.register(Signal.SELECT_SIMULATION_RESULT, select_simulation_result)
     signals.register(Signal.DELETE_SIMULATION_RESULT, delete_simulation_result)
     signals.register(Signal.APPLY_SIMULATION_SETTINGS, apply_simulation_settings)
+
     # Signals for the plotting tab
     signals.register(Signal.NEW_PLOT_SETTINGS, new_plot_settings)
     signals.register(Signal.SELECT_PLOT_SETTINGS, select_plot_settings)
@@ -943,18 +1078,23 @@ def initialize_program(args: Namespace):
     )
     signals.register(Signal.EXPORT_PLOT, export_plot)
     signals.register(Signal.SAVE_PLOT, save_plot)
+
     # Miscellaneous
     signals.register(Signal.BATCH_PERFORM_ANALYSIS, select_batch_data_sets)
     signals.register(Signal.CHECK_UPDATES, perform_update_check)
     signals.register(Signal.SHOW_CHANGELOG, show_changelog)
+
+    # Program is actually starting to function at this point
     dpg.split_frame(delay=100)
     STATE.program_window.busy_message.resize(
         dpg.get_viewport_width(),
         dpg.get_viewport_height(),
     )
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Rendering assets")
     signals.emit(Signal.RENDER_MATH)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
+    
     signals.register(
         Signal.REFRESH_USER_DEFINED_ELEMENTS,
         refresh_user_defined_elements,
@@ -963,15 +1103,20 @@ def initialize_program(args: Namespace):
         Signal.REFRESH_USER_DEFINED_ELEMENTS,
         path=STATE.config.user_defined_elements_path,
     )
+    
     # signals.register(Signal., )
     if args.data_files:
         signals.emit(Signal.NEW_PROJECT, data=args.data_files)
+    
     if args.project_files:
         signals.emit(Signal.LOAD_PROJECT_FILES, paths=args.project_files)
+    
     restore_unsaved_project_snapshots()
+    
     signals.emit_backlog()
     signals.register(Signal.SHOW_GETTING_STARTED_WINDOW, getting_started_window)
     STATE.check_version()
+    
     try:
         STATE.config.validate_keybindings(STATE.config.keybindings)
     except AssertionError:
@@ -990,6 +1135,7 @@ def program_closing():
         )
     )
     STATE.serialize_project_snapshots(dirty_projects)
+
     clean_projects: List[Project] = list(
         filter(
             lambda _: not STATE.is_project_dirty(_)
@@ -998,6 +1144,7 @@ def program_closing():
         )
     )
     STATE.clear_project_backups(clean_projects)
+
     STATE.save_recent_projects()
     STATE.config.save()
 

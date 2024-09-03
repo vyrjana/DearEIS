@@ -51,6 +51,7 @@ from deareis.keybindings import is_control_down, is_shift_down
 from deareis.signals import Signal
 import deareis.signals as signals
 import deareis.themes as themes
+from deareis.typing.helpers import Tag
 
 
 class FileDialog:
@@ -64,22 +65,27 @@ class FileDialog:
         if not exists(cwd):
             cwd = getcwd()
         self._cwd: str = cwd
+
         label: str = kwargs.get("label", "File dialog")
         assert type(label) is str, label
+        
         extensions: List[str] = kwargs.get("extensions", [".*"])
         assert type(extensions) is list and len(extensions) > 0, extensions
+        
         default_extension: str = kwargs.get("default_extension", extensions[0])
         assert default_extension in extensions, (
             default_extension,
             extensions,
         )
+        
         self._callback: Callable = kwargs["callback"]
         self._cancel_callback: Optional[Callable] = kwargs.get("cancel_callback", None)
         self._save: bool = kwargs.get("save", False)
         self._merge: bool = kwargs.get("merge", False)
         self._multiple: bool = kwargs.get("multiple", True)
-        self._window: int = dpg.generate_uuid()
+        self._window: Tag = dpg.generate_uuid()
         self._input_widgets: List[int] = []
+        
         x: int
         y: int
         w: int
@@ -99,6 +105,7 @@ class FileDialog:
                 if self._save:
                     dpg.add_button(label="N", callback=lambda: self.create_directory())
                     attach_tooltip("Create a new directory." + "\n\nShortcut: Ctrl+N")
+                
                 dpg.add_button(
                     label="R",
                     callback=lambda: self.reset_path(),
@@ -107,9 +114,11 @@ class FileDialog:
                     f"Reset to current working directory: '{self._cwd}'."
                     + "\n\nShortcut: Ctrl+R"
                 )
+                
                 dpg.add_button(label="E", callback=lambda: self.edit_path())
                 attach_tooltip("Edit the path via input." + "\n\nShortcut: Ctrl+E")
-                self._path_combo: int = dpg.generate_uuid()
+                
+                self._path_combo: Tag = dpg.generate_uuid()
                 dpg.add_combo(
                     tag=self._path_combo,
                     width=-1,
@@ -121,7 +130,8 @@ class FileDialog:
                     "Navigate to different parts of the current path."
                     + "\n\nShortcut: Backspace"
                 )
-                self._path_input: int = dpg.generate_uuid()
+                
+                self._path_input: Tag = dpg.generate_uuid()
                 dpg.add_input_text(
                     hint="Path...",
                     callback=lambda s, a, u: self.update_current_path(a),
@@ -131,22 +141,26 @@ class FileDialog:
                     tag=self._path_input,
                 )
                 self._input_widgets.append(self._path_input)
+
             with dpg.group(horizontal=True):
                 dpg.add_button(label="C", callback=lambda: self.clear_search())
                 attach_tooltip("Clear the search input." + "\n\nShortcut: Ctrl+C")
-                self._search_input: int = dpg.generate_uuid()
+                
+                self._search_input: Tag = dpg.generate_uuid()
                 dpg.add_input_text(
                     hint="Find...",
                     width=-100 if not self._save else -1,
                     tag=self._search_input,
                     callback=lambda s, a, u: dpg.set_value(self._table, a.lower()),
                 )
+                
                 self._input_widgets.append(self._search_input)
                 attach_tooltip(
                     "Search for something based on a substring."
                     + "\n\nShortcut: Ctrl+F"
                 )
-                self._extension_combo: int = dpg.generate_uuid()
+                
+                self._extension_combo: Tag = dpg.generate_uuid()
                 dpg.add_combo(
                     default_value=default_extension,
                     items=extensions,
@@ -159,7 +173,8 @@ class FileDialog:
                     "Filter files based on their extension."
                     + "\n\nShortcut: Page up/down"
                 )
-            self._table: int = dpg.generate_uuid()
+            
+            self._table: Tag = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -176,24 +191,29 @@ class FileDialog:
                         width_fixed=True,
                         width=24,
                     )
+                
                 dpg.add_table_column(
                     label="",
                     width_fixed=True,
                     width=24,
                 )
+                
                 dpg.add_table_column(
                     label="Name",
                 )
+                
                 dpg.add_table_column(
                     label="Size",
                     width_fixed=True,
                     width=200,
                 )
+                
                 dpg.add_table_column(
                     label="Modified",
                     width_fixed=True,
                     width=200,
                 )
+            
             with dpg.group(horizontal=True):
                 button_pad: int = 12
                 if not self._save:
@@ -202,12 +222,14 @@ class FileDialog:
                         callback=lambda: self.load_files(),
                     )
                     attach_tooltip("Shortcut: Enter")
+                    
                     if self._multiple:
                         dpg.add_button(
                             label="Select all".ljust(button_pad),
                             callback=lambda: self.select_files(state=True),
                         )
                         attach_tooltip("Shortcut: Ctrl+A")
+                        
                         dpg.add_button(
                             label="Unselect all".ljust(button_pad),
                             callback=lambda: self.select_files(state=False),
@@ -219,7 +241,8 @@ class FileDialog:
                         callback=lambda: self.save_file(),
                     )
                     attach_tooltip("Shortcut: Enter")
-                    self._name_input: int = dpg.generate_uuid()
+                    
+                    self._name_input: Tag = dpg.generate_uuid()
                     dpg.add_input_text(
                         hint="Name...",
                         callback=lambda: self.save_file(),
@@ -228,7 +251,8 @@ class FileDialog:
                         tag=self._name_input,
                     )
                     self._input_widgets.append(self._name_input)
-                    self._name_extension_combo: int = dpg.generate_uuid()
+                    
+                    self._name_extension_combo: Tag = dpg.generate_uuid()
                     dpg.add_combo(
                         default_value=default_extension,
                         items=extensions,
@@ -238,22 +262,26 @@ class FileDialog:
                         ),
                         tag=self._name_extension_combo,
                     )
+
         self.update_current_path(self._cwd)
         self.show()
 
     def hide(self):
         dpg.hide_item(self._window)
+        
         if dpg.does_item_exist(self._key_handler):
             dpg.delete_item(self._key_handler)
+
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
     def show(self):
-        self._key_handler: int = dpg.generate_uuid()
+        self._key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self._key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,
                 callback=lambda: self.close(keybinding=True),
             )
+            
             if self._save:
                 dpg.add_key_release_handler(
                     key=dpg.mvKey_N,
@@ -272,6 +300,7 @@ class FileDialog:
                     key=dpg.mvKey_Return,
                     callback=lambda: self.load_files(keybinding=True),
                 )
+            
             dpg.add_key_release_handler(
                 key=dpg.mvKey_R,
                 callback=lambda: self.reset_path(keybinding=True),
@@ -300,9 +329,12 @@ class FileDialog:
                 key=dpg.mvKey_Clear,
                 callback=self.go_back_one_folder,
             )
+
         dpg.show_item(self._window)
+        
         if self._save:
             dpg.focus_item(self._name_input)
+        
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self._window, window_object=self)
 
     def close(self, cancel: bool = False, keybinding: bool = False):
@@ -311,8 +343,10 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+        
         self.hide()
         dpg.delete_item(self._window)
+        
         if cancel is True and callable(self._cancel_callback):
             dpg.split_frame(delay=33)
             self._cancel_callback()
@@ -321,16 +355,18 @@ class FileDialog:
         assert type(keybinding) is bool, keybinding
         if keybinding and not is_control_down():
             return
+        
         self.hide()
         dpg.split_frame(delay=33)
+        
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(400, 40)
-        key_handler: int = dpg.generate_uuid()
-        window: int = dpg.generate_uuid()
-        name_input: int = dpg.generate_uuid()
+        key_handler: Tag = dpg.generate_uuid()
+        window: Tag = dpg.generate_uuid()
+        name_input: Tag = dpg.generate_uuid()
 
         def close(path: str = ""):
             dpg.delete_item(window)
@@ -378,6 +414,7 @@ class FileDialog:
         dpg.show_item(window)
         dpg.split_frame()
         dpg.focus_item(name_input)
+
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
     def clear_search(self, keybinding: bool = False):
@@ -387,12 +424,14 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+        
         dpg.set_value(self._table, "")
         dpg.set_value(self._search_input, "")
 
     def focus_search(self, keybinding: bool = False):
         if keybinding and not is_control_down():
             return
+        
         dpg.focus_item(self._search_input)
 
     def select_files(self, state: Optional[bool] = None, keybinding: bool = False):
@@ -403,24 +442,31 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+        
         state = not is_shift_down()
         assert state is not None
+        
         filter_key: str = dpg.get_value(self._search_input).lower()
         files: Dict[int, Optional[str]] = {}
+        
         row: int
         for row in dpg.get_item_children(self._table, slot=1):
             if not is_filtered_item_visible(row, filter_key):
                 continue
-            size_text: int = dpg.get_item_children(row, slot=1)[-2]
+            
+            size_text: Tag = dpg.get_item_children(row, slot=1)[-2]
             if dpg.get_value(size_text) == "":
                 continue
+            
             files[row] = dpg.get_item_user_data(row)
+        
         path: Optional[str]
         for row, path in files.items():
-            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+            checkbox: Tag = dpg.get_item_children(row, slot=1)[0]
             assert "mvCheckbox" in dpg.get_item_type(checkbox), dpg.get_item_type(
                 checkbox
             )
+            
             if state and path is None:
                 dpg.set_value(checkbox, state)
                 dpg.set_item_user_data(row, dpg.get_item_user_data(checkbox)[1])
@@ -435,12 +481,14 @@ class FileDialog:
         assert type(keybinding) is bool, keybinding
         if keybinding and not is_control_down():
             return
+
         self.update_current_path(self._cwd)
 
     def edit_path(self, keybinding: bool = False):
         assert type(keybinding) is bool, keybinding
         if keybinding and not is_control_down():
             return
+        
         dpg.hide_item(self._path_combo)
         dpg.show_item(self._path_input)
         dpg.set_value(self._path_input, self.get_current_path())
@@ -449,6 +497,7 @@ class FileDialog:
     def update_current_path(self, path: str):
         if not exists(path):
             return
+        
         self.clear_search()
         self.update_path_combo(path)
         self.update_contents_table(path)
@@ -457,17 +506,20 @@ class FileDialog:
         dpg.hide_item(self._path_input)
         lookup: Dict[str, str] = {}
         items: List[str] = []
+
+        suffix: str = ""
         a: str
         b: str
-        suffix: str = ""
         a, b = split(path)
         while b != "":
             items.insert(0, b + suffix)
             lookup[b + suffix] = join(a, b)
             a, b = split(a)
             suffix += " "
+        
         items.insert(0, a + suffix)
         lookup[a + suffix] = a
+        
         dpg.configure_item(
             self._path_combo,
             default_value=path,
@@ -483,6 +535,10 @@ class FileDialog:
         dpg.delete_item(self._table, children_only=True, slot=1)
         for _, dirs, files in walk(root):
             break
+        else:
+            dirs = []
+            files = []
+
         dirs.sort()
         files.sort()
         dpg.push_container_stack(self._table)
@@ -493,6 +549,7 @@ class FileDialog:
             with dpg.table_row(filter_key=directory.lower()):
                 if not self._save:
                     dpg.add_checkbox(enabled=False, show=False)
+
                 if islink(path):
                     path = str(Path(path).resolve())
                     dpg.add_text("L")
@@ -500,6 +557,7 @@ class FileDialog:
                 else:
                     dpg.add_text("D")
                     attach_tooltip("Directory")
+                
                 dpg.bind_item_theme(
                     dpg.add_button(
                         label=directory,
@@ -511,18 +569,23 @@ class FileDialog:
                 )
                 dpg.add_text("", show=False)
                 dpg.add_text("", show=False)
+
         for file in files:
             if not (
                 extension_filter == ".*" or file.lower().endswith(extension_filter)
             ):
                 continue
+            
             path = join(root, file)
             link: bool = False
+            
             if islink(path):
                 path = str(Path(path).resolve())
                 if not exists(path):
                     continue
-                link = True
+                else:
+                    link = True
+            
             row: int
             with dpg.table_row(filter_key=file.lower()) as row:
                 if not self._save:
@@ -537,17 +600,20 @@ class FileDialog:
                         enabled=self._multiple,
                         show=self._multiple,
                     )
+                    
                     if self._multiple:
                         attach_tooltip(
                             "Select multiple files to "
                             + ("merge." if self._merge else "load.")
                         )
+                
                 if link:
                     dpg.add_text("L")
                     attach_tooltip(f"Link to file: '{path}'")
                 else:
                     dpg.add_text("F")
                     attach_tooltip("File")
+                
                 dpg.bind_item_theme(
                     dpg.add_button(
                         label=file,
@@ -559,6 +625,7 @@ class FileDialog:
                 )
                 dpg.add_text(self.format_size(getsize(path)))
                 dpg.add_text(format_timestamp(getmtime(path)))
+
         dpg.pop_container_stack()
 
     def format_size(self, num_bytes: int) -> str:
@@ -573,20 +640,24 @@ class FileDialog:
             "ZiB",
             "YiB",
         ]
+
         i: int = 0
         value: float = float(num_bytes)
         while value > 1.0:
             i += 1
             value /= 1024
+
         i -= 1
         if i < 0:
             i = 0
+
         return f"{float(num_bytes) / pow(1024, i):.3g} {suffixes[i]}".ljust(9)
 
     def click_file(self, path: str):
         if not self._save:
             if self._merge:
                 return
+
             self.hide()
             self._callback(paths=[path])
             self.close()
@@ -599,6 +670,7 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+
         paths: List[str] = list(
             filter(
                 lambda _: _ is not None,
@@ -610,6 +682,7 @@ class FileDialog:
         )
         if not paths:
             return
+
         self.hide()
         self._callback(paths=paths, merge=self._merge)
         self.close()
@@ -620,15 +693,19 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+
         name: str = dpg.get_value(self._name_input).strip()
         if name == "":
             dpg.focus_item(self._name_input)
             return
+        
         self.hide()
         path: str = join(self.get_current_path(), name)
+        
         extension: str = dpg.get_value(self._name_extension_combo)
         if not path.endswith(extension):
             path += extension
+        
         self._callback(path=path)
         self.close()
 
@@ -638,6 +715,7 @@ class FileDialog:
             or self.has_active_input()
         ):
             return
+        
         path: str = self.get_current_path()
         root: str = dirname(path)
         if exists(root):

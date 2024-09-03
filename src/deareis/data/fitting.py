@@ -62,7 +62,11 @@ from deareis.utility import (
 from deareis.data import DataSet
 
 
-VERSION: int = 2
+VERSION: int = 3
+
+
+def _parse_fitted_parameter_v3(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_fitted_parameter_v2(dictionary: dict) -> dict:
@@ -73,6 +77,7 @@ def _parse_fitted_parameter_v1(dictionary: dict) -> dict:
     stderr: Optional[float] = dictionary.get("stderr")
     dictionary["stderr"] = stderr if stderr is not None else nan
     dictionary["unit"] = ""
+
     return dictionary
 
 
@@ -96,21 +101,26 @@ class FittedParameter(pyimpspec.FittedParameter):
         version: int = dictionary["version"]
         del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+
         parsers: Dict[int, Callable] = {
             1: _parse_fitted_parameter_v1,
             2: _parse_fitted_parameter_v2,
+            3: _parse_fitted_parameter_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         assert "value" in dictionary
         assert "stderr" in dictionary
         assert "fixed" in dictionary
         assert "unit" in dictionary
+
         return Class(**dictionary)
 
     def to_dict(self) -> dict:
@@ -130,7 +140,14 @@ class FittedParameter(pyimpspec.FittedParameter):
         }
 
 
+def _parse_settings_v3(dictionary: dict) -> dict:
+    return dictionary
+
+
 def _parse_settings_v2(dictionary: dict) -> dict:
+    if "timeout" not in dictionary:
+        dictionary["timeout"] = 0
+
     return dictionary
 
 
@@ -156,12 +173,17 @@ class FitSettings:
 
     max_nfev: int
         The maximum number of function evaluations to use when performing the fit.
+
+    timeout: int
+        The amount of time in seconds that a single fit is allowed to take before being timed out.
+        If this values is less than one, then no time limit is imposed.
     """
 
     cdc: str
     method: CNLSMethod
     weight: Weight
     max_nfev: int
+    timeout: int
 
     def __repr__(self) -> str:
         return f"FitSettings ({hex(id(self))})"
@@ -185,23 +207,30 @@ class FitSettings:
         version: int = dictionary["version"]
         del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
             2: _parse_settings_v2,
+            3: _parse_settings_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         assert "cdc" in dictionary
         assert "method" in dictionary
         assert "weight" in dictionary
         assert "max_nfev" in dictionary
+        assert "timeout" in dictionary
+
         dictionary["method"] = CNLSMethod(dictionary["method"])
         dictionary["weight"] = Weight(dictionary["weight"])
+
         return Class(**dictionary)
 
     def to_dict(self) -> dict:
@@ -218,12 +247,18 @@ class FitSettings:
             "method": self.method,
             "weight": self.weight,
             "max_nfev": self.max_nfev,
+            "timeout": self.timeout,
         }
+
+
+def _parse_result_v3(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_result_v2(dictionary: dict) -> dict:
     if "pseudo_chisqr" not in dictionary:
         dictionary["pseudo_chisqr"] = nan
+
     return dictionary
 
 
@@ -233,11 +268,14 @@ def _parse_result_v1(dictionary: dict) -> dict:
         rename_dict_entry(dictionary, "real_impedance", "real_impedances")
     if "imaginary_impedance" in dictionary:
         rename_dict_entry(dictionary, "imaginary_impedance", "imaginary_impedances")
+
     rename_dict_entry(dictionary, "real_residual", "real_residuals")
     rename_dict_entry(dictionary, "imaginary_residual", "imaginary_residuals")
+
     old_parameters: dict = dictionary["parameters"]
     new_parameters: dict = {}
     counts: Dict[str, int] = {}
+
     key: str
     for key in sorted(old_parameters.keys()):
         name: str = key.split("_", 1)[0]
@@ -245,7 +283,9 @@ def _parse_result_v1(dictionary: dict) -> dict:
             counts[name] = 0
         counts[name] += 1
         new_parameters[f"{name}_{counts[name]}"] = old_parameters[key]
+
     dictionary["parameters"] = new_parameters
+
     return dictionary
 
 
@@ -371,17 +411,21 @@ class FitResult:
         version: int = dictionary["version"]
         del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
             2: _parse_result_v2,
+            3: _parse_result_v3,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         assert "uuid" in dictionary
         assert "timestamp" in dictionary
         assert "circuit" in dictionary
@@ -401,7 +445,9 @@ class FitResult:
         assert "method" in dictionary
         assert "weight" in dictionary
         assert "settings" in dictionary
+
         dictionary["circuit"] = pyimpspec.parse_cdc(dictionary["circuit"])
+
         dictionary["parameters"] = {
             element_label: {
                 parameter_label: FittedParameter.from_dict(param)
@@ -409,7 +455,9 @@ class FitResult:
             }
             for element_label, parameters in dictionary["parameters"].items()
         }
+
         dictionary["frequencies"] = array(dictionary["frequencies"])
+
         if (
             "real_impedances" not in dictionary
             or "imaginary_impedances" not in dictionary
@@ -431,10 +479,20 @@ class FitResult:
             )
             del dictionary["real_impedances"]
             del dictionary["imaginary_impedances"]
+
         mask: Dict[str, bool] = dictionary["mask"]
-        dictionary["mask"] = {
-            i: mask.get(str(i), False) for i in range(0, len(dictionary["frequencies"]))
-        }
+        if data is not None:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(data.get_frequencies(masked=None)))
+            }
+        else:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(dictionary["frequencies"]))
+            }
+        dictionary["mask"] = mask
+
         dictionary["residuals"] = array(
             list(
                 map(
@@ -448,21 +506,24 @@ class FitResult:
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
+
         dictionary["settings"] = FitSettings.from_dict(dictionary["settings"])
+
         if isnan(dictionary["pseudo_chisqr"]):
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
                 Z_exp=data.get_impedances(),
                 Z_fit=dictionary["impedances"],
             )
+
         return Class(**dictionary)
 
-    def to_dict(self, session: bool) -> dict:
+    def to_dict(self, session: bool = True) -> dict:
         """
         Return a dictionary that can be used to recreate an instance.
 
         Parameters
         ----------
-        session: bool
+        session: bool, optional
             If False, then a minimal dictionary is generated to reduce file size.
 
         Returns
@@ -470,6 +531,7 @@ class FitResult:
         dict
         """
         assert type(session) is bool, session
+
         dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
@@ -483,7 +545,7 @@ class FitResult:
                 for element_label, parameters in self.parameters.items()
             },
             "frequencies": list(self.frequencies),
-            "mask": {k: True for k, v in self.mask.items() if v is True},
+            "mask": self.mask.copy(),
             "real_residuals": list(self.residuals.real),
             "imaginary_residuals": list(self.residuals.imag),
             "pseudo_chisqr": self.pseudo_chisqr,
@@ -498,13 +560,24 @@ class FitResult:
             "weight": self.weight,
             "settings": self.settings.to_dict(),
         }
-        if session:
+
+        if session is True:
+            # Used during a session for plots since time would otherwise
+            # have to be spent recalculating the impedances when switching
+            # between results.
             dictionary.update(
                 {
                     "real_impedances": list(self.impedances.real),
                     "imaginary_impedances": list(self.impedances.imag),
                 }
             )
+
+        if not session:
+            # This helps to reduce the file sizes of projects.
+            dictionary["mask"] = {
+                k: v for k, v in dictionary["mask"].items() if v is True
+            }
+
         return dictionary
 
     def to_statistics_dataframe(self) -> DataFrame:
@@ -527,6 +600,7 @@ class FitResult:
             "Method": cnls_method_to_label[self.method],
             "Weight": weight_to_label[self.weight],
         }
+
         return DataFrame.from_dict(
             {
                 "Label": list(statistics.keys()),
@@ -560,11 +634,12 @@ class FitResult:
         external_identifiers: Dict[
             Element, int
         ] = self.circuit.generate_element_identifiers(running=False)
+
         element_label: str
         parameters: Union[Dict[str, FittedParameter], Dict[int, Dict[str, float]]]
         element: Element
         ident: int
-        for (element, ident) in sorted(
+        for element, ident in sorted(
             internal_identifiers.items(),
             key=lambda _: _[1],
         ):
@@ -594,6 +669,7 @@ class FitResult:
                 )
                 fixed.append("Yes" if param.fixed else "No")
                 units.append(param.unit)
+
         return DataFrame.from_dict(
             {
                 "Element": element_labels,
@@ -616,7 +692,9 @@ class FitResult:
         cdc: str = self.circuit.to_string()
         if cdc.startswith("[") and cdc.endswith("]"):
             cdc = cdc[1:-1]
+
         timestamp: str = format_timestamp(self.timestamp)
+
         return f"{cdc} ({timestamp})"
 
     def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
@@ -640,6 +718,7 @@ class FitResult:
                     self.frequencies, num_per_decade
                 )
             return self._cached_frequencies[num_per_decade]
+
         return self.frequencies
 
     def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
@@ -663,6 +742,7 @@ class FitResult:
                     self.get_frequencies(num_per_decade)
                 )
             return self._cached_impedances[num_per_decade]
+
         return self.impedances
 
     def get_nyquist_data(
@@ -687,6 +767,7 @@ class FitResult:
                 Z.real,
                 -Z.imag,
             )
+
         return (
             self.impedances.real,
             -self.impedances.imag,
@@ -716,6 +797,7 @@ class FitResult:
                 abs(Z),
                 -angle(Z, deg=True),
             )
+
         return (
             self.frequencies,
             abs(self.impedances),

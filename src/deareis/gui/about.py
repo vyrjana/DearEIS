@@ -34,6 +34,7 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 class AboutWindow:
@@ -63,7 +64,8 @@ class AboutWindow:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(270, 100)
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="About",
             modal=True,

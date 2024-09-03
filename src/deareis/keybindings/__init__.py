@@ -42,9 +42,10 @@ from deareis.data import (
     DataSet,
     FitResult,
     SimulationResult,
-    TestResult,
+    KramersKronigResult,
     ZHITResult,
 )
+from deareis.typing.helpers import Tag
 
 
 def is_shift_down() -> bool:
@@ -72,13 +73,18 @@ def filter_keybindings(key: int, keybindings: List[Keybinding]) -> List[Keybindi
     for kb in keybindings:
         if key not in kb:
             continue
+        
         if kb.mod_alt is not is_alt_pressed:
             continue
+        
         if kb.mod_ctrl is not is_control_pressed:
             continue
+        
         if kb.mod_shift is not is_shift_pressed:
             continue
+        
         filtered_keybindings.append(kb)
+
     return filtered_keybindings
 
 
@@ -89,6 +95,7 @@ class KeybindingHandler:
         self.keybindings: List[Keybinding] = keybindings
         if not keybindings:
             return
+
         self.key_handler: int = -1
         self.register(self.keybindings)
 
@@ -103,6 +110,7 @@ class KeybindingHandler:
             for kb in keybindings:
                 if kb.key in registered_keys:
                     continue
+
                 registered_keys.add(kb.key)
                 dpg.add_key_release_handler(
                     key=kb.key,
@@ -127,12 +135,14 @@ class KeybindingHandler:
                 signals.emit(Signal.UNBLOCK_KEYBINDINGS)
             else:
                 return
+
         filtered_keybindings: List[Keybinding] = filter_keybindings(
             key=key,
             keybindings=self.keybindings,
         )
         if not filtered_keybindings:
             return
+
         project = self.state.get_active_project()  # Optional[Project]
         project_tab = self.state.get_active_project_tab()  # Optional[ProjectTab]
         context: Context
@@ -155,6 +165,7 @@ class KeybindingHandler:
             )
         if not filtered_keybindings:
             return
+
         context = (
             project_tab.get_active_context()
             if project_tab is not None
@@ -163,6 +174,7 @@ class KeybindingHandler:
         # Check for active input fields
         if project_tab is not None and project_tab.has_active_input(context):
             return
+
         try:
             self.validate_keybindings(filtered_keybindings)
             self.perform_action(
@@ -226,7 +238,7 @@ class KeybindingHandler:
             assert project is not None
             assert project_tab is not None
             # Project-level
-            test: Optional[TestResult]
+            test: Optional[KramersKronigResult]
             fit: Optional[FitResult]
             if action == Action.SAVE_PROJECT:
                 signals.emit(Signal.SAVE_PROJECT)
@@ -512,10 +524,7 @@ class KeybindingHandler:
                     )
             elif action == Action.LOAD_SIMULATION_AS_DATA_SET:
                 if context == Context.SIMULATION_TAB:
-                    signals.emit(
-                        Signal.LOAD_SIMULATION_AS_DATA_SET,
-                        simulation=project_tab.get_active_simulation(),
-                    )
+                    project_tab.start_loading_simulation_as_data_set()
             elif action == Action.LOAD_ZHIT_AS_DATA_SET:
                 if context == Context.ZHIT_TAB:
                     signals.emit(
@@ -618,11 +627,6 @@ class KeybindingHandler:
                     project_tab.fitting_tab.show_circuit_editor()
                 elif context == Context.SIMULATION_TAB:
                     project_tab.simulation_tab.show_circuit_editor()
-            elif action == Action.ADJUST_PARAMETERS:
-                if context == Context.FITTING_TAB:
-                    project_tab.fitting_tab.show_parameter_adjustment()
-                elif context == Context.SIMULATION_TAB:
-                    project_tab.simulation_tab.show_parameter_adjustment()
             elif action == Action.COPY_DRT_DATA:
                 signals.emit(
                     Signal.COPY_PLOT_DATA,
@@ -713,7 +717,7 @@ class KeybindingHandler:
                 settings = project_tab.get_active_plot()  # Optional[PlotSettings]
                 # Project-level: plotting tab
                 data_sets: List[DataSet]
-                tests: List[TestResult]
+                tests: List[KramersKronigResult]
                 zhits: List[ZHITResult]
                 drts: List[DRTResult]
                 fits: List[FitResult]
@@ -784,13 +788,14 @@ class TemporaryKeybindingHandler:
     def __init__(self, callbacks: Dict[Keybinding, Callable] = {}):
         self._blocked: bool = False
         self.callbacks: Dict[Keybinding, Callable] = callbacks
-        self.key_handler: int = dpg.generate_uuid()
+        self.key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             registered_keys: Set[int] = set()
             kb: Keybinding
             for kb in callbacks:
                 if kb.key in registered_keys:
                     continue
+
                 registered_keys.add(kb.key)
                 dpg.add_key_release_handler(
                     key=kb.key,
@@ -810,12 +815,14 @@ class TemporaryKeybindingHandler:
     def process(self, key: int):
         if self._blocked is True:
             return
+
         filtered_keybindings: List[Keybinding] = filter_keybindings(
             key=key,
             keybindings=list(self.callbacks.keys()),
         )
         if not filtered_keybindings:
             return
+
         try:
             self.validate_keybindings(
                 {kb: self.callbacks[kb] for kb in filtered_keybindings}

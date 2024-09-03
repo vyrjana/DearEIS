@@ -28,6 +28,8 @@ from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.keybindings import Keybinding, dpg_to_string
 from deareis.config import DEFAULT_KEYBINDINGS
+from deareis.typing.helpers import Tag
+
 
 
 class KeybindingTable:
@@ -36,16 +38,18 @@ class KeybindingTable:
         self.description_filter_input: int = description_filter_input
         self.state = state
         self.remapping: bool = False
-        self.info_window: int = dpg.generate_uuid()
+
+        self.info_window: Tag = dpg.generate_uuid()
         with dpg.child_window(width=-1, height=-26, tag=self.info_window):
-            self.info_text: int = dpg.generate_uuid()
+            self.info_text: Tag = dpg.generate_uuid()
             dpg.add_text(
                 "",
                 tag=self.info_text,
                 user_data="Press a key or Esc to clear the current key mapping...",
                 wrap=680,
             )
-        self.table: int = dpg.generate_uuid()
+
+        self.table: Tag = dpg.generate_uuid()
         with dpg.table(
             borders_outerV=True,
             borders_outerH=True,
@@ -61,16 +65,19 @@ class KeybindingTable:
                 width_fixed=True,
             )
             attach_tooltip("Whether or not the Alt modifier key is required.")
+
             dpg.add_table_column(
                 label=" C",
                 width_fixed=True,
             )
             attach_tooltip("Whether or not the Ctrl modifier key is required.")
+
             dpg.add_table_column(
                 label=" S",
                 width_fixed=True,
             )
             attach_tooltip("Whether or not the Shift modifier key is required.")
+
             self.key_padding: int = max(list(map(len, list(dpg_to_string.values()))))
             dpg.add_table_column(
                 label="Key".ljust(self.key_padding),
@@ -79,9 +86,11 @@ class KeybindingTable:
             attach_tooltip(
                 "Press a button in this column to remap the key. Note that not all keys are supported. Press 'Esc' while remapping to clear the key instead of remapping it to another key."
             )
+
             dpg.add_table_column(
                 label="Description",
             )
+
         self.reset()
 
     def is_remapping(self) -> bool:
@@ -92,8 +101,12 @@ class KeybindingTable:
         action: Action
         description: str
         for action, description in action_descriptions.items():
+            if description.startswith("DEPRECATED:"):
+                continue
+
             if action in (Action.CANCEL, Action.CUSTOM):
                 continue
+
             kb: Optional[Keybinding] = self.find_keybinding(action)
             filter_key: str = "|".join(
                 [str(kb) if kb else "", description.lower()]
@@ -137,14 +150,18 @@ class KeybindingTable:
                         "action": action,
                     },
                 )
+
                 short_description: str = description.split("\n")[0]
                 description_limit: int = 64
                 if len(short_description) > description_limit:
                     short_description = short_description[:description_limit] + "..."
+
                 if short_description.endswith(":"):
                     short_description = short_description[:-1] + "..."
+
                 dpg.add_text(short_description)
                 attach_tooltip(description)
+
         self.filter()
 
     def filter(self):
@@ -160,16 +177,19 @@ class KeybindingTable:
                     dpg.show_item(row)
                 else:
                     dpg.hide_item(row)
+
             elif key:
                 if key in key_filter:
                     dpg.show_item(row)
                 else:
                     dpg.hide_item(row)
+
             elif description:
                 if description in description_filter:
                     dpg.show_item(row)
                 else:
                     dpg.hide_item(row)
+
             else:
                 dpg.show_item(row)
 
@@ -178,11 +198,13 @@ class KeybindingTable:
         for kb in self.state.config.keybindings:
             if kb.action == action:
                 return kb
+
         return None
 
     def toggle_mod_key(self, sender: int, state: bool, kb: Optional[Keybinding]):
         if kb is None:
             return
+
         keybindings: List[Keybinding] = self.state.config.keybindings.copy()
         keybindings.remove(kb)
         keybindings.append(
@@ -194,6 +216,7 @@ class KeybindingTable:
                 kb.action,
             )
         )
+
         try:
             self.state.config.validate_keybindings(keybindings)
         except Exception as e:
@@ -204,6 +227,7 @@ class KeybindingTable:
             t: Timer = Timer(5, self.reset)
             t.start()
             return
+
         try:
             self.state.config.keybindings = keybindings
             self.state.keybinding_handler.register(keybindings)
@@ -225,6 +249,7 @@ class KeybindingTable:
         for row in dpg.get_item_children(self.table, slot=1):
             if dpg.get_item_user_data(row) != action:
                 continue
+
             cell: int
             for cell in dpg.get_item_children(row, slot=1):
                 user_data: Any = dpg.get_item_user_data(cell)
@@ -232,11 +257,12 @@ class KeybindingTable:
                     continue
                 elif user_data.get("mod") == mod:
                     return dpg.get_value(cell)
+
         return False
 
     def begin_remap(self, kb: Optional[Keybinding], action: Action):
         self.remapping = True
-        self.key_handler: int = dpg.generate_uuid()
+        self.key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             key: int
             for key in dpg_to_string:
@@ -244,16 +270,19 @@ class KeybindingTable:
                     key=key,
                     callback=lambda s, a, u: self.end_remap(a, kb, action),
                 )
+
         dpg.hide_item(self.table)
         dpg.show_item(self.info_window)
 
     def end_remap(self, key: int, kb: Optional[Keybinding], action: Action):
         if dpg.does_item_exist(self.key_handler):
             dpg.delete_item(self.key_handler)
+
         self.remapping = False
         keybindings: List[Keybinding] = self.state.config.keybindings.copy()
         if kb is not None:
             keybindings.remove(kb)
+
         if key != dpg.mvKey_Escape:
             kb = Keybinding(
                 key,
@@ -263,6 +292,7 @@ class KeybindingTable:
                 action,
             )
             keybindings.append(kb)  # type: ignore
+
         try:
             self.state.config.validate_keybindings(keybindings)
         except Exception as e:
@@ -271,6 +301,7 @@ class KeybindingTable:
             t: Timer = Timer(5, self.reset)
             t.start()
             return
+
         try:
             self.state.config.keybindings = keybindings
             self.state.keybinding_handler.register(keybindings)
@@ -293,7 +324,8 @@ class KeybindingRemapping:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(720, 540)
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Settings - keybindings",
             modal=True,
@@ -308,8 +340,9 @@ class KeybindingRemapping:
             on_close=self.close,
             tag=self.window,
         ):
-            key_filter_input: int = dpg.generate_uuid()
-            description_filter_input: int = dpg.generate_uuid()
+            key_filter_input: Tag = dpg.generate_uuid()
+            description_filter_input: Tag = dpg.generate_uuid()
+
             with dpg.group(horizontal=True):
                 dpg.add_input_text(
                     callback=lambda s, a, u: self.table.filter(),
@@ -322,6 +355,7 @@ class KeybindingRemapping:
 Filter based on keys or modifiers ('alt', 'ctrl', or 'shift'). Multiple modifiers and a key can be filtered by using '+' as a separator (e.g. 'alt+shift+n').
                 """.strip()
                 )
+
                 dpg.add_input_text(
                     callback=lambda s, a, u: self.table.filter(),
                     hint="Filter description(s)",
@@ -333,19 +367,25 @@ Filter based on keys or modifiers ('alt', 'ctrl', or 'shift'). Multiple modifier
 Filter based on descriptions.
                 """.strip()
                 )
+
             self.table: KeybindingTable = KeybindingTable(
                 key_filter_input, description_filter_input, state
             )
+
             with dpg.group(horizontal=True):
                 button_pad: int = 12
-                dpg.add_button(label="Clear all".ljust(button_pad), callback=self.clear_all)
+                dpg.add_button(
+                    label="Clear all".ljust(button_pad), callback=self.clear_all
+                )
                 dpg.add_button(label="Reset".ljust(button_pad), callback=self.reset)
-        self.key_handler: int = dpg.generate_uuid()
+
+        self.key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,
                 callback=self.close,
             )
+
         signals.emit(Signal.BLOCK_KEYBINDINGS, window=self.window, window_object=self)
 
     def clear_all(self):
@@ -361,8 +401,11 @@ Filter based on descriptions.
     def close(self):
         if self.table.is_remapping():
             return
+
         if dpg.does_item_exist(self.window):
             dpg.delete_item(self.window)
+
         if dpg.does_item_exist(self.key_handler):
             dpg.delete_item(self.key_handler)
+
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)

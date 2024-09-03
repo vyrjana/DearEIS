@@ -27,6 +27,7 @@ liu2020: str = "DOI:10.1016/j.electacta.2020.136864"
 boukamp2015: str = "DOI:10.1016/j.electacta.2014.12.059"
 boukamp2017: str = "DOI:10.1016/j.ssi.2016.10.009"
 cultrera2020: str = "DOI:10.1088/2633-1357/abad0d"
+maradesa2023: str = "DOI:10.1149/1945-7111/acbca4"
 
 drt = SimpleNamespace(
     **{
@@ -34,19 +35,19 @@ drt = SimpleNamespace(
 The method to use when calculating the distribution of relaxation times.
 
 BHT: Bayesian Hilbert transform method.
-- {liu2020}
+- Liu et al. (2020, {liu2020})
 
 TR-NNLS: Tikhonov regularization combined with non-negative least squares fitting.
-- {kulikovsky2021}
+- Kulikovsky (2021, {kulikovsky2021})
 
 TR-RBF: Tikhonov regularization combined with radial basis function (or piecewise linear) discretization and convex optimization.
-- {wan2015}
-- {ciucci2015}
-- {effat2017}
+- Wan et al. (2015, {wan2015})
+- Ciucci and Chen (2015, {ciucci2015})
+- Effat and Ciucci (2017, {effat2017})
 
 m(RQ)fit: multi-(RQ) complex non-linear least squares fit.
-- {boukamp2015}
-- {boukamp2017}
+- Boukamp (2015, {boukamp2015})
+- Boukamp and Rolle (2017, {boukamp2017})
 
 The TR-NNLS method is very fast while the slower TR-RBF method provides the ability to optionally also calculate Bayesian credible intervals. The BHT method, while temperamental due to randomization of initial values, is able to provide numerical scores that can be used to assess the quality of an impedance spectrum. The m(RQ)fit method requires a suitable fitted circuit but may be able to distinguish peaks that are in close proximity and would only show up as broad peaks in some other methods.
     """.strip(),
@@ -59,11 +60,13 @@ The data to use when performing the calculations:
 This is only used when the method setting is set to TR-NNLS or TR-RBF.
     """.strip(),
         "lambda_value": f"""
-The regularization parameter to use as part of the Tikhonov regularization. If the checkbox next to the input field is ticked, then an attempt will be made to automatically find a suitable value. However, further tweaking of the value manually is recommended.
-
-More than one approach for suggesting a suitable regularization parameter may be available (e.g., 'L-curve corner search' from {cultrera2020}). It may be necessary to use a lower value for the 'Maximum symmetry' setting (e.g., 0.1) when using the TR-RBF method and the 'L-curve corner search' algorithm to suggest a suitable regularization parameter.
+The regularization parameter to use as part of the Tikhonov regularization. If the checkbox next to the input field is ticked, then an attempt will be made to automatically find a suitable value. However, further tweaking of the value manually may be necessary. More than one approach for suggesting a suitable regularization parameter may be available.
 
 This is only used when the method setting is set to TR-NNLS or TR-RBF.
+
+References:
+- Cultrera and Callegaro (2020, {cultrera2020})
+- Maradesa et al. (2023, {maradesa2023})
     """.strip(),
         "shape_coeff": """
 The input value, k, for the shape coefficient used in the shape type (see the setting above).
@@ -89,7 +92,7 @@ The number of attempts to make to find a solution using the BHT method. The init
         "maximum_symmetry": """
 Poor results with significant oscillation can be discarded automatically by defining a limit for the ratio of the vertical peak-to-peak symmetry allowed in the DRT plot. The limit is defined as a ratio from 0.0 to 1.0. A smaller value provides a stricter condition as the absolute value of the most positive peak must be greater than the absolute value of the most negative peak.
 
-This is only used when the method setting is set to BHT or TR-RBF.
+This is only used when the method setting is set to BHT.
     """.strip(),
         "perform": f"""
 DRT analyses work best with data sets where the imaginary part of the impedance approaches zero at both the low- and high-frequency ends of the recorded frequency range. Thus, some data sets may require some processing if they exhibit, e.g., inductive behavior at high frequencies and/or increasing impedance at low frequencies due to diffusion.
@@ -114,7 +117,7 @@ The Hellinger distance between the Hilbert transformed impedances and the DRT im
 The Jensen-Shannon distance between the Hilbert transformed impedances and the DRT impedances (i.e., without the high-frequency resistance and inductance).
     """.strip(),
         "circuit": """
-The fitted circuit to use to calculate the distribution of relaxation times.
+The fitted circuit to use to calculate the distribution of relaxation times. The circuit must be constructed and fitted in the 'Fitting' tab for it to show up here.
 
 Valid circuits consist of one or more parallel RQ (or RC) circuits in series. An optional series resistance may also be included. For example, the following circuits would be valid:
 - (RC)

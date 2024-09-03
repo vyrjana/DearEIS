@@ -137,7 +137,9 @@ _QUEUE: Optional[Dict[Signal, List[Tuple[tuple, dict]]]] = {}
 def emit(signal: Signal, *args, **kwargs):
     global _REGISTERED_CALLBACKS
     global _QUEUE
+    
     assert type(signal) is Signal, signal
+    
     if _QUEUE is not None and signal not in _REGISTERED_CALLBACKS:
         if signal not in _QUEUE:
             _QUEUE[signal] = []
@@ -148,7 +150,9 @@ def emit(signal: Signal, *args, **kwargs):
             )
         )
         return
+    
     assert signal in _REGISTERED_CALLBACKS, signal
+    
     try:
         if DEBUG:
             print(f"\nsignals.emit: {str(signal)}")
@@ -160,6 +164,7 @@ def emit(signal: Signal, *args, **kwargs):
                         print(f" - {repr(arg)[:80]}...")
                     else:
                         print(f" - {repr(arg)}")
+            
             if kwargs:
                 print("- kwargs:")
                 key: str
@@ -170,12 +175,13 @@ def emit(signal: Signal, *args, **kwargs):
                     else:
                         print(f" - {key}: {repr(value)}")
             print("- entries:")
-        entry: Tuple[Callable, int]
+
         func: Callable
         uuid: int
         for (func, uuid) in _REGISTERED_CALLBACKS[signal]:
             if DEBUG:
                 print(f" - {uuid}: {repr(func)}")
+            
             func(*args, **kwargs)
     except Exception:
         if signal == Signal.SHOW_ERROR_MESSAGE:
@@ -187,10 +193,13 @@ def emit(signal: Signal, *args, **kwargs):
 def register(signal: Signal, callback: Callable) -> int:
     global _UUID_COUNTER
     global _REGISTERED_CALLBACKS
+    
     assert type(signal) is Signal, signal
+    
     try:
         if signal not in _REGISTERED_CALLBACKS:
             _REGISTERED_CALLBACKS[signal] = []
+        
         _UUID_COUNTER += 1
         _REGISTERED_CALLBACKS[signal].append(
             (
@@ -198,15 +207,18 @@ def register(signal: Signal, callback: Callable) -> int:
                 _UUID_COUNTER,
             )
         )
+        
         if DEBUG:
             print(f"\nsignals.register: {str(signal)}")
             print(f"- callback: {callback} ({_UUID_COUNTER})")
+        
         return _UUID_COUNTER
     except Exception:
         if signal == Signal.SHOW_ERROR_MESSAGE:
             print(format_exc())
         else:
             emit(Signal.SHOW_ERROR_MESSAGE, format_exc())
+        
         return -1
 
 
@@ -215,17 +227,20 @@ def unregister(
     callback: Optional[Callable] = None,
     uuid: Optional[int] = None,
 ):
+    global _REGISTERED_CALLBACKS
+
     if DEBUG:
         print(f"\nsignals.unregister: {str(signal)}")
         print(f"- callback: {callback}")
         print(f"- uuid: {uuid}")
-    global _REGISTERED_CALLBACKS
+    
     assert type(signal) is Signal, signal
     assert callback is not None or type(uuid) is int and uuid > 0, (
         callback,
         uuid,
     )
     assert signal in _REGISTERED_CALLBACKS, signal
+    
     try:
         chosen_entry: Optional[Tuple[Callable, int]] = None
         entry: Tuple[Callable, int]
@@ -233,7 +248,9 @@ def unregister(
             if entry[0] == callback or entry[1] == uuid:
                 chosen_entry = entry
                 break
+        
         assert chosen_entry is not None
+        
         _REGISTERED_CALLBACKS[signal].remove(chosen_entry)
     except Exception:
         if signal == Signal.SHOW_ERROR_MESSAGE:
@@ -243,11 +260,14 @@ def unregister(
 
 
 def clear(signal: Signal):
+    global _REGISTERED_CALLBACKS
+
     if DEBUG:
         print(f"\nsignals.clear: {str(signal)}")
-    global _REGISTERED_CALLBACKS
+    
     assert type(signal) is Signal, signal
     assert signal in _REGISTERED_CALLBACKS, signal
+    
     try:
         del _REGISTERED_CALLBACKS[signal]
     except Exception:
@@ -259,9 +279,11 @@ def clear(signal: Signal):
 
 def emit_backlog():
     global _QUEUE
+    
     signal: Signal
     queue: List[Tuple[list, dict]]
     for signal, queue in _QUEUE.items():
         for (args, kwargs) in queue:
             emit(signal, *args, **kwargs)
+    
     _QUEUE = None

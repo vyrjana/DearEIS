@@ -25,14 +25,17 @@ from typing import (
 )
 import dearpygui.dearpygui as dpg
 from numpy import (
+    angle,
     array,
     ceil,
+    complex128,
     floor,
     log10 as log,
     ndarray,
 )
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
 class Bode(Plot):
@@ -40,6 +43,7 @@ class Bode(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -52,19 +56,19 @@ class Bode(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis_1: int = dpg.add_plot_axis(
+            self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Mod(Z) (ohm)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis_2: int = dpg.add_plot_axis(
+            self._y_axis_2: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="-Phase(Z) (°)",
                 no_gridlines=True,
@@ -101,9 +105,8 @@ class Bode(Plot):
                     dpg.get_item_children(self._y_axis_2, slot=1),
                 )
             ):
-                self._series[i]["frequency"] = array([])
-                self._series[i]["magnitude"] = array([])
-                self._series[i]["phase"] = array([])
+                self._series[i]["frequencies"] = array([])
+                self._series[i]["impedances"] = array([], dtype=complex128)
                 dpg.set_value(series_1, [[], []])
                 dpg.set_value(series_2, [[], []])
 
@@ -114,12 +117,16 @@ class Bode(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        mag: ndarray = kwargs["magnitude"]
-        phase: ndarray = kwargs["phase"]
+
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        mag: ndarray = abs(X)
+        phase: ndarray = angle(X, deg=True) * (1 if self._admittance is True else -1)
+
         assert type(freq) is ndarray, freq
         assert type(mag) is ndarray, mag
         assert type(phase) is ndarray, phase
+
         i: int
         series_1: int
         series_2: int
@@ -134,19 +141,25 @@ class Bode(Plot):
             self._series[index].update(kwargs)
             dpg.set_value(series_1, [list(freq), list(mag)])
             dpg.set_value(series_2, [list(freq), list(phase)])
+            dpg.show_item(series_1)
+            dpg.show_item(series_2)
             break
 
     def plot(self, *args, **kwargs) -> Tuple[int, int]:
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        mag: ndarray = kwargs["magnitude"]
-        phase: ndarray = kwargs["phase"]
+
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        mag: ndarray = abs(X)
+        phase: ndarray = angle(X, deg=True) * (1 if self._admittance is True else -1)
+
         labels: Tuple[str, str] = kwargs["labels"]
         sim: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         show_labels: bool = kwargs.get("show_labels", True)
         themes: Optional[Tuple[int, int]] = kwargs.get("themes")
+
         assert type(freq) is ndarray, freq
         assert type(mag) is ndarray, mag
         assert type(phase) is ndarray, phase
@@ -156,6 +169,7 @@ class Bode(Plot):
         assert type(line) is bool, line
         assert (type(themes) is tuple and len(themes) == 2) or themes is None, themes
         assert type(show_labels) is bool, show_labels
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         x: list = list(freq)
@@ -174,6 +188,7 @@ class Bode(Plot):
         if themes is not None:
             dpg.bind_item_theme(tag_mag, themes[0])
             dpg.bind_item_theme(tag_phase, themes[1])
+
         return (
             tag_mag,
             tag_phase,
@@ -187,31 +202,40 @@ class Bode(Plot):
             return
         else:
             self.limits_adjusted()
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y1_min: Optional[float] = None
         y1_max: Optional[float] = None
         y2_min: Optional[float] = None
         y2_max: Optional[float] = None
+
         for kwargs in self._series:
-            freq: ndarray = kwargs["frequency"]
-            mag: ndarray = kwargs["magnitude"]
-            phase: ndarray = kwargs["phase"]
+            freq: ndarray = kwargs["frequencies"]
+            X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+            mag: ndarray = abs(X)
+            phase: ndarray = angle(X, deg=True) * (
+                1 if self._admittance is True else -1
+            )
+
             if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
+
             if mag.size > 0:
                 if y1_min is None or min(mag) < y1_min:
                     y1_min = min(mag)
                 if y1_max is None or max(mag) > y1_max:
                     y1_max = max(mag)
+
             if phase.size > 0:
                 if y2_min is None or min(phase) < y2_min:
                     y2_min = min(phase)
                 if y2_max is None or max(phase) > y2_max:
                     y2_max = max(phase)
+
         if x_min is None:
             x_min = 0.0
             x_max = 1.0
@@ -223,19 +247,23 @@ class Bode(Plot):
             dx: float = 0.1
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
+
             dy: float = 0.1
             y1_min = 10 ** (floor(log(y1_min) / dy) * dy - dy)
             y1_max = 10 ** (ceil(log(y1_max) / dy) * dy + dy)
             if log(y1_max) - log(y1_min) < 1.0:
                 y1_min = 10 ** floor(log(y1_min))
                 y1_max = 10 ** ceil(log(y1_max))
+
             n: int = 5
             y2_min = floor(y2_min / n) * n - n
             y2_max = ceil(y2_max / n) * n + n
+
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis_1, ymin=y1_min, ymax=y1_max)
         dpg.set_axis_limits(self._y_axis_2, ymin=y2_min, ymax=y2_max)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
@@ -258,10 +286,38 @@ class Bode(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
         dpg.set_axis_limits_auto(self._y_axis_2)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._y_axis_1,
+            "Mod(Y) (S)" if self._admittance is True else "Mod(Z) (ohm)",
+        )
+        dpg.set_item_label(
+            self._y_axis_2,
+            "Phase(Y) (°)" if self._admittance is True else "-Phase(Z) (°)",
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance
 
 
 class BodeMagnitude(Plot):
@@ -269,6 +325,7 @@ class BodeMagnitude(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -281,18 +338,19 @@ class BodeMagnitude(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis: int = dpg.add_plot_axis(
+            self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Mod(Z) (ohm)",
                 log_scale=True,
                 no_gridlines=True,
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -301,6 +359,7 @@ class BodeMagnitude(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -317,10 +376,14 @@ class BodeMagnitude(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        mag: ndarray = kwargs["magnitude"]
+
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        mag: ndarray = abs(X)
+
         assert type(freq) is ndarray, freq
         assert type(mag) is ndarray, mag
+
         i: int
         series: int
         for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
@@ -328,18 +391,21 @@ class BodeMagnitude(Plot):
                 continue
             self._series[index].update(kwargs)
             dpg.set_value(series, [list(freq), list(mag)])
+            dpg.show_item(series)
             break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        mag: ndarray = kwargs["magnitude"]
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        mag: ndarray = abs(X)
         label: str = kwargs["label"]
         sim: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         theme: Optional[int] = kwargs.get("theme")
         show_label: bool = kwargs.get("show_label", True)
+
         assert type(freq) is ndarray, freq
         assert type(mag) is ndarray, mag
         assert type(label) is str, label
@@ -348,6 +414,7 @@ class BodeMagnitude(Plot):
         assert type(line) is bool, line
         assert type(theme) is int or theme is None, theme
         assert type(show_label) is bool, show_label
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         tag: int = func(
@@ -358,6 +425,7 @@ class BodeMagnitude(Plot):
         )
         if theme is not None:
             dpg.bind_item_theme(tag, theme)
+
         return tag
 
     def adjust_limits(self):
@@ -368,23 +436,29 @@ class BodeMagnitude(Plot):
             return
         else:
             self.limits_adjusted()
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y_min: Optional[float] = None
         y_max: Optional[float] = None
+
         for kwargs in self._series:
-            freq: ndarray = kwargs["frequency"]
-            mag: ndarray = kwargs["magnitude"]
+            freq: ndarray = kwargs["frequencies"]
+            X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+            mag: ndarray = abs(X)
+
             if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
+
             if mag.size > 0:
                 if y_min is None or min(mag) < y_min:
                     y_min = min(mag)
                 if y_max is None or max(mag) > y_max:
                     y_max = max(mag)
+
         if x_min is None:
             x_min = 0.0
             x_max = 1.0
@@ -394,15 +468,18 @@ class BodeMagnitude(Plot):
             dx: float = 0.1
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
+
             dy: float = 0.1
             y_min = 10 ** (floor(log(y_min) / dy) * dy - dy)
             y_max = 10 ** (ceil(log(y_max) / dy) * dy + dy)
             if log(y_max) - log(y_min) < 1.0:
                 y_min = 10 ** floor(log(y_min))
                 y_max = 10 ** ceil(log(y_max))
+
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis, ymin=y_min, ymax=y_max)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
@@ -422,9 +499,33 @@ class BodeMagnitude(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._y_axis,
+            "Mod(Y) (S)" if self._admittance is True else "Mod(Z) (ohm)",
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance
 
 
 class BodePhase(Plot):
@@ -432,6 +533,7 @@ class BodePhase(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -444,17 +546,18 @@ class BodePhase(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis: int = dpg.add_plot_axis(
+            self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="-Phase(Z) (°)",
                 no_gridlines=True,
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -463,6 +566,7 @@ class BodePhase(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -479,29 +583,36 @@ class BodePhase(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        phase: ndarray = kwargs["phase"]
+
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        phase: ndarray = angle(X, deg=True) * (1 if self._admittance is True else -1)
+
         assert type(freq) is ndarray, freq
         assert type(phase) is ndarray, phase
+
         i: int
-        series: int
+        series: Tag
         for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
             if i != index:
                 continue
             self._series[index].update(kwargs)
             dpg.set_value(series, [list(freq), list(phase)])
+            dpg.show_item(series)
             break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        phase: ndarray = kwargs["phase"]
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        phase: ndarray = angle(X, deg=True) * (1 if self._admittance is True else -1)
         label: str = kwargs["label"]
         sim: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         theme: Optional[int] = kwargs.get("theme")
         show_label: bool = kwargs.get("show_label", True)
+
         assert type(freq) is ndarray, freq
         assert type(phase) is ndarray, phase
         assert type(label) is str, label
@@ -510,6 +621,7 @@ class BodePhase(Plot):
         assert type(line) is bool, line
         assert type(theme) is int or theme is None, theme
         assert type(show_label) is bool, show_label
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         tag: int = func(
@@ -520,6 +632,7 @@ class BodePhase(Plot):
         )
         if theme is not None:
             dpg.bind_item_theme(tag, theme)
+
         return tag
 
     def adjust_limits(self):
@@ -530,23 +643,31 @@ class BodePhase(Plot):
             return
         else:
             self.limits_adjusted()
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y_min: Optional[float] = None
         y_max: Optional[float] = None
+
         for kwargs in self._series:
-            freq: ndarray = kwargs["frequency"]
-            phase: ndarray = kwargs["phase"]
+            freq: ndarray = kwargs["frequencies"]
+            X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+            phase: ndarray = angle(X, deg=True) * (
+                1 if self._admittance is True else -1
+            )
+
             if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
+
             if phase.size > 0:
                 if y_min is None or min(phase) < y_min:
                     y_min = min(phase)
                 if y_max is None or max(phase) > y_max:
                     y_max = max(phase)
+
         if x_min is None:
             x_min = 0.0
             x_max = 1.0
@@ -556,12 +677,15 @@ class BodePhase(Plot):
             dx: float = 0.1
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
+
             n: int = 5
             y_min = floor(y_min / n) * n - n
             y_max = ceil(y_max / n) * n + n
+
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis, ymin=y_min, ymax=y_max)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
@@ -581,6 +705,30 @@ class BodePhase(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._y_axis,
+            "Phase(Y) (°)" if self._admittance is True else "-Phase(Z) (°)",
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance

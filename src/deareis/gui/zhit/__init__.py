@@ -27,13 +27,11 @@ from typing import (
 from numpy import (
     array,
     allclose,
+    complex128,
     log10 as log,
     ndarray,
 )
-from pyimpspec import (
-    ComplexImpedances,
-    ComplexResiduals,
-)
+from pyimpspec import ComplexResiduals
 from pyimpspec.analysis.utility import _calculate_residuals
 import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
@@ -47,14 +45,17 @@ from deareis.enums import (
     Context,
     ZHITInterpolation,
     ZHITSmoothing,
+    ZHITRepresentation,
     ZHITWindow,
     label_to_zhit_interpolation,
+    label_to_zhit_representation,
     label_to_zhit_smoothing,
     label_to_zhit_window,
     value_to_zhit_interpolation,
     value_to_zhit_smoothing,
     value_to_zhit_window,
     zhit_interpolation_to_label,
+    zhit_representation_to_label,
     zhit_smoothing_to_label,
     zhit_window_to_label,
 )
@@ -76,6 +77,8 @@ from deareis.gui.shared import (
     ResultsCombo,
 )
 from deareis.utility import pad_tab_labels
+from deareis.gui.widgets.combo import Combo
+from deareis.typing.helpers import Tag
 
 
 class SettingsMenu:
@@ -87,19 +90,21 @@ class SettingsMenu:
         with dpg.group(horizontal=True):
             dpg.add_text("Smoothing".rjust(label_pad))
             attach_tooltip(tooltips.zhit.smoothing)
-            self.smoothing_combo: int = dpg.generate_uuid()
+
             smoothing_items: List[str] = list(label_to_zhit_smoothing.keys())
-            dpg.add_combo(
+            self.smoothing_combo: Combo = Combo(
                 items=smoothing_items,
                 default_value=zhit_smoothing_to_label[default_settings.smoothing],
                 callback=lambda s, a, u: self.update_settings(),
+                user_data=label_to_zhit_smoothing,
                 width=-1,
-                tag=self.smoothing_combo,
             )
-        self.num_points_input: int = dpg.generate_uuid()
+
         with dpg.group(horizontal=True):
             dpg.add_text("Number of points".rjust(label_pad))
             attach_tooltip(tooltips.zhit.num_points)
+
+            self.num_points_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=default_settings.num_points,
                 min_value=2,
@@ -109,10 +114,12 @@ class SettingsMenu:
                 width=-1,
                 tag=self.num_points_input,
             )
-        self.polynomial_order_input: int = dpg.generate_uuid()
+
         with dpg.group(horizontal=True):
             dpg.add_text("Polynomial order".rjust(label_pad))
             attach_tooltip(tooltips.zhit.polynomial_order)
+
+            self.polynomial_order_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=default_settings.polynomial_order,
                 min_value=1,
@@ -122,10 +129,12 @@ class SettingsMenu:
                 width=-1,
                 tag=self.polynomial_order_input,
             )
-        self.num_iterations_input: int = dpg.generate_uuid()
+
         with dpg.group(horizontal=True):
             dpg.add_text("Number of iterations".rjust(label_pad))
             attach_tooltip(tooltips.zhit.num_iterations)
+
+            self.num_iterations_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=default_settings.num_iterations,
                 min_value=1,
@@ -135,34 +144,38 @@ class SettingsMenu:
                 width=-1,
                 tag=self.num_iterations_input,
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("Interpolation".rjust(label_pad))
             attach_tooltip(tooltips.zhit.interpolation)
-            self.interpolation_combo: int = dpg.generate_uuid()
+
             interpolation_items: List[str] = list(label_to_zhit_interpolation.keys())
-            dpg.add_combo(
+            self.interpolation_combo: Combo = Combo(
                 items=interpolation_items,
                 default_value=zhit_interpolation_to_label[
                     default_settings.interpolation
                 ],
+                user_data=label_to_zhit_interpolation,
                 width=-1,
-                tag=self.interpolation_combo,
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("Window".rjust(label_pad))
             attach_tooltip(tooltips.zhit.window)
-            self.window_combo: int = dpg.generate_uuid()
+
             window_items: List[str] = list(label_to_zhit_window.keys())
-            dpg.add_combo(
+            self.window_combo: Combo = Combo(
                 items=window_items,
                 default_value=zhit_window_to_label[default_settings.window],
+                user_data=label_to_zhit_window,
                 width=-1,
-                tag=self.window_combo,
             )
-        self.window_center_input: int = dpg.generate_uuid()
+
         with dpg.group(horizontal=True):
             dpg.add_text("Window center".rjust(label_pad))
             attach_tooltip(tooltips.zhit.window_center)
+
+            self.window_center_input: Tag = dpg.generate_uuid()
             dpg.add_input_float(
                 default_value=default_settings.window_center,
                 step=0.0,
@@ -171,10 +184,12 @@ class SettingsMenu:
                 width=-1,
                 tag=self.window_center_input,
             )
-        self.window_width_input: int = dpg.generate_uuid()
+
         with dpg.group(horizontal=True):
             dpg.add_text("Window width".rjust(label_pad))
             attach_tooltip(tooltips.zhit.window_width)
+
+            self.window_width_input: Tag = dpg.generate_uuid()
             dpg.add_input_float(
                 default_value=default_settings.window_width,
                 min_value=1e-12,
@@ -185,15 +200,29 @@ class SettingsMenu:
                 width=-1,
                 tag=self.window_width_input,
             )
+
+        with dpg.group(horizontal=True):
+            dpg.add_text("Representation".rjust(label_pad))
+            attach_tooltip(tooltips.zhit.representation)
+
+            self.representation_combo: Combo = Combo(
+                items=list(label_to_zhit_representation.keys()),
+                default_value=zhit_representation_to_label[default_settings.representation],
+                user_data=label_to_zhit_representation,
+                width=-1,
+            )
+
         self.set_settings(default_settings)
 
     def update_settings(self, settings: Optional[ZHITSettings] = None):
         if settings is None:
             settings = self.get_settings()
+
         if settings.smoothing == ZHITSmoothing.NONE:
             dpg.disable_item(self.num_points_input)
         else:
             dpg.enable_item(self.num_points_input)
+
         if settings.smoothing == ZHITSmoothing.AUTO:
             dpg.enable_item(self.polynomial_order_input)
             dpg.enable_item(self.num_iterations_input)
@@ -203,7 +232,11 @@ class SettingsMenu:
         elif settings.smoothing == ZHITSmoothing.LOWESS:
             dpg.disable_item(self.polynomial_order_input)
             dpg.enable_item(self.num_iterations_input)
-        elif settings.smoothing == ZHITSmoothing.SAVGOL:
+        elif settings.smoothing in (
+            ZHITSmoothing.SAVGOL,
+            ZHITSmoothing.WHITHEND,
+            ZHITSmoothing.MODSINC,
+        ):
             dpg.enable_item(self.polynomial_order_input)
             dpg.disable_item(self.num_iterations_input)
         else:
@@ -212,18 +245,16 @@ class SettingsMenu:
             )
 
     def get_settings(self) -> ZHITSettings:
-        smoothing: ZHITSmoothing = label_to_zhit_smoothing[
-            dpg.get_value(self.smoothing_combo)
-        ]
+        smoothing: ZHITSmoothing = self.smoothing_combo.get_value()
         num_points: int = dpg.get_value(self.num_points_input)
         polynomial_order: int = dpg.get_value(self.polynomial_order_input)
         num_iterations: int = dpg.get_value(self.num_iterations_input)
-        interpolation: ZHITInterpolation = label_to_zhit_interpolation[
-            dpg.get_value(self.interpolation_combo)
-        ]
-        window: ZHITWindow = label_to_zhit_window[dpg.get_value(self.window_combo)]
+        interpolation: ZHITInterpolation = self.interpolation_combo.get_value()
+        window: ZHITWindow = self.window_combo.get_value()
         window_center: float = dpg.get_value(self.window_center_input)
         window_width: float = dpg.get_value(self.window_width_input)
+        representation: ZHITRepresentation = self.representation_combo.get_value()
+
         return ZHITSettings(
             smoothing=smoothing,
             num_points=num_points,
@@ -233,24 +264,27 @@ class SettingsMenu:
             window=window,
             window_center=window_center,
             window_width=window_width,
+            representation=representation,
         )
 
     def set_settings(self, settings: ZHITSettings):
         assert isinstance(settings, ZHITSettings), settings
-        dpg.set_value(self.smoothing_combo, zhit_smoothing_to_label[settings.smoothing])
+        self.smoothing_combo.set_value(settings.smoothing)
         if settings.num_points > 1:
             dpg.set_value(self.num_points_input, settings.num_points)
+
         if 0 < settings.polynomial_order < settings.num_points:
             dpg.set_value(self.polynomial_order_input, settings.polynomial_order)
+
         if settings.num_iterations > 0:
             dpg.set_value(self.num_iterations_input, settings.num_iterations)
-        dpg.set_value(
-            self.interpolation_combo,
-            zhit_interpolation_to_label[settings.interpolation],
-        )
-        dpg.set_value(self.window_combo, zhit_window_to_label[settings.window])
+
+        self.interpolation_combo.set_value(settings.interpolation)
+        self.window_combo.set_value(settings.window)
         dpg.set_value(self.window_center_input, settings.window_center)
         dpg.set_value(self.window_width_input, settings.window_width)
+        self.representation_combo.set_value(settings.representation)
+
         self.update_settings(settings)
 
     def has_active_input(self) -> bool:
@@ -274,9 +308,9 @@ class ZHITResultsCombo(ResultsCombo):
 class StatisticsTable:
     def __init__(self):
         label_pad: int = 23
-        self._header: int = dpg.generate_uuid()
+        self._header: Tag = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Statistics", leaf=True, tag=self._header):
-            self._table: int = dpg.generate_uuid()
+            self._table: Tag = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -297,7 +331,7 @@ class StatisticsTable:
                 )
                 label: str
                 tooltip: str
-                for (label, tooltip) in [
+                for label, tooltip in [
                     (
                         "log X² (pseudo)",
                         tooltips.fitting.pseudo_chisqr,
@@ -318,7 +352,8 @@ class StatisticsTable:
                     with dpg.table_row():
                         dpg.add_text(label.rjust(label_pad))
                         attach_tooltip(tooltip)
-                        tooltip_tag: int = dpg.generate_uuid()
+
+                        tooltip_tag: Tag = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
 
@@ -327,7 +362,7 @@ class StatisticsTable:
             dpg.hide_item(self._header)
         row: int
         for row in dpg.get_item_children(self._table, slot=1):
-            tag: int = dpg.get_item_children(row, slot=1)[2]
+            tag: Tag = dpg.get_item_children(row, slot=1)[2]
             dpg.set_value(tag, "")
             dpg.hide_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
 
@@ -340,7 +375,7 @@ class StatisticsTable:
         assert len(cells) == 4, cells
         tag: int
         value: str
-        for (tag, value) in [
+        for tag, value in [
             (
                 cells[0],
                 f"{log(zhit.pseudo_chisqr):.3f}",
@@ -386,9 +421,9 @@ class StatisticsTable:
 class SettingsTable:
     def __init__(self):
         label_pad: int = 23
-        self._header: int = dpg.generate_uuid()
+        self._header: Tag = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Settings", leaf=True, tag=self._header):
-            self._table: int = dpg.generate_uuid()
+            self._table: Tag = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -417,15 +452,17 @@ class SettingsTable:
                     "Window",
                     "Center",
                     "Width",
+                    "Representation",
                 ]:
                     with dpg.table_row():
                         dpg.add_text(label.rjust(label_pad))
-                        tooltip_tag: int = dpg.generate_uuid()
+                        tooltip_tag: Tag = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
+
             dpg.add_spacer(height=8)
             with dpg.group(horizontal=True):
-                self._apply_settings_button: int = dpg.generate_uuid()
+                self._apply_settings_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Apply settings",
                     callback=lambda s, a, u: signals.emit(
@@ -436,7 +473,8 @@ class SettingsTable:
                     width=154,
                 )
                 attach_tooltip(tooltips.general.apply_settings)
-                self._apply_mask_button: int = dpg.generate_uuid()
+
+                self._apply_mask_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Apply mask",
                     callback=lambda s, a, u: signals.emit(
@@ -447,8 +485,9 @@ class SettingsTable:
                     width=-1,
                 )
                 attach_tooltip(tooltips.general.apply_mask)
+
             with dpg.group(horizontal=True):
-                self._load_as_data_button: int = dpg.generate_uuid()
+                self._load_as_data_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Load as data set",
                     callback=lambda s, a, u: signals.emit(
@@ -465,7 +504,7 @@ class SettingsTable:
             dpg.hide_item(self._header)
         row: int
         for row in dpg.get_item_children(self._table, slot=1):
-            tag: int = dpg.get_item_children(row, slot=1)[1]
+            tag: Tag = dpg.get_item_children(row, slot=1)[1]
             dpg.set_value(tag, "")
             dpg.hide_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
 
@@ -477,13 +516,15 @@ class SettingsTable:
         for row in dpg.get_item_children(self._table, slot=1):
             rows.append(row)
             cells.append(dpg.get_item_children(row, slot=1))
-        assert len(rows) == len(cells) == 8, (
+
+        assert len(rows) == len(cells) == 9, (
             rows,
             cells,
         )
+
         tag: int
         value: str
-        for (row, tag, value) in [
+        for row, tag, value in [
             (
                 rows[0],
                 cells[0][1],
@@ -524,11 +565,17 @@ class SettingsTable:
                 cells[7][1],
                 f"{zhit.settings.window_width:.3f}",
             ),
+            (
+                rows[8],
+                cells[8][1],
+                zhit_representation_to_label[zhit.settings.representation],
+            ),
         ]:
             dpg.set_value(tag, value.split("\n")[0])
             update_tooltip(dpg.get_item_user_data(tag), value)
             dpg.show_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
-        dpg.set_item_height(self._table, 18 + 23 * 8)
+
+        dpg.set_item_height(self._table, 18 + 23 * len(rows))
         dpg.set_item_user_data(
             self._apply_settings_button,
             {"settings": zhit.settings},
@@ -557,7 +604,7 @@ class ZHITTab:
         self.create_tab(state)
 
     def create_tab(self, state):
-        self.tab: int = dpg.generate_uuid()
+        self.tab: Tag = dpg.generate_uuid()
         label_pad: int = 24
         with dpg.tab(label="Z-HIT analysis", tag=self.tab):
             with dpg.child_window(border=False):
@@ -566,14 +613,14 @@ class ZHITTab:
                     self.create_plots()
 
     def create_sidebar(self, state, label_pad: int):
-        self.sidebar_window: int = dpg.generate_uuid()
+        self.sidebar_window: Tag = dpg.generate_uuid()
         self.sidebar_width: int = 350
         with dpg.child_window(
             border=False,
             width=self.sidebar_width,
             tag=self.sidebar_window,
         ):
-            with dpg.child_window(width=-1, height=242):
+            with dpg.child_window(width=-1, height=266):
                 self.settings_menu: SettingsMenu = SettingsMenu(
                     state.config.default_zhit_settings,
                     label_pad,
@@ -581,6 +628,7 @@ class ZHITTab:
                 with dpg.group(horizontal=True):
                     dpg.add_text("?".rjust(label_pad))
                     attach_tooltip(tooltips.zhit.preview_weights)
+
                     dpg.add_button(
                         label="Preview weights",
                         callback=lambda s, a, u: signals.emit(
@@ -590,13 +638,14 @@ class ZHITTab:
                         width=-1,
                     )
                 with dpg.group(horizontal=True):
-                    self.visibility_item: int = dpg.generate_uuid()
+                    self.visibility_item: Tag = dpg.generate_uuid()
                     dpg.add_text(
                         "?".rjust(label_pad),
                         tag=self.visibility_item,
                     )
                     attach_tooltip(tooltips.zhit.perform)
-                    self.perform_zhit_button: int = dpg.generate_uuid()
+
+                    self.perform_zhit_button: Tag = dpg.generate_uuid()
                     dpg.add_button(
                         label="Perform",
                         callback=lambda s, a, u: signals.emit(
@@ -628,7 +677,7 @@ class ZHITTab:
                         label="Result".rjust(label_pad),
                         width=-60,
                     )
-                    self.delete_button: int = dpg.generate_uuid()
+                    self.delete_button: Tag = dpg.generate_uuid()
                     dpg.add_button(
                         label="Delete",
                         callback=lambda s, a, u: signals.emit(
@@ -639,9 +688,10 @@ class ZHITTab:
                         tag=self.delete_button,
                     )
                     attach_tooltip(tooltips.zhit.delete)
+
             with dpg.child_window(width=-1, height=-1):
                 with dpg.group(show=False):
-                    self.validity_text: int = dpg.generate_uuid()
+                    self.validity_text: Tag = dpg.generate_uuid()
                     dpg.bind_item_theme(
                         dpg.add_text(
                             "",
@@ -656,18 +706,19 @@ class ZHITTab:
                 self.settings_table: SettingsTable = SettingsTable()
 
     def create_plots(self):
-        self.plot_window: int = dpg.generate_uuid()
+        self.plot_window: Tag = dpg.generate_uuid()
         with dpg.child_window(
             border=False,
             width=-1,
             height=-1,
             tag=self.plot_window,
         ):
-            self.plot_tab_bar: int = dpg.generate_uuid()
+            self.plot_tab_bar: Tag = dpg.generate_uuid()
             with dpg.tab_bar(tag=self.plot_tab_bar):
                 self.create_nyquist_plot()
                 bode_tab: int = self.create_bode_plot()
                 self.create_impedance_plot()
+
             pad_tab_labels(self.plot_tab_bar)
             dpg.set_value(self.plot_tab_bar, bode_tab)
             dpg.add_spacer(height=4)
@@ -679,37 +730,35 @@ class ZHITTab:
         with dpg.tab(label="Nyquist"):
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Data",
                 line=False,
                 theme=themes.nyquist.data,
             )
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Fit",
                 line=False,
                 fit=True,
                 theme=themes.nyquist.simulation,
             )
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Fit",
                 line=True,
                 fit=True,
                 theme=themes.nyquist.simulation,
                 show_label=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_nyquist_button: int = dpg.generate_uuid()
-                self.adjust_nyquist_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_nyquist_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_nyquist,
                     tag=self.enlarge_nyquist_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -719,6 +768,8 @@ class ZHITTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_nyquist_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
@@ -726,17 +777,24 @@ class ZHITTab:
                 )
                 attach_tooltip(tooltips.general.adjust_nyquist_limits)
 
+                self.nyquist_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.nyquist_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
+
     def create_bode_plot(self) -> int:
         tab: int
         with dpg.tab(label="Bode") as tab:
             self.bode_plot: Bode = Bode(width=-1, height=-24)
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), d.",
-                    "Phase(Z), d.",
+                    "Mod(data)",
+                    "Phase(data)",
                 ),
                 line=False,
                 themes=(
@@ -745,12 +803,11 @@ class ZHITTab:
                 ),
             )
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), f.",
-                    "Phase(Z), f.",
+                    "Mod(fit)",
+                    "Phase(fit)",
                 ),
                 line=False,
                 fit=True,
@@ -760,12 +817,11 @@ class ZHITTab:
                 ),
             )
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), f.",
-                    "Phase(Z), f.",
+                    "Mod(fit)",
+                    "Phase(fit)",
                 ),
                 line=True,
                 fit=True,
@@ -775,14 +831,15 @@ class ZHITTab:
                 ),
                 show_labels=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_bode_button: int = dpg.generate_uuid()
-                self.adjust_bode_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_bode_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_bode,
                     tag=self.enlarge_bode_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -792,27 +849,37 @@ class ZHITTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_bode_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
                     tag=self.adjust_bode_limits_checkbox,
                 )
                 attach_tooltip(tooltips.general.adjust_bode_limits)
+
+                self.bode_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.bode_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
+
         return tab
 
     def create_impedance_plot(self):
-        with dpg.tab(label="Real & Imag."):
+        with dpg.tab(label="Real & imag."):
             self.impedance_plot: Impedance = Impedance(
                 width=-1,
                 height=-24,
             )
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), d.",
-                    "Im(Z), d.",
+                    "Re(data)",
+                    "Im(data)",
                 ),
                 line=False,
                 themes=(
@@ -821,12 +888,11 @@ class ZHITTab:
                 ),
             )
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), f.",
-                    "Im(Z), f.",
+                    "Re(fit)",
+                    "Im(fit)",
                 ),
                 line=False,
                 fit=True,
@@ -836,12 +902,11 @@ class ZHITTab:
                 ),
             )
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), f.",
-                    "Im(Z), f.",
+                    "Re(fit)",
+                    "Im(fit)",
                 ),
                 line=True,
                 fit=True,
@@ -851,14 +916,15 @@ class ZHITTab:
                 ),
                 show_labels=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_impedance_button: int = dpg.generate_uuid()
-                self.adjust_impedance_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_impedance_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_impedance,
                     tag=self.enlarge_impedance_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -868,12 +934,22 @@ class ZHITTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_impedance_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
                     tag=self.adjust_impedance_limits_checkbox,
                 )
                 attach_tooltip(tooltips.general.adjust_impedance_limits)
+
+                self.impedance_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.impedance_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
 
     def create_residuals_plot(self):
         self.residuals_plot_height: int = 300
@@ -882,13 +958,14 @@ class ZHITTab:
             height=self.residuals_plot_height,
         )
         self.residuals_plot.plot(
-            frequency=array([]),
+            frequencies=array([]),
             real=array([]),
             imaginary=array([]),
         )
+
         with dpg.group(horizontal=True):
-            self.enlarge_residuals_button: int = dpg.generate_uuid()
-            self.adjust_residuals_limits_checkbox: int = dpg.generate_uuid()
+            self.enlarge_residuals_button: Tag = dpg.generate_uuid()
+            self.adjust_residuals_limits_checkbox: Tag = dpg.generate_uuid()
             dpg.add_button(
                 label="Enlarge plot",
                 callback=self.show_enlarged_residuals,
@@ -903,6 +980,7 @@ class ZHITTab:
                 ),
             )
             attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
             dpg.add_checkbox(
                 label="Adjust limits",
                 default_value=True,
@@ -913,11 +991,25 @@ class ZHITTab:
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
 
+    def toggle_plot_admittance(self, admittance: bool):
+        tag: int
+        for tag in (
+            self.nyquist_admittance_checkbox,
+            self.bode_admittance_checkbox,
+            self.impedance_admittance_checkbox,
+        ):
+            dpg.set_value(tag, admittance)
+
+        self.nyquist_plot.set_admittance(admittance)
+        self.bode_plot.set_admittance(admittance)
+        self.impedance_plot.set_admittance(admittance)
+
     def resize(self, width: int, height: int):
         assert type(width) is int and width > 0
         assert type(height) is int and height > 0
         if not self.is_visible():
             return
+
         width, height = dpg.get_item_rect_size(self.plot_window)
         tmp: int = round(height / 2) - 24 * 2
         if tmp > 300:
@@ -926,6 +1018,7 @@ class ZHITTab:
         else:
             height = tmp
             self.residuals_plot.resize(-1, height)
+
         plots: List[Plot] = [
             self.nyquist_plot,
             self.bode_plot,
@@ -990,30 +1083,24 @@ class ZHITTab:
         dpg.set_item_user_data(self.perform_zhit_button, data)
         if data is None:
             return
+
         self.data_sets_combo.set(data.get_label())
-        real: ndarray
-        imag: ndarray
-        real, imag = data.get_nyquist_data()
+        Z: ndarray = data.get_impedances()
         self.nyquist_plot.update(
             index=0,
-            real=real,
-            imaginary=imag,
+            impedances=Z,
         )
-        freq: ndarray
-        mag: ndarray
-        phase: ndarray
-        freq, mag, phase = data.get_bode_data()
+
+        freq: ndarray = data.get_frequencies()
         self.bode_plot.update(
             index=0,
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq,
+            impedances=Z,
         )
         self.impedance_plot.update(
             index=0,
-            frequency=freq,
-            real=real,
-            imaginary=imag,
+            frequencies=freq,
+            impedances=Z,
         )
 
     def assert_zhit_up_to_date(self, zhit: ZHITResult, data: DataSet):
@@ -1021,6 +1108,7 @@ class ZHITTab:
         Z_exp: ndarray = data.get_impedances()
         Z_zhit: ndarray = zhit.get_impedances()
         assert Z_exp.shape == Z_zhit.shape, "The number of data points differ!"
+
         # Check if the masks are the same
         mask_exp: Dict[int, bool] = data.get_mask()
         mask_zhit: Dict[int, bool] = {
@@ -1037,15 +1125,17 @@ class ZHITTab:
             assert (
                 mask_exp[i] == mask_zhit[i]
             ), f"The data set's mask differs at index {i + 1}!"
+
         # Check if the frequencies and impedances are the same
         assert allclose(
             zhit.get_frequencies(),
             data.get_frequencies(),
         ), "The frequencies differ!"
-        residuals: ComplexResiduals = _calculate_residuals(Z_exp, Z_zhit)
+
+        residuals: ComplexResiduals = _calculate_residuals(Z_exp=Z_exp, Z_fit=Z_zhit)
         assert allclose(zhit.residuals.real, residuals.real) and allclose(
             zhit.residuals.imag, residuals.imag
-        ), "The data set's impedances differ from what they were when the zhit was performed!"
+        ), "The data set's impedances differ from what they were when the analysis was performed!"
 
     def select_zhit_result(self, zhit: Optional[ZHITResult], data: Optional[DataSet]):
         assert type(zhit) is ZHITResult or zhit is None, zhit
@@ -1060,19 +1150,26 @@ class ZHITTab:
         if not self.is_visible():
             self.queued_update = lambda: self.select_zhit_result(zhit, data)
             return
+
         self.queued_update = None
         self.select_data_set(data)
         if zhit is None or data is None:
             if dpg.get_value(self.adjust_nyquist_limits_checkbox):
                 self.nyquist_plot.queue_limits_adjustment()
+
             if dpg.get_value(self.adjust_bode_limits_checkbox):
                 self.bode_plot.queue_limits_adjustment()
+
             if dpg.get_value(self.adjust_impedance_limits_checkbox):
                 self.impedance_plot.queue_limits_adjustment()
+
             if dpg.get_value(self.adjust_residuals_limits_checkbox):
                 self.residuals_plot.queue_limits_adjustment()
+
             return
+
         self.results_combo.set(zhit.get_label())
+
         message: str
         try:
             self.assert_zhit_up_to_date(zhit, data)
@@ -1083,61 +1180,61 @@ class ZHITTab:
                 f"Z-HIT result is not valid for the current state of the data set!\n\n{message}",
             )
             dpg.show_item(dpg.get_item_parent(self.validity_text))
+
         self.statistics_table.populate(zhit)
         self.settings_table.populate(
             zhit,
             data,
         )
-        real: ndarray
-        imag: ndarray
-        real, imag = zhit.get_nyquist_data()
+
+        Z: ndarray = zhit.get_impedances()
         i: int
         for i in range(1, 3):
             self.nyquist_plot.update(
                 index=i,
-                real=real,
-                imaginary=imag,
+                impedances=Z,
             )
-        freq: ndarray
-        mag: ndarray
-        phase: ndarray
-        freq, mag, phase = zhit.get_bode_data()
+
+        freq: ndarray = zhit.get_frequencies()
         for i in range(1, 3):
             self.bode_plot.update(
                 index=i,
-                frequency=freq,
-                magnitude=mag,
-                phase=phase,
+                frequencies=freq,
+                impedances=Z,
             )
             self.impedance_plot.update(
                 index=i,
-                frequency=freq,
-                real=real,
-                imaginary=imag,
+                frequencies=freq,
+                impedances=Z,
             )
+
         freq, real, imag = zhit.get_residuals_data()
         self.residuals_plot.update(
             index=0,
-            frequency=freq,
+            frequencies=freq,
             real=real,
             imaginary=imag,
         )
+
         if dpg.get_value(self.adjust_nyquist_limits_checkbox):
             self.nyquist_plot.queue_limits_adjustment()
+
         if dpg.get_value(self.adjust_bode_limits_checkbox):
             self.bode_plot.queue_limits_adjustment()
+
         if dpg.get_value(self.adjust_impedance_limits_checkbox):
             self.impedance_plot.queue_limits_adjustment()
+
         if dpg.get_value(self.adjust_residuals_limits_checkbox):
             self.residuals_plot.queue_limits_adjustment()
 
     def next_plot_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + 1
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
     def previous_plot_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) - 1
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
@@ -1146,6 +1243,7 @@ class ZHITTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.nyquist_plot,
             adjust_limits=dpg.get_value(self.adjust_nyquist_limits_checkbox),
+            admittance=dpg.get_value(self.nyquist_admittance_checkbox),
         )
 
     def show_enlarged_bode(self):
@@ -1153,6 +1251,7 @@ class ZHITTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.bode_plot,
             adjust_limits=dpg.get_value(self.adjust_bode_limits_checkbox),
+            admittance=dpg.get_value(self.bode_admittance_checkbox),
         )
 
     def show_enlarged_impedance(self):
@@ -1160,6 +1259,7 @@ class ZHITTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.impedance_plot,
             adjust_limits=dpg.get_value(self.adjust_impedance_limits_checkbox),
+            admittance=dpg.get_value(self.impedance_admittance_checkbox),
         )
 
     def show_enlarged_residuals(self):

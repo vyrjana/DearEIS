@@ -21,13 +21,14 @@ import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 import deareis.themes as themes
+from deareis.typing.helpers import Tag
 
 
 class OverviewTab:
     def __init__(self):
-        self.tab: int = dpg.generate_uuid()
-        self.label_input: int = dpg.generate_uuid()
-        self.notes_input: int = dpg.generate_uuid()
+        self.tab: Tag = dpg.generate_uuid()
+        self.label_input: Tag = dpg.generate_uuid()
+        self.notes_input: Tag = dpg.generate_uuid()
         with dpg.tab(label="Overview", tag=self.tab):
             with dpg.group(horizontal=True):
                 dpg.add_text("Label")
@@ -39,6 +40,7 @@ class OverviewTab:
                     width=-1,
                     tag=self.label_input,
                 )
+
             dpg.add_text("Notes")
             dpg.add_input_text(
                 multiline=True,

@@ -37,7 +37,7 @@ from deareis import (
     PlotSettings,
     Project,
     SimulationResult,
-    TestResult,
+    KramersKronigResult,
     ZHITResult,
 )
 
@@ -163,7 +163,7 @@ class TestProject(TestCase):
         self.assertEqual(data.get_path(), new_path)
 
     def test_get_all_tests(self):
-        tests: Dict[str, List[TestResult]] = self.project.get_all_tests()
+        tests: Dict[str, List[KramersKronigResult]] = self.project.get_all_tests()
         self.assertIsInstance(tests, dict)
         self.assertTrue(all([isinstance(_, str) for _ in tests.keys()]))
         self.assertTrue(all([isinstance(_, list) for _ in tests.values()]))
@@ -173,20 +173,20 @@ class TestProject(TestCase):
     def test_get_tests(self):
         data: DataSet
         for data in self.project.get_data_sets():
-            tests: List[TestResult] = self.project.get_tests(data)
+            tests: List[KramersKronigResult] = self.project.get_tests(data)
             self.assertIsInstance(tests, list)
-            self.assertTrue(all([isinstance(_, TestResult) for _ in tests]))
+            self.assertTrue(all([isinstance(_, KramersKronigResult) for _ in tests]))
 
     def test_add_test(self):
         data: DataSet
         for data in self.project.get_data_sets():
-            tests: List[TestResult] = self.project.get_tests(data)
+            tests: List[KramersKronigResult] = self.project.get_tests(data)
             if len(tests) == 0:
                 continue
             break
         else:
             raise NotImplementedError("No suitable test data available in the project!")
-        test: TestResult = tests[0]
+        test: KramersKronigResult = tests[0]
         with self.assertRaises(AssertionError):
             # Attempt to add a duplicate (checked using the UUIDs of the tests)
             self.project.add_test(data, test)
@@ -201,13 +201,13 @@ class TestProject(TestCase):
     def test_delete_test(self):
         data: DataSet
         for data in self.project.get_data_sets():
-            tests: List[TestResult] = self.project.get_tests(data)
+            tests: List[KramersKronigResult] = self.project.get_tests(data)
             if len(tests) < 2:
                 continue
             break
         else:
             raise NotImplementedError("No suitable test data available in the project!")
-        test: TestResult = tests[0]
+        test: KramersKronigResult = tests[0]
         num_tests: int = len(tests)
         self.project.delete_test(data, test)
         tests = self.project.get_tests(data)

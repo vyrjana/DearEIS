@@ -25,10 +25,10 @@ DRT calculations can be performed in the **DRT analysis** tab (:numref:`drt_tab`
 - a table of the settings that were used to obtain the active result
 
 .. _drt_tab:
-.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-tab-interpolated.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/drt-tab.png
    :alt: The DRT analysis tab of a project
 
-   An example of a result obtained with the noisy data set with the interpolated data point near 50 Hz and the TR-RBF method.
+   An example of a result obtained with the noisy data set and the TR-RBF method.
 
 The results are presented in the form of one or more tables (e.g., statistics, scores), a plot of gamma versus time constant, and other plots.
 Some results can be copied to the clipboard in different plain-text formats via the **Output** combo box and the **Copy** button.
@@ -76,13 +76,13 @@ One can see based on :numref:`drt_overlay_2` that different DRT methods can prod
 
 References:
 
-- Boukamp, B.A., 2015, Electrochim. Acta, 154, 35-46, (https://doi.org/10.1016/j.electacta.2014.12.059)
-- Boukamp, B.A. and Rolle, A, 2017, Solid State Ionics, 302, 12-18 (https://doi.org/10.1016/j.ssi.2016.10.009)
-- Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 (https://doi.org/10.1016/j.electacta.2015.03.123)
-- Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 (https://doi.org/10.1016/j.electacta.2017.07.050)
-- Kulikovsky, A., 2021, J. Electrochem. Soc., 168, 044512 (https://doi.org/10.1149/1945-7111/abf508)
-- Liu, J., Wan, T. H., and Ciucci, F., 2020, Electrochim. Acta, 357, 136864 (https://doi.org/10.1016/j.electacta.2020.136864)
-- Wan, T. H., Saccoccio, M., Chen, C., and Ciucci, F., 2015, Electrochim. Acta, 184, 483-499 (https://doi.org/10.1016/j.electacta.2015.09.097)
+- `Boukamp, B.A., 2015, Electrochim. Acta, 154, 35-46 <https://doi.org/10.1016/j.electacta.2014.12.059>`_
+- `Boukamp, B.A. and Rolle, A, 2017, Solid State Ionics, 302, 12-18 <https://doi.org/10.1016/j.ssi.2016.10.009>`_
+- `Ciucci, F. and Chen, C., 2015, Electrochim. Acta, 167, 439-454 <https://doi.org/10.1016/j.electacta.2015.03.123>`_
+- `Effat, M. B. and Ciucci, F., 2017, Electrochim. Acta, 247, 1117-1129 <https://doi.org/10.1016/j.electacta.2017.07.050>`_
+- `Kulikovsky, A., 2021, J. Electrochem. Soc., 168, 044512 <https://doi.org/10.1149/1945-7111/abf508>`_
+- `Liu, J., Wan, T. H., and Ciucci, F., 2020, Electrochim. Acta, 357, 136864 <https://doi.org/10.1016/j.electacta.2020.136864>`_
+- `Wan, T. H., Saccoccio, M., Chen, C., and Ciucci, F., 2015, Electrochim. Acta, 184, 483-499 <https://doi.org/10.1016/j.electacta.2015.09.097>`_
 
 .. raw:: latex
 

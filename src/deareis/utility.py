@@ -62,9 +62,10 @@ from pyimpspec import (
     TokenizingError,
     parse_cdc as _parse_cdc,
 )
+from deareis.typing.helpers import Tag
 
 
-MATH_REGISTRY: int = dpg.add_texture_registry()
+MATH_REGISTRY: Tag = dpg.add_texture_registry()
 
 
 def rename_dict_entry(dictionary: dict, old: str, new: str):
@@ -92,8 +93,8 @@ def calculate_checksum(*args, **kwargs) -> str:
 
 
 def calculate_window_position_dimensions(
-    width: Union[int, float] = 0.9,
-    height: Union[int, float] = 0.9,
+    width: Union[int, float] = 0.96,
+    height: Union[int, float] = 0.96,
 ) -> Tuple[int, int, int, int]:
     assert (issubdtype(type(width), floating) and width > 0.0 and width < 1.0) or (
         issubdtype(type(width), integer) and width > 0
@@ -101,20 +102,23 @@ def calculate_window_position_dimensions(
     assert (issubdtype(type(height), floating) and height > 0.0 and height < 1.0) or (
         issubdtype(type(width), integer) and height > 0
     )
-    viewport_width: int = dpg.get_viewport_width()
+
+    viewport_width: Tag = dpg.get_viewport_width()
     x: int
     if issubdtype(type(width), floating):
         x = floor(viewport_width * (1.0 - width) / 2)
         width = floor(viewport_width * width)
     else:
         x = floor((viewport_width - width) / 2)
-    viewport_height: int = dpg.get_viewport_height()
+
+    viewport_height: Tag = dpg.get_viewport_height()
     y: int
     if issubdtype(type(height), floating):
         y = floor(viewport_height * (1.0 - height) / 2)
         height = floor(viewport_height * height)
     else:
         y = floor((viewport_height - height) / 2)
+
     return (
         int(x),
         int(y),
@@ -152,9 +156,11 @@ def format_number(
         return adjust_width("INF")
     elif isneginf(value):
         return adjust_width("-INF")
+
     fmt: str = "{:." + str(decimals) + "f}"
     if significants > 0:
         fmt = "{:." + str(significants) + "g}"
+
     string: str
     if exponent:
         if value == 0.0:
@@ -180,17 +186,20 @@ def format_number(
                 string += "e-{:02d}".format(abs(exp))
     else:
         string = fmt.format(value)
+
     if significants > 0:
         i: int = string.find("e") if "e" in string else len(string)
         if "." not in string and i < significants:
             string = (string[:i] + ".").ljust(significants + 1, "0") + string[i:]
         elif "." in string and i < significants + 1:
             string = string[:i].ljust(significants + 1, "0") + string[i:]
+
     return adjust_width(string)
 
 
 def align_numbers(values: List[str]) -> List[str]:
     assert type(values) is list and all(map(lambda _: type(_) is str, values))
+
     has_negative_values: bool = any(map(lambda _: _.strip().startswith("-"), values))
     values = list(
         map(
@@ -210,10 +219,12 @@ def align_numbers(values: List[str]) -> List[str]:
             values,
         )
     )
+
     max_index: int = max(indices)
     for i, index in enumerate(indices):
         value = values[i]
         values[i] = value.rjust(max_index - index + len(value))
+
     return values
 
 
@@ -222,6 +233,7 @@ def pad_dataframe_dictionary(dictionary: dict) -> Optional[dict]:
     max_len: int = max(lengths)
     if max_len == 0:
         return None
+
     elif len(lengths) > 1:
         padded_dictionary: dict = dictionary.copy()
         for label in padded_dictionary.keys():
@@ -233,7 +245,9 @@ def pad_dataframe_dictionary(dictionary: dict) -> Optional[dict]:
                 ),
                 constant_values=None,
             )
+
         return padded_dictionary
+
     return dictionary
 
 
@@ -241,9 +255,11 @@ def is_filtered_item_visible(item: int, filter_string: str) -> bool:
     filter_string = filter_string.strip()
     if filter_string == "":
         return True
+
     filter_key: Optional[str] = dpg.get_item_filter_key(item)
     if filter_key is None:
         return False
+
     visible: bool = False
     for fragment in map(str.strip, filter_string.split(",")):
         if fragment.startswith("-"):
@@ -254,6 +270,7 @@ def is_filtered_item_visible(item: int, filter_string: str) -> bool:
             visible = False
             if fragment in filter_key:
                 return True
+
     return visible
 
 
@@ -295,11 +312,13 @@ def render_math(
     )
     canvas.draw()
     buffer: ndarray = asarray(canvas.buffer_rgba()).astype(float32) / 255
+
     if print_dimensions:
         min_x: int = 0
         max_x: int = buffer.shape[1] - 1
         min_y: int = 0
         max_y: int = buffer.shape[0] - 1
+
         i: int
         row: ndarray
         col: ndarray
@@ -313,7 +332,8 @@ def render_math(
                 min_y = i
             else:
                 break
-        for (i, row) in reversed(list(enumerate(buffer))):
+
+        for i, row in reversed(list(enumerate(buffer))):
             rgba_sums = row.sum(1)
             if isclose(rgba_sums[0], 3.0 + alpha, atol=1e-2) and array_all(
                 isclose(rgba_sums, rgba_sums[0])
@@ -322,6 +342,7 @@ def render_math(
                 max_y = i + 1
             else:
                 break
+
         for i in range(buffer.shape[1]):
             col = buffer[:, i]
             rgba_sums = col.sum(1)
@@ -332,6 +353,7 @@ def render_math(
                 min_x = i
             else:
                 break
+
         for i in reversed(range(buffer.shape[1])):
             col = buffer[:, i]
             rgba_sums = col.sum(1)
@@ -342,8 +364,10 @@ def render_math(
                 max_x = i + 1
             else:
                 break
+
         print(f"{math}\n- width: {max_x - min_x}\n- height: {max_y - min_y}")
-    tag: int = dpg.add_raw_texture(
+
+    tag: Tag = dpg.add_raw_texture(
         buffer.shape[1],
         buffer.shape[0],
         buffer,
@@ -351,6 +375,7 @@ def render_math(
         parent=MATH_REGISTRY,
     )
     plt.close(fig)
+
     return tag
 
 
@@ -359,24 +384,30 @@ def find_parent_containers(circuit: Circuit) -> Dict[Element, Container]:
 
     def mark_elements(connection: Connection, container: Optional[Container]):
         nonlocal parent_containers
-        for elem_or_con in connection.get_elements(flattened=False):
+
+        elem_or_con: Union[Element, Connection]
+        for elem_or_con in connection:
             if isinstance(elem_or_con, Connection):
                 mark_elements(connection=elem_or_con, container=container)
             elif isinstance(elem_or_con, Container):
                 if container is not None:
                     parent_containers[elem_or_con] = container
+
                 con: Optional[Connection]
                 for con in elem_or_con.get_subcircuits().values():
                     if con is None:
                         continue
+
                     mark_elements(connection=con, container=elem_or_con)
+
             elif container is not None:
                 parent_containers[elem_or_con] = container
 
     mark_elements(
-        connection=circuit.get_connections(flattened=False)[0],
+        connection=circuit.get_connections(recursive=False)[0],
         container=None,
     )
+
     return parent_containers
 
 
@@ -385,20 +416,24 @@ def process_cdc(cdc: str) -> Tuple[Optional[Circuit], str]:
         circuit: Circuit = _parse_cdc(cdc)
     except (TokenizingError, ParsingError, InvalidParameterKey) as err:
         return (None, str(err))
+
     try:
         circuit.get_impedances(array([1e-3, 1e0, 1e3]))
     except (ImpedanceError, NotImplementedError) as err:
         return (None, str(err))
+
     return (circuit, "")
 
 
 def format_latex_value(value: Any, fmt: str = "{:.3g}") -> str:
     if isinstance(value, bool):
         return str(value)
+
     try:
         float(value)
     except ValueError:
         return str(value)
+
     return fmt.format(value)
 
 
@@ -407,7 +442,7 @@ def format_latex_unit(unit: str) -> str:
     unit = unit.strip()
     if unit == "":
         return unit
-    stack: List[List[str]] = [[]]
+
     chars: List[str] = []
     c: str
     for c in unit:
@@ -421,6 +456,7 @@ def format_latex_unit(unit: str) -> str:
             chars.append("}")
         else:
             chars.append(c)
+
     unit = "".join(chars)
     return f"$\\rm {unit}$"
 
@@ -429,17 +465,22 @@ def format_latex_element(label: str) -> str:
     assert isinstance(label, str), label
     if "_" not in label:
         return f"$\\rm {label}$"
+
     assert label.count("_") == 1
     pre, post = label.split("_")
+
     return f"$\\rm {pre}_{{{post}}}$"
 
 
-def pad_tab_labels(tab_bar: int):
+def pad_tab_labels(tab_bar: Tag):
     labels: Dict[int, str] = {}
-    tab: int
+
+    tab: Tag
     for tab in dpg.get_item_children(tab_bar, slot=1):
         labels[tab] = dpg.get_item_label(tab)
+
     longest_length: int = max(map(len, labels.values()))
+
     label: str
     for tab, label in labels.items():
         dpg.set_item_label(tab, label.ljust(longest_length))
@@ -447,11 +488,11 @@ def pad_tab_labels(tab_bar: int):
 
 class HorizontalWidgets:
     def __init__(self):
-        self.table: int = dpg.add_table(
+        self.table: Tag = dpg.add_table(
             header_row=False,
             policy=dpg.mvTable_SizingStretchProp,
         )
-        self.stage: int = dpg.add_stage()
+        self.stage: Tag = dpg.add_stage()
         dpg.push_container_stack(self.stage)
 
     def __enter__(self) -> "HorizontalWidgets":

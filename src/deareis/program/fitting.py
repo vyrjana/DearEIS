@@ -42,10 +42,12 @@ def select_fit_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     fit: Optional[FitResult] = kwargs.get("fit")
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or fit is None:
         return
+
     is_busy_message_visible: bool = STATE.is_busy_message_visible()
     if not is_busy_message_visible:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading fit result")
@@ -59,10 +61,12 @@ def delete_fit_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     fit: Optional[FitResult] = kwargs.get("fit")
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or fit is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting fit result")
     settings: Optional[PlotSettings] = project_tab.get_active_plot()
     update_plot: bool = (
@@ -70,14 +74,17 @@ def delete_fit_result(*args, **kwargs):
     )
     project.delete_fit(data, fit)
     project_tab.populate_fits(project, data)
+
     if settings is not None:
         project_tab.plotting_tab.populate_fits(
             project.get_all_fits(),
             project.get_data_sets(),
             settings,
         )
+
     if update_plot:
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -87,9 +94,11 @@ def apply_fit_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[FitSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     project_tab.set_fit_settings(settings)
 
 
@@ -98,14 +107,17 @@ def perform_fit(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     data: Optional[DataSet] = kwargs.get("data")
     settings: Optional[FitSettings] = kwargs.get("settings")
     if data is None or settings is None:
         return
+
     assert data.get_num_points() > 0, "There are no data points to fit the circuit to!"
     circuit: pyimpspec.Circuit = pyimpspec.parse_cdc(settings.cdc)
     if len(circuit.get_elements()) == 0:
         return
+
     batch: bool = kwargs.get("batch", False)
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing fit")
     fit: FitResult = api.fit_circuit(
@@ -114,12 +126,14 @@ def perform_fit(*args, **kwargs):
         num_procs=STATE.config.num_procs or -1,
     )
     project.add_fit(data, fit)
+
     project_tab.populate_fits(project, data)
     project_tab.plotting_tab.populate_fits(
         project.get_all_fits(),
         project.get_data_sets(),
         project_tab.get_active_plot(),
     )
+
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
     if batch is False:
         signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)

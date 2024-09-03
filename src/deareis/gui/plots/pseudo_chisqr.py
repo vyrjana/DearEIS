@@ -27,13 +27,13 @@ from numpy import (
     floor,
     integer,
     issubdtype,
-    ndarray,
 )
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
-class MuXps(Plot):
+class PseudoChisqrAndScore(Plot):
     def __init__(self, width: int = -1, height: int = -1, *args, **kwargs):
         assert type(width) is int, width
         assert type(height) is int, height
@@ -50,20 +50,22 @@ class MuXps(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
-                label="number of RC elements",
+                label="Number of RC elements",
             )
-            self._y_axis_1: int = dpg.add_plot_axis(
+            self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="µ",
+                label="Score",
                 no_gridlines=True,
+                no_tick_labels=True,
             )
-            self._y_axis_2: int = dpg.add_plot_axis(
+            self._y_axis_2: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="log X² (pseudo)",
                 no_gridlines=True,
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -72,6 +74,7 @@ class MuXps(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -88,51 +91,50 @@ class MuXps(Plot):
     def update(self, num_RC: int):
         assert type(num_RC) is int and num_RC >= 0, num_RC
         assert len(self._series) == 1, len(self._series)
-        num_RCs: ndarray = self._series[0]["num_RCs"]
-        mu: ndarray = self._series[0]["mu"]
-        Xps: ndarray = self._series[0]["Xps"]
-        x: list = list(num_RCs)
-        y: list = list(mu)
+
+        x: list = self._series[0]["num_RCs"]
+        y: list = self._series[0]["scores"]
         dpg.set_value(
             dpg.get_item_children(self._y_axis_1, slot=1)[1],
-            [[num_RC], y[x.index(num_RC)]],
+            [[num_RC], [y[x.index(num_RC)]]],
         )
-        y = list(Xps)
+
+        y = self._series[0]["pseudo_chisqr"]
         dpg.set_value(
             dpg.get_item_children(self._y_axis_2, slot=1)[1],
-            [[num_RC], y[x.index(num_RC)]],
+            [[num_RC], [y[x.index(num_RC)]]],
         )
 
     def plot(self, *args, **kwargs):
         assert len(args) == 0, args
-        num_RCs: ndarray = kwargs["num_RCs"]
-        mu: ndarray = kwargs["mu"]
-        Xps: ndarray = kwargs["Xps"]
-        mu_criterion: float = kwargs["mu_criterion"]
+        num_RCs: List[int] = kwargs["num_RCs"]
+        scores: List[float] = kwargs["scores"]
+        pseudo_chisqr: List[float] = kwargs["pseudo_chisqr"]
         num_RC: int = kwargs["num_RC"]
-        assert type(num_RCs) is ndarray, num_RCs
-        assert type(mu) is ndarray, mu
-        assert type(Xps) is ndarray, Xps
-        assert type(mu_criterion) is float, mu_criterion
+        lower_limit: int = kwargs["lower_limit"]
+        upper_limit: int = kwargs["upper_limit"]
+
+        assert type(num_RCs) is list, num_RCs
+        assert type(scores) is list, scores
+        assert type(pseudo_chisqr) is list, pseudo_chisqr
         assert issubdtype(type(num_RC), integer), (type(num_RC), num_RC)
         assert num_RC >= min(num_RCs), (num_RC, num_RCs)
         assert num_RC <= max(num_RCs), (num_RC, num_RCs)
+        assert type(lower_limit) is int, lower_limit
+        assert type(upper_limit) is int, upper_limit
+
         self._series.append(kwargs)
-        x: list = list(num_RCs)
-        y: list = list(mu)
+        x: list = num_RCs
+
+        y: list = scores
         dpg.bind_item_theme(
             dpg.add_scatter_series(
                 x=x,
                 y=y,
-                label="µ",
-                user_data=(
-                    num_RCs,
-                    mu,
-                    Xps,
-                ),
+                label="Score",
                 parent=self._y_axis_1,
             ),
-            themes.mu_Xps.mu,
+            themes.suggestion_method.default,
         )
         dpg.bind_item_theme(
             dpg.add_scatter_series(
@@ -140,31 +142,29 @@ class MuXps(Plot):
                 y=[y[x.index(num_RC)]],
                 parent=self._y_axis_1,
             ),
-            themes.mu_Xps.mu_highlight,
+            themes.suggestion_method.highlight,
         )
         dpg.bind_item_theme(
             dpg.add_line_series(
                 x=x,
                 y=y,
-                user_data=(
-                    num_RCs,
-                    mu,
-                    Xps,
-                ),
                 parent=self._y_axis_1,
             ),
-            themes.mu_Xps.mu,
+            themes.suggestion_method.default,
         )
+
         dpg.bind_item_theme(
-            dpg.add_line_series(
-                x=[x[0] - 2, x[-1] + 2],
-                y=[mu_criterion, mu_criterion],
-                label="µ-crit.",
+            dpg.add_shade_series(
+                x=[lower_limit, upper_limit],
+                y1=[-2.0] * 2,
+                y2=[2.0] * 2,
+                label="Limits",
                 parent=self._y_axis_1,
             ),
-            themes.mu_Xps.mu_criterion,
+            themes.suggestion_method.range,
         )
-        y = list(Xps)
+
+        y = pseudo_chisqr
         dpg.bind_item_theme(
             dpg.add_scatter_series(
                 x=x,
@@ -172,7 +172,7 @@ class MuXps(Plot):
                 label="X²",
                 parent=self._y_axis_2,
             ),
-            themes.mu_Xps.Xps,
+            themes.pseudo_chisqr.default,
         )
         dpg.bind_item_theme(
             dpg.add_scatter_series(
@@ -180,7 +180,7 @@ class MuXps(Plot):
                 y=[y[x.index(num_RC)]],
                 parent=self._y_axis_2,
             ),
-            themes.mu_Xps.Xps_highlight,
+            themes.pseudo_chisqr.highlight,
         )
         dpg.bind_item_theme(
             dpg.add_line_series(
@@ -188,7 +188,7 @@ class MuXps(Plot):
                 y=y,
                 parent=self._y_axis_2,
             ),
-            themes.mu_Xps.Xps,
+            themes.pseudo_chisqr.default,
         )
 
     def adjust_limits(self):
@@ -199,23 +199,49 @@ class MuXps(Plot):
             return
         else:
             self.limits_adjusted()
-        max_Xps: Optional[float] = None
-        min_Xps: Optional[float] = None
+
+        min_num_RC: int = 1
+        max_num_RC: int = 2
+        max_pseudo_chisqr: Optional[float] = None
+        min_pseudo_chisqr: Optional[float] = None
+
         for kwargs in self._series:
-            num_RCs: ndarray = kwargs["num_RCs"]
-            Xps: ndarray = kwargs["Xps"]
-            if max_Xps is None or max(Xps) > max_Xps:
-                max_Xps = ceil(max(Xps))
-            if min_Xps is None or min(Xps) > min_Xps:
-                min_Xps = floor(min(Xps))
-        if max_Xps is None:
-            max_Xps = 1.0
-        if min_Xps is None:
-            min_Xps = 0.0
+            num_RCs: List[int] = kwargs["num_RCs"]
+            min_num_RC = min(num_RCs) - 1
+            max_num_RC = kwargs["max_x"]
+
+            pseudo_chisqr: List[float] = kwargs["pseudo_chisqr"]
+            if min_pseudo_chisqr is None or min(pseudo_chisqr) > min_pseudo_chisqr:
+                min_pseudo_chisqr = floor(min(pseudo_chisqr))
+            if max_pseudo_chisqr is None or max(pseudo_chisqr) > max_pseudo_chisqr:
+                max_pseudo_chisqr = ceil(max(pseudo_chisqr))
+
+        if max_pseudo_chisqr is None:
+            max_pseudo_chisqr = 1.0
+
+        if min_pseudo_chisqr is None:
+            min_pseudo_chisqr = 0.0
+
         dpg.split_frame()
-        dpg.set_axis_limits(self._x_axis, ymin=min(num_RCs) - 1, ymax=max(num_RCs) + 1)
-        dpg.set_axis_limits(self._y_axis_1, ymin=-0.1, ymax=1.1)
-        dpg.set_axis_limits(self._y_axis_2, ymin=min_Xps - 0.1, ymax=max_Xps + 0.1)
+        dpg.set_axis_limits(
+            self._x_axis,
+            ymin=min_num_RC,
+            ymax=max_num_RC,
+        )
+        dpg.set_axis_limits(
+            self._y_axis_1,
+            ymin=-0.1,
+            ymax=1.1,
+        )
+        dpg.set_axis_limits(
+            self._y_axis_2,
+            ymin=min_pseudo_chisqr - 0.1,
+            ymax=max_pseudo_chisqr + 0.1,
+        )
+
+        dpg.split_frame(delay=33)
+        dpg.set_axis_limits_auto(self._x_axis)
+        dpg.set_axis_limits_auto(self._y_axis_2)
 
     def copy_limits(self, other: Plot):
         src: int
@@ -234,6 +260,7 @@ class MuXps(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)

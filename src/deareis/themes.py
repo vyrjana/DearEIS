@@ -21,6 +21,7 @@ from random import choice
 from types import SimpleNamespace
 from typing import Dict, List, Set, Tuple
 import dearpygui.dearpygui as dpg
+from deareis.typing.helpers import Tag
 
 
 PLOT_MARKERS: Dict[str, int] = {
@@ -86,32 +87,40 @@ VIBRANT_COLORS: List[List[float]] = [
 def get_plot_series_theme_color(parent: int) -> List[float]:
     assert type(parent) is int, parent
     color: List[float] = []
+
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
         for i in dpg.get_item_children(item, slot=1):
             if not dpg.get_item_type(i).endswith("::mvThemeColor"):
                 continue
+            
             color = dpg.get_value(i)
+
     assert (
         type(color) is list and len(color) == 4 and all(map(lambda _: _ >= 0.0, color))
     ), color
+    
     return color
 
 
 def get_plot_series_theme_marker(parent: int) -> int:
     assert type(parent) is int, parent
     marker: int = -1
+    
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
         for i in dpg.get_item_children(item, slot=1):
             if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
                 continue
+            
             marker = int(dpg.get_value(i)[0])
+    
     assert type(marker) is int and (
         marker in PLOT_MARKERS.values() or marker == -1
     ), marker
+    
     return marker
 
 
@@ -121,8 +130,10 @@ def get_random_color_marker(existing_themes: Dict[str, int]) -> Tuple[List[float
     existing_colors: List[List[float]] = []
     existing_markers: List[int] = []
     existing_combinations: List[str] = []
+    
     color: List[float]
     marker: int
+    
     uuid: str
     item: int
     for uuid, item in existing_themes.items():
@@ -131,6 +142,7 @@ def get_random_color_marker(existing_themes: Dict[str, int]) -> Tuple[List[float
         existing_colors.append(color)
         existing_markers.append(marker)
         existing_combinations.append(",".join(map(str, color)) + str(marker))
+    
     if len(available_markers) > len(existing_markers):
         available_markers = list(set(available_markers) - set(existing_markers))
         ac: Set[str] = set(map(lambda _: ",".join(map(str, _)), available_colors))
@@ -142,8 +154,10 @@ def get_random_color_marker(existing_themes: Dict[str, int]) -> Tuple[List[float
                 choice(available_colors),
                 choice(available_markers),
             )
+    
     possible_combinations: Dict[str, Tuple[List[float], int]] = {}
     combination: str
+    
     for marker in PLOT_MARKERS.values():
         for color in VIBRANT_COLORS:
             combination = ",".join(map(str, color)) + str(marker)
@@ -152,8 +166,10 @@ def get_random_color_marker(existing_themes: Dict[str, int]) -> Tuple[List[float
                     color,
                     marker,
                 )
+    
     if len(possible_combinations) > 0:
         return choice(list(possible_combinations.values()))
+    
     return (
         [255.0, 255.0, 255.0, 255.0],
         dpg.mvPlotMarker_Circle,
@@ -172,13 +188,16 @@ def create_plot_series_theme(
     ), color
     assert type(marker) is int and marker in PLOT_MARKERS.values(), marker
     assert type(tag) is int
+
     if tag < 0:
         tag = dpg.generate_uuid()
+
     R: float
     G: float
     B: float
     A: float
     R, G, B, A = color
+
     with dpg.theme(tag=tag):
         with dpg.theme_component(dpg.mvScatterSeries):
             dpg.add_theme_color(
@@ -204,44 +223,55 @@ def create_plot_series_theme(
             dpg.add_theme_style(
                 dpg.mvPlotStyleVar_Marker, marker, category=dpg.mvThemeCat_Plots
             )
+
         with dpg.theme_component(dpg.mvLineSeries):
             dpg.add_theme_color(
                 dpg.mvPlotCol_Line,
                 color,
                 category=dpg.mvThemeCat_Plots,
             )
+
         with dpg.theme_component(dpg.mvShadeSeries):
             dpg.add_theme_color(
                 dpg.mvPlotCol_Fill,
                 color,
                 category=dpg.mvThemeCat_Plots,
             )
+
     return tag
 
 
 def update_plot_series_theme_color(parent: int, color: List[float]):
     assert type(parent) is int, parent
+    
     if type(color) is tuple:
         color = list(color)
+
     assert (
         type(color) is list
         and len(color) == 4
         and all(map(lambda _: type(_) is float, color))
     ), color
+    
     uuids: List[int] = []
+    
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
         for i in dpg.get_item_children(item, slot=1):
             if not dpg.get_item_type(i).endswith("::mvThemeColor"):
                 continue
+            
             uuids.append(i)
+
     if len(uuids) == 0:
         return
+
     alpha: float = color[-1]
     color[-1] = 0
     dpg.set_value(uuids.pop(0), color)
     color[-1] = alpha
+    
     while uuids:
         dpg.set_value(uuids.pop(0), color)
 
@@ -249,12 +279,14 @@ def update_plot_series_theme_color(parent: int, color: List[float]):
 def update_plot_series_theme_marker(parent: int, marker: int):
     assert type(parent) is int, parent
     assert type(marker) is int, marker
+    
     item: int
     for item in dpg.get_item_children(parent, slot=1):
         i: int
         for i in dpg.get_item_children(item, slot=1):
             if not dpg.get_item_type(i).endswith("::mvThemeStyle"):
                 continue
+            
             dpg.set_value(i, [marker, -1])
 
 
@@ -367,6 +399,7 @@ residuals: SimpleNamespace = SimpleNamespace(
     }
 )
 
+# TODO: Replace this (and any uses of it) with the two namespaces below
 mu_Xps: SimpleNamespace = SimpleNamespace(
     **{
         "mu": create_plot_series_theme(
@@ -392,7 +425,52 @@ mu_Xps: SimpleNamespace = SimpleNamespace(
     }
 )
 
-plot: int
+
+pseudo_chisqr: SimpleNamespace = SimpleNamespace(
+    **{
+        "default": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Square,
+        ),
+        "highlight": create_plot_series_theme(
+            [238.0, 119.0, 51.0, 190.0],
+            dpg.mvPlotMarker_Square,
+        ),
+        "default_log_F_ext": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "highlight_log_F_ext": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+    }
+)
+
+
+suggestion_method: SimpleNamespace = SimpleNamespace(
+    **{
+        "default": create_plot_series_theme(
+            [238.0, 51.0, 119.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "highlight": create_plot_series_theme(
+            [51.0, 187.0, 238.0, 190.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+        "threshold": create_plot_series_theme(
+            [0.0, 153.0, 136.0, 190.0],
+            dpg.mvPlotMarker_Square,
+        ),
+        "range": create_plot_series_theme(
+            [0.0, 136.0, 255.0, 32.0],
+            dpg.mvPlotMarker_Circle,
+        ),
+    }
+)
+
+
+plot: Tag
 with dpg.theme() as plot:
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -407,8 +485,8 @@ with dpg.theme() as plot:
         )
 
 
-_clean_tab: int = dpg.generate_uuid()
-_dirty_tab: int = dpg.generate_uuid()
+_clean_tab: Tag = dpg.generate_uuid()
+_dirty_tab: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_clean_tab):
     with dpg.theme_component(dpg.mvTab):
         dpg.add_theme_color(
@@ -511,9 +589,9 @@ tab: SimpleNamespace = SimpleNamespace(
 )
 
 
-_valid_cdc: int = dpg.generate_uuid()
-_invalid_cdc: int = dpg.generate_uuid()
-_normal_cdc: int = dpg.generate_uuid()
+_valid_cdc: Tag = dpg.generate_uuid()
+_invalid_cdc: Tag = dpg.generate_uuid()
+_normal_cdc: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_valid_cdc):
     with dpg.theme_component(dpg.mvInputText, enabled_state=True):
         dpg.add_theme_color(
@@ -586,8 +664,8 @@ cdc: SimpleNamespace = SimpleNamespace(
 )
 
 
-_valid_result: int = dpg.generate_uuid()
-_invalid_result: int = dpg.generate_uuid()
+_valid_result: Tag = dpg.generate_uuid()
+_invalid_result: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_valid_result):
     with dpg.theme_component(dpg.mvText, enabled_state=True):
         dpg.add_theme_color(
@@ -662,7 +740,8 @@ _invalid_color = (
     29.0,
     255.0,
 )
-_invalid_unselected_node: int = dpg.generate_uuid()
+
+_invalid_unselected_node: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_invalid_unselected_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -710,7 +789,8 @@ with dpg.theme(tag=_invalid_unselected_node):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_invalid_selected_node: int = dpg.generate_uuid()
+
+_invalid_selected_node: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_invalid_selected_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -758,13 +838,15 @@ with dpg.theme(tag=_invalid_selected_node):
             ),
             category=dpg.mvThemeCat_Core,
         )
+
 _valid_color = (
     15.0,
     86.0,
     135.0,
     255.0,
 )
-_valid_selected_node: int = dpg.generate_uuid()
+
+_valid_selected_node: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_valid_selected_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -812,7 +894,8 @@ with dpg.theme(tag=_valid_selected_node):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_valid_unselected_node: int = dpg.generate_uuid()
+
+_valid_unselected_node: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_valid_unselected_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -860,9 +943,11 @@ with dpg.theme(tag=_valid_unselected_node):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_preview_node: int = dpg.generate_uuid()
+
+_preview_node: Tag = dpg.generate_uuid()
 _link_color = (255, 255, 255, 200)
 _pin_color = (255, 255, 255, 0)
+
 with dpg.theme(tag=_preview_node):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -941,6 +1026,7 @@ with dpg.theme(tag=_preview_node):
             y=4,
             category=dpg.mvThemeCat_Nodes,
         )
+
 circuit_editor: SimpleNamespace = SimpleNamespace(
     **{
         "valid_selected_node": _valid_selected_node,
@@ -952,7 +1038,7 @@ circuit_editor: SimpleNamespace = SimpleNamespace(
 )
 
 
-_limited_parameter: int = dpg.generate_uuid()
+_limited_parameter: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_limited_parameter):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -965,7 +1051,8 @@ with dpg.theme(tag=_limited_parameter):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_huge_error: int = dpg.generate_uuid()
+
+_huge_error: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_huge_error):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -978,7 +1065,8 @@ with dpg.theme(tag=_huge_error):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_large_error: int = dpg.generate_uuid()
+
+_large_error: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_large_error):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -991,7 +1079,8 @@ with dpg.theme(tag=_large_error):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_default_statistic: int = dpg.generate_uuid()
+
+_default_statistic: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_default_statistic):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -1004,7 +1093,8 @@ with dpg.theme(tag=_default_statistic):
             ),
             category=dpg.mvThemeCat_Core,
         )
-_highlighted_statistic: int = dpg.generate_uuid()
+
+_highlighted_statistic: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_highlighted_statistic):
     with dpg.theme_component(dpg.mvAll):
         dpg.add_theme_color(
@@ -1017,6 +1107,7 @@ with dpg.theme(tag=_highlighted_statistic):
             ),
             category=dpg.mvThemeCat_Core,
         )
+
 fitting: SimpleNamespace = SimpleNamespace(
     **{
         "limited_parameter": _limited_parameter,
@@ -1068,7 +1159,6 @@ with dpg.theme() as _palette_option:
             category=dpg.mvThemeCat_Core,
         )
 
-
 palette: SimpleNamespace = SimpleNamespace(
     **{
         "option": _palette_option,
@@ -1087,7 +1177,6 @@ with dpg.theme() as _file_dialog_folder:
             category=dpg.mvThemeCat_Core,
         )
 
-
 _file_dialog_file: int
 with dpg.theme() as _file_dialog_file:
     with dpg.theme_component(dpg.mvAll):
@@ -1097,7 +1186,6 @@ with dpg.theme() as _file_dialog_file:
             0.5,
             category=dpg.mvThemeCat_Core,
         )
-
 
 file_dialog: SimpleNamespace = SimpleNamespace(
     **{
@@ -1116,8 +1204,8 @@ with dpg.theme() as transparent_modal_background:
             category=dpg.mvThemeCat_Core,
         )
 
-_valid_path: int = dpg.generate_uuid()
-_invalid_path: int = dpg.generate_uuid()
+_valid_path: Tag = dpg.generate_uuid()
+_invalid_path: Tag = dpg.generate_uuid()
 with dpg.theme(tag=_valid_path):
     with dpg.theme_component(dpg.mvInputText, enabled_state=True):
         dpg.add_theme_color(
@@ -1139,6 +1227,7 @@ with dpg.theme(tag=_valid_path):
                 255.0,
             ],
         )
+
 with dpg.theme(tag=_invalid_path):
     with dpg.theme_component(dpg.mvInputText, enabled_state=True):
         dpg.add_theme_color(
@@ -1160,6 +1249,7 @@ with dpg.theme(tag=_invalid_path):
                 255.0,
             ],
         )
+
 path: SimpleNamespace = SimpleNamespace(
     **{
         "valid": _valid_path,
@@ -1188,6 +1278,7 @@ _greyed_out: List[float] = [
     255.0,
 ]
 _rounding: int = 2
+
 global_theme: int
 with dpg.theme() as global_theme:
     # Enabled

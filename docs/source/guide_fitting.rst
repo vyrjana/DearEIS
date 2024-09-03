@@ -56,7 +56,7 @@ For example, ``R{R=250f:ct}`` defines a resistor with:
 - a fixed initial value (i.e., a constant value)
 - the label ``ct``, which stands for charge transfer
   
-Engineering notation (e.g., ``1e-6`` or ``1E-6`` instead of ``0.000001``) is supported by the extended syntax.
+E notation (e.g., ``1e-6`` or ``1E-6`` instead of ``0.000001``) is supported by the extended syntax.
 All parameters do not need to be defined if a circuit element has multiple parameters.
 If parameters are omitted, then the default values are used (e.g., the default initial value for the ``R`` parameter of a resistor is 1000 ohms).
 If parameter limits are completely omitted, then the default values are used (e.g., the default lower limit for the ``R`` parameter of a resistor i 0 and the upper limit is infinity).
@@ -66,13 +66,14 @@ If parameter limits are completely omitted, then the default values are used (e.
 - an initial value of 0.95 for the ``n`` parameter (other sources may use the notation ``alpha`` or ``psi`` for this parameter) with a lower limit of 0.9 and an upper limit of 1.0
 - the label ``dl``, which stands for double-layer (i.e., double-layer capacitance)
 
-The valid symbols are listed in the **Element** combo box positioned below the **CDC input** field.
+The valid symbols are listed in the **Elements** tab found within the **Diagram** tab of the **Circuit editor** window.
 
 Alternatively, nodes representing the circuit elements can be added to the node editor and connected together to form an equivalent circuit.
-This is done by choosing the type of circuit element one wants to add, clicking the **Add** button, and finally linking nodes together by clicking and dragging between the terminals of the nodes  (i.e., the yellow dots on either side of a node).
+Circuit elements can be added to the node editor by clicking on a type of element in the **Elements** tab or by dragging a type of element from the **Elements** tab and onto the node editor.
+The nodes can be linked together by clicking and dragging between the terminals of the nodes  (i.e., the yellow dots on either side of a node).
 If two parallel circuits are connected in series like in :numref:`circuit_editor`, then it is necessary to place a node between them.
 This node could be an element (e.g., a resistor) that is also connected in series to the two parallel circuits or it could be a dummy node.
-This dummy node, which can be added via the **Add dummy** button, does not affect the impedance of the system at all.
+This dummy node, which can be added with the **Add dummy/junction** button, does not affect the impedance of the system at all.
 Links between nodes can be deleted by either clicking on a link and then pressing the **Delete** button on the keyboard, or by holding down **Ctrl** when clicking on a link.
 Multiple nodes can be moved or deleted by clicking and dragging a selection box around them.
 
@@ -80,16 +81,6 @@ Multiple nodes can be moved or deleted by clicking and dragging a selection box 
 
     \clearpage
 
-Clicking a node will update the area on the left-hand side.
-This is where a label such as ``ct`` for charge transfer can be added to a circuit element.
-More importantly, this is where initial values and limits can be defined for the parameters of a circuit element.
-One can also set a parameter to have a fixed value.
-
-.. note::
-
-   Due to technical reasons, one must click on the upper part of a node (i.e., where the label is) that represents a circuit element in order to be able to define, e.g., custom initial values.
-   Also, any values typed into the input fields must be confirmed by pressing ``Enter`` or the value will not actually be set.
-   Click and hold on the lower part of the node to move it around.
 
 .. note:: 
 
@@ -103,8 +94,20 @@ One can also set a parameter to have a fixed value.
 
    The graphical circuit editor can be used to construct equivalent circuits and to define the initial values and limits of parameters.
 
+
+.. _node_selected:
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor-selected.png
+   :alt: After selecting a node
+
+   Selecting a node makes it possible to assign a label (e.g., ``ct`` for charge transfer).
+
+.. note::
+
+   Due to technical reasons, one must click on the upper part of a node (i.e., where the label is) that represents a circuit element in order to be able to define, e.g., custom initial values.
+   Also, any values typed into the input fields must be confirmed by pressing ``Enter`` or the value will not actually be set.
+   Click and hold on the lower part of the node to move it around.
 .. _container_elements:
-.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-container.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor-container.png
    :alt: Example of the parameters and subcircuits of a container element
 
    Container elements such as the general transmission line model have subcircuits that can also be modified.
@@ -114,7 +117,7 @@ If there is an issue with the equivalent circuit (e.g., a missing or invalid con
 The **Status** field at the bottom of the window should offer some help regarding the nature of the issue and the affected node should be highlighted with a red label (:numref:`invalid_circuit`).
 
 .. _invalid_circuit:
-.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-invalid.png
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor-invalid.png
    :alt: Example of a status message for an invalid circuit (e.g., missing connection)
 
    If the circuit is invalid because of, e.g., a missing connection, then that is indicated by highlighting the affected node and by showing a relevant error message in the status field near the bottom of the window.
@@ -123,14 +126,20 @@ The **Status** field at the bottom of the window should offer some help regardin
 Adjusting parameters
 --------------------
 
-The parameters of each circuit element can be adjusted via the circuit editor.
-However, there is also a separate parameter adjustment window that provides a real-time preview of the impedance spectrum produced by the circuit.
-This window is accessible from the **Fitting** tab (i.e., not from the circuit editor).
+The initial values of the parameters of each circuit element can be adjusted via the circuit editor's **Parameters** tab.
+This tab provides a real-time preview of the impedance/admittance spectrum produced by the circuit.
+The lower and/or upper limits of the parameters can also be defined, and parameters can also be given fixed values.
 
-.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-adjustment.png
-   :alt: The parameter adjustment window in the Fitting tab
+..
+  This figure must be updated
 
-   The parameter adjustment window provides a convenient way of dialing in the initial values before performing a fit.
+.. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/fitting-tab-editor-adjustment.png
+   :alt: The parameter adjustment tab of the Circuit editor window
+
+   The **Parameters** tab of the **Circuit editor** window provides a convenient way of dialing in the initial values before performing a fit.
+
+It is possible to apply the values, which were obtained by fitting a circuit, as the initial values for another iteration of circuit fitting.
+This is accomplished by clicking the **Apply fitted values as initial values** button that can be found below the table of fitted values in the **Fitting** tab of the project.
 
 
 Applying old settings and masks

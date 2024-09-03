@@ -27,13 +27,15 @@ import dearpygui.dearpygui as dpg
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.data import DataSet
+from deareis.typing.helpers import Tag
+
 
 
 class DataSetsCombo:
     def __init__(self, label: str, width: int):
         self.labels: List[str] = []
         dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
+        self.tag: Tag = dpg.generate_uuid()
         dpg.add_combo(
             callback=lambda s, a, u: signals.emit(
                 Signal.SELECT_DATA_SET,
@@ -95,7 +97,7 @@ class ResultsCombo:
     def __init__(self, label: str, width: int):
         self.labels: Dict[str, str] = {}
         dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
+        self.tag: Tag = dpg.generate_uuid()
         dpg.add_combo(
             callback=self.selection_callback,
             user_data=(

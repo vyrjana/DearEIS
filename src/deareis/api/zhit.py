@@ -18,11 +18,8 @@
 # the LICENSES folder.
 
 from time import time as _time
+from typing import Dict
 from uuid import uuid4 as _uuid4
-from numpy import (
-    integer as _integer,
-    issubdtype as _issubdtype,
-)
 import pyimpspec as _pyimpspec
 from deareis.data import (
     DataSet,
@@ -33,16 +30,18 @@ from deareis.enums import (
     ZHITSmoothing,
     ZHITInterpolation,
     ZHITWindow,
+    ZHITRepresentation,
     zhit_smoothing_to_value as _zhit_smoothing_to_value,
     zhit_interpolation_to_value as _zhit_interpolation_to_value,
     zhit_window_to_value as _zhit_window_to_value,
+    zhit_representation_to_value as _zhit_representation_to_value,
 )
 
 
 def perform_zhit(
     data: DataSet,
     settings: ZHITSettings,
-    num_procs: int = 0,
+    num_procs: int = -1,
 ) -> ZHITResult:
     """
     Wrapper for the `pyimpspec.perform_zhit` function.
@@ -51,7 +50,7 @@ def perform_zhit(
     The results can be used to, e.g., check the validity of an impedance spectrum by detecting non-steady state issues like drift at low frequencies.
     See the references below for more information about the algorithm and its applications.
     The algorithm involves an offset adjustment of the reconstructed modulus data, which is done by fitting the reconstructed modulus data to the experimental modulus data in a frequency range that is unaffected (or minimally affected) by artifacts.
-    This frequency range is typically around 1 Hz to 1000 Hz, which is why the default window function is a "boxcar" window that is centered around :math:`\log{f} = 1.5` and has a width of 3.0.
+    This frequency range is typically around 1 Hz to 1000 Hz, which is why the default window function is a "boxcar" window that is centered around :math:`\\log{f} = 1.5` and has a width of 3.0.
     Multiple window functions are supported and a custom array of weights can also be used.
 
     References:
@@ -72,6 +71,7 @@ def perform_zhit(
     num_procs: int, optional
         The maximum number of parallel processes to use when performing the computations.
         A value less than 1 will result in an attempt to automatically figure out a suitable value.
+        Negative values are used as offsets relative to the number of cores detected.
         Applies only when there are multiple possible options for smoothing, interpolation, or window function.
 
     Returns
@@ -80,7 +80,7 @@ def perform_zhit(
     """
     assert isinstance(data, _pyimpspec.DataSet), data
     assert isinstance(settings, ZHITSettings), settings
-    assert _issubdtype(type(num_procs), _integer), num_procs
+
     result: _pyimpspec.ZHITResult = _pyimpspec.perform_zhit(
         data=data,
         smoothing=_zhit_smoothing_to_value[settings.smoothing],
@@ -92,16 +92,22 @@ def perform_zhit(
         center=settings.window_center,
         width=settings.window_width,
         weights=None,
+        admittance=_zhit_representation_to_value[settings.representation],
         num_procs=num_procs,
     )
+
+
+    time: float = _time()
+    mask: Dict[int, bool] = data.get_mask().copy()
+
     return ZHITResult(
         uuid=_uuid4().hex,
-        timestamp=_time(),
+        timestamp=time,
         frequencies=result.frequencies,
         impedances=result.impedances,
         residuals=result.residuals,
         pseudo_chisqr=result.pseudo_chisqr,
-        mask=data.get_mask().copy(),
+        mask=mask,
         smoothing=result.smoothing,
         interpolation=result.interpolation,
         window=result.window,

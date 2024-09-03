@@ -81,5 +81,8 @@ The magnitude of the complex impedance.
         "phase": """
 The negative phase shift of the complex impedance.
     """.strip(),
+        "show_frequency": """
+Show the frequency of the data point closest to the mouse pointer.
+    """.strip(),
     }
 )

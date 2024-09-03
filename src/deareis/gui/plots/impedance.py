@@ -27,12 +27,14 @@ import dearpygui.dearpygui as dpg
 from numpy import (
     array,
     ceil,
+    complex128,
     floor,
     log10 as log,
     ndarray,
 )
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
 class Impedance(Plot):
@@ -40,6 +42,7 @@ class Impedance(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -52,22 +55,23 @@ class Impedance(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis_1: int = dpg.add_plot_axis(
+            self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Re(Z) (ohm)",
                 no_gridlines=True,
             )
-            self._y_axis_2: int = dpg.add_plot_axis(
+            self._y_axis_2: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="-Im(Z) (ohm)",
                 no_gridlines=True,
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -76,6 +80,7 @@ class Impedance(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -100,9 +105,8 @@ class Impedance(Plot):
                     dpg.get_item_children(self._y_axis_2, slot=1),
                 )
             ):
-                self._series[i]["frequency"] = array([])
-                self._series[i]["real"] = array([])
-                self._series[i]["imaginary"] = array([])
+                self._series[i]["frequencies"] = array([])
+                self._series[i]["impedances"] = array([], dtype=complex128)
                 dpg.set_value(series_1, [[], []])
                 dpg.set_value(series_2, [[], []])
 
@@ -113,12 +117,16 @@ class Impedance(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        real: ndarray = kwargs["real"]
-        imag: ndarray = kwargs["imaginary"]
+
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        real: ndarray = X.real
+        imag: ndarray = X.imag * (1 if self._admittance is True else -1)
+
         assert type(freq) is ndarray, freq
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
+
         i: int
         series_1: int
         series_2: int
@@ -133,19 +141,23 @@ class Impedance(Plot):
             self._series[index].update(kwargs)
             dpg.set_value(series_1, [list(freq), list(real)])
             dpg.set_value(series_2, [list(freq), list(imag)])
+            dpg.show_item(series_1)
+            dpg.show_item(series_2)
             break
 
     def plot(self, *args, **kwargs) -> Tuple[int, int]:
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
-        real: ndarray = kwargs["real"]
-        imag: ndarray = kwargs["imaginary"]
+        freq: ndarray = kwargs["frequencies"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        real: ndarray = X.real
+        imag: ndarray = X.imag * (1 if self._admittance is True else -1)
         labels: Tuple[str, str] = kwargs["labels"]
         sim: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         show_labels: bool = kwargs.get("show_labels", True)
         themes: Optional[Tuple[int, int]] = kwargs.get("themes")
+
         assert type(freq) is ndarray, freq
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
@@ -155,6 +167,7 @@ class Impedance(Plot):
         assert type(line) is bool, line
         assert (type(themes) is tuple and len(themes) == 2) or themes is None, themes
         assert type(show_labels) is bool, show_labels
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         x: list = list(freq)
@@ -173,6 +186,7 @@ class Impedance(Plot):
         if themes is not None:
             dpg.bind_item_theme(tag_real, themes[0])
             dpg.bind_item_theme(tag_imag, themes[1])
+
         return (
             tag_real,
             tag_imag,
@@ -186,61 +200,64 @@ class Impedance(Plot):
             return
         else:
             self.limits_adjusted()
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y1_min: Optional[float] = None
         y1_max: Optional[float] = None
         y2_min: Optional[float] = None
         y2_max: Optional[float] = None
+
         for kwargs in self._series:
-            freq: ndarray = kwargs["frequency"]
-            real: ndarray = kwargs["real"]
-            imag: ndarray = kwargs["imaginary"]
+            freq: ndarray = kwargs["frequencies"]
             if freq.size > 0:
                 if x_min is None or min(freq) < x_min:
                     x_min = min(freq)
                 if x_max is None or max(freq) > x_max:
                     x_max = max(freq)
+
+            X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+            real: ndarray = X.real
             if real.size > 0:
                 if y1_min is None or min(real) < y1_min:
                     y1_min = min(real)
                 if y1_max is None or max(real) > y1_max:
                     y1_max = max(real)
+
+            imag: ndarray = X.imag * (1 if self._admittance is True else -1)
             if imag.size > 0:
                 if y2_min is None or min(imag) < y2_min:
                     y2_min = min(imag)
                 if y2_max is None or max(imag) > y2_max:
                     y2_max = max(imag)
+
         if x_min is None:
             x_min = 0.0
             x_max = 1.0
+
             y1_min = 0.0
             y1_max = 1.0
+
             y2_min = 0.0
             y2_max = 1.0
         else:
             dx: float = 0.1
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
+
             dy: float = abs(y1_max - y1_min) * 0.05
-            n: int = 1
-            if dy < 1.0:
-                y1_min = floor(y1_min / n) * n - n
-                y1_max = ceil(y1_max / n) * n + n
-            else:
-                y1_min = y1_min - dy
-                y1_max = y1_max + dy
+            y1_min = y1_min - dy
+            y1_max = y1_max + dy
+
             dy = abs(y2_max - y2_min) * 0.05
-            if dy < 1.0:
-                y2_min = floor(y2_min / n) * n - n
-                y2_max = ceil(y2_max / n) * n + n
-            else:
-                y2_min = y2_min - dy
-                y2_max = y2_max + dy
+            y2_min = y2_min - dy
+            y2_max = y2_max + dy
+
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis_1, ymin=y1_min, ymax=y1_max)
         dpg.set_axis_limits(self._y_axis_2, ymin=y2_min, ymax=y2_max)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
@@ -263,10 +280,38 @@ class Impedance(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
         dpg.set_axis_limits_auto(self._y_axis_2)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._y_axis_1,
+            "Re(Y) (S)" if self._admittance is True else "Re(Z) (ohm)",
+        )
+        dpg.set_item_label(
+            self._y_axis_2,
+            "Im(Y) (S)" if self._admittance is True else "-Im(Z) (ohm)",
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance
 
 
 class ImpedanceSingleAxis(Plot):
@@ -281,6 +326,8 @@ class ImpedanceSingleAxis(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
+        self._imaginary: bool = False
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -293,17 +340,18 @@ class ImpedanceSingleAxis(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis: int = dpg.add_plot_axis(
+            self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label=y_axis_label,
                 no_gridlines=True,
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -312,6 +360,7 @@ class ImpedanceSingleAxis(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -328,8 +377,8 @@ class ImpedanceSingleAxis(Plot):
             for i, series in enumerate(
                 dpg.get_item_children(self._y_axis, slot=1),
             ):
-                self._series[i]["x"] = array([])
-                self._series[i]["y"] = array([])
+                self._series[i]["frequencies"] = array([])
+                self._series[i]["impedances"] = array([], dtype=complex128)
                 dpg.set_value(series, [[], []])
 
     def update(self, index: int, *args, **kwargs):
@@ -339,10 +388,16 @@ class ImpedanceSingleAxis(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        x: ndarray = kwargs["x"]
-        y: ndarray = kwargs["y"]
+        x: ndarray = kwargs["frequencies"]
+        y: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        if self._imaginary is True:
+            y = y.imag * (1 if self._admittance is True else -1)
+        else:
+            y = y.real
+
         assert type(x) is ndarray, x
         assert type(y) is ndarray, y
+
         i: int
         series: int
         for i, series in enumerate(
@@ -352,18 +407,24 @@ class ImpedanceSingleAxis(Plot):
                 continue
             self._series[index].update(kwargs)
             dpg.set_value(series, [list(x), list(y)])
+            dpg.show_item(series)
             break
 
     def plot(self, *args, **kwargs) -> Tuple[int, int]:
         assert len(args) == 0, args
-        x: ndarray = kwargs["x"]
-        y: ndarray = kwargs["y"]
+        x: ndarray = kwargs["frequencies"]
+        y: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        if self._imaginary is True:
+            y = y.imag * (1 if self._admittance is True else -1)
+        else:
+            y = y.real
         label: str = kwargs["label"]
         sim: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         show_label: bool = kwargs.get("show_label", True)
         theme: Optional[int] = kwargs.get("theme")
+
         assert type(x) is ndarray, x
         assert type(y) is ndarray, y
         assert type(label) is str, label
@@ -372,6 +433,7 @@ class ImpedanceSingleAxis(Plot):
         assert type(line) is bool, line
         assert type(theme) is int or theme is None, theme
         assert type(show_label) is bool, show_label
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         tag: int = func(
@@ -382,6 +444,7 @@ class ImpedanceSingleAxis(Plot):
         )
         if themes is not None:
             dpg.bind_item_theme(tag, theme)
+
         return tag
 
     def adjust_limits(self):
@@ -392,23 +455,31 @@ class ImpedanceSingleAxis(Plot):
             return
         else:
             self.limits_adjusted()
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y_min: Optional[float] = None
         y_max: Optional[float] = None
+
         for kwargs in self._series:
-            x: ndarray = kwargs["x"]
-            y: ndarray = kwargs["y"]
+            x: ndarray = kwargs["frequencies"]
             if x.size > 0:
                 if x_min is None or min(x) < x_min:
                     x_min = min(x)
                 if x_max is None or max(x) > x_max:
                     x_max = max(x)
+
+            y: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+            if self._imaginary is True:
+                y = y.imag * (1 if self._admittance is True else -1)
+            else:
+                y = y.real
             if y.size > 0:
                 if y_min is None or min(y) < y_min:
                     y_min = min(y)
                 if y_max is None or max(y) > y_max:
                     y_max = max(y)
+
         if x_min is None:
             x_min = 0.0
             x_max = 1.0
@@ -418,17 +489,15 @@ class ImpedanceSingleAxis(Plot):
             dx: float = 0.1
             x_min = 10 ** (floor(log(x_min) / dx) * dx - dx)
             x_max = 10 ** (ceil(log(x_max) / dx) * dx + dx)
+
             dy: float = abs(y_max - y_min) * 0.05
-            n: int = 1
-            if dy < 1.0:
-                y_min = floor(y_min / n) * n - n
-                y_max = ceil(y_max / n) * n + n
-            else:
-                y_min = y_min - dy
-                y_max = y_max + dy
+            y_min = y_min - dy
+            y_max = y_max + dy
+
         dpg.split_frame()
         dpg.set_axis_limits(self._x_axis, ymin=x_min, ymax=x_max)
         dpg.set_axis_limits(self._y_axis, ymin=y_min, ymax=y_max)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
@@ -448,9 +517,35 @@ class ImpedanceSingleAxis(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._y_axis,
+            ("Im(Y) (S)" if self._admittance is True else "-Im(Z) (ohm)")
+            if self._imaginary is True
+            else ("Re(Y) (S)" if self._admittance is True else "Re(Z) (ohm)"),
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance
 
 
 class ImpedanceReal(ImpedanceSingleAxis):
@@ -468,6 +563,11 @@ class ImpedanceReal(ImpedanceSingleAxis):
             *args,
             **kwargs,
         )
+        self._imaginary = False
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance
 
 
 class ImpedanceImaginary(ImpedanceSingleAxis):
@@ -485,3 +585,8 @@ class ImpedanceImaginary(ImpedanceSingleAxis):
             *args,
             **kwargs,
         )
+        self._imaginary = True
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance

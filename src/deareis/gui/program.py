@@ -28,18 +28,19 @@ from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
+from deareis.typing.helpers import Tag
 
 
 class HomeTab:
     def __init__(self):
-        self.tab: int = dpg.generate_uuid()
+        self.tab: Tag = dpg.generate_uuid()
         with dpg.tab(
             label="Home",
             order_mode=dpg.mvTabOrder_Fixed,
             tag=self.tab,
         ):
             dpg.add_text("Recent projects")
-            self.recent_projects_table: int = dpg.generate_uuid()
+            self.recent_projects_table: Tag = dpg.generate_uuid()
             with dpg.child_window(border=False, width=-1, height=-24):
                 with dpg.table(
                     borders_outerV=True,
@@ -61,14 +62,14 @@ class HomeTab:
                         callback=lambda: signals.emit(Signal.NEW_PROJECT),
                     )
                     attach_tooltip(tooltips.home.new_project)
-                    self.load_projects_button: int = dpg.generate_uuid()
+                    self.load_projects_button: Tag = dpg.generate_uuid()
                     dpg.add_button(
                         label="Load project(s)",
                         callback=lambda: signals.emit(Signal.SELECT_PROJECT_FILES),
                         tag=self.load_projects_button,
                     )
                     attach_tooltip(tooltips.home.load_projects)
-                    self.merge_projects_button: int = dpg.generate_uuid()
+                    self.merge_projects_button: Tag = dpg.generate_uuid()
                     dpg.add_button(
                         label="Merge projects",
                         callback=lambda: signals.emit(
@@ -78,7 +79,7 @@ class HomeTab:
                         tag=self.merge_projects_button,
                     )
                     attach_tooltip(tooltips.home.merge_projects)
-                    self.clear_recent_projects_button: int = dpg.generate_uuid()
+                    self.clear_recent_projects_button: Tag = dpg.generate_uuid()
                     dpg.add_button(
                         label="Clear recent projects",
                         callback=lambda: signals.emit(
@@ -162,7 +163,7 @@ class HomeTab:
         paths: List[str] = []
         row: int
         for row in dpg.get_item_children(self.recent_projects_table, slot=1):
-            checkbox: int = dpg.get_item_children(row, slot=1)[-2]
+            checkbox: Tag = dpg.get_item_children(row, slot=1)[-2]
             assert "Checkbox" in dpg.get_item_type(checkbox), dpg.get_item_type(
                 checkbox
             )
@@ -175,7 +176,7 @@ class HomeTab:
 
 class ProjectTabBar:
     def __init__(self):
-        self.tab_bar: int = dpg.generate_uuid()
+        self.tab_bar: Tag = dpg.generate_uuid()
         with dpg.tab_bar(
             callback=lambda s, a, u: signals.emit(
                 Signal.SELECT_PROJECT_TAB
@@ -194,12 +195,12 @@ class ProjectTabBar:
         dpg.set_value(self.tab_bar, self.home_tab.tab)
 
     def select_next_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.tab_bar)) + 1
         dpg.set_value(self.tab_bar, tabs[index % len(tabs)])
 
     def select_previous_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.tab_bar)) - 1
         dpg.set_value(self.tab_bar, tabs[index % len(tabs)])
 
@@ -334,10 +335,11 @@ class MenuBar:
 
 class ProgramWindow:
     def __init__(self):
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(tag=self.window):
             self.menu_bar: MenuBar = MenuBar()
             self.project_tab_bar: ProjectTabBar = ProjectTabBar()
+
         self.busy_message: BusyMessage = BusyMessage()
         self.error_message: ErrorMessage = ErrorMessage()
 

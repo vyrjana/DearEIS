@@ -1,3 +1,76 @@
+# 5.0.0 (2024/09/03)
+
+## Kramers-Kronig
+
+- Added support for complex, real, and imaginary linear Kramers-Kronig tests implemented using least squares fitting.
+  - The previous implementations based on matrix inversion are still available.
+- Added a `Representation` setting that can be used to choose which immittance representation to perform the linear Kramers-Kronig tests on: admittance or impedance. There is also an option to perform the tests with both representations and then automatically suggest the one that seems to be the most appropriate.
+- Added settings (`Log Fext`, `Minimum log Fext`, `Maximum log Fext`, `Number of Fext eval.`, and `Rapid Fext eval.`) related to the range of time constants used during the linear Kramers-Kronig tests. Fext is used to either extend (Fext > 1) or contract (Fext < 1) the limits of the range of time constants. See DOI:10.1149/1.2044210 (e.g., eq. 18) for more information `Fext`.
+- Added a `Timeout` setting for the CNLS variant of the linear Kramers-Kronig test.
+- Updated the `Exploratory test results` window:
+  - If more than one immittance representation was tested, then one can switch between their results.
+  - If more than one Fext was evaluated, then one can switch between their results.
+  - Added a tab for plots that present the statistic that was minimized when optimizing Fext and the pseudo chi-squared values as a function of the number of RC elements for the chosen Fext value.
+  - Added support for the additional methods for suggesting the optimal number of RC elements added in the latest version of pyimpspec.
+    - The three new methods described by Plank et al. (2022, DOI:10.1109/IWIS57888.2022.9975131) with some modifications proposed by Yrjänä and Bobacka (2024, DOI:10.1016/j.electacta.2024.144951).
+    - Two new methods described by Yrjänä and Bobacka (2024, DOI:10.1016/j.electacta.2024.144951).
+  - Added support for combining multiple methods for suggesting the optimal number of RC elements.
+  - Added support for using the automatically suggested lower and upper limits for the number of RC elements. These limits can also be set manually.
+  - Added a static 3D plot (generated using matplotlib) of log pseudo chi-squared as a function of the number of RC elements and log Fext. Only available if the `Clear registry` setting is enabled and `Disable preview` setting is disabled (see the `Export plot` section in the default settings).
+- Added additional entries to the table of statistics for a Kramers-Kronig test result. These include, e.g., the mean and standard deviation of the residuals, and p-values for some statistical tests performed on the residuals.
+- Updated the default settings. The default settings should work for most scenarios and require nothing more than for the user to click the button to perform the test.
+- Updated tooltips.
+
+
+
+## Z-HIT analysis
+
+- Added support for additional smoothing methods introduced in the latest version of pyimpspec.
+- Added a setting for performing Z-HIT analyses on the admittance representation instead of the impedance representation.
+
+
+## DRT analysis
+
+- Added support for choosing the cross-validation method to use in conjunction with the TR-RBF method. The cross-validation method is used to pick a suitable lambda value.
+- See the changelog for the latest version of pyimpspec for other changes related to DRT methods.
+- Added the ability to toggle between plotting DRT spectra as a function of the time constant (in seconds) and the frequency (in hertz).
+- Updated tooltips.
+
+
+## Fitting
+
+- Added a button that copies the fitted circuit of the currently active result and uses the fitted values as the initial values in preparation for a new fit.
+- Added the ability to drag-and-drop elements from the list of elements into the node editor part of the `Circuit editor` window.
+- Moved the parameter adjustment into a tab in the `Circuit editor` window. The tab is only visible when the equivalent circuit model is valid (i.e., there are no missing or invalid connections).
+- Updated the widgets for adjusting a circuit element's parameter. If the value is represented as `m*10^n`, then there is now a slider that represents `log m` and a drop-down list representing `n`. The slider represents values in the range from 0 to 3 and the the items in the drop-down list represent the SI prefixes in the range 10^-30 to 10^30. There is still an input field for typing in a value directly and using that will update both the slider and drop-down list (and vice versa). If the value needs to be zero, then it has to be typed into the input field. Negative values can be adjusted with the slider after typing a negative value into the input field first. The slider will then adjust the magnitude as it would for positive values (i.e., low to high absolute values from left to right) and then multiply the value by -1.
+
+
+## Simulation
+
+- Added a modal window, which allows specifying the amount of noise to add to the impedance spectrum, when loading a simulation result as a data set.
+
+
+## Plotting
+
+- Updated the preview in the `Export plot` window to always use 100 DPI.
+- Deprecated the preview limits setting.
+
+
+## Miscellaneous
+
+- Added support for changing the default values of parameters for circuit elements (e.g., the default resistance of a resistor). These values can be changed in `Settings > Defaults`.
+- Added a checkbox to the `Data sets` tab for toggling the visibility of a tooltip that shows the frequency of the data point closest to the mouse cursor in the Nyquist plot.
+- Added checkboxes to various tabs for toggling between plotting the impedance or the admittance representation of the immittance data.
+- Updated migration of project files to automatically save a backup of the pre-migrated project with `.backupN` extensions where `N` is some integer that is incremented so as to avoid overwriting previous backups.
+- Updated how project snapshots are handled at initialization and when closing a project while discarding changes.
+- Updated automatic adjustment of limits for y-axes in plots of real and imaginary impedances.
+- Updated minimum versions of dependencies.
+- Updated tooltips.
+- Updated the error message window.
+- Fixed a bug that prevented modification of the regularization parameter in the `DRT analysis` tab after switching to a method that does not make use of the regularization parameter input.
+- Refactored code.
+
+
 # 4.2.1 (2024/03/14)
 
 - Maintenance release that updates the version requirements for dependencies.

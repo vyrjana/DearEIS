@@ -29,6 +29,7 @@ import dearpygui.dearpygui as dpg
 from numpy import (
     angle,
     array,
+    complex128,
     empty,
     flip,
     float64,
@@ -71,6 +72,7 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 class InterpolatePoints:
@@ -78,6 +80,7 @@ class InterpolatePoints:
         self,
         data: DataSet,
         callback: Callable,
+        admittance: bool,
     ):
         assert isinstance(data, DataSet), data
         assert callable(callback), callback
@@ -87,15 +90,17 @@ class InterpolatePoints:
         self.preview_data: DataSet = DataSet.from_dict(data.to_dict())
         self.preview_data.set_mask({})
         self.callback: Callable = callback
-        self.create_window()
+        self.create_window(admittance=admittance)
         self.register_keybindings()
         self.update_smoothing()
         self.nyquist_plot.queue_limits_adjustment()
         self.magnitude_plot.queue_limits_adjustment()
         self.phase_plot.queue_limits_adjustment()
+        self.toggle_plot_admittance(admittance)
 
     def register_keybindings(self):
         callbacks: Dict[Keybinding, Callable] = {}
+
         # Cancel
         kb: Keybinding = Keybinding(
             key=dpg.mvKey_Escape,
@@ -105,6 +110,7 @@ class InterpolatePoints:
             action=Action.CANCEL,
         )
         callbacks[kb] = self.close
+
         # Accept
         for kb in STATE.config.keybindings:
             if kb.action is Action.PERFORM_ACTION:
@@ -118,6 +124,7 @@ class InterpolatePoints:
                 action=Action.PERFORM_ACTION,
             )
         callbacks[kb] = self.accept
+
         # Previous plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.PREVIOUS_PLOT_TAB:
@@ -131,6 +138,7 @@ class InterpolatePoints:
                 action=Action.PREVIOUS_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=-1)
+
         # Next plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.NEXT_PLOT_TAB:
@@ -144,18 +152,20 @@ class InterpolatePoints:
                 action=Action.NEXT_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=1)
+
         # Create the handler
         self.keybinding_handler: TemporaryKeybindingHandler = (
             TemporaryKeybindingHandler(callbacks=callbacks)
         )
 
-    def create_window(self):
+    def create_window(self, admittance: bool):
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions()
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Interpolate points",
             modal=True,
@@ -169,24 +179,43 @@ class InterpolatePoints:
             on_close=self.close,
         ):
             with dpg.group(horizontal=True):
-                self.table_window: int = dpg.generate_uuid()
+                self.table_window: Tag = dpg.generate_uuid()
+
                 with dpg.child_window(
                     border=False,
-                    width=500,
+                    width=570,
                     tag=self.table_window,
                 ):
                     self.create_table()
-                    dpg.add_button(
-                        label="Accept".ljust(12),
-                        callback=self.accept,
-                    )
+
+                    with dpg.group(horizontal=True):
+                        dpg.add_button(
+                            label="Accept".ljust(12),
+                            callback=self.accept,
+                        )
+
+                        self.admittance_checkbox: Tag = dpg.generate_uuid()
+                        dpg.add_checkbox(
+                            label="Y",
+                            default_value=admittance,
+                            callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                            tag=self.admittance_checkbox,
+                        )
+                        attach_tooltip(tooltips.general.plot_admittance)
+
                 self.create_plots()
+
+    def toggle_plot_admittance(self, admittance: bool):
+        self.nyquist_plot.set_admittance(admittance)
+        self.magnitude_plot.set_admittance(admittance)
+        self.phase_plot.set_admittance(admittance)
 
     def create_table(self):
         with dpg.group(horizontal=True):
             dpg.add_text("Num. points")
             attach_tooltip(tooltips.zhit.num_points)
-            self.num_points_input: int = dpg.generate_uuid()
+
+            self.num_points_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=5,
                 min_value=2,
@@ -199,9 +228,11 @@ class InterpolatePoints:
                 width=100,
                 tag=self.num_points_input,
             )
+
             dpg.add_text("Num. iterations")
             attach_tooltip(tooltips.zhit.num_iterations)
-            self.num_iterations_input: int = dpg.generate_uuid()
+
+            self.num_iterations_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=3,
                 min_value=1,
@@ -214,7 +245,8 @@ class InterpolatePoints:
                 width=100,
                 tag=self.num_iterations_input,
             )
-            self.smooth_polar_checkbox: int = dpg.generate_uuid()
+
+            self.smooth_polar_checkbox: Tag = dpg.generate_uuid()
             dpg.add_checkbox(
                 label="Polar",
                 default_value=True,
@@ -222,6 +254,7 @@ class InterpolatePoints:
                 tag=self.smooth_polar_checkbox,
             )
             attach_tooltip(tooltips.data_sets.interpolation_smooth_polar)
+
         self.table = dpg.generate_uuid()
         with dpg.table(
             borders_outerV=True,
@@ -238,30 +271,37 @@ class InterpolatePoints:
                 width_fixed=True,
             )
             attach_tooltip(tooltips.data_sets.interpolation_toggle)
+
             dpg.add_table_column(
                 label="Index",
                 width_fixed=True,
             )
+
             dpg.add_table_column(
                 label="f (Hz)",
             )
             attach_tooltip(tooltips.data_sets.frequency)
+
             dpg.add_table_column(
                 label="Re(Z) (ohm)",
             )
             attach_tooltip(tooltips.data_sets.real)
+
             dpg.add_table_column(
                 label="-Im(Z) (ohm)",
             )
             attach_tooltip(tooltips.data_sets.imaginary)
+
             dpg.add_table_column(
                 label="Mod(Z) (ohm)",
             )
             attach_tooltip(tooltips.data_sets.magnitude)
+
             dpg.add_table_column(
                 label="-Phase(Z) (°)",
             )
             attach_tooltip(tooltips.data_sets.phase)
+
         num_points: int = self.original_data.get_num_points(masked=None)
         i: int
         for i in range(0, num_points):
@@ -271,11 +311,14 @@ class InterpolatePoints:
                     callback=lambda s, a, u: self.toggle_point(u, a),
                     user_data=i,
                 )
+
                 dpg.add_text("")  # Index
+
                 dpg.set_item_user_data(
                     dpg.add_text(""),
                     attach_tooltip(""),
                 )  # f
+
                 dpg.set_item_user_data(
                     dpg.add_input_text(
                         hint="?",
@@ -286,6 +329,7 @@ class InterpolatePoints:
                     ),
                     attach_tooltip(""),
                 )  # Re(Z)
+
                 dpg.set_item_user_data(
                     dpg.add_input_text(
                         hint="?",
@@ -296,10 +340,12 @@ class InterpolatePoints:
                     ),
                     attach_tooltip(""),
                 )  # -Im(Z)
+
                 dpg.set_item_user_data(
                     dpg.add_text(""),
                     attach_tooltip(""),
                 )  # Mod(Z)
+
                 dpg.set_item_user_data(
                     dpg.add_text(""),
                     attach_tooltip(""),
@@ -337,13 +383,15 @@ class InterpolatePoints:
                 "theme": themes.bode.phase_data,
             },
         ]
-        self.preview_window: int = dpg.generate_uuid()
+
+        self.preview_window: Tag = dpg.generate_uuid()
         with dpg.child_window(border=False, tag=self.preview_window):
-            self.plot_tab_bar: int = dpg.generate_uuid()
+            self.plot_tab_bar: Tag = dpg.generate_uuid()
             with dpg.tab_bar(tag=self.plot_tab_bar):
                 self.create_nyquist_plot(settings)
                 self.create_magnitude_plot(settings)
                 self.create_phase_plot(settings)
+
             pad_tab_labels(self.plot_tab_bar)
 
     def create_nyquist_plot(self, settings: List[dict]):
@@ -351,8 +399,7 @@ class InterpolatePoints:
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-1)
             for kwargs in settings:
                 self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -361,8 +408,8 @@ class InterpolatePoints:
             self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-1)
             for kwargs in settings:
                 self.magnitude_plot.plot(
-                    frequency=array([]),
-                    magnitude=array([]),
+                    frequencies=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -371,8 +418,8 @@ class InterpolatePoints:
             self.phase_plot: BodePhase = BodePhase(width=-1, height=-1)
             for kwargs in settings:
                 self.phase_plot.plot(
-                    frequency=array([]),
-                    phase=array([]),
+                    frequencies=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -391,16 +438,20 @@ class InterpolatePoints:
         else:
             self.close()
             return
+
         dictionary: dict = self.preview_data.to_dict()
         del dictionary["uuid"]
+
         data: DataSet = DataSet.from_dict(dictionary)
         data.set_label(f"{self.preview_data.get_label()} - interpolated")
         self.callback(data)
+
         self.close()
 
     def toggle_point(self, index: int, state: bool):
-        rows: List[int] = dpg.get_item_children(self.table, slot=1)
-        inputs: Tuple[int, int] = self.get_inputs(rows[index])
+        rows: List[Tag] = dpg.get_item_children(self.table, slot=1)
+        inputs: Tuple[Tag, Tag] = self.get_inputs(rows[index])
+
         if state is True:
             dpg.disable_item(inputs[0])
             dpg.disable_item(inputs[1])
@@ -409,6 +460,7 @@ class InterpolatePoints:
             dpg.set_value(inputs[1], "")
             dpg.enable_item(inputs[0])
             dpg.enable_item(inputs[1])
+
         self.update_table(index=index, state=state)
         self.update_plots()
 
@@ -416,11 +468,12 @@ class InterpolatePoints:
         self.update_table()
         self.update_plots()
 
-    def get_checkbox(self, row: int) -> int:
+    def get_checkbox(self, row: int) -> Tag:
         return dpg.get_item_children(row, slot=1)[0]
 
-    def get_inputs(self, row: int) -> Tuple[int, int]:
-        cells: List[int] = dpg.get_item_children(row, slot=1)
+    def get_inputs(self, row: int) -> Tuple[Tag, Tag]:
+        cells: List[Tag] = dpg.get_item_children(row, slot=1)
+
         return (
             cells[4],
             cells[6],
@@ -428,27 +481,30 @@ class InterpolatePoints:
 
     def get_mask(self) -> Dict[int, bool]:
         mask: Dict[int, bool] = {}
-        rows: List[int] = dpg.get_item_children(self.table, slot=1)
+        rows: List[Tag] = dpg.get_item_children(self.table, slot=1)
+
         i: int
-        row: int
+        row: Tag
         for i, row in enumerate(rows):
             mask[i] = dpg.get_value(self.get_checkbox(rows[i]))
+
         return mask
 
-    def get_real_input(self, row: int) -> int:
+    def get_real_input(self, row: int) -> Tag:
         return dpg.get_item_children(row, slot=1)[4]
 
-    def get_imaginary_input(self, row: int) -> int:
+    def get_imaginary_input(self, row: int) -> Tag:
         return dpg.get_item_children(row, slot=1)[6]
 
-    def get_rows(self) -> List[int]:
+    def get_rows(self) -> List[Tag]:
         return dpg.get_item_children(self.table, slot=1)
 
     def get_overrides(self) -> Dict[int, ComplexImpedance]:
         overrides: Dict[int, ComplexImpedance] = {}
-        rows: List[int] = self.get_rows()
+        rows: List[Tag] = self.get_rows()
+
         i: int
-        row: int
+        row: Tag
         Z: ComplexImpedance
         for i, (row, Z) in enumerate(
             zip(rows, self.original_data.get_impedances(masked=None))
@@ -459,11 +515,13 @@ class InterpolatePoints:
                 real: float = float(re) if re != "" else Z.real
                 imag: float = -float(im) if im != "" else Z.imag
                 overrides[i] = ComplexImpedance(real + imag * 1j)
+
         return overrides
 
     def get_impedances(self, mask: Dict[int, bool] = {}) -> ComplexImpedances:
         if not mask:
             mask = self.get_mask()
+
         overrides: Dict[int, ComplexImpedance] = self.get_overrides()
         Z: ComplexImpedances = self.original_data.get_impedances(masked=None)
         smooth_Z: ComplexImpedances = self.smoothed_data.get_impedances(masked=None)
@@ -471,6 +529,7 @@ class InterpolatePoints:
             Z.shape,
             dtype=Z.dtype,
         )
+
         i: int
         state: bool
         for i, state in mask.items():
@@ -480,6 +539,7 @@ class InterpolatePoints:
                 results[i] = overrides[i]
             else:
                 results[i] = Z[i]
+
         return results
 
     def update_table(self, index: int = -1, state: Optional[bool] = None):
@@ -487,6 +547,7 @@ class InterpolatePoints:
             assert isinstance(state, bool), state
         else:
             assert state is None, state
+
         original_f: Frequencies = self.original_data.get_frequencies(masked=None)
         original_Z: ComplexImpedances = self.original_data.get_impedances(masked=None)
         mask: Dict[int, bool] = self.get_mask()
@@ -527,6 +588,7 @@ class InterpolatePoints:
             )
         )
         indices: List[str] = list(map(lambda _: str(_ + 1), range(0, len(Z))))
+
         indices = align_numbers(indices)
         f = align_numbers(f)
         re_Z = align_numbers(re_Z)
@@ -535,33 +597,39 @@ class InterpolatePoints:
         phase_Z = align_numbers(phase_Z)
         fmt: str = "{:.6E}"
 
-        def get_cell_and_tooltip(cells: List[int], index: int) -> Tuple[int, int]:
+        def get_cell_and_tooltip(cells: List[Tag], index: int) -> Tuple[Tag, Tag]:
             assert 0 <= index < 7
             if index < 2:
                 return (
                     cells[index],
                     -1,
                 )
+
             index = (index - 2) * 2 + 2
+
             return (
                 cells[index],
                 dpg.get_item_user_data(cells[index]),
             )
 
-        rows: List[int] = dpg.get_item_children(self.table, slot=1)
+        rows: List[Tag] = dpg.get_item_children(self.table, slot=1)
+
         i: int
-        row: int
+        row: Tag
         for i, row in enumerate(rows):
             if index >= 0 and i != index:
                 continue
-            cells: List[int] = dpg.get_item_children(row, slot=1)
-            cell: int
-            tooltip: int
+
+            cells: List[Tag] = dpg.get_item_children(row, slot=1)
             dpg.set_value(cells[0], mask[i])
             dpg.set_value(cells[1], indices[i])
+
+            cell: Tag
+            tooltip: Tag
             cell, tooltip = get_cell_and_tooltip(cells, 2)
             dpg.set_value(cell, f[i])
             update_tooltip(tooltip, fmt.format(original_f[i]))
+
             cell, tooltip = get_cell_and_tooltip(cells, 3)
             dpg.configure_item(cell, hint=re_Z[i])
             if mask[i] is True:
@@ -577,6 +645,7 @@ class InterpolatePoints:
                     )
                 ),
             )
+
             cell, tooltip = get_cell_and_tooltip(cells, 4)
             dpg.configure_item(cell, hint=im_Z[i])
             if mask[i] is True:
@@ -592,6 +661,7 @@ class InterpolatePoints:
                     )
                 ),
             )
+
             cell, tooltip = get_cell_and_tooltip(cells, 5)
             dpg.set_value(cell, mod_Z[i])
             update_tooltip(
@@ -605,6 +675,7 @@ class InterpolatePoints:
                     )
                 ),
             )
+
             cell, tooltip = get_cell_and_tooltip(cells, 6)
             dpg.set_value(cell, phase_Z[i])
             update_tooltip(
@@ -618,6 +689,7 @@ class InterpolatePoints:
                     )
                 ),
             )
+
         dictionary: dict = self.original_data.to_dict()
         dictionary.update(
             {
@@ -626,6 +698,7 @@ class InterpolatePoints:
                 "imaginary_impedances": list(Z.imag),
             }
         )
+
         self.preview_data = DataSet.from_dict(dictionary)
 
     def update_smoothing(self):
@@ -634,6 +707,7 @@ class InterpolatePoints:
         fraction: float = dpg.get_value(self.num_points_input) / Z.size
         num_iterations: int = dpg.get_value(self.num_iterations_input)
         smooth_polar_data = dpg.get_value(self.smooth_polar_checkbox)
+
         if smooth_polar_data is True:
             smoothed_mod: Impedances = lowess(
                 abs(Z),
@@ -670,6 +744,7 @@ class InterpolatePoints:
             log_f = flip(log_f)
             real_interpolator = Akima1DInterpolator(log_f, flip(smoothed_real))
             imag_interpolator = Akima1DInterpolator(log_f, flip(smoothed_imag))
+
         log_f = log(self.original_data.get_frequencies(masked=None))
         dictionary: dict = self.smoothed_data.to_dict()
         if smooth_polar_data is True:
@@ -694,6 +769,7 @@ class InterpolatePoints:
                     "imaginary_impedances": list(map(imag_interpolator, log_f)),
                 }
             )
+
         self.smoothed_data = DataSet.from_dict(dictionary)
         self.update_table()
         self.update_plots()
@@ -705,62 +781,98 @@ class InterpolatePoints:
 
     def update_nyquist(self, original: DataSet, smoothed: DataSet, preview: DataSet):
         data: List[Tuple[ndarray, ndarray]] = [
-            original.get_nyquist_data(masked=False),
-            original.get_nyquist_data(masked=False),
-            original.get_nyquist_data(masked=True),
-            smoothed.get_nyquist_data(masked=None),
-            preview.get_nyquist_data(masked=None),
-            preview.get_nyquist_data(masked=None),
+            original.get_impedances(masked=False),
+            original.get_impedances(masked=False),
+            original.get_impedances(masked=True),
+            smoothed.get_impedances(masked=None),
+            preview.get_impedances(masked=None),
+            preview.get_impedances(masked=None),
         ]
+
         i: int
-        real: ndarray
-        imag: ndarray
-        for i, (real, imag) in enumerate(data):
+        for i, Z in enumerate(data):
             self.nyquist_plot.update(
                 index=i,
-                real=real,
-                imaginary=imag,
+                impedances=Z,
             )
 
     def update_magnitude(self, original: DataSet, smoothed: DataSet, preview: DataSet):
-        data: List[Tuple[ndarray, ndarray, ndarray]] = [
-            original.get_bode_data(masked=False),
-            original.get_bode_data(masked=False),
-            original.get_bode_data(masked=True),
-            smoothed.get_bode_data(masked=None),
-            preview.get_bode_data(masked=None),
-            preview.get_bode_data(masked=None),
+        data: List[Tuple[ndarray, ndarray]] = [
+            (
+                original.get_frequencies(masked=False),
+                original.get_impedances(masked=False),
+            ),
+            (
+                original.get_frequencies(masked=False),
+                original.get_impedances(masked=False),
+            ),
+            (
+                original.get_frequencies(masked=True),
+                original.get_impedances(masked=True),
+            ),
+            (
+                smoothed.get_frequencies(masked=None),
+                smoothed.get_impedances(masked=None),
+            ),
+            (
+                preview.get_frequencies(masked=None),
+                preview.get_impedances(masked=None),
+            ),
+            (
+                preview.get_frequencies(masked=None),
+                preview.get_impedances(masked=None),
+            ),
         ]
+
         i: int
         freq: ndarray
-        mag: ndarray
-        for i, (freq, mag, _) in enumerate(data):
+        Z: ndarray
+        for i, (freq, Z) in enumerate(data):
             self.magnitude_plot.update(
                 index=i,
-                frequency=freq,
-                magnitude=mag,
+                frequencies=freq,
+                impedances=Z,
             )
 
     def update_phase(self, original: DataSet, smoothed: DataSet, preview: DataSet):
-        data: List[Tuple[ndarray, ndarray, ndarray]] = [
-            original.get_bode_data(masked=False),
-            original.get_bode_data(masked=False),
-            original.get_bode_data(masked=True),
-            smoothed.get_bode_data(masked=None),
-            preview.get_bode_data(masked=None),
-            preview.get_bode_data(masked=None),
+        data: List[Tuple[ndarray, ndarray]] = [
+            (
+                original.get_frequencies(masked=False),
+                original.get_impedances(masked=False),
+            ),
+            (
+                original.get_frequencies(masked=False),
+                original.get_impedances(masked=False),
+            ),
+            (
+                original.get_frequencies(masked=True),
+                original.get_impedances(masked=True),
+            ),
+            (
+                smoothed.get_frequencies(masked=None),
+                smoothed.get_impedances(masked=None),
+            ),
+            (
+                preview.get_frequencies(masked=None),
+                preview.get_impedances(masked=None),
+            ),
+            (
+                preview.get_frequencies(masked=None),
+                preview.get_impedances(masked=None),
+            ),
         ]
+
         i: int
         freq: ndarray
-        phase: ndarray
-        for i, (freq, _, phase) in enumerate(data):
+        Z: ndarray
+        for i, (freq, Z) in enumerate(data):
             self.phase_plot.update(
                 index=i,
-                frequency=freq,
-                phase=phase,
+                frequencies=freq,
+                impedances=Z,
             )
 
     def cycle_plot_tab(self, step: int):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + step
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])

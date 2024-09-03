@@ -18,6 +18,7 @@
 # the LICENSES folder.
 
 import dearpygui.dearpygui as dpg
+from deareis.typing.helpers import Tag
 from .batch_analysis import batch_analysis
 from .circuit_editor import circuit_editor
 from .data_sets import data_sets
@@ -32,31 +33,40 @@ from .simulation import simulation
 from .zhit import zhit
 
 
-def update_tooltip(tag: int, msg: str, wrap: bool = True):
-    assert type(tag) is int, tag
+def update_tooltip(tag: Tag, msg: str, wrap: bool = True):
+    assert type(tag) is int, (type(tag), tag)
     assert type(msg) is str, msg
     assert type(wrap) is bool, wrap
+
     wrap_limit: int = -1
     if wrap:
         max_line_length: int
+
         if "\n" in msg:
             max_line_length = max(map(len, msg.split("\n")))
         else:
             max_line_length = len(msg)
+
         wrap_limit = min([8 * max_line_length, 500])
+
     dpg.configure_item(tag, default_value=msg, wrap=wrap_limit)
 
 
-def attach_tooltip(msg: str, parent: int = -1, tag: int = -1, wrap: bool = True) -> int:
+def attach_tooltip(msg: str, parent: Tag = -1, tag: Tag = -1, wrap: bool = True) -> Tag:
     assert type(msg) is str, msg
-    assert type(parent) is int, parent
-    assert type(tag) is int, tag
+    assert type(parent) is int, (type(parent), parent)
+    assert type(tag) is int, (type(tag), tag)
     assert type(wrap) is bool, wrap
+
     if parent < 0:
         parent = dpg.last_item()
+
     if tag < 0:
         tag = dpg.generate_uuid()
+
     with dpg.tooltip(parent, user_data=tag):
         dpg.add_text("", tag=tag)
+
     update_tooltip(tag, msg, wrap)
+
     return tag

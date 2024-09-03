@@ -37,19 +37,25 @@ from typing import (
     List,
     Optional,
     Set,
+    Type,
 )
 from xdg import (
     xdg_cache_home,  #  User-specific cache files
     xdg_config_home,  # User-specific configuration files
     xdg_data_home,  #   User-specific data files
 )
+from pyimpspec import (
+    Element,
+    get_elements,
+)
 from deareis.keybindings import Keybinding
 from deareis.data.plotting import PlotExportSettings
 from deareis.data import (
     DRTSettings,
+    KramersKronigSuggestionSettings,
     FitSettings,
     SimulationSettings,
-    TestSettings,
+    KramersKronigSettings,
     ZHITSettings,
 )
 from deareis.enums import (
@@ -64,7 +70,7 @@ from .defaults import (
     DEFAULT_KEYBINDINGS,
     DEFAULT_MARKERS,
     DEFAULT_COLORS,
-    DEFAULT_TEST_SETTINGS,
+    DEFAULT_KRAMERS_KRONIG_SETTINGS,
     DEFAULT_ZHIT_SETTINGS,
     DEFAULT_FIT_SETTINGS,
     DEFAULT_SIMULATION_SETTINGS,
@@ -73,13 +79,36 @@ from .defaults import (
 )
 
 
-VERSION: int = 4
+VERSION: int = 5
+
+
+def _parse_v5(dictionary: dict) -> dict:
+    if "default_kramers_kronig_settings" not in dictionary:
+        dictionary["default_kramers_kronig_settings"] = DEFAULT_KRAMERS_KRONIG_SETTINGS.to_dict()
+
+    if "default_test_settings" in dictionary:
+        del dictionary["default_test_settings"]
+
+    dictionary[
+        "default_suggestion_settings"
+    ] = DEFAULT_KRAMERS_KRONIG_SETTINGS.suggestion_settings.to_dict()
+
+    if "keybindings" in dictionary:
+        for i in range(len(dictionary["keybindings"]) - 1, -1, -1):
+            if dictionary["keybindings"][i].get("action") == "adjust-parameters":
+                dictionary["keybindings"].pop(i)
+                break
+
+    if "num_procs" not in dictionary or dictionary["num_procs"] == 0:
+        dictionary["num_procs"] = -1
+
+    return dictionary
 
 
 def _parse_v4(dictionary: dict) -> dict:
-    # TODO: Update when VERSION is incremented
     if "num_procs" not in dictionary:
         dictionary["num_procs"] = 0
+
     return dictionary
 
 
@@ -111,6 +140,7 @@ def _parse_v3(dictionary: dict) -> dict:
     del dictionary["export_extension"]
     del dictionary["export_experimental_clear_registry"]
     del dictionary["export_experimental_disable_previews"]
+
     return dictionary
 
 
@@ -166,6 +196,7 @@ def _parse_v1(dictionary: dict) -> dict:
         "exploratory_xps": "mu_Xps_Xps",
         "exploratory_xps_highlight": "mu_Xps_Xps_highlight",
     }
+
     old: str
     new: str
     colors: dict = dictionary.get("colors", {})
@@ -177,6 +208,7 @@ def _parse_v1(dictionary: dict) -> dict:
         if old in markers:
             markers[new] = markers[old]
             del markers[old]
+
     return {
         "version": 2,
         "auto_backup_interval": dictionary.get("auto_backup_interval", 10),
@@ -198,12 +230,14 @@ class Config:
         self.config_path: str = join(self.config_dir_path, "config.json")
         self.auto_backup_interval: int = None  # type: ignore
         self.num_per_decade_in_simulated_lines: int = None  # type: ignore
-        self.default_test_settings: TestSettings = None  # type: ignore
+        self.default_suggestion_settings: KramersKronigSuggestionSettings = None  # type: ignore
+        self.default_kramers_kronig_settings: KramersKronigSettings = None  # type: ignore
         self.default_zhit_settings: ZHITSettings = None  # type: ignore
         self.default_fit_settings: FitSettings = None  # type: ignore
         self.default_drt_settings: DRTSettings = None  # type: ignore
         self.default_simulation_settings: SimulationSettings = None  # type: ignore
         self.default_plot_export_settings: PlotExportSettings = None  # type: ignore
+        self.default_element_parameters: Dict[str, Dict[str, float]] = None  # type: ignore
         self.markers: Dict[str, int] = None  # type: ignore
         self.colors: Dict[str, List[float]] = None  # type: ignore
         self.keybindings: List[Keybinding] = None  # type: ignore
@@ -230,15 +264,16 @@ class Config:
     def default_settings(self) -> dict:
         return {
             "version": VERSION,
-            "num_procs": 0,
+            "num_procs": -1,
             "auto_backup_interval": 10,
             "num_per_decade_in_simulated_lines": 100,
-            "default_test_settings": DEFAULT_TEST_SETTINGS.to_dict(),
+            "default_kramers_kronig_settings": DEFAULT_KRAMERS_KRONIG_SETTINGS.to_dict(),
             "default_zhit_settings": DEFAULT_ZHIT_SETTINGS.to_dict(),
             "default_fit_settings": DEFAULT_FIT_SETTINGS.to_dict(),
             "default_drt_settings": DEFAULT_DRT_SETTINGS.to_dict(),
             "default_plot_export_settings": DEFAULT_PLOT_EXPORT_SETTINGS.to_dict(),
             "default_simulation_settings": DEFAULT_SIMULATION_SETTINGS.to_dict(),
+            "default_element_parameters": {},
             "colors": DEFAULT_COLORS,
             "markers": DEFAULT_MARKERS,
             "keybindings": list(map(lambda _: _.to_dict(), DEFAULT_KEYBINDINGS)),
@@ -246,6 +281,9 @@ class Config:
         }
 
     def to_dict(self) -> dict:
+        kramers_kronig_settings: dict = self.default_kramers_kronig_settings.to_dict()
+        kramers_kronig_settings["suggestion_settings"] = self.default_kramers_kronig_suggestion_settings.to_dict()
+
         return parse_json(
             dump_json(  # This is done to get new instances in memory
                 {
@@ -253,12 +291,13 @@ class Config:
                     "num_procs": self.num_procs,
                     "auto_backup_interval": self.auto_backup_interval,
                     "num_per_decade_in_simulated_lines": self.num_per_decade_in_simulated_lines,
-                    "default_test_settings": self.default_test_settings.to_dict(),
+                    "default_kramers_kronig_settings": kramers_kronig_settings,
                     "default_zhit_settings": self.default_zhit_settings.to_dict(),
                     "default_fit_settings": self.default_fit_settings.to_dict(),
                     "default_drt_settings": self.default_drt_settings.to_dict(),
                     "default_simulation_settings": self.default_simulation_settings.to_dict(),
                     "default_plot_export_settings": self.default_plot_export_settings.to_dict(),
+                    "default_element_parameters": self.default_element_parameters.copy(),
                     "colors": self.colors,
                     "markers": self.markers,
                     "keybindings": list(map(lambda _: _.to_dict(), self.keybindings)),
@@ -270,11 +309,13 @@ class Config:
     def save(self):
         if not isdir(self.config_dir_path):
             makedirs(self.config_dir_path)
+
         old_config: str = ""
         fp: IO
         if exists(self.config_path):
             with open(self.config_path, "r") as fp:
                 old_config = fp.read().strip()
+
         new_config: str = dump_json(
             self.to_dict(),
             sort_keys=True,
@@ -282,6 +323,7 @@ class Config:
         ).strip()
         if new_config == old_config:
             return
+
         with open(self.config_path, "w") as fp:
             fp.write(new_config)
 
@@ -291,12 +333,13 @@ class Config:
         self.num_per_decade_in_simulated_lines = settings[
             "num_per_decade_in_simulated_lines"
         ]
-        self.default_test_settings = TestSettings.from_dict(
+        self.default_kramers_kronig_settings = KramersKronigSettings.from_dict(
             settings.get(
-                "default_test_settings",
-                DEFAULT_TEST_SETTINGS.to_dict(),
+                "default_kramers_kronig_settings",
+                DEFAULT_KRAMERS_KRONIG_SETTINGS.to_dict(),
             )
         )
+        self.default_kramers_kronig_suggestion_settings = self.default_kramers_kronig_settings.suggestion_settings
         self.default_zhit_settings = ZHITSettings.from_dict(
             settings.get(
                 "default_zhit_settings",
@@ -327,6 +370,16 @@ class Config:
                 DEFAULT_PLOT_EXPORT_SETTINGS.to_dict(),
             )
         )
+        self.default_element_parameters = settings.get(
+            "default_element_parameters",
+            {},
+        )
+
+        key: str
+        element: Type[Element]
+        for key, element in get_elements().items():
+            element.set_default_values(**self.default_element_parameters.get(key, {}))
+
         self.markers = settings["markers"]
         marker_themes: Dict[str, int] = {
             "bode_magnitude_data": themes.bode.magnitude_data,
@@ -344,10 +397,12 @@ class Config:
             "residuals_imaginary": themes.residuals.imaginary,
             "residuals_real": themes.residuals.real,
         }
+
         key: str
         theme: int
         for key, theme in marker_themes.items():
             themes.update_plot_series_theme_marker(theme, self.markers[key])
+
         self.colors = settings["colors"]
         color_themes: Dict[str, int] = {
             "bode_magnitude_data": themes.bode.magnitude_data,
@@ -374,19 +429,22 @@ class Config:
         }
         for key, theme in color_themes.items():
             themes.update_plot_series_theme_color(theme, self.colors[key])
+
         self.keybindings = list(map(Keybinding.from_dict, settings["keybindings"]))
         try:
             self.validate_keybindings(self.keybindings)
         except AssertionError:
             print(format_exc())
+
         self.user_defined_elements_path = settings["user_defined_elements_path"]
 
     def check_type(self, user: Any, default: Any, key: str):
         assert type(user) == type(default), (user, default, key)
         if type(default) is list:
-            user_types: set = set(list(map(type, user)))
-            default_types: set = set(list(map(type, default)))
-            assert user_types == default_types, (user_types, default_types, key)
+            if len(default) > 0:
+                user_types: set = set(list(map(type, user)))
+                default_types: set = set(list(map(type, default)))
+                assert user_types == default_types, (user_types, default_types, key)
         elif type(default) is dict:
             for key in default:
                 if key in user:
@@ -394,38 +452,51 @@ class Config:
 
     def merge_dicts(self, user: dict, default: dict) -> dict:
         result: dict = {}
+
+        keys: Set[str] = set(default.keys())
+        keys.update(set(user.keys()))
+
         key: str
-        for key in default.keys():
+        for key in keys:
             value: Optional[Any] = user.get(key)
-            if value is None:
+            if value is None and key in default:
                 result[key] = default[key]
                 continue
-            self.check_type(value, default[key], key)
+
+            if key in default:
+                self.check_type(value, default[key], key)
+
             if type(value) is dict:
-                result[key] = self.merge_dicts(value, default[key])
+                result[key] = self.merge_dicts(value, default.get(key, {}))
             else:
                 result[key] = value
+
         return result
 
     def load(self):
         with open(self.config_path, "r") as fp:
             dictionary: dict = load_json(fp)
+
         assert "version" in dictionary
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+
         parsers: Dict[int, Callable] = {
             1: _parse_v1,
             2: _parse_v2,
             3: _parse_v3,
             4: _parse_v4,
+            5: _parse_v5,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+        
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         dictionary = self.merge_dicts(dictionary, self.to_dict())
         self.from_dict(dictionary)
 
@@ -436,12 +507,14 @@ class Config:
             count: int = stringified.count(string)
             if count == 1:
                 continue
+
             contexts: List[Set[Context]] = list(
                 map(
                     lambda _: set(action_contexts[_.action]),
                     filter(lambda _: str(_) == string, keybindings),
                 )
             )
+
             while contexts:
                 a = contexts.pop(0)
                 for b in contexts:
@@ -454,8 +527,10 @@ class Config:
                         "The same keybinding has been applied to multiple actions in the same context or in overlapping contexts:\n- "
                         + "\n- ".join(
                             map(repr, filter(lambda _: str(_) == string, keybindings))
-                        ) + "\n\nYou should modify one or more of the keybindings to resolve the situation. Alternatively, reset the keybindings."
+                        )
+                        + "\n\nYou should modify one or more of the keybindings to resolve the situation. Alternatively, reset the keybindings."
                     )
+
         actions: List[Action] = list(map(lambda _: _.action, keybindings))
         action: Action
         for action in set(actions):

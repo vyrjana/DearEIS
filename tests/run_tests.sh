@@ -25,9 +25,10 @@ if [ "$#" -ne 1 ]; then
 	echo "- gui: Run GUI-related tests."
 	exit
 fi
-if ! [ "$1" == "gui" ]; then
+if [ "$1" == "api" ]; then
 	python3 -m unittest discover . -v -f
-fi
-if [ "$?" -eq "0" ] && ! [ "$1" == "api" ]; then
+elif [ "$1" == "gui" ]; then
 	python3 -c "from deareis.program import main; from test_gui import setup_tests; setup_tests(); main()"
+else
+	echo "Unsupported argument!"
 fi

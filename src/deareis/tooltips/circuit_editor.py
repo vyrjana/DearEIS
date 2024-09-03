@@ -74,7 +74,20 @@ Add a node that represents the circuit element that is currently selected in the
 Remove all of the circuit element nodes.
     """.strip(),
         "dummy_node": """
-Add a dummy node that can be used as a junction.
+A dummy node that does not affect the impedance of the equivalent circuit model. It can be used as a junction to connect, e.g., two parallel connections together in series.
+    """.strip(),
+        "node_help": """
+Circuits can be constructed either using the node editor to the right or by parsing a circuit description code (CDC).
+
+Nodes corresponding to circuit elements can be added to the node editor by going to the 'Element' tab and clicking on a button corresponding to the desired type of circuit element. The node can then be moved around by clicking and holding onto the lower part of the node. One can also simply click and hold one of the buttons in the 'Elements' tab and then drag-and-drop the element directly to the desired position on the node editor.
+
+Nodes can be connected by left-clicking on the input/output of one node, dragging to the output/input of another node, and releasing. Connections can be deleted by left-clicking a connection while holding down the Ctrl key.
+
+Clicking on the upper part of a node brings up the ability to specify an optional label to the left of the node editor. There is also a 'Delete' button to the left of the node editor for deleting the selected node, but it is also possible to delete the selected node using the appropriate keyboard shortcut (Alt+Delete by default). The keyboard shortcut can also be used to delete multiple nodes that have been selected by clicking and holding to draw a box. Note that the 'WE' and 'CE+RE' nodes, which represent the terminals of the circuit, cannot be deleted.
+
+The status of the validity of the circuit is shown below the node editor. Nodes that are highlighted in red have some kind of issue (e.g. a missing connection). Circuit description codes are generated and shown below the node editor (the upper CDC is a basic CDC while the one below it is an extended CDC that includes parameter values, labels, etc.).
+
+The initial parameters of the elements included in the circuit can be altered in the 'Parameters' tab that appears at the top of the window once a valid circuit has been created. It is highly recommended to make use of this feature to provide suitable starting values since it will increase the chances of obtaining a good fit. It is also possible to perform a fit, use the fitted parameters (click on the 'Apply fitted values as initial values' in the 'Fitting' tab), adjust the initial values if necessary, and perform another fit. In some cases such as when using constant phase elements (CPEs), it may be a good idea to set, e.g., the 'n' parameter to be fixed parameters for the initial fit (i.e., treat each CPE as something close to an ideal capacitor), apply the fitted values as initial values, set the 'n' parameters to no longer be fixed parameters, and then perform another fit. The initial fit will then be simpler due to the reduced number of variables and is used to obtain approximate values. The second fit will then start with most of the variables fairly close to their optimal values.
     """.strip(),
     }
 )

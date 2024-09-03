@@ -48,7 +48,7 @@ from deareis.enums import (
 def fit_circuit(
     data: DataSet,
     settings: FitSettings,
-    num_procs: int = 0,
+    num_procs: int = -1,
 ) -> FitResult:
     """
     Wrapper for the `pyimpspec.fit_circuit` function.
@@ -66,6 +66,7 @@ def fit_circuit(
     num_procs: int, optional
         The maximum number of parallel processes to use when method is `CNLSMethod.AUTO` and/or weight is `Weight.AUTO`.
         A value less than 1 will result in an attempt to automatically figure out a suitable value.
+        Negative values are used as offsets relative to the number of cores detected.
 
     Returns
     -------
@@ -74,6 +75,7 @@ def fit_circuit(
     assert isinstance(data, _pyimpspec.DataSet), data
     assert type(settings) is FitSettings, settings
     assert _issubdtype(type(num_procs), _integer), num_procs
+
     circuit: Circuit = _pyimpspec.parse_cdc(settings.cdc)
     result: _pyimpspec.FitResult = _pyimpspec.fit_circuit(
         circuit=circuit,
@@ -82,11 +84,13 @@ def fit_circuit(
         weight=_weight_to_value.get(settings.weight, "auto"),
         max_nfev=settings.max_nfev,
         num_procs=num_procs,
+        timeout=settings.timeout,
     )
     method: Optional[CNLSMethod] = _value_to_cnls_method.get(result.method)
     weight: Optional[Weight] = _value_to_weight.get(result.weight)
     assert method is not None
     assert weight is not None
+
     parameters: Dict[str, Dict[str, FittedParameter]] = {}
     for element_symbol in result.parameters:
         parameters[element_symbol] = {}
@@ -97,15 +101,19 @@ def fit_circuit(
                 fixed=param.fixed,
                 unit=param.unit,
             )
+
+    time: float = _time()
+    mask: Dict[int, bool] = data.get_mask().copy()
+
     return FitResult(
         uuid=_uuid4().hex,
-        timestamp=_time(),
+        timestamp=time,
         circuit=result.circuit,
         parameters=parameters,
         frequencies=result.frequencies,
         impedances=result.impedances,
         residuals=result.residuals,
-        mask=data.get_mask(),
+        mask=mask,
         pseudo_chisqr=result.pseudo_chisqr,
         chisqr=result.minimizer_result.chisqr,
         red_chisqr=result.minimizer_result.redchi,

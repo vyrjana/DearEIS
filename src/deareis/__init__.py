@@ -35,14 +35,17 @@ from deareis.api.circuit import *
 from deareis.typing import *
 from deareis.exceptions import *
 from deareis.api.kramers_kronig import (
-    TestResult,
-    TestSettings,
+    KramersKronigResult,
+    KramersKronigSettings,
+    KramersKronigSuggestionSettings,
     # - enums
-    TestMode,
-    Test,
+    CNLSMethod,
+    KramersKronigMode,
+    KramersKronigRepresentation,
+    KramersKronigTest,
     # - functions
-    perform_test,
-    perform_exploratory_tests,
+    perform_kramers_kronig_test,
+    perform_exploratory_kramers_kronig_tests,
 )
 from deareis.api.fitting import (
     FitResult,
@@ -70,10 +73,12 @@ from deareis.api.drt import (
     DRTResult,
     DRTSettings,
     # - enums
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
     RBFShape,
     RBFType,
+    TRNNLSLambdaMethod,
     # - functions
     calculate_drt,
 )
@@ -84,6 +89,7 @@ from deareis.api.zhit import (
     ZHITInterpolation,
     ZHITSmoothing,
     ZHITWindow,
+    ZHITRepresentation,
     # - functions
     perform_zhit,
 )

@@ -87,23 +87,32 @@ class DataSet(pyimpspec.DataSet):
             )
         except AssertionError:
             return False
+        
         return True
 
     def to_dict(self, session: bool = True) -> dict:
         """
-        Return a dictionary that can be used to recreate this data set.
+        Return a dictionary that can be used to recreate an instance.
 
         Parameters
         ----------
-        session: bool = True
-            If true, then no data minimization is performed.
+        session: bool, optional
+            If False, then a minimal dictionary is generated to reduce file size.
+
+        Returns
+        -------
+        dict
         """
-        # This is implemented to reduce the file sizes of projects.
+        assert type(session) is bool, session
+
         dictionary: dict = super().to_dict()
+
         if not session:
+            # This helps to reduce the file sizes of projects.
             dictionary["mask"] = {
                 k: v for k, v in dictionary["mask"].items() if v is True
             }
+        
         return dictionary
 
     @classmethod
@@ -119,4 +128,5 @@ class DataSet(pyimpspec.DataSet):
         # This is implemented to deal with the effects of the modified to_dict method.
         if any(map(lambda _: type(_) is str, dictionary["mask"].keys())):
             dictionary["mask"] = {int(k): v for k, v in dictionary["mask"].items()}
+
         return Class(**Class._parse(dictionary))

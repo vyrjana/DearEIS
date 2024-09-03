@@ -10,7 +10,7 @@ from inspect import getmodule
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "DearEIS"
-copyright = "2023, DearEIS developers"
+copyright = "2024, DearEIS developers"
 author = "DearEIS developers"
 release = "X.Y.Z"
 version_path = join(dirname(dirname(dirname(abspath(__file__)))), "version.txt")

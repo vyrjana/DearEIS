@@ -40,6 +40,8 @@ Several different file formats are supported:
 - Eco Chemie: ``.dfr``
 - Gamry: ``.dta``
 - Ivium: ``.idf`` and ``.ids``
+- PalmSens: ``.pssession``
+- ZView: ``.z``
 - Spreadsheets: ``.xlsx`` and ``.ods``
 - Plain-text character-separated values (CSV): ``.csv`` and ``.txt``
 
@@ -50,8 +52,8 @@ The parsers expect to find at least a column with frequencies (Hz) and columns f
 The supported column headers are:
 
 - frequency: ``frequency``, ``freq``, or ``f``
-- real: ``z'``, ``z_re``, ``zre``, ``real``, or ``re``
-- imaginary: ``z"``, ``z''``, ``z_im``, ``zim``, ``imaginary``, ``imag``, or ``im``
+- real: ``z'``, ``z re``, ``z_re``, ``zre``, ``real``, or ``re``
+- imaginary: ``z"``, ``z''``, ``z im``, ``z_im``, ``zim``, ``imaginary``, ``imag``, or ``im``
 - magnitude: ``|z|``, ``z``, ``magnitude``, ``modulus``, ``mag``, or ``mod``
 - phase: ``phase``, ``phz``, or ``phi``
 
@@ -92,7 +94,7 @@ If multiple data sets will need to have the same (or very similar) masks, then t
 
 .. _mask_figure:
 .. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-copy.png
-   :alt: Copying masks from another data set
+   :alt: Copying a mask from another data set
 
    The **Copy mask** includes a preview of what the current data set would look like with the mask that was applied to another data set in :numref:`toggle_figure`.
 
@@ -157,8 +159,10 @@ Alternatively, if the smoothing and interpolation cannot provide a reasonable re
 Adding parallel impedances
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Impedance data that include negative differential resistances cannot be validated directly using the included implementations of linear Kramers-Kronig tests.
-Kramers-Kronig tests can be performed on such data either after transforming it into admittance data (not currently supported) or after adding a suitable parallel resistance to the impedance data.
+Impedance data that include negative differential resistances may present some challenges.
+For example, such spectra cannot be validated directly using linear Kramers-Kronig tests if only the impedance representation is tested.
+However, they can be validated if the admittance representation is tested.
+Alternatively, one can add a suitable parallel resistance to the impedance data.
 The addition of a parallel resistance does not affect the Kramers-Kronig compliance of the data.
 
 .. plot::
@@ -176,7 +180,7 @@ The addition of a parallel resistance does not affect the Kramers-Kronig complia
 
 
 The magnitude of the parallel resistance to add depends on the original impedance data.
-In the example below (:numref:`parallel_figure`), a resistance of 30 |ohm| was chosen since the absolute value of the real impedance at the lowest frequency was approximately 50 |ohm| (i.e., the point near the x-axis on the left-hand side).
+In the example below (:numref:`parallel_figure`), a resistance of 50 |ohm| was chosen.
 
 
 .. note::
@@ -188,8 +192,8 @@ In the example below (:numref:`parallel_figure`), a resistance of 30 |ohm| was c
    :alt: Addition of parallel impedance to impedance data
 
    An impedance spectrum that includes a negative differential resistance was generated for this example (marked here as **Before**).
-   Performing Kramers-Kronig tests using the implementations included in DearEIS on this impedance data would incorrectly indicate non-compliance even for compliant impedance data.
-   Adding a parallel resistance of 30 |ohm| produces impedance data (marked here as **After**) that can be validated.
+   Performing Kramers-Kronig tests on the impedance representation would fail despite the original data being compliant.
+   Adding a parallel resistance of 50 |ohm| produces impedance data (marked here as **After**) that can be validated.
    The added parallel resistance is always Kramers-Kronig compliant, which means that the compliance of the resulting circuit and its impedance data depends on the compliance of the original data.
 
 
@@ -214,7 +218,7 @@ This feature can be used to, e.g., correct for some aspect of a measurement setu
 .. figure:: https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-subtraction.png
    :alt: Subtraction of impedances from a recorded spectrum
 
-   A resistance of 100 |ohm| is subtracted from a data set.
+   A resistance of 50 |ohm| is subtracted from a data set.
 
 
 .. raw:: latex

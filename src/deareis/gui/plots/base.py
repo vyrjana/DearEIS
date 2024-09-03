@@ -19,13 +19,14 @@
 
 from typing import List, Optional
 import dearpygui.dearpygui as dpg
+from deareis.typing.helpers import Tag
 
 
 class Plot:
     def __init__(self):
-        self._plot: int = dpg.generate_uuid()
+        self._plot: Tag = dpg.generate_uuid()
         self._series: List[dict] = []
-        self._item_handler: int = dpg.generate_uuid()
+        self._item_handler: Tag = dpg.generate_uuid()
         with dpg.item_handler_registry(tag=self._item_handler):
             dpg.add_item_visible_handler(callback=self._visibility_handler)
         self._is_limits_adjustment_queued: bool = False
@@ -51,6 +52,50 @@ class Plot:
 
     def hide(self):
         dpg.hide_item(self._plot)
+
+    def show_series(self, index: int):
+        i: int
+        if hasattr(self, "_y_axis"):
+            series: int
+            for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+                if i == index:
+                    dpg.show_item(series)
+                    break
+        elif hasattr(self, "_y_axis_1") and hasattr(self, "_y_axis_2"):
+            series_1: int
+            series_2: int
+            for i, (series_1, series_2) in enumerate(
+                zip(
+                    dpg.get_item_children(self._y_axis_1, slot=1),
+                    dpg.get_item_children(self._y_axis_2, slot=1),
+                )
+            ):
+                if i == index:
+                    dpg.show_item(series_1)
+                    dpg.show_item(series_2)
+                    break
+
+    def hide_series(self, index: int):
+        i: int
+        if hasattr(self, "_y_axis"):
+            series: int
+            for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
+                if i == index:
+                    dpg.hide_item(series)
+                    break
+        elif hasattr(self, "_y_axis_1") and hasattr(self, "_y_axis_2"):
+            series_1: int
+            series_2: int
+            for i, (series_1, series_2) in enumerate(
+                zip(
+                    dpg.get_item_children(self._y_axis_1, slot=1),
+                    dpg.get_item_children(self._y_axis_2, slot=1),
+                )
+            ):
+                if i == index:
+                    dpg.hide_item(series_1)
+                    dpg.hide_item(series_2)
+                    break
 
     def delete(self):
         dpg.delete_item(self._item_handler)
@@ -84,3 +129,6 @@ class Plot:
 
     def plot(self, *args, **kwargs):
         raise Exception("'plot' method has not been implemented!")
+
+    def adjust_limits(self, *args, **kwargs):
+        raise Exception("'adjust_limits' method has not been implemented!")

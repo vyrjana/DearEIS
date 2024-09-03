@@ -30,6 +30,7 @@ from os.path import (
     dirname,
     exists,
     join,
+    splitext,
 )
 from tempfile import gettempdir
 from threading import Timer
@@ -58,15 +59,19 @@ from deareis.enums import (
     Action,
     CNLSMethod,
     Context,
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
     PlotType,
     RBFShape,
     RBFType,
-    Test,
-    TestMode,
+    TRNNLSLambdaMethod,
+    KramersKronigTest,
+    KramersKronigMode,
+    KramersKronigRepresentation,
     Weight,
     ZHITInterpolation,
+    ZHITRepresentation,
     ZHITSmoothing,
     ZHITWindow,
     label_to_drt_output,
@@ -84,10 +89,12 @@ from deareis.data import (
     Project,
     SimulationResult,
     SimulationSettings,
-    TestResult,
-    TestSettings,
+    KramersKronigResult,
+    KramersKronigSettings,
+    KramersKronigSuggestionSettings,
     ZHITSettings,
 )
+from deareis.data.project import VERSION as LATEST_PROJECT_VERSION
 from deareis.gui import ProjectTab
 
 
@@ -444,7 +451,7 @@ parameters = {"""
     def copy_sympy_expression_with_values():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_sympy_expression_with_values)
@@ -457,7 +464,7 @@ parameters = {"""
     def copy_sympy_expression():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_sympy_expression)
@@ -470,7 +477,7 @@ parameters = {"""
     def copy_svg_circuit_without_labels():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_svg_circuit_without_labels)
@@ -483,7 +490,7 @@ parameters = {"""
     def copy_svg_circuit():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_svg_circuit)
@@ -499,7 +506,7 @@ parameters = {"""
     def copy_markdown_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_markdown_parameters)
@@ -521,7 +528,7 @@ Element & Parameter & Value & Unit \\
     def copy_latex_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_parameters)
@@ -534,7 +541,7 @@ Element & Parameter & Value & Unit \\
     def copy_latex_expression():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_expression)
@@ -549,7 +556,7 @@ Element & Parameter & Value & Unit \\
     def copy_latex_circuit():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_circuit)
@@ -562,7 +569,7 @@ Element & Parameter & Value & Unit \\
     def copy_json_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_json_parameters)
@@ -575,7 +582,7 @@ Element & Parameter & Value & Unit \\
     def copy_csv_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_parameters)
@@ -588,7 +595,7 @@ Element & Parameter & Value & Unit \\
     def copy_csv_impedance():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_impedance)
@@ -601,7 +608,7 @@ Element & Parameter & Value & Unit \\
     def copy_extended_cdc():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_extended_cdc)
@@ -614,7 +621,7 @@ Element & Parameter & Value & Unit \\
     def copy_basic_cdc():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.simulation_tab.output_combo, output)
+        project_tab.simulation_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_basic_cdc)
@@ -717,7 +724,12 @@ Element & Parameter & Value & Unit \\
 
     @next_step(validate_load_as_data_set)
     def load_as_data_set():
-        perform_action(action=Action.LOAD_SIMULATION_AS_DATA_SET)
+        print("  - Load as data set")
+        project_tab.start_loading_simulation_as_data_set()
+        sleep(0.5)
+        modal_window = STATE.active_modal_window_object
+        modal_window.accept()
+        sleep(0.5)
 
     @next_step(load_as_data_set)
     def validate_apply_settings():
@@ -786,23 +798,6 @@ Element & Parameter & Value & Unit \\
         perform_action(action=Action.PERFORM_ACTION)
 
     @next_step(perform_simulation)
-    def validate_parameter_adjustment():
-        assert STATE.is_project_dirty(project) is False
-        settings = project_tab.get_simulation_settings()
-        circuit = parse_cdc(settings.cdc)
-        assert isclose(circuit.get_elements()[0].get_value("R"), 850.15)
-
-    @next_step(validate_parameter_adjustment)
-    def parameter_adjustment():
-        print("  - Parameter adjustment")
-        assert STATE.is_project_dirty(project) is False
-        perform_action(action=Action.ADJUST_PARAMETERS)
-        sleep(0.5)
-        STATE.active_modal_window_object.circuit.get_elements()[0].set_values(R=850.15)
-        sleep(0.5)
-        STATE.active_modal_window_object.accept()
-
-    @next_step(parameter_adjustment)
     def validate_circuit_editor():
         assert STATE.is_project_dirty(project) is False
         settings = project_tab.get_simulation_settings()
@@ -857,6 +852,8 @@ Element & Parameter & Value & Unit \\
     assert context == Context.SIMULATION_TAB, context
 
 
+# TODO: Update tests
+# - Automatic lambda (TR-NNLS and TR-RBF)
 def test_drt_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -896,7 +893,7 @@ def test_drt_tab():
     def copy_markdown_scores():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        project_tab.drt_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_markdown_scores)
@@ -917,7 +914,7 @@ Score & Real (\%) & Imag. (\%) \\"""
     def copy_latex_scores():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        project_tab.drt_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_scores)
@@ -930,7 +927,7 @@ Score & Real (\%) & Imag. (\%) \\"""
     def copy_json_scores():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        project_tab.drt_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_json_scores)
@@ -945,7 +942,7 @@ Score & Real (\%) & Imag. (\%) \\"""
         sleep(0.5)
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.drt_tab.output_combo, output)
+        project_tab.drt_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_scores)
@@ -1160,6 +1157,8 @@ Score & Real (\%) & Imag. (\%) \\"""
                 fit=project_tab.get_active_fit(),
                 gaussian_width=0.15,
                 num_per_decade=20,
+                cross_validation_method=CrossValidationMethod.MGCV,
+                tr_nnls_lambda_method=TRNNLSLambdaMethod.NONE,
             ),
         )
         sleep(0.5)
@@ -1195,6 +1194,8 @@ Score & Real (\%) & Imag. (\%) \\"""
                 fit=project_tab.get_active_fit(),
                 gaussian_width=0.15,
                 num_per_decade=30,
+                cross_validation_method=CrossValidationMethod.NONE,
+                tr_nnls_lambda_method=TRNNLSLambdaMethod.CUSTOM,
             ),
         )
         sleep(0.5)
@@ -1234,6 +1235,8 @@ Score & Real (\%) & Imag. (\%) \\"""
                 fit=project_tab.get_active_fit(),
                 gaussian_width=0.15,
                 num_per_decade=20,
+                cross_validation_method=CrossValidationMethod.NONE,
+                tr_nnls_lambda_method=TRNNLSLambdaMethod.NONE,
             ),
         )
         sleep(0.5)
@@ -1269,6 +1272,8 @@ Score & Real (\%) & Imag. (\%) \\"""
                 fit=None,
                 gaussian_width=0.15,
                 num_per_decade=1,
+                cross_validation_method=CrossValidationMethod.NONE,
+                tr_nnls_lambda_method=TRNNLSLambdaMethod.NONE,
             ),
         )
         sleep(0.5)
@@ -1340,7 +1345,7 @@ parameters = {"""
     def copy_sympy_expression_with_values():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_sympy_expression_with_values)
@@ -1355,7 +1360,7 @@ parameters = {"""
     def copy_sympy_expression():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_sympy_expression)
@@ -1368,7 +1373,7 @@ parameters = {"""
     def copy_svg_circuit_without_labels():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_svg_circuit_without_labels)
@@ -1381,7 +1386,7 @@ parameters = {"""
     def copy_svg_circuit():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_svg_circuit)
@@ -1396,7 +1401,7 @@ parameters = {"""
     def copy_markdown_statistics():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_markdown_statistics)
@@ -1412,7 +1417,7 @@ parameters = {"""
     def copy_markdown_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_markdown_parameters)
@@ -1434,7 +1439,7 @@ Label & Value \\
     def copy_latex_statistics():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_statistics)
@@ -1456,7 +1461,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_latex_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_parameters)
@@ -1472,7 +1477,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_latex_expression():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_expression)
@@ -1487,7 +1492,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_latex_circuit():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_latex_circuit)
@@ -1500,7 +1505,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_json_statistics():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_json_statistics)
@@ -1513,7 +1518,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_json_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_json_parameters)
@@ -1526,7 +1531,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_csv_statistics():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_statistics)
@@ -1539,7 +1544,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_csv_parameters():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_parameters)
@@ -1554,7 +1559,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_csv_impedance():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_csv_impedance)
@@ -1567,7 +1572,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_extended_cdc():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_extended_cdc)
@@ -1580,7 +1585,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     def copy_basic_cdc():
         output = outputs.pop(0)
         print(f"  - Copy: {output}")
-        dpg.set_value(project_tab.fitting_tab.output_combo, output)
+        project_tab.fitting_tab.output_combo.set_label(output)
         perform_action(action=Action.COPY_OUTPUT)
 
     @next_step(copy_basic_cdc)
@@ -1761,6 +1766,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
                 method=CNLSMethod.LEASTSQ,
                 weight=Weight.BOUKAMP,
                 max_nfev=1000,
+                timeout=60,
             ),
         )
         perform_action(action=Action.BATCH_PERFORM_ACTION)
@@ -1770,23 +1776,6 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
         STATE.active_modal_window_object.accept()
 
     @next_step(perform_fit)
-    def validate_parameter_adjustment():
-        assert STATE.is_project_dirty(project) is False
-        settings = project_tab.get_fit_settings()
-        circuit = parse_cdc(settings.cdc)
-        assert isclose(circuit.get_elements()[0].get_value("R"), 950.15)
-
-    @next_step(validate_parameter_adjustment)
-    def parameter_adjustment():
-        print("  - Parameter adjustment")
-        assert STATE.is_project_dirty(project) is False
-        perform_action(action=Action.ADJUST_PARAMETERS)
-        sleep(0.5)
-        STATE.active_modal_window_object.circuit.get_elements()[0].set_values(R=950.15)
-        sleep(0.5)
-        STATE.active_modal_window_object.accept()
-
-    @next_step(parameter_adjustment)
     def validate_circuit_editor():
         assert STATE.is_project_dirty(project) is False
         settings = project_tab.get_fit_settings()
@@ -1803,6 +1792,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
                 method=CNLSMethod.POWELL,
                 weight=Weight.PROPORTIONAL,
                 max_nfev=1000,
+                timeout=60,
             ),
         )
         sleep(0.5)
@@ -1839,6 +1829,8 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
     assert context == Context.FITTING_TAB, context
 
 
+# TODO: Update tests
+# - Representation
 def test_zhit_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -2051,6 +2043,7 @@ def test_zhit_tab():
                 window=ZHITWindow.BOXCAR,
                 window_center=1.5,
                 window_width=2.0,
+                representation=ZHITRepresentation.IMPEDANCE,
             ),
         )
         sleep(0.5)
@@ -2082,6 +2075,7 @@ def test_zhit_tab():
                 window=ZHITWindow.HAMMING,
                 window_center=1.6,
                 window_width=2.0,
+                representation=ZHITRepresentation.IMPEDANCE,
             ),
         )
         sleep(0.5)
@@ -2126,6 +2120,9 @@ def test_zhit_tab():
     assert context == Context.ZHIT_TAB, context
 
 
+# TODO: Update tests
+# - Representation
+# - Log Fext widgets
 def test_kramers_kronig_tab():
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -2271,8 +2268,8 @@ def test_kramers_kronig_tab():
     def validate_apply_settings():
         assert STATE.is_project_dirty(project) is False
         settings = project_tab.get_test_settings()
-        assert settings.test == Test.REAL
-        assert settings.mode == TestMode.AUTO
+        assert settings.test == KramersKronigTest.REAL
+        assert settings.mode == KramersKronigMode.AUTO
 
     @next_step(validate_apply_settings)
     def apply_settings():
@@ -2323,15 +2320,32 @@ def test_kramers_kronig_tab():
         assert STATE.is_project_dirty(project) is False
         signals.emit(
             Signal.APPLY_TEST_SETTINGS,
-            settings=TestSettings(
-                test=Test.COMPLEX,
-                mode=TestMode.EXPLORATORY,
+            settings=KramersKronigSettings(
+                test=KramersKronigTest.COMPLEX,
+                mode=KramersKronigMode.EXPLORATORY,
+                representation=KramersKronigRepresentation.AUTO,
                 num_RC=25,
-                mu_criterion=0.8,
                 add_capacitance=True,
                 add_inductance=True,
-                method=CNLSMethod.LEASTSQ,
+                min_log_F_ext=-1.0,
+                max_log_F_ext=1.0,
+                log_F_ext=0.0,
+                num_F_ext_evaluations=20,
+                rapid_F_ext_evaluations=True,
+                timeout=10,
+                cnls_method=CNLSMethod.LEASTSQ,
                 max_nfev=1,
+                suggestion_settings=KramersKronigSuggestionSettings(
+                    methods=[],
+                    use_mean=False,
+                    use_ranking=False,
+                    use_sum=False,
+                    lower_limit=0,
+                    upper_limit=0,
+                    limit_delta=0,
+                    m1_mu_criterion=0.7,
+                    m1_beta=0.75,
+                ),
             ),
         )
         sleep(0.5)
@@ -2356,15 +2370,32 @@ def test_kramers_kronig_tab():
         assert STATE.is_project_dirty(project) is False
         signals.emit(
             Signal.APPLY_TEST_SETTINGS,
-            settings=TestSettings(
-                test=Test.REAL,
-                mode=TestMode.AUTO,
+            settings=KramersKronigSettings(
+                test=KramersKronigTest.REAL,
+                mode=KramersKronigMode.AUTO,
+                representation=KramersKronigRepresentation.AUTO,
                 num_RC=16,
-                mu_criterion=0.7,
                 add_capacitance=True,
                 add_inductance=True,
-                method=CNLSMethod.LEASTSQ,
+                min_log_F_ext=-1.0,
+                max_log_F_ext=1.0,
+                log_F_ext=0.0,
+                num_F_ext_evaluations=20,
+                rapid_F_ext_evaluations=True,
+                timeout=10,
+                cnls_method=CNLSMethod.LEASTSQ,
                 max_nfev=1,
+                suggestion_settings=KramersKronigSuggestionSettings(
+                    methods=[],
+                    use_mean=False,
+                    use_ranking=False,
+                    use_sum=False,
+                    lower_limit=0,
+                    upper_limit=0,
+                    limit_delta=0,
+                    m1_mu_criterion=0.7,
+                    m1_beta=0.75,
+                ),
             ),
         )
         sleep(0.5)
@@ -2387,15 +2418,32 @@ def test_kramers_kronig_tab():
         assert STATE.is_project_dirty(project) is False
         signals.emit(
             Signal.APPLY_TEST_SETTINGS,
-            settings=TestSettings(
-                test=Test.CNLS,
-                mode=TestMode.MANUAL,
+            settings=KramersKronigSettings(
+                test=KramersKronigTest.CNLS,
+                mode=KramersKronigMode.MANUAL,
+                representation=KramersKronigRepresentation.AUTO,
                 num_RC=7,
-                mu_criterion=0.0,
                 add_capacitance=True,
                 add_inductance=True,
-                method=CNLSMethod.LEASTSQ,
+                min_log_F_ext=-1.0,
+                max_log_F_ext=1.0,
+                log_F_ext=0.0,
+                num_F_ext_evaluations=20,
+                rapid_F_ext_evaluations=True,
+                timeout=10,
+                cnls_method=CNLSMethod.LEASTSQ,
                 max_nfev=100,
+                suggestion_settings=KramersKronigSuggestionSettings(
+                    methods=[],
+                    use_mean=False,
+                    use_ranking=False,
+                    use_sum=False,
+                    lower_limit=0,
+                    upper_limit=0,
+                    limit_delta=0,
+                    m1_mu_criterion=0.7,
+                    m1_beta=0.75,
+                ),
             ),
         )
         sleep(0.5)
@@ -2785,14 +2833,29 @@ def test_project():
 def test_project_versions():
     project_paths: List[str] = []
     for _, _, files in walk(PARENT_FOLDER):
-        files.sort()
         break
+    
     project_paths = [
         join(PARENT_FOLDER, _)
         for _ in files
         if _.startswith("example-project-v") and _.endswith(".json")
     ]
     assert len(project_paths) > 0
+    
+    project_versions: Dict[str, int] = {}
+
+    path: str
+    for path in project_paths:
+        name = splitext(basename(path))[0]
+        i: int = -1
+        
+        while name[i:].isnumeric():
+            i -= 1
+        
+        project_versions[path] = int(name[min((i+1, -1)):])
+    
+    project_paths.sort(key=lambda s: project_versions[s])
+
     actions = [
         Action.SELECT_DATA_SETS_TAB,
         Action.SELECT_KRAMERS_KRONIG_TAB,
@@ -2812,12 +2875,20 @@ def test_project_versions():
 
     @next_step(close)
     def load():
-        num_projects = len(project_paths)
+        num_projects: int = len(project_paths)
+        backup_paths_to_remove: List[str] = []
+
         while project_paths:
             path = project_paths.pop(0)
             print(f"  - {basename(path)}")
             signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
-            sleep(0.5)
+            sleep(1.0)
+            backup_path: str = path.replace(".json", ".backup0")
+            version: int = project_versions[path]
+            assert exists(backup_path) or version == LATEST_PROJECT_VERSION, (backup_path, version)
+            if exists(backup_path):
+                backup_paths_to_remove.append(backup_path)
+
             project: Optional[Project] = STATE.get_active_project()
             project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
             for action in actions:
@@ -2828,7 +2899,11 @@ def test_project_versions():
                     project_tab=project_tab,
                 )
                 sleep(0.5)
+
         assert len(STATE.projects) == num_projects, num_projects
+
+        for backup_path in backup_paths_to_remove:
+            remove(backup_path)
 
     print("\n- Project versions")
     load()

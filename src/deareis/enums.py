@@ -17,8 +17,15 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
-from enum import IntEnum, auto
-from typing import Dict, List
+from enum import (
+    IntEnum,
+    auto,
+)
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
 
 
 class Context(IntEnum):
@@ -126,7 +133,7 @@ class Action(IntEnum):
     COPY_BODE_DATA = auto()
     COPY_RESIDUALS_DATA = auto()
     COPY_OUTPUT = auto()
-    ADJUST_PARAMETERS = auto()
+    ADJUST_PARAMETERS = auto()  # Deprecated as of version 5.0.0
     # - Fit output
     # - Simulation output
     LOAD_SIMULATION_AS_DATA_SET = auto()
@@ -704,7 +711,7 @@ Preview the weights for the Z-HIT offset adjustment.
 Duplicate the current plot.
 """.strip(),
     Action.ADJUST_PARAMETERS: """
-Adjust the (initial) values of circuit parameters prior to fitting or simulation.
+DEPRECATED: Adjust the (initial) values of circuit parameters prior to fitting or simulation.
 """.strip(),
     Action.NEXT_PLOT_TAB: """
 Select the next plot type.
@@ -825,12 +832,12 @@ assert set(cnls_method_to_value.keys()) == set(
 ), "Duplicate method string keys detected!"
 
 
-class TestMode(IntEnum):
+class KramersKronigMode(IntEnum):
     """
-    Types of modes that determine how the number of Voigt elements (capacitor connected in parallel with resistor) is chosen:
+    Types of modes that determine how the number of RC elements is chosen:
 
-    - AUTO: follow procedure described by Schönleber, Klotz, and Ivers-Tiffée (2014)
-    - EXPLORATORY: same procedure as AUTO but present intermediate results to user and apply additional weighting to the initial suggestion
+    - AUTO: automatically suggest the number of using the selected method(s)
+    - EXPLORATORY: same procedure as AUTO but present intermediate results to user
     - MANUAL: manually choose the number
     """
 
@@ -839,15 +846,47 @@ class TestMode(IntEnum):
     MANUAL = 3
 
 
-test_mode_to_label: Dict[TestMode, str] = {
-    TestMode.AUTO: "Auto",
-    TestMode.EXPLORATORY: "Exploratory",
-    TestMode.MANUAL: "Manual",
+test_mode_to_label: Dict[KramersKronigMode, str] = {
+    KramersKronigMode.AUTO: "Auto",
+    KramersKronigMode.EXPLORATORY: "Exploratory",
+    KramersKronigMode.MANUAL: "Manual",
 }
-label_to_test_mode: Dict[str, TestMode] = {v: k for k, v in test_mode_to_label.items()}
+label_to_test_mode: Dict[str, KramersKronigMode] = {v: k for k, v in test_mode_to_label.items()}
 assert set(test_mode_to_label.keys()) == set(
     label_to_test_mode.values()
 ), "Duplicate test mode string labels detected!"
+
+
+class KramersKronigRepresentation(IntEnum):
+    """
+    - AUTO: Automatically suggest the most suitable immittance representation
+    - IMPEDANCE
+    - ADMITTANCE
+    """
+    AUTO = 1
+    IMPEDANCE = 2
+    ADMITTANCE = 3
+
+
+test_representation_to_label: Dict[KramersKronigRepresentation, str] = {
+    KramersKronigRepresentation.AUTO: "Auto",
+    KramersKronigRepresentation.IMPEDANCE: "Impedance",
+    KramersKronigRepresentation.ADMITTANCE: "Admittance",
+}
+label_to_test_representation: Dict[str, KramersKronigRepresentation] = {
+    v: k for k, v in test_representation_to_label.items()
+}
+test_representation_to_value: Dict[KramersKronigRepresentation, Optional[bool]] = {
+    KramersKronigRepresentation.AUTO: None,
+    KramersKronigRepresentation.IMPEDANCE: False,
+    KramersKronigRepresentation.ADMITTANCE: True,
+}
+assert set(test_representation_to_label.keys()) == set(
+    label_to_test_representation.values()
+), "Duplicate test representation string labels detected!"
+assert set(test_representation_to_value.keys()) == set(
+    test_representation_to_value.keys()
+), "Missing test representation value detected!"
 
 
 class FitSimOutput(IntEnum):
@@ -897,33 +936,49 @@ assert set(fit_sim_output_to_label.keys()) == set(
 ), "Duplicate output string labels detected!"
 
 
+# TODO: Add DRT with frequency rather than time constant?
 class PlotType(IntEnum):
     """
     Types of plots:
 
-    - NYQUIST: -Im(Z) vs Re(Z)
-    - BODE_MAGNITUDE: Mod(Z) vs f
-    - BODE_PHASE: -Phase(Z) vs f
-    - DRT: gamma vs tau
+    - NYQUIST_IMPEDANCE: -Im(Z) vs Re(Z)
+    - BODE_IMPEDANCE_MAGNITUDE: Mod(Z) vs f
+    - BODE_IMPEDANCE_PHASE: -Phase(Z) vs f
     - IMPEDANCE_REAL: Re(Z) vs f
     - IMPEDANCE_IMAGINARY: -Im(Z) vs f
+    - DRT: gamma vs tau
+    - NYQUIST_ADMITTANCE: Im(Y) vs Re(Y)
+    - BODE_ADMITTANCE_MAGNITUDE: Mod(Y) vs f
+    - BODE_ADMITTANCE_PHASE: Phase(Y) vs f
+    - ADMITTANCE_REAL: Re(Y) vs f
+    - ADMITTANCE_IMAGINARY: Im(Y) vs f
     """
 
-    NYQUIST = 1
-    BODE_MAGNITUDE = 2
-    BODE_PHASE = 3
+    NYQUIST_IMPEDANCE = 1
+    BODE_IMPEDANCE_MAGNITUDE = 2
+    BODE_IMPEDANCE_PHASE = 3
     IMPEDANCE_REAL = 4
     IMPEDANCE_IMAGINARY = 5
     DRT = 6
+    NYQUIST_ADMITTANCE = 7
+    BODE_ADMITTANCE_MAGNITUDE = 8
+    BODE_ADMITTANCE_PHASE = 9
+    ADMITTANCE_REAL = 10
+    ADMITTANCE_IMAGINARY = 11
 
 
 plot_type_to_label: Dict[PlotType, str] = {
-    PlotType.NYQUIST: "Nyquist",
-    PlotType.BODE_MAGNITUDE: "Bode - magnitude",
-    PlotType.BODE_PHASE: "Bode - phase",
-    PlotType.IMPEDANCE_REAL: "Impedance - real",
-    PlotType.IMPEDANCE_IMAGINARY: "Impedance - imaginary",
+    PlotType.ADMITTANCE_IMAGINARY: "Admittance - imaginary",
+    PlotType.ADMITTANCE_REAL: "Admittance - real",
+    PlotType.BODE_ADMITTANCE_MAGNITUDE: "Bode - admittance magnitude",
+    PlotType.BODE_ADMITTANCE_PHASE: "Bode - admittance phase",
+    PlotType.BODE_IMPEDANCE_MAGNITUDE: "Bode - impedance magnitude",
+    PlotType.BODE_IMPEDANCE_PHASE: "Bode - impedance phase",
     PlotType.DRT: "Distribution of relaxation times",
+    PlotType.IMPEDANCE_IMAGINARY: "Impedance - imaginary",
+    PlotType.IMPEDANCE_REAL: "Impedance - real",
+    PlotType.NYQUIST_ADMITTANCE: "Nyquist - admittance",
+    PlotType.NYQUIST_IMPEDANCE: "Nyquist - impedance",
 }
 label_to_plot_type: Dict[str, PlotType] = {v: k for k, v in plot_type_to_label.items()}
 assert set(plot_type_to_label.keys()) == set(
@@ -931,7 +986,7 @@ assert set(plot_type_to_label.keys()) == set(
 ), "Duplicate plot type string labels detected!"
 
 
-class Test(IntEnum):
+class KramersKronigTest(IntEnum):
     """
     Types of Kramers-Kronig tests:
 
@@ -939,26 +994,37 @@ class Test(IntEnum):
     - COMPLEX: eqs. 11 and 12, Boukamp, 1995
     - IMAGINARY: eqs. 4, 6, and 7, Boukamp, 1995
     - REAL: eqs. 5, 8, 9, and 10, Boukamp, 1995
+
+    The `_LEASTSQ` variants use numpy.linalg.lstsq instead of pseudo-inverse matrices.
     """
 
     CNLS = 1
     COMPLEX = 2
     IMAGINARY = 3
     REAL = 4
+    COMPLEX_LEASTSQ = 5
+    IMAGINARY_LEASTSQ = 6
+    REAL_LEASTSQ = 7
 
 
-test_to_label: Dict[Test, str] = {
-    Test.CNLS: "CNLS",
-    Test.COMPLEX: "Complex",
-    Test.IMAGINARY: "Imaginary",
-    Test.REAL: "Real",
+test_to_label: Dict[KramersKronigTest, str] = {
+    KramersKronigTest.CNLS: "CNLS",
+    KramersKronigTest.COMPLEX_LEASTSQ: "Complex (least sq.)",
+    KramersKronigTest.COMPLEX: "Complex (mat. inv.)",
+    KramersKronigTest.IMAGINARY_LEASTSQ: "Imaginary (least sq.)",
+    KramersKronigTest.IMAGINARY: "Imaginary (mat. inv.)",
+    KramersKronigTest.REAL_LEASTSQ: "Real (least sq.)",
+    KramersKronigTest.REAL: "Real (mat. inv.)",
 }
-label_to_test: Dict[str, Test] = {v: k for k, v in test_to_label.items()}
-test_to_value: Dict[Test, str] = {
-    Test.CNLS: "cnls",
-    Test.COMPLEX: "complex",
-    Test.IMAGINARY: "imaginary",
-    Test.REAL: "real",
+label_to_test: Dict[str, KramersKronigTest] = {v: k for k, v in test_to_label.items()}
+test_to_value: Dict[KramersKronigTest, str] = {
+    KramersKronigTest.CNLS: "cnls",
+    KramersKronigTest.COMPLEX: "complex-inv",
+    KramersKronigTest.IMAGINARY: "imaginary-inv",
+    KramersKronigTest.REAL: "real-inv",
+    KramersKronigTest.COMPLEX_LEASTSQ: "complex",
+    KramersKronigTest.IMAGINARY_LEASTSQ: "imaginary",
+    KramersKronigTest.REAL_LEASTSQ: "real",
 }
 assert set(test_to_label.keys()) == set(
     label_to_test.values()
@@ -1085,6 +1151,36 @@ assert set(drt_mode_to_label.keys()) == set(
 ), "Missing DRT mode string values detected!"
 
 
+class TRNNLSLambdaMethod(IntEnum):
+    """
+    - NONE
+    - CUSTOM - Custom approach
+    - LC - L-curve corner search
+    """
+    NONE = 1
+    CUSTOM = 2
+    LC = 3
+
+
+tr_nnls_lambda_method_to_label: Dict[TRNNLSLambdaMethod, str] = {
+    TRNNLSLambdaMethod.NONE: "NONE",
+    TRNNLSLambdaMethod.CUSTOM: "Custom",
+    TRNNLSLambdaMethod.LC: "L-curve corner search",
+}
+label_to_tr_nnls_lambda_method: Dict[str, TRNNLSLambdaMethod] = {v: k for k, v in tr_nnls_lambda_method_to_label.items()}
+tr_nnls_lambda_method_to_value: Dict[TRNNLSLambdaMethod, float] = {
+    TRNNLSLambdaMethod.NONE: 0.0,
+    TRNNLSLambdaMethod.CUSTOM: -1.0,
+    TRNNLSLambdaMethod.LC: -2.0,
+}
+assert set(tr_nnls_lambda_method_to_label.keys()) == set(
+    label_to_tr_nnls_lambda_method.values()
+), "Duplicate TR-NNLS lambda method string labels detected!"
+assert set(tr_nnls_lambda_method_to_label.keys()) == set(
+    tr_nnls_lambda_method_to_value.keys()
+), "Missing TR-NNLS lambda method string values detected!"
+
+
 class RBFType(IntEnum):
     """
     The radial basis function to use for discretization (or piecewise linear discretization):
@@ -1180,6 +1276,49 @@ label_to_derivative_order: Dict[str, int] = {
 }
 
 
+class CrossValidationMethod(IntEnum):
+    """
+    Cross-validation method used by the TR-RBF method for automatically
+    determining a suitable lambda value.
+    """
+
+    NONE = 1
+    GCV = 2
+    MGCV = 3
+    RGCV = 4
+    RE_IM = 5
+    LC = 6
+
+
+cross_validation_method_to_label: Dict[CrossValidationMethod, str] = {
+    CrossValidationMethod.NONE: "None",
+    CrossValidationMethod.GCV: "GCV",
+    CrossValidationMethod.MGCV: "mGCV",
+    CrossValidationMethod.RGCV: "rGCV",
+    CrossValidationMethod.RE_IM: "Re-Im",
+    CrossValidationMethod.LC: "L-curve",
+}
+
+label_to_cross_validation_method: Dict[str, CrossValidationMethod] = {
+    v: k for k, v in cross_validation_method_to_label.items()
+}
+
+cross_validation_method_to_value: Dict[CrossValidationMethod, str] = {
+    CrossValidationMethod.NONE: "",
+    CrossValidationMethod.GCV: "gcv",
+    CrossValidationMethod.MGCV: "mgcv",
+    CrossValidationMethod.RGCV: "rgcv",
+    CrossValidationMethod.RE_IM: "re-im",
+    CrossValidationMethod.LC: "lc",
+}
+assert set(cross_validation_method_to_label.keys()) == set(
+    label_to_cross_validation_method.values()
+), "Duplicate cross-validation method string labels detected!"
+assert set(cross_validation_method_to_label.keys()) == set(
+    cross_validation_method_to_value.keys()
+), "Missing cross-validation method string values detected!"
+
+
 class DRTOutput(IntEnum):
     CSV_SCORES = auto()
     JSON_SCORES = auto()
@@ -1232,6 +1371,8 @@ assert set(plot_units_to_label.keys()) == set(
 ), "Missing plot unit string values detected!"
 
 
+# DEPRECATED
+# TODO: Remove at some point
 class PlotPreviewLimit(IntEnum):
     """
     The limits of the plot preview:
@@ -1256,6 +1397,8 @@ class PlotPreviewLimit(IntEnum):
     PX16384 = 14
 
 
+# DEPRECATED
+# TODO: Remove at some point
 plot_preview_limit_to_label: Dict[PlotPreviewLimit, str] = {
     PlotPreviewLimit.NONE: "No limit",
     PlotPreviewLimit.PX256: f"{2**8} px",
@@ -1344,12 +1487,16 @@ class ZHITSmoothing(IntEnum):
     - NONE: no smoothing
     - LOWESS: `Local Weighted Scatterplot Smoothing <https://www.statsmodels.org/dev/generated/statsmodels.nonparametric.smoothers_lowess.lowess.html#statsmodels.nonparametric.smoothers_lowess.lowess>`_
     - SAVGOL: `Savitzky-Golay <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html>`_
+    - WHITHEND: `Whittaker-Henderson <https://doi.org/10.1021/acsmeasuresciau.1c00054>`_
+    - MODSINC: `Modified sinc kernel <https://doi.org/10.1021/acsmeasuresciau.1c00054>`_
     """
 
     AUTO = 1
     NONE = 2
     LOWESS = 3
     SAVGOL = 4  # Savitzky-Golay
+    WHITHEND = 5  # Whittaker-Henderson
+    MODSINC = 6  # Modifiec sinc kernel
 
 
 label_to_zhit_smoothing: Dict[str, ZHITSmoothing] = {
@@ -1357,6 +1504,8 @@ label_to_zhit_smoothing: Dict[str, ZHITSmoothing] = {
     "None": ZHITSmoothing.NONE,
     "LOWESS": ZHITSmoothing.LOWESS,
     "Savitzky-Golay": ZHITSmoothing.SAVGOL,
+    "Whittaker-Henderson": ZHITSmoothing.WHITHEND,
+    "Modified sinc kernel": ZHITSmoothing.MODSINC,
 }
 zhit_smoothing_to_label: Dict[ZHITSmoothing, str] = {
     v: k for k, v in label_to_zhit_smoothing.items()
@@ -1366,10 +1515,18 @@ zhit_smoothing_to_value: Dict[ZHITSmoothing, str] = {
     ZHITSmoothing.NONE: "none",
     ZHITSmoothing.LOWESS: "lowess",
     ZHITSmoothing.SAVGOL: "savgol",
+    ZHITSmoothing.WHITHEND: "whithend",
+    ZHITSmoothing.MODSINC: "modsinc",
 }
 value_to_zhit_smoothing: Dict[str, ZHITSmoothing] = {
     v: k for k, v in zhit_smoothing_to_value.items()
 }
+assert set(zhit_smoothing_to_label.keys()) == set(
+    label_to_zhit_smoothing.values()
+), "Duplicate ZHIT smoothing string labels detected!"
+assert set(zhit_smoothing_to_label.keys()) == set(
+    zhit_smoothing_to_value.keys()
+), "Missing ZHIT smoothing string value detected!"
 
 
 class ZHITInterpolation(IntEnum):
@@ -1406,6 +1563,12 @@ zhit_interpolation_to_value: Dict[ZHITInterpolation, str] = {
 value_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
     v: k for k, v in zhit_interpolation_to_value.items()
 }
+assert set(zhit_interpolation_to_label.keys()) == set(
+    label_to_zhit_interpolation.values()
+), "Duplicate ZHIT interpolation string labels detected!"
+assert set(zhit_interpolation_to_label.keys()) == set(
+    zhit_interpolation_to_value.keys()
+), "Missing ZHIT interpolation string value detected!"
 
 
 class ZHITWindow(IntEnum):
@@ -1448,25 +1611,25 @@ class ZHITWindow(IntEnum):
     LANCZOS = 15
 
 
-label_to_zhit_window: Dict[str, ZHITWindow] = {
-    "Auto": ZHITWindow.AUTO,
-    "Barthann": ZHITWindow.BARTHANN,
-    "Bartlett": ZHITWindow.BARTLETT,
-    "Blackman": ZHITWindow.BLACKMAN,
-    "Blackman-Harris": ZHITWindow.BLACKMANHARRIS,
-    "Bohman": ZHITWindow.BOHMAN,
-    "Boxcar": ZHITWindow.BOXCAR,
-    "Cosine": ZHITWindow.COSINE,
-    "Flat top": ZHITWindow.FLATTOP,
-    "Hamming": ZHITWindow.HAMMING,
-    "Hann": ZHITWindow.HANN,
-    "Lanczos": ZHITWindow.LANCZOS,
-    "Nuttall": ZHITWindow.NUTTALL,
-    "Parzen": ZHITWindow.PARZEN,
-    "Triangular": ZHITWindow.TRIANG,
-}
 zhit_window_to_label: Dict[ZHITWindow, str] = {
-    v: k for k, v in label_to_zhit_window.items()
+    ZHITWindow.AUTO: "Auto",
+    ZHITWindow.BARTHANN: "Barthann",
+    ZHITWindow.BARTLETT: "Bartlett",
+    ZHITWindow.BLACKMAN: "Blackman",
+    ZHITWindow.BLACKMANHARRIS: "Blackman-Harris",
+    ZHITWindow.BOHMAN: "Bohman",
+    ZHITWindow.BOXCAR: "Boxcar",
+    ZHITWindow.COSINE: "Cosine",
+    ZHITWindow.FLATTOP: "Flat top",
+    ZHITWindow.HAMMING: "Hamming",
+    ZHITWindow.HANN: "Hann",
+    ZHITWindow.LANCZOS: "Lanczos",
+    ZHITWindow.NUTTALL: "Nuttall",
+    ZHITWindow.PARZEN: "Parzen",
+    ZHITWindow.TRIANG: "Triangular",
+}
+label_to_zhit_window: Dict[str, ZHITWindow] = {
+    v: k for k, v in zhit_window_to_label.items()
 }
 zhit_window_to_value: Dict[ZHITWindow, str] = {
     ZHITWindow.AUTO: "auto",
@@ -1488,3 +1651,39 @@ zhit_window_to_value: Dict[ZHITWindow, str] = {
 value_to_zhit_window: Dict[str, ZHITWindow] = {
     v: k for k, v in zhit_window_to_value.items()
 }
+assert set(zhit_window_to_label.keys()) == set(
+    label_to_zhit_window.values()
+), "Duplicate ZHIT window string labels detected!"
+assert set(zhit_window_to_label.keys()) == set(
+    zhit_window_to_value.keys()
+), "Missing ZHIT window string value detected!"
+
+
+class ZHITRepresentation(IntEnum):
+    """
+    - IMPEDANCE
+    - ADMITTANCE
+    """
+    #AUTO = 1
+    IMPEDANCE = 2
+    ADMITTANCE = 3
+
+
+zhit_representation_to_label: Dict[ZHITRepresentation, str] = {
+    #ZHITRepresentation.AUTO: "Auto",
+    ZHITRepresentation.IMPEDANCE: "Impedance",
+    ZHITRepresentation.ADMITTANCE: "Admittance",
+}
+label_to_zhit_representation: Dict[str, ZHITRepresentation] = {
+    v: k for k, v in zhit_representation_to_label.items()
+}
+zhit_representation_to_value: Dict[ZHITRepresentation, Optional[bool]] = {
+    ZHITRepresentation.IMPEDANCE: False,
+    ZHITRepresentation.ADMITTANCE: True,
+}
+assert set(zhit_representation_to_label.keys()) == set(
+    label_to_zhit_representation.values()
+), "Duplicate ZHIT representation string labels detected!"
+assert set(zhit_representation_to_value.keys()) == set(
+    zhit_representation_to_value.keys()
+), "Missing ZHIT representation value detected!"

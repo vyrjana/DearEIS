@@ -19,24 +19,25 @@
 
 from traceback import format_exc
 from typing import (
+    Dict,
     List,
     Optional,
+    Tuple,
 )
-from numpy import (
-    array,
-    ndarray,
-)
+import pyimpspec
 from pyimpspec.exceptions import FittingError
 import deareis.api.kramers_kronig as api
 from deareis.data import (
     DataSet,
     PlotSettings,
     Project,
-    TestResult,
-    TestSettings,
+    KramersKronigSuggestionSettings,
+    KramersKronigResult,
+    KramersKronigSettings,
 )
 from deareis.enums import (
-    TestMode,
+    KramersKronigMode,
+    KramersKronigRepresentation,
 )
 from deareis.gui import ProjectTab
 from deareis.gui.kramers_kronig.exploratory_results import ExploratoryResults
@@ -50,13 +51,16 @@ def select_test_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    test: Optional[TestResult] = kwargs.get("test")
+
+    test: Optional[KramersKronigResult] = kwargs.get("test")
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or test is None:
         return
+
     is_busy_message_visible: bool = STATE.is_busy_message_visible()
     if not is_busy_message_visible:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading test result")
+
     project_tab.select_test_result(test, data)
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
@@ -67,10 +71,12 @@ def delete_test_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    test: Optional[TestResult] = kwargs.get("test")
+
+    test: Optional[KramersKronigResult] = kwargs.get("test")
     data: Optional[DataSet] = kwargs.get("data")
     if data is None or test is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting test result")
     settings: Optional[PlotSettings] = project_tab.get_active_plot()
     update_plot: bool = (
@@ -80,6 +86,7 @@ def delete_test_result(*args, **kwargs):
         data=data,
         test=test,
     )
+
     project_tab.populate_tests(project, data)
     if settings is not None:
         project_tab.plotting_tab.populate_tests(
@@ -87,8 +94,10 @@ def delete_test_result(*args, **kwargs):
             project.get_data_sets(),
             settings,
         )
+
     if update_plot:
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -98,20 +107,26 @@ def apply_test_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
-    settings: Optional[TestSettings] = kwargs.get("settings")
+
+    settings: Optional[KramersKronigSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     project_tab.set_test_settings(settings)
+    STATE.kramers_kronig_suggestion_settings = settings.suggestion_settings
 
 
-def accept_exploratory_result(data: DataSet, test: TestResult, settings: TestSettings):
+def accept_exploratory_result(
+    data: DataSet,
+    test: KramersKronigResult,
+):
     assert type(data) is DataSet
-    assert type(test) is TestResult
-    assert type(settings) is TestSettings
+    assert type(test) is KramersKronigResult
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     project.add_test(
         data=data,
         test=test,
@@ -127,22 +142,24 @@ def accept_exploratory_result(data: DataSet, test: TestResult, settings: TestSet
 
 def show_exploratory_results(
     data: DataSet,
-    results: List[TestResult],
-    settings: TestSettings,
-    num_RCs: ndarray,
+    suggested_admittance: bool,
+    Z_suggestion: Optional[Tuple[KramersKronigResult, Dict[int, float], int, int]],
+    Y_suggestion: Optional[Tuple[KramersKronigResult, Dict[int, float], int, int]],
+    Z_evaluations: Optional[List[Tuple[float, List[KramersKronigResult], float]]],
+    Y_evaluations: Optional[List[Tuple[float, List[KramersKronigResult], float]]],
+    admittance: bool,
 ):
-    assert type(data) is DataSet
-    assert type(results) is list and all(map(lambda _: type(_) is TestResult, results))
-    assert type(settings) is TestSettings
-    assert type(num_RCs) is ndarray
     exploratory_results: ExploratoryResults = ExploratoryResults(
         data=data,
-        results=results,
-        settings=settings,
-        num_RCs=num_RCs,
+        suggested_admittance=suggested_admittance,
+        Z_suggestion=Z_suggestion,
+        Y_suggestion=Y_suggestion,
+        Z_evaluations=Z_evaluations,
+        Y_evaluations=Y_evaluations,
         callback=accept_exploratory_result,
-        state=STATE,
+        admittance=admittance,
     )
+
     signals.emit(
         Signal.BLOCK_KEYBINDINGS,
         window=exploratory_results.window,
@@ -155,59 +172,127 @@ def perform_test(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     data: Optional[DataSet] = kwargs.get("data")
-    settings: Optional[TestSettings] = kwargs.get("settings")
+    settings: Optional[KramersKronigSettings] = kwargs.get("settings")
     if data is None or settings is None:
         return
+
     assert data.get_num_points() > 0, "There are no data points to test!"
     batch: bool = kwargs.get("batch", False)
-    if settings.mode == TestMode.AUTO or settings.mode == TestMode.MANUAL:
+    if settings.mode == KramersKronigMode.AUTO or settings.mode == KramersKronigMode.MANUAL:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test(s)")
-        try:
-            test: TestResult = api.perform_test(
-                data=data,
-                settings=settings,
-                num_procs=STATE.config.num_procs or -1,
-            )
-        except FittingError:
-            signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
-            return
+        test: KramersKronigResult = api.perform_kramers_kronig_test(
+            data=data,
+            settings=settings,
+            num_procs=STATE.config.num_procs or -1,
+        )
+
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
         project.add_test(
             data=data,
             test=test,
         )
+
         project_tab.populate_tests(project, data)
         project_tab.plotting_tab.populate_tests(
             project.get_all_tests(),
             project.get_data_sets(),
             project_tab.get_active_plot(),
         )
+
         if batch is False:
             signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
-    elif settings.mode == TestMode.EXPLORATORY:
+
+    elif settings.mode == KramersKronigMode.EXPLORATORY:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing test")
-        try:
-            results: List[TestResult] = api.perform_exploratory_tests(
+        # TODO: Override busy message to specify which representation is being processed?
+
+        Z_evaluations: Optional[List[Tuple[float, List[KramersKronigResult], float]]] = None
+        Z_suggestion: Optional[Tuple[KramersKronigResult, Dict[int, float], int, int]] = None
+        if settings.representation in (
+            KramersKronigRepresentation.AUTO,
+            KramersKronigRepresentation.IMPEDANCE,
+        ):
+            tmp = settings.to_dict()
+            tmp["representation"] = KramersKronigRepresentation.IMPEDANCE
+
+            Z_evaluations = api.evaluate_log_F_ext(
                 data=data,
-                settings=settings,
+                settings=KramersKronigSettings.from_dict(tmp),
+                num_procs=STATE.config.num_procs or -1,
             )
-        except FittingError:
-            signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
-            return
+
+            signals.emit(
+                Signal.SHOW_BUSY_MESSAGE,
+                message="Suggesting optimum number of time constants",
+            )
+            Z_suggestion = api.suggest_num_RC(
+                Z_evaluations[0][1],
+                settings=settings.suggestion_settings,
+            )
+
+            evaluation: Tuple[float, List[KramersKronigResult], float]
+            for evaluation in Z_evaluations:
+                result: KramersKronigResult
+                for result in evaluation[1]:
+                    result.settings = settings
+
+        Y_evaluations: Optional[List[Tuple[float, List[KramersKronigResult], float]]] = None
+        Y_suggestion: Optional[Tuple[KramersKronigResult, Dict[int, float], int, int]] = None
+        if settings.representation in (
+            KramersKronigRepresentation.AUTO,
+            KramersKronigRepresentation.ADMITTANCE,
+        ):
+            tmp = settings.to_dict()
+            tmp["representation"] = KramersKronigRepresentation.ADMITTANCE
+
+            Y_evaluations = api.evaluate_log_F_ext(
+                data=data,
+                settings=KramersKronigSettings.from_dict(tmp),
+                num_procs=STATE.config.num_procs or -1,
+            )
+
+            for evaluation in Y_evaluations:
+                for result in evaluation[1]:
+                    result.settings = settings
+
+            signals.emit(
+                Signal.SHOW_BUSY_MESSAGE,
+                message="Suggesting optimum number of time constants",
+            )
+            Y_suggestion = api.suggest_num_RC(
+                Y_evaluations[0][1],
+                settings=settings.suggestion_settings,
+            )
+
+        X_suggestion: Optional[Tuple[KramersKronigResult, Dict[int, float], int, int]] = None
+        if Z_suggestion is not None and Y_suggestion is not None:
+            signals.emit(
+                Signal.SHOW_BUSY_MESSAGE,
+                message="Suggesting optimum immittance representation",
+            )
+            X_suggestion = api.suggest_representation([Z_suggestion, Y_suggestion])
+        elif Z_suggestion is not None:
+            X_suggestion = Z_suggestion
+        elif Y_suggestion is not None:
+            X_suggestion = Y_suggestion
+
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
         if batch is False:
-            num_RCs: ndarray = array(list(range(1, settings.num_RC + 1)))
             show_exploratory_results(
-                data,
-                results,
-                settings,
-                num_RCs,
+                data=data,
+                suggested_admittance=X_suggestion[0].admittance,
+                Z_suggestion=Z_suggestion,
+                Y_suggestion=Y_suggestion,
+                Z_evaluations=Z_evaluations,
+                Y_evaluations=Y_evaluations,
+                admittance=project_tab.show_admittance_plots(),
             )
         else:
             project.add_test(
                 data=data,
-                test=results[0],
+                test=X_suggestion[0],
             )
             project_tab.populate_tests(project, data)
             project_tab.plotting_tab.populate_tests(

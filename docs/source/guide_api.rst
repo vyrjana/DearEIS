@@ -19,7 +19,7 @@ Creating/loading a project
    >>> project: Project = Project()
    >>>
    >>> # Load an existing project
-   >>> project = Project.from_file("./tests/example-project-v5.json")
+   >>> project = Project.from_file("./tests/example-project-v6.json")
 
 
 Batch importing data sets
@@ -54,13 +54,13 @@ A single example of each of these will be plotted.
    ...   PlotSettings,
    ...   Project,
    ...   SimulationResult,
-   ...   TestResult,
+   ...   KramersKronigResult,
    ...   ZHITResult,
    ...   mpl,
    ... )
    >>> import matplotlib.pyplot as plt
    >>>
-   >>> project: Project = Project.from_file("./tests/example-project-v5.json")
+   >>> project: Project = Project.from_file("./tests/example-project-v6.json")
    >>>
    >>> data: DataSet
    >>> for data in project.get_data_sets():
@@ -71,7 +71,7 @@ A single example of each of these will be plotted.
    ...   )
    ...
    ...   # Iterate over Kramers-Kronig results
-   ...   test: TestResult
+   ...   test: KramersKronigResult
    ...   for test in project.get_tests(data):
    ...     figure, axes = mpl.plot_fit(
    ...       test,
@@ -142,7 +142,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for data in project.get_data_sets():
      figure, axes = mpl.plot_data(
        data,
@@ -156,7 +156,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for data in project.get_data_sets():
      for test in project.get_tests(data):
        figure, axes = mpl.plot_fit(
@@ -173,7 +173,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for data in project.get_data_sets():
      for zhit in project.get_zhits(data):
        figure, axes = mpl.plot_fit(
@@ -190,7 +190,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for data in project.get_data_sets():
      for drt in project.get_drts(data):
        figure, axes = mpl.plot_drt(
@@ -207,7 +207,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for data in project.get_data_sets():
      for fit in project.get_fits(data):
        figure, axes = mpl.plot_fit(
@@ -224,7 +224,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for sim in project.get_simulations():
      figure, axes = mpl.plot_nyquist(
        sim,
@@ -239,7 +239,7 @@ A single example of each of these will be plotted.
 .. plot::
 
    from deareis import Project, mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for plot in project.get_plots():
      figure, axes = mpl.plot(plot, project)
      figure.tight_layout()
@@ -261,7 +261,7 @@ The resulting |PlotSettings| and |PlotSeries| objects can then be used as the fo
 .. doctest::
 
    >>> from deareis import (
-   ...   PlotSeries,   # Wrapper class for DataSet, TestResult, etc.
+   ...   PlotSeries,   # Wrapper class for DataSet, KramersKronigResult, etc.
    ...   PlotSettings, # The settings class for plots created via DearEIS' GUI
    ...   PlotType,     # Enum for different types of plots (e.g., Nyquist)
    ...   Project,
@@ -279,7 +279,7 @@ The resulting |PlotSettings| and |PlotSeries| objects can then be used as the fo
    >>> axes = [axis]
    >>> 
    >>> # Load the project of interest.
-   >>> project: Project = Project.from_file("./tests/example-project-v5.json")
+   >>> project: Project = Project.from_file("./tests/example-project-v6.json")
    >>>
    >>> # Get the settings for the plot that contains the series (data sets,
    >>> # fit results, etc.) that we wish to plot.
@@ -363,9 +363,9 @@ The resulting |PlotSettings| and |PlotSeries| objects can then be used as the fo
    )
    figure, axis = plt.subplots()
    axes = [axis]
-   project: Project = Project.from_file("../../tests/example-project-v5.json")
+   project: Project = Project.from_file("../../tests/example-project-v6.json")
    plot: PlotSettings = [plot for plot in project.get_plots() if plot.get_label() == "Noisy"][0]
-   assert plot.get_type() == PlotType.NYQUIST
+   assert plot.get_type() == PlotType.NYQUIST_IMPEDANCE
    series: PlotSeries
    for series in project.get_plot_series(plot):
      label: Optional[str] = None
@@ -422,7 +422,7 @@ Several of the various ``*Result`` classes have ``to_*_dataframe`` methods that 
 .. doctest::
 
    >>> from deareis import DataSet, FitResult, Project
-   >>> project: Project = Project.from_file("./tests/example-project-v5.json")
+   >>> project: Project = Project.from_file("./tests/example-project-v6.json")
    >>> data: DataSet = project.get_data_sets()[0]
    >>> fit: FitResult = project.get_fits(data)[0]
    >>> print(fit.to_parameters_dataframe().to_markdown(index=False))
@@ -455,7 +455,7 @@ Generating circuit diagrams
 .. doctest::
 
    >>> from deareis import DataSet, FitResult, Project
-   >>> project: Project = Project.from_file("./tests/example-project-v5.json")
+   >>> project: Project = Project.from_file("./tests/example-project-v6.json")
    >>> data: DataSet = project.get_data_sets()[0]
    >>> fit: FitResult = project.get_fits(data)[0]
    >>> print(fit.circuit.to_circuitikz())
@@ -492,7 +492,7 @@ Generating circuit diagrams
 .. plot::
 
    from deareis import Project
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    data = project.get_data_sets()[0]
    fit = project.get_fits(data)[0]
    fit.circuit.to_drawing().draw()
@@ -517,7 +517,7 @@ Equations for the impedances of elements and circuits can be obtained in the for
 .. doctest::
 
    >>> from deareis import DataSet, FitResult, Project
-   >>> project: Project = Project.from_file("./tests/example-project-v5.json")
+   >>> project: Project = Project.from_file("./tests/example-project-v6.json")
    >>> data: DataSet = project.get_data_sets()[0]
    >>> fit: FitResult = project.get_fits(data)[0]
    >>> print(fit.circuit.to_sympy())

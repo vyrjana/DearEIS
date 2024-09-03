@@ -21,6 +21,7 @@ from json import (
     dumps as dump_json,
     loads as parse_json,
 )
+from os import remove
 from os.path import (
     dirname,
     exists,
@@ -49,17 +50,21 @@ from deareis.utility import (
     calculate_window_position_dimensions,
 )
 import deareis.signals as signals
+from deareis.typing.helpers import Tag
 
 
 def new_project(*args, **kwargs):
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Creating new project")
     project: Project = Project()
     project._is_new = True
+
     project_tab: ProjectTab
     existing_tab: bool
     project_tab, existing_tab = STATE.add_project(project)
+    
     STATE.program_window.select_tab(project_tab)
     signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
+    
     if not existing_tab:
         STATE.snapshot_project_state(project)
         signals.emit(
@@ -69,14 +74,17 @@ def new_project(*args, **kwargs):
             state_snapshot="{}",
         )
         assert STATE.is_project_dirty(project) is True
+    
     paths: List[str] = kwargs.get("data", [])
     if paths:
         signals.emit(Signal.LOAD_DATA_SET_FILES, paths=paths)
+    
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
 def select_project_files(*args, **kwargs):
     merge: bool = kwargs.get("merge", False)
+    
     # Check if any recent projects have been selected in the home tab
     paths: List[str] = STATE.program_window.get_selected_projects()
     if paths:
@@ -86,6 +94,7 @@ def select_project_files(*args, **kwargs):
             merge=merge,
         )
         return
+    
     FileDialog(
         cwd=STATE.latest_project_directory,
         label="Select project file(s)",
@@ -101,15 +110,21 @@ def select_project_files(*args, **kwargs):
 def load_project_files(*args, **kwargs):
     paths: List[str] = kwargs.get("paths", [])
     merge: bool = kwargs.get("merge", False)
+    
     assert type(paths) is list, paths
     assert type(merge) is bool, merge
+    
     project: Project
     project_tab: ProjectTab
     existing_tab: bool
+    
     assert paths, len(paths)
+    
     parsing_errors: Dict[str, str] = {}
     path: str
+    
     assert len(paths) >= 1, paths
+    
     if merge:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Merging projects")
         projects: List[Project] = []
@@ -119,11 +134,13 @@ def load_project_files(*args, **kwargs):
             except Exception:
                 parsing_errors[path] = format_exc()
                 continue
+        
         if not parsing_errors:
             project = Project.merge(projects)
             project_tab, existing_tab = STATE.add_project(project)
             STATE.program_window.select_tab(project_tab)
             signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
+            
             if not existing_tab:
                 STATE.snapshot_project_state(project)
                 signals.emit(
@@ -133,19 +150,24 @@ def load_project_files(*args, **kwargs):
                     state_snapshot=dump_json(project.to_dict(session=True)),
                 )
                 project_tab.set_dirty(STATE.is_project_dirty(project))
+                
                 assert STATE.is_project_dirty(project) is True
+        
         STATE.set_recent_projects(paths=[])
     else:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading project(s)")
+        
         for path in paths:
             try:
                 project: Project = Project.from_file(path)
             except Exception:
                 parsing_errors[path] = format_exc()
                 continue
+            
             project_tab, existing_tab = STATE.add_project(project)
             STATE.program_window.select_tab(project_tab)
             signals.emit(Signal.SELECT_PROJECT_TAB, uuid=project.uuid)
+            
             if not existing_tab:
                 STATE.snapshot_project_state(project)
                 signals.emit(
@@ -156,19 +178,24 @@ def load_project_files(*args, **kwargs):
                 )
                 STATE.update_project_state_saved_index(project)
                 project_tab.set_dirty(STATE.is_project_dirty(project))
+                
                 assert STATE.is_project_dirty(project) is False
                 assert (
                     STATE.get_project_state_snapshot_index(project) == 0
                 ), STATE.get_project_state_snapshot_index(project)
+
         STATE.set_recent_projects(
             paths=list(filter(lambda _: _ not in parsing_errors, paths))
         )
+
     STATE.latest_project_directory = dirname(path)
+
     if parsing_errors:
         total_traceback: str = ""
         traceback: str
         for path, traceback in parsing_errors.items():
             total_traceback += f"{traceback}\nThe exception above was encountered while parsing '{path}'.\n\n"
+        
         signals.emit(
             Signal.SHOW_ERROR_MESSAGE,
             traceback=total_traceback.strip(),
@@ -176,6 +203,7 @@ def load_project_files(*args, **kwargs):
 Encountered error(s) while parsing project file(s). The file(s) might be malformed, corrupted, or simply a newer version than is supported by this version of DearEIS.
             """.strip(),
         )
+    
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
 
@@ -185,15 +213,19 @@ def restore_project_state(*args, **kwargs):
         "project_tab", STATE.get_active_project_tab()
     )
     state_snapshot: Optional[str] = kwargs.get("state_snapshot")
+    
     if project is None or project_tab is None or state_snapshot is None:
         return
+    
     project_state: dict = parse_json(state_snapshot)
     project.update(**project_state)
     project_tab.set_label(project_state.get("label", "Project"))
     project_tab.set_notes(project_state.get("notes", ""))
     project_tab.populate_plots(project)
+    
     plot: Optional[PlotSettings] = project_tab.get_active_plot()
     plots: List[PlotSettings] = project.get_plots()
+    
     if plot is None or plot.uuid not in list(map(lambda _: _.uuid, plots)):
         assert len(plots) > 0
         plot = plots[0]
@@ -201,34 +233,42 @@ def restore_project_state(*args, **kwargs):
         # The PlotSettings returned by ProjectTab.get_active_plot is potentially out of date.
         # Look for the up-to-date version among those returned by Project.get_plots.
         plot = list(filter(lambda _: _.uuid == plot.uuid, plots))[0]
+    
     signals.emit(
         Signal.SELECT_PLOT_SETTINGS,
         settings=plot,
     )
+    
     project_tab.populate_data_sets(project)
     data: Optional[DataSet] = project_tab.get_active_data_set()
     data_sets: List[DataSet] = project.get_data_sets()
+    
     if data is None and data_sets:
         data = data_sets[0]
     elif data_sets:
         # This is done because the DataSet instance returned by get_active_data_set is outdated.
         found_data: bool = False
+        
         for _ in data_sets:
             if _.uuid == data.uuid:
                 data = _
                 found_data = True
                 break
+        
         if not found_data:
             data = data_sets[0]
     else:
         data = None
+    
     signals.emit(
         Signal.SELECT_DATA_SET,
         data=data,
     )
+    
     project_tab.populate_simulations(project)
     simulation: Optional[SimulationResult] = project_tab.get_active_simulation()
     simulations: List[SimulationResult] = project.get_simulations()
+    
     if simulation is None and simulations:
         simulation = simulations[0]
     elif simulations:
@@ -238,23 +278,28 @@ def restore_project_state(*args, **kwargs):
                 simulation = _
                 found_sim = True
                 break
+        
         if not found_sim:
             simulation = simulations[0]
     else:
         simulation = None
+    
     signals.emit(
         Signal.SELECT_SIMULATION_RESULT,
         simulation=simulation,
         data=project_tab.get_active_data_set(context=Context.SIMULATION_TAB),
     )
+    
     project_tab.set_dirty(STATE.is_project_dirty(project))
 
 
 def create_project_snapshot(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    
     if project is None or project_tab is None:
         return
+    
     STATE.snapshot_project_state(project)
     project_tab.set_dirty(kwargs.get("dirty", True))
 
@@ -262,8 +307,10 @@ def create_project_snapshot(*args, **kwargs):
 def save_project_as(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    
     if project is None or project_tab is None:
         return
+    
     FileDialog(
         cwd=STATE.latest_project_directory,
         label="Select project path",
@@ -281,8 +328,10 @@ def save_project_as(*args, **kwargs):
 def save_project(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    
     if project is None or project_tab is None:
         return
+    
     path: Optional[str] = kwargs.get("path", "").strip() or None
     if path is None and project.get_path().strip() == "":
         signals.emit(
@@ -290,9 +339,13 @@ def save_project(*args, **kwargs):
             close_project=kwargs.get("close_project", False),
         )
         return
+
+    signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Saving project")
+    
     assert path is None or exists(
         dirname(path)
     ), f"Folder does not exist: '{dirname(path)}'"
+    
     if "replacement_uuid" in kwargs and project._is_new is False:  # Save as
         old_uuid: str = project.uuid
         old_path: str = project.get_path()
@@ -306,34 +359,59 @@ def save_project(*args, **kwargs):
         STATE.update_project_state_saved_index(project)
         project_tab.set_dirty(STATE.is_project_dirty(project))
         STATE.clear_project_backups([project])
+    
     STATE.set_recent_projects(paths=[project.get_path()])
     if kwargs.get("close_project", False) is True:
         STATE.remove_project(project)
         dpg.delete_item(project_tab.tab)
 
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
 
 def close_project(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    
     if project is None or project_tab is None:
         return
+
     if not STATE.is_project_dirty(project) or kwargs.get("force", False):
         STATE.remove_project(project)
+
+        # Get rid of a handler or else DPG will raise exceptions when trying
+        # to check if the mouse cursor is hovering over the Nyquist plot.
+        project_tab.data_sets_tab.toggle_nyquist_show_frequency(flag=False)
+
         dpg.delete_item(project_tab.tab)
         STATE.clear_project_backups([project])
         return
-    window: int = dpg.generate_uuid()
-    key_handler: int = dpg.generate_uuid()
+    
+    window: Tag = dpg.generate_uuid()
+    key_handler: Tag = dpg.generate_uuid()
 
     def close():
         if dpg.does_item_exist(window):
             dpg.delete_item(window)
+        
         if dpg.does_item_exist(key_handler):
             dpg.delete_item(key_handler)
 
     def discard():
         close()
+
+        snapshot_path: str = STATE.generate_project_snapshot_path(
+            project=project,
+            auto_backup=False,
+        )
+        if exists(snapshot_path):
+            remove(snapshot_path)
+
         STATE.remove_project(project)
+        
+        # Get rid of a handler or else DPG will raise exceptions when trying
+        # to check if the mouse cursor is hovering over the Nyquist plot.
+        project_tab.data_sets_tab.toggle_nyquist_show_frequency(flag=False)
+        
         dpg.delete_item(project_tab.tab)
         STATE.clear_project_backups([project])
 
@@ -361,6 +439,7 @@ def close_project(*args, **kwargs):
             wrap=260,
         )
         dpg.add_spacer(height=8)
+        
         hw: HorizontalWidgets
         with HorizontalWidgets() as hw:
             hw.add(
@@ -375,9 +454,11 @@ def close_project(*args, **kwargs):
                 dpg.add_button(label="Cancel", callback=close),
                 fraction=0.3,
             )
+    
     with dpg.handler_registry(tag=key_handler):
         dpg.add_key_release_handler(
             key=dpg.mvKey_Escape,
             callback=close,
         )
+    
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)

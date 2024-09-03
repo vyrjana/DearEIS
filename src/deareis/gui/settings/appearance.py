@@ -35,7 +35,6 @@ from deareis.gui.plots import (
     Bode,
     DRT,
     Impedance,
-    MuXps,
     Nyquist,
     Residuals,
 )
@@ -54,10 +53,12 @@ from deareis.data import (
     DataSet,
 )
 from deareis.enums import (
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
     RBFShape,
     RBFType,
+    TRNNLSLambdaMethod,
 )
 import pyimpspec
 from deareis.signals import Signal
@@ -66,6 +67,8 @@ from deareis.config.defaults import (
     DEFAULT_COLORS,
     DEFAULT_MARKERS,
 )
+from deareis.typing.helpers import Tag
+
 
 
 # TODO: Refactor color and marker widgets to reduce code duplication
@@ -102,8 +105,9 @@ class AppearanceSettings:
         y: int
         w: int
         h: int
+
         x, y, w, h = calculate_window_position_dimensions(600, 540)
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Settings - appearance",
             modal=True,
@@ -121,7 +125,7 @@ class AppearanceSettings:
             self.create_impedance_settings()
             self.create_nyquist_settings()
             self.create_residuals_settings()
-            self.create_mu_chi_squared_settings()
+            self.create_exploratory_test_settings()
             # TODO: Settings for Z-HIT weights preview plot?
 
     def create_general_settings(self):
@@ -150,14 +154,14 @@ This affects how smooth the lines will look when plotting the impedance response
     def create_bode_settings(self):
         with dpg.collapsing_header(label="Bode plots", default_open=True):
             self.bode_plot = Bode(width=-1, height=200)
-            self.bode_data_mag_color: int = dpg.generate_uuid()
-            self.bode_data_phase_color: int = dpg.generate_uuid()
-            self.bode_sim_mag_color: int = dpg.generate_uuid()
-            self.bode_sim_phase_color: int = dpg.generate_uuid()
-            self.bode_data_mag_marker: int = dpg.generate_uuid()
-            self.bode_data_phase_marker: int = dpg.generate_uuid()
-            self.bode_sim_mag_marker: int = dpg.generate_uuid()
-            self.bode_sim_phase_marker: int = dpg.generate_uuid()
+            self.bode_data_mag_color: Tag = dpg.generate_uuid()
+            self.bode_data_phase_color: Tag = dpg.generate_uuid()
+            self.bode_sim_mag_color: Tag = dpg.generate_uuid()
+            self.bode_sim_phase_color: Tag = dpg.generate_uuid()
+            self.bode_data_mag_marker: Tag = dpg.generate_uuid()
+            self.bode_data_phase_marker: Tag = dpg.generate_uuid()
+            self.bode_sim_mag_marker: Tag = dpg.generate_uuid()
+            self.bode_sim_phase_marker: Tag = dpg.generate_uuid()
             # Data colors and markers
             with dpg.group(horizontal=True):
                 dpg.add_text("Data - magnitude".rjust(self.label_pad))
@@ -257,10 +261,10 @@ This affects how smooth the lines will look when plotting the impedance response
     def create_drt_settings(self):
         with dpg.collapsing_header(label="DRT plots", default_open=True):
             self.drt_plot = DRT(width=-1, height=200)
-            self.drt_real_gamma_color: int = dpg.generate_uuid()
-            self.drt_imaginary_gamma_color: int = dpg.generate_uuid()
-            self.drt_mean_gamma_color: int = dpg.generate_uuid()
-            self.drt_credible_intervals_color: int = dpg.generate_uuid()
+            self.drt_real_gamma_color: Tag = dpg.generate_uuid()
+            self.drt_imaginary_gamma_color: Tag = dpg.generate_uuid()
+            self.drt_mean_gamma_color: Tag = dpg.generate_uuid()
+            self.drt_credible_intervals_color: Tag = dpg.generate_uuid()
             with dpg.group(horizontal=True):
                 dpg.add_text("Gamma/real".rjust(self.label_pad))
                 dpg.add_color_edit(
@@ -316,14 +320,14 @@ This affects how smooth the lines will look when plotting the impedance response
     def create_impedance_settings(self):
         with dpg.collapsing_header(label="Impedance plots", default_open=True):
             self.impedance_plot = Impedance(width=-1, height=200)
-            self.impedance_real_data_color: int = dpg.generate_uuid()
-            self.impedance_real_simulation_color: int = dpg.generate_uuid()
-            self.impedance_imaginary_data_color: int = dpg.generate_uuid()
-            self.impedance_imaginary_simulation_color: int = dpg.generate_uuid()
-            self.impedance_real_data_marker: int = dpg.generate_uuid()
-            self.impedance_real_simulation_marker: int = dpg.generate_uuid()
-            self.impedance_imaginary_data_marker: int = dpg.generate_uuid()
-            self.impedance_imaginary_simulation_marker: int = dpg.generate_uuid()
+            self.impedance_real_data_color: Tag = dpg.generate_uuid()
+            self.impedance_real_simulation_color: Tag = dpg.generate_uuid()
+            self.impedance_imaginary_data_color: Tag = dpg.generate_uuid()
+            self.impedance_imaginary_simulation_color: Tag = dpg.generate_uuid()
+            self.impedance_real_data_marker: Tag = dpg.generate_uuid()
+            self.impedance_real_simulation_marker: Tag = dpg.generate_uuid()
+            self.impedance_imaginary_data_marker: Tag = dpg.generate_uuid()
+            self.impedance_imaginary_simulation_marker: Tag = dpg.generate_uuid()
             # Data colors and markers
             with dpg.group(horizontal=True):
                 dpg.add_text("Data - real".rjust(self.label_pad))
@@ -423,10 +427,10 @@ This affects how smooth the lines will look when plotting the impedance response
     def create_nyquist_settings(self):
         with dpg.collapsing_header(label="Nyquist plots", default_open=True):
             self.nyquist_plot = Nyquist(width=-1, height=200)
-            self.nyquist_data_color: int = dpg.generate_uuid()
-            self.nyquist_sim_color: int = dpg.generate_uuid()
-            self.nyquist_data_marker: int = dpg.generate_uuid()
-            self.nyquist_sim_marker: int = dpg.generate_uuid()
+            self.nyquist_data_color: Tag = dpg.generate_uuid()
+            self.nyquist_sim_color: Tag = dpg.generate_uuid()
+            self.nyquist_data_marker: Tag = dpg.generate_uuid()
+            self.nyquist_sim_marker: Tag = dpg.generate_uuid()
             # Data colors and markers
             with dpg.group(horizontal=True):
                 dpg.add_text("Data".rjust(self.label_pad))
@@ -484,10 +488,10 @@ This affects how smooth the lines will look when plotting the impedance response
     def create_residuals_settings(self):
         with dpg.collapsing_header(label="Residuals plots", default_open=True):
             self.residuals_plot = Residuals(width=-1, height=200)
-            self.residuals_real_color: int = dpg.generate_uuid()
-            self.residuals_imag_color: int = dpg.generate_uuid()
-            self.residuals_real_marker: int = dpg.generate_uuid()
-            self.residuals_imag_marker: int = dpg.generate_uuid()
+            self.residuals_real_color: Tag = dpg.generate_uuid()
+            self.residuals_imag_color: Tag = dpg.generate_uuid()
+            self.residuals_real_marker: Tag = dpg.generate_uuid()
+            self.residuals_imag_marker: Tag = dpg.generate_uuid()
             # Re(Z) color and marker
             with dpg.group(horizontal=True):
                 dpg.add_text("Re(Z) residual".rjust(self.label_pad))
@@ -542,101 +546,12 @@ This affects how smooth the lines will look when plotting the impedance response
             self.update_residuals_plot(True)
             dpg.add_spacer(height=8)
 
-    def create_mu_chi_squared_settings(self):
-        with dpg.collapsing_header(label="µ-X² (pseudo) plots", default_open=True):
-            self.muxps_plot = MuXps(width=-1, height=200)
-            self.muxps_mu_criterion_color: int = dpg.generate_uuid()
-            self.muxps_mu_color: int = dpg.generate_uuid()
-            self.muxps_mu_highlight_color: int = dpg.generate_uuid()
-            self.muxps_xps_color: int = dpg.generate_uuid()
-            self.muxps_xps_highlight_color: int = dpg.generate_uuid()
-            self.muxps_mu_marker: int = dpg.generate_uuid()
-            self.muxps_xps_marker: int = dpg.generate_uuid()
-            # Mu-criterion color
-            with dpg.group(horizontal=True):
-                dpg.add_text("µ-criterion".rjust(self.label_pad))
-                dpg.add_color_edit(
-                    default_value=STATE.config.colors["mu_Xps_mu_criterion"],
-                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                    no_inputs=True,
-                    alpha_bar=True,
-                    callback=self.update_muxps_color,
-                    user_data=themes.mu_Xps.mu_criterion,
-                    tag=self.muxps_mu_criterion_color,
-                )
-            # Mu color and marker
-            with dpg.group(horizontal=True):
-                dpg.add_text("µ".rjust(self.label_pad))
-                dpg.add_color_edit(
-                    default_value=STATE.config.colors["mu_Xps_mu"],
-                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                    no_inputs=True,
-                    alpha_bar=True,
-                    callback=self.update_muxps_color,
-                    user_data=themes.mu_Xps.mu,
-                    tag=self.muxps_mu_color,
-                )
-                dpg.add_color_edit(
-                    default_value=STATE.config.colors["mu_Xps_mu_highlight"],
-                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                    no_inputs=True,
-                    alpha_bar=True,
-                    callback=self.update_muxps_color,
-                    user_data=themes.mu_Xps.mu_highlight,
-                    tag=self.muxps_mu_highlight_color,
-                )
-                dpg.add_combo(
-                    items=self.marker_items,
-                    default_value=self.marker_label_lookup[
-                        STATE.config.markers["mu_Xps_mu"]
-                    ],
-                    callback=self.update_muxps_marker,
-                    user_data=themes.mu_Xps.mu,
-                    tag=self.muxps_mu_marker,
-                    width=-1,
-                )
-            # Xps color and marker
-            with dpg.group(horizontal=True):
-                dpg.add_text("X² (pseudo)".rjust(self.label_pad))
-                dpg.add_color_edit(
-                    default_value=STATE.config.colors["mu_Xps_Xps"],
-                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                    no_inputs=True,
-                    alpha_bar=True,
-                    callback=self.update_muxps_color,
-                    user_data=themes.mu_Xps.Xps,
-                    tag=self.muxps_xps_color,
-                )
-                dpg.add_color_edit(
-                    default_value=STATE.config.colors["mu_Xps_Xps_highlight"],
-                    alpha_preview=dpg.mvColorEdit_AlphaPreviewHalf,
-                    no_inputs=True,
-                    alpha_bar=True,
-                    callback=self.update_muxps_color,
-                    user_data=themes.mu_Xps.Xps_highlight,
-                    tag=self.muxps_xps_highlight_color,
-                )
-                dpg.add_combo(
-                    items=self.marker_items,
-                    default_value=self.marker_label_lookup[
-                        STATE.config.markers["mu_Xps_Xps"]
-                    ],
-                    callback=self.update_muxps_marker,
-                    user_data=themes.mu_Xps.Xps,
-                    tag=self.muxps_xps_marker,
-                    width=-1,
-                )
-            with dpg.group(horizontal=True):
-                dpg.add_text("".rjust(self.label_pad))
-                dpg.add_button(
-                    label="Restore defaults",
-                    callback=self.reset_muxps_plot,
-                    width=-1,
-                )
-            self.update_muxps_plot()
+    # TODO: Replace with settings for plots only used in the exploratory results window
+    def create_exploratory_test_settings(self):
+        return
 
     def register_keybindings(self):
-        self.key_handler: int = dpg.generate_uuid()
+        self.key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,
@@ -786,6 +701,8 @@ This affects how smooth the lines will look when plotting the impedance response
                 fit=None,
                 gaussian_width=0.15,
                 num_per_decade=100,
+                cross_validation_method=CrossValidationMethod.NONE,
+                tr_nnls_lambda_method=TRNNLSLambdaMethod.NONE,
             ),
         )
         return (
@@ -812,32 +729,33 @@ This affects how smooth the lines will look when plotting the impedance response
         self.update_impedance_plot()
         self.update_nyquist_plot()
         self.update_residuals_plot()
-        self.update_muxps_plot()
+        #self.update_muxps_plot()  # TODO: Update
 
     def update_bode_plot(self, adjust_limits: bool = False):
         self.bode_plot.clear()
-        freq, mag, phase = self.data.get_bode_data()
+        freq: ndarray = self.data.get_frequencies()
+        Z: ndarray = self.data.get_impedances()
         self.bode_plot.plot(
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq,
+            impedances=Z,
             labels=(
-                "Mod(Z), d.",
-                "Phase(Z), d.",
+                "Mod(data)",
+                "Phase(data)",
             ),
             themes=(
                 themes.bode.magnitude_data,
                 themes.bode.phase_data,
             ),
         )
-        freq, mag, phase = self.smooth_data.get_bode_data()
+
+        freq = self.smooth_data.get_frequencies()
+        Z = self.smooth_data.get_impedances()
         self.bode_plot.plot(
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq,
+            impedances=Z,
             labels=(
-                "Mod(Z), f.",
-                "Phase(Z), f.",
+                "Mod(sim.)",
+                "Phase(sim.)",
             ),
             line=True,
             themes=(
@@ -845,14 +763,15 @@ This affects how smooth the lines will look when plotting the impedance response
                 themes.bode.phase_simulation,
             ),
         )
-        freq, mag, phase = self.sim_data.get_bode_data()
+
+        freq = self.sim_data.get_frequencies()
+        Z = self.sim_data.get_impedances()
         self.bode_plot.plot(
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq,
+            impedances=Z,
             labels=(
-                "Mod(Z), f.",
-                "Phase(Z), f.",
+                "Mod(fit)",
+                "Phase(fit)",
             ),
             line=False,
             show_labels=False,
@@ -1039,27 +958,26 @@ This affects how smooth the lines will look when plotting the impedance response
         f: ndarray = self.data.get_frequencies()
         Z: ndarray = self.data.get_impedances()
         self.impedance_plot.plot(
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequencies=f,
+            impedances=Z,
             labels=(
-                "Re(Z), d.",
-                "Im(Z), d.",
+                "Re(data)",
+                "Im(data)",
             ),
             themes=(
                 themes.impedance.real_data,
                 themes.impedance.imaginary_data,
             ),
         )
+
         f = self.sim_data.get_frequencies()
         Z = self.sim_data.get_impedances()
         self.impedance_plot.plot(
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequencies=f,
+            impedances=Z,
             labels=(
-                "Re(Z), f.",
-                "Im(Z), f.",
+                "Re(fit)",
+                "Im(fit)",
             ),
             fit=True,
             line=False,
@@ -1068,15 +986,15 @@ This affects how smooth the lines will look when plotting the impedance response
                 themes.impedance.imaginary_simulation,
             ),
         )
+
         f = self.smooth_data.get_frequencies()
         Z = self.smooth_data.get_impedances()
         self.impedance_plot.plot(
-            frequency=f,
-            real=Z.real,
-            imaginary=-Z.imag,
+            frequencies=f,
+            impedances=Z,
             labels=(
-                "Re(Z), f.",
-                "Im(Z), f.",
+                "Re(sim)",
+                "Im(sim)",
             ),
             fit=True,
             line=True,
@@ -1182,25 +1100,24 @@ This affects how smooth the lines will look when plotting the impedance response
 
     def update_nyquist_plot(self, adjust_limits: bool = False):
         self.nyquist_plot.clear()
-        real, imag = self.data.get_nyquist_data()
+        Z: ndarray = self.data.get_impedances()
         self.nyquist_plot.plot(
-            real=real,
-            imaginary=imag,
+            impedances=Z,
             label="Data",
             theme=themes.nyquist.data,
         )
-        real, imag = self.smooth_data.get_nyquist_data()
+
+        Z = self.smooth_data.get_impedances()
         self.nyquist_plot.plot(
-            real=real,
-            imaginary=imag,
-            label="Fit",
+            impedances=Z,
+            label="Sim.",
             line=True,
             theme=themes.nyquist.simulation,
         )
-        real, imag = self.sim_data.get_nyquist_data()
+
+        Z = self.sim_data.get_impedances()
         self.nyquist_plot.plot(
-            real=real,
-            imaginary=imag,
+            impedances=Z,
             label="Fit",
             show_label=False,
             theme=themes.nyquist.simulation,
@@ -1268,7 +1185,7 @@ This affects how smooth the lines will look when plotting the impedance response
     def update_residuals_plot(self, adjust_limits: bool = False):
         self.residuals_plot.clear()
         self.residuals_plot.plot(
-            frequency=self.data.get_frequencies(),
+            frequencies=self.data.get_frequencies(),
             real=self.residuals.real,
             imaginary=self.residuals.imag,
         )
@@ -1332,6 +1249,7 @@ This affects how smooth the lines will look when plotting the impedance response
             themes.residuals.imaginary,
         )
 
+    # TODO: Update
     def update_muxps_plot(self):
         self.muxps_plot.clear()
         self.muxps_plot.plot(

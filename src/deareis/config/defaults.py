@@ -24,18 +24,22 @@ from typing import (
 import dearpygui.dearpygui as dpg
 from deareis.enums import (
     Action,
+    CNLSMethod,
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
-    CNLSMethod,
-    TestMode,
     PlotLegendLocation,
     PlotPreviewLimit,
     PlotUnits,
     RBFShape,
     RBFType,
-    Test,
+    TRNNLSLambdaMethod,
+    KramersKronigTest,
+    KramersKronigMode,
+    KramersKronigRepresentation,
     Weight,
     ZHITInterpolation,
+    ZHITRepresentation,
     ZHITSmoothing,
     ZHITWindow,
 )
@@ -43,9 +47,10 @@ from deareis.keybindings import Keybinding
 from deareis.data.plotting import PlotExportSettings
 from deareis.data import (
     DRTSettings,
+    KramersKronigSuggestionSettings,
     FitSettings,
     SimulationSettings,
-    TestSettings,
+    KramersKronigSettings,
     ZHITSettings,
 )
 
@@ -170,7 +175,9 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         action=Action.UNDO,
     ),
     Keybinding(
-        key=dpg.mvKey_Y if dpg.get_platform() == dpg.mvPlatform_Windows else dpg.mvKey_Z,
+        key=dpg.mvKey_Y
+        if dpg.get_platform() == dpg.mvPlatform_Windows
+        else dpg.mvKey_Z,
         mod_alt=False,
         mod_ctrl=True,
         mod_shift=False if dpg.get_platform() == dpg.mvPlatform_Windows else True,
@@ -471,13 +478,6 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         action=Action.EXPORT_PLOT,
     ),
     Keybinding(
-        key=dpg.mvKey_P,
-        mod_alt=True,
-        mod_ctrl=False,
-        mod_shift=False,
-        action=Action.ADJUST_PARAMETERS,
-    ),
-    Keybinding(
         key=dpg.mvKey_L,
         mod_alt=True,
         mod_ctrl=False,
@@ -669,15 +669,36 @@ DEFAULT_COLORS: Dict[str, List[float]] = {
     ],
 }
 
-DEFAULT_TEST_SETTINGS: TestSettings = TestSettings(
-    test=Test.COMPLEX,
-    mode=TestMode.EXPLORATORY,
-    num_RC=999,
-    mu_criterion=0.85,
+DEFAULT_KRAMERS_KRONIG_SETTINGS: KramersKronigSettings = KramersKronigSettings(
+    test=KramersKronigTest.REAL_LEASTSQ,
+    mode=KramersKronigMode.AUTO,
+    representation=KramersKronigRepresentation.AUTO,
     add_capacitance=True,
     add_inductance=True,
-    method=CNLSMethod.LEASTSQ,
-    max_nfev=1000,
+    # Manual mode
+    num_RC=999,
+    # Optimum range of time constants
+    min_log_F_ext=-1.0,
+    max_log_F_ext=1.0,
+    log_F_ext=0.0,
+    num_F_ext_evaluations=20,
+    rapid_F_ext_evaluations=True,
+    # CNLS-specific
+    cnls_method=CNLSMethod.LEASTSQ,
+    max_nfev=0,
+    timeout=60,
+    # Num RC suggestion settings
+    suggestion_settings=KramersKronigSuggestionSettings(
+        methods=[],
+        use_mean=False,
+        use_ranking=False,
+        use_sum=False,
+        lower_limit=0,
+        upper_limit=0,
+        limit_delta=0,
+        m1_mu_criterion=0.85,
+        m1_beta=0.75,
+    ),
 )
 
 DEFAULT_FIT_SETTINGS: FitSettings = FitSettings(
@@ -685,6 +706,7 @@ DEFAULT_FIT_SETTINGS: FitSettings = FitSettings(
     method=CNLSMethod.AUTO,
     weight=Weight.AUTO,
     max_nfev=1000,
+    timeout=0,
 )
 
 DEFAULT_SIMULATION_SETTINGS: SimulationSettings = SimulationSettings(
@@ -711,6 +733,8 @@ DEFAULT_DRT_SETTINGS: DRTSettings = DRTSettings(
     fit=None,
     gaussian_width=0.15,
     num_per_decade=100,
+    cross_validation_method=CrossValidationMethod.MGCV,
+    tr_nnls_lambda_method=TRNNLSLambdaMethod.CUSTOM,
 )
 
 DEFAULT_PLOT_EXPORT_SETTINGS: PlotExportSettings = PlotExportSettings(
@@ -732,12 +756,13 @@ DEFAULT_PLOT_EXPORT_SETTINGS: PlotExportSettings = PlotExportSettings(
 
 
 DEFAULT_ZHIT_SETTINGS: ZHITSettings = ZHITSettings(
-    smoothing=ZHITSmoothing.LOWESS,
-    num_points=5,
+    smoothing=ZHITSmoothing.MODSINC,
+    num_points=3,
     polynomial_order=2,
     num_iterations=3,
     interpolation=ZHITInterpolation.AKIMA,
     window=ZHITWindow.HANN,
     window_center=1.5,
     window_width=3.0,
+    representation=ZHITRepresentation.IMPEDANCE,
 )

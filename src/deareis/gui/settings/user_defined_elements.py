@@ -48,6 +48,7 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 DEFAULT_ELEMENTS: Dict[str, Type[Element]] = get_elements()
@@ -57,18 +58,23 @@ USER_DEFINED_ELEMENTS: Dict[str, Type[Element]] = {}
 def update_path(path: str, path_input: int = -1):
     if path_input < 1:
         return
+
     assert isinstance(path, str), path
+
     if path == "" or exists(path):
         dpg.bind_item_theme(path_input, themes.path.valid)
     else:
         dpg.bind_item_theme(path_input, themes.path.invalid)
+
     dpg.set_value(path_input, path)
 
 
 def update_table(table: int, elements: Dict[str, Type[Element]]):
     if table < 1:
         return
+
     dpg.delete_item(table, children_only=True, slot=1)
+
     Class: Type[Element]
     for Class in elements.values():
         with dpg.table_row(parent=table):
@@ -85,11 +91,15 @@ def refresh(
     key: str
     for key in USER_DEFINED_ELEMENTS:
         del registry._ELEMENTS[key]
+
     USER_DEFINED_ELEMENTS.clear()
+
     update_path(path, path_input)
+
     if close_window is not None:
         close_window()
         dpg.split_frame(delay=33)
+
     if path != "" and exists(path):
         signals.emit(
             Signal.SHOW_BUSY_MESSAGE,
@@ -103,6 +113,7 @@ def refresh(
             k: v for k, v in get_elements().items() if k not in DEFAULT_ELEMENTS
         }
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
     if close_window is not None:
         signals.emit(Signal.SHOW_SETTINGS_USER_DEFINED_ELEMENTS)
 
@@ -112,10 +123,13 @@ def select_script(path_input: int, window: int, close_window: Callable):
     if dir_path != "":
         if not isdir(dir_path):
             dir_path = dirname(dir_path)
+
     if dir_path == "" or not exists(dir_path):
         dir_path = getcwd()
+
     dpg.hide_item(window)
     dpg.split_frame(delay=33)
+
     FileDialog(
         cwd=dir_path,
         label="Select Python script",
@@ -143,7 +157,8 @@ class UserDefinedElementsSettings:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(600, 540)
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Settings - User-defined elements",
             modal=True,
@@ -165,8 +180,9 @@ The definitions for user-defined elements are NOT stored inside of project files
                     "IMPORTANT! HOVER MOUSE CURSOR OVER THIS PART FOR DETAILS!"
                 ),
             )
+
             with dpg.group(horizontal=True):
-                self.path_input: int = dpg.generate_uuid()
+                self.path_input: Tag = dpg.generate_uuid()
                 dpg.add_input_text(
                     default_value=self.config.user_defined_elements_path,
                     hint="Path to Python script/package",
@@ -184,6 +200,7 @@ The definitions for user-defined elements are NOT stored inside of project files
                     ),
                     width=-1,
                 )
+
             update_path(dpg.get_value(self.path_input), self.path_input)
             attach_tooltip(
                 """
@@ -192,7 +209,8 @@ An absolute path to a Python script/package that when loaded defines new element
 Detected user-defined elements will be listed in the table below this input field. If there are no entries in the table below, then you may need to press the "Refresh" button or the path might be invalid.
     """.strip()
             )
-            table: int = dpg.generate_uuid()
+
+            table: Tag = dpg.generate_uuid()
             with dpg.child_window(
                 border=False,
                 width=-2,
@@ -232,7 +250,9 @@ Detected user-defined elements will be listed in the table below this input fiel
             mod_shift=False,
             action=Action.CANCEL,
         )
+
         callbacks[kb] = self.close
+
         # Accept
         for kb in self.config.keybindings:
             if kb.action is Action.PERFORM_ACTION:
@@ -245,7 +265,9 @@ Detected user-defined elements will be listed in the table below this input fiel
                 mod_shift=False,
                 action=Action.PERFORM_ACTION,
             )
+
         callbacks[kb] = self.refresh
+
         # Create the handler
         self.keybinding_handler: TemporaryKeybindingHandler = (
             TemporaryKeybindingHandler(callbacks=callbacks)
@@ -255,9 +277,12 @@ Detected user-defined elements will be listed in the table below this input fiel
         path: str = dpg.get_value(self.path_input)
         if isinstance(path, str) and (path == "" or exists(path)):
             self.config.user_defined_elements_path = path
+
         if dpg.does_item_exist(self.window):
             dpg.delete_item(self.window)
+
         self.keybinding_handler.delete()
+
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
     def refresh(self):

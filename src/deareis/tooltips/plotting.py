@@ -114,6 +114,8 @@ The number of dots (or points) per inch.
 The final dimensions.
     """.strip(),
         "export_preview": """
+DEPRECATED
+TODO: Remove at some point
 The maximum limit for either dimension in the preview. For example, if the limit is set to 1024 and the figure is 1920 px by 1080 px, then the preview will be 1024 px by 576 px.
 
 Note that using a limit may cause the preview to look slightly or even very different compared to the final saved figure but helps to maintain acceptable performance.

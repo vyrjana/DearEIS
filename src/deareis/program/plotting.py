@@ -39,7 +39,7 @@ from deareis.data import (
     PlotSettings,
     Project,
     SimulationResult,
-    TestResult,
+    KramersKronigResult,
     ZHITResult,
 )
 from deareis.gui import ProjectTab
@@ -51,6 +51,7 @@ from deareis.themes import get_random_color_marker
 from deareis.utility import calculate_window_position_dimensions
 import deareis.signals as signals
 import deareis.themes as themes
+from deareis.typing.helpers import Tag
 
 
 def new_plot_settings(*args, **kwargs):
@@ -58,15 +59,17 @@ def new_plot_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     existing_labels: List[str] = list(map(lambda _: _.get_label(), project.get_plots()))
     i: int = 1
     label: str = "Plot"
     while label in existing_labels:
         i += 1
         label = f"Plot ({i})"
+
     settings: PlotSettings = PlotSettings(
         plot_label=label,
-        plot_type=PlotType.NYQUIST,
+        plot_type=PlotType.NYQUIST_IMPEDANCE,
         series_order=[],
         labels={},
         colors={},
@@ -86,10 +89,12 @@ def rename_plot_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     label: Optional[str] = kwargs.get("label")
     if settings is None or label is None:
         return
+
     project.edit_plot_label(settings, label)
     project_tab.populate_plots(project)
     signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
@@ -101,18 +106,21 @@ def rename_plot_series(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     label: Optional[str] = kwargs.get("label")
     settings: Optional[PlotSettings] = kwargs.get("settings")
     uuid: Optional[str] = kwargs.get("uuid")
-    series: Optional[Union[DataSet, TestResult, FitResult, SimulationResult]]
+    series: Optional[Union[DataSet, KramersKronigResult, FitResult, SimulationResult]]
     series = kwargs.get("series")
     if label is None or settings is None or uuid is None or series is None:
         return
+
     settings.set_series_label(uuid, label)
     if label == "":
         label = series.get_label()
     elif label.strip() == "":
         label = ""
+
     project_tab.set_series_label(uuid, label)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
@@ -122,16 +130,19 @@ def reorder_plot_series(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     uuid: Optional[str] = kwargs.get("uuid")
     step: Optional[int] = kwargs.get("step")
     if step is None or settings is None or uuid is None:
         return
+
     assert abs(step) == 1
     assert uuid in settings.series_order
     index: int = settings.series_order.index(uuid)
     if index + step < 0 or index + step > len(settings.series_order) - 1:
         return
+
     settings.series_order.insert(index + step, settings.series_order.pop(index))
     signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings, adjust_limits=False)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
@@ -143,14 +154,16 @@ def modify_plot_series_theme(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     series: Optional[
-        Union[DataSet, TestResult, FitResult, SimulationResult]
+        Union[DataSet, KramersKronigResult, FitResult, SimulationResult]
     ] = kwargs.get("series")
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if series is None or settings is None:
         return
-    window: int = dpg.generate_uuid()
-    handler: int = dpg.generate_uuid()
+
+    window: Tag = dpg.generate_uuid()
+    handler: Tag = dpg.generate_uuid()
     states: List[str] = []
 
     def accept_plot_series_theme():
@@ -158,11 +171,13 @@ def modify_plot_series_theme(*args, **kwargs):
         dpg.hide_item(window)
         dpg.delete_item(window)
         dpg.delete_item(handler)
+
         before: str
         after: str
         before, after = states
         if before == after:
             return
+
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
         signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
 
@@ -185,7 +200,7 @@ def modify_plot_series_theme(*args, **kwargs):
         settings.set_series_color(uuid, new_color)  # type: ignore
         states[1] = hash_state()
 
-    color_edit: int = dpg.generate_uuid()
+    color_edit: Tag = dpg.generate_uuid()
 
     def randomize_color():
         nonlocal states
@@ -194,6 +209,7 @@ def modify_plot_series_theme(*args, **kwargs):
         new_color, _ = get_random_color_marker({})
         while new_color == color:
             new_color, _ = get_random_color_marker({})
+
         color = new_color[:]
         settings.set_series_color(uuid, new_color)  # type: ignore
         states[1] = hash_state()
@@ -272,6 +288,7 @@ def modify_plot_series_theme(*args, **kwargs):
                 label="Randomize",
                 callback=randomize_color,
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("Marker")
             dpg.add_combo(
@@ -280,12 +297,14 @@ def modify_plot_series_theme(*args, **kwargs):
                 width=-1,
                 callback=lambda s, a, u: update_marker(a),
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("  Line")
             dpg.add_checkbox(
                 default_value=settings.get_series_line(uuid),
                 callback=lambda s, a, u: update_line(a),
             )
+
     dpg.bind_item_theme(window, themes.transparent_modal_background)
 
     with dpg.handler_registry(tag=handler):
@@ -293,6 +312,7 @@ def modify_plot_series_theme(*args, **kwargs):
             key=dpg.mvKey_Escape,
             callback=accept_plot_series_theme,
         )
+
     signals.emit(Signal.BLOCK_KEYBINDINGS, window=window, window_object=None)
 
 
@@ -301,9 +321,11 @@ def export_plot(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     # TODO: Get current x- and y-limits
     STATE.show_plot_exporter(settings, project)
 
@@ -312,6 +334,7 @@ def save_plot(*args, **kwargs):
     figure = kwargs["figure"]  # Optional[matplotlib.figure.Figure]
     if figure is None:
         return
+
     STATE.close_plot_exporter()
 
     def save(*args, **kwargs):
@@ -336,11 +359,14 @@ def select_plot_appearance_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None or len(settings.series_order) == 0:
         return
+
     if len(project.get_plots()) < 2:
         return
+
     CopyPlotAppearance(settings, project)
 
 
@@ -349,12 +375,14 @@ def copy_plot_appearance_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     changes: Optional[Dict[str, Tuple[str, List[float], int, bool]]] = kwargs.get(
         "changes"
     )
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if changes is None or settings is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
     uuid: str
     label: str
@@ -372,6 +400,7 @@ def copy_plot_appearance_settings(*args, **kwargs):
             settings.get_series_theme(uuid), settings.get_series_marker(uuid)
         )
         settings.set_series_line(uuid, line)
+
     signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
@@ -382,12 +411,15 @@ def select_plot_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     is_busy_message_visible: bool = STATE.is_busy_message_visible()
     if not is_busy_message_visible:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
+
     project_tab.select_plot(
         settings=settings,
         data_sets=project.get_data_sets(),
@@ -399,6 +431,7 @@ def select_plot_settings(*args, **kwargs):
         adjust_limits=kwargs.get("adjust_limits", True),
         plot_only=kwargs.get("plot_only", False),
     )
+
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -408,12 +441,15 @@ def select_plot_type(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     plot_type: Optional[PlotType] = kwargs.get("plot_type")
     if plot_type is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
     settings.set_type(plot_type)
     signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings, plot_only=True)
@@ -426,47 +462,56 @@ def toggle_plot_series(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Updating plots")
     enabled: bool = kwargs.get("enabled", False)
     data_sets: Optional[List[DataSet]] = kwargs.get("data_sets")
-    tests: Optional[List[TestResult]] = kwargs.get("tests")
+    tests: Optional[List[KramersKronigResult]] = kwargs.get("tests")
     zhits: Optional[List[ZHITResult]] = kwargs.get("zhits")
     drts: Optional[List[DRTResult]] = kwargs.get("drts")
     fits: Optional[List[FitResult]] = kwargs.get("fits")
     simulations: Optional[List[SimulationResult]] = kwargs.get("simulations")
+
     if data_sets is not None:
         if enabled:
             list(map(settings.add_series, data_sets))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), data_sets))
+
     if tests is not None:
         if enabled:
             list(map(settings.add_series, tests))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), tests))
+
     if zhits is not None:
         if enabled:
             list(map(settings.add_series, zhits))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), zhits))
+
     if drts is not None:
         if enabled:
             list(map(settings.add_series, drts))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), drts))
+
     if fits is not None:
         if enabled:
             list(map(settings.add_series, fits))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), fits))
+
     if simulations is not None:
         if enabled:
             list(map(settings.add_series, simulations))
         else:
             list(map(lambda _: settings.remove_series(_.uuid), simulations))
+
     signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
@@ -477,17 +522,21 @@ def delete_plot_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting plot")
     project.delete_plot(settings)
+
     plots: List[PlotSettings] = project.get_plots()
     if not plots:
         signals.emit(Signal.NEW_PLOT_SETTINGS)
     else:
         project_tab.populate_plots(project)
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=plots[0])
+
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -497,9 +546,11 @@ def duplicate_plot_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[PlotSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     existing_labels: List[str] = list(map(lambda _: _.get_label(), project.get_plots()))
     label: str = settings.get_label()
     match: Optional[Match] = search(r"^(?P<label>.+?)\s+\((?P<num>\d+)\)$", label)
@@ -507,9 +558,11 @@ def duplicate_plot_settings(*args, **kwargs):
     if match is not None:
         label = match.group("label")
         i = int(match.group("num"))
+
     while f"{label} ({i})" in existing_labels:
         i += 1
     label = f"{label} ({i})"
+
     dictionary: dict = settings.to_dict(session=False)
     dictionary["plot_label"] = label
     dictionary["uuid"] = uuid4().hex

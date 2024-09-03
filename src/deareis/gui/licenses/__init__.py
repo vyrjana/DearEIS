@@ -35,6 +35,7 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 def read_file(path: str) -> str:
@@ -145,7 +146,7 @@ class LicensesWindow:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(640, 540)
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Licenses",
             modal=True,
@@ -160,16 +161,17 @@ class LicensesWindow:
             on_close=self.close,
             tag=self.window,
         ):
-            self.tab_bar: int = dpg.generate_uuid()
+            self.tab_bar: Tag = dpg.generate_uuid()
             with dpg.tab_bar(tag=self.tab_bar):
                 with dpg.tab(label="DearEIS"):
                     with dpg.child_window(border=False):
                         dpg.add_text(self.licenses["DearEIS"], wrap=w)
                     del self.licenses["DearEIS"]
                 with dpg.tab(label="Dependencies"):
-                    self.text_widget: int = dpg.generate_uuid()
+                    self.text_widget: Tag = dpg.generate_uuid()
+                    self.license_combo: Tag = dpg.generate_uuid()
+
                     items: List[str] = list(sorted(self.licenses.keys()))
-                    self.license_combo: int = dpg.generate_uuid()
                     dpg.add_combo(
                         items=items,
                         default_value=items[0],
@@ -193,7 +195,7 @@ class LicensesWindow:
         dpg.set_value(self.text_widget, self.licenses[label])
 
     def cycle_tabs(self, step: int):
-        tabs: List[int] = dpg.get_item_children(self.tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.tab_bar)) + step
         dpg.set_value(self.tab_bar, tabs[index % len(tabs)])
 

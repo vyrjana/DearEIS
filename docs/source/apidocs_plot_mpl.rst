@@ -10,7 +10,7 @@ These functions provide a high-level API for visualizing various objects/results
 Most of them are the same functions included in pyimpspec_ with the notable exception of :func:`~deareis.mpl.plot`.
 
 .. automodule:: deareis.mpl
-   :members: plot, plot_circuit, plot_data, plot_drt, plot_fit, plot_tests
+   :members: plot, plot_circuit, plot_data, plot_drt, plot_fit, plot_kramers_kronig_tests
 
 
 
@@ -21,7 +21,7 @@ These functions are used by the wrapper functions to make a more complex figure 
 These are all the same as those included in pyimpspec_.
 
 .. automodule:: deareis.mpl
-   :members: plot_bht_scores, plot_bode, plot_complex, plot_gamma, plot_imaginary, plot_magnitude, plot_mu_xps, plot_nyquist, plot_phase, plot_real, plot_residuals
+   :members: plot_bht_scores, plot_bode, plot_real_imaginary, plot_gamma, plot_imaginary, plot_magnitude, plot_mu_xps, plot_nyquist, plot_phase, plot_real, plot_residuals
 
 
 Examples
@@ -49,7 +49,7 @@ plot
 
    from deareis import Project
    from deareis import mpl
-   project = Project.from_file("../../tests/example-project-v5.json")
+   project = Project.from_file("../../tests/example-project-v6.json")
    for plot in project.get_plots():
      if "DRT" not in plot.get_label():
        continue
@@ -72,17 +72,17 @@ plot_circuit
 
   from deareis import mpl
   import pyimpspec
-  from pyimpspec.mock_data import EXAMPLE, TC1
-  import matplotlib.pyplot as plt
   from numpy import logspace, log10 as log
 
-  f = EXAMPLE.get_frequencies()
-  figure, axes = mpl.plot_circuit(TC1, frequencies=f, label="TC-1", title="", legend=False, colored_axes=True)
+  data = pyimpspec.generate_mock_data("CIRCUIT_1", noise=5e-2, seed=42)[0]
+  circuit = pyimpspec.generate_mock_circuits("CIRCUIT_1")[0]
+  f = data.get_frequencies()
+  figure, axes = mpl.plot_circuit(circuit, frequencies=f, label="TC-1", title="", legend=False, colored_axes=True)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   data = pyimpspec.simulate_spectrum(
-    TC1,
+    circuit,
     logspace(
       log(max(f)),
       log(min(f)),
@@ -92,11 +92,11 @@ plot_circuit
   )
   figure, axes = mpl.plot_nyquist(data, line=True)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_bode(data, line=True)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 .. raw:: latex
 
@@ -113,21 +113,21 @@ plot_data
 .. plot::
 
   from deareis import mpl
-  from pyimpspec.mock_data import EXAMPLE
+  import pyimpspec
   import pyimpspec.plot.colors as colors
-  import matplotlib.pyplot as plt
 
-  figure, axes = mpl.plot_data(EXAMPLE, legend=False, colored_axes=True)
+  data = pyimpspec.generate_mock_data("CIRCUIT_1", noise=5e-2, seed=42)[0]
+  figure, axes = mpl.plot_data(data, legend=False, colored_axes=True)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
-  figure, axes = mpl.plot_nyquist(EXAMPLE)
+  figure, axes = mpl.plot_nyquist(data)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
-  figure, axes = mpl.plot_bode(EXAMPLE)
+  figure, axes = mpl.plot_bode(data)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 .. raw:: latex
 
@@ -138,7 +138,7 @@ plot_drt
 ~~~~~~~~
 :func:`~deareis.mpl.plot_drt`
 
-* :func:`~deareis.mpl.plot_complex`
+* :func:`~deareis.mpl.plot_real_imaginary`
 * :func:`~deareis.mpl.plot_gamma`
 * :func:`~deareis.mpl.plot_residuals`
 
@@ -146,45 +146,44 @@ plot_drt
 
   from deareis import mpl
   import pyimpspec
-  from pyimpspec.mock_data import EXAMPLE
   import pyimpspec.plot.colors as colors
-  import matplotlib.pyplot as plt
 
-  drt = pyimpspec.calculate_drt_tr_nnls(EXAMPLE)
+  data = pyimpspec.generate_mock_data("CIRCUIT_1", noise=5e-2, seed=42)[0]
+  drt = pyimpspec.analysis.drt.calculate_drt_tr_rbf(data)
   figure, axes = mpl.plot_drt(
     drt,
-    EXAMPLE,
+    data,
     legend=False,
     colored_axes=True,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
-  figure, axes = mpl.plot_complex(
-    EXAMPLE,
+  figure, axes = mpl.plot_real_imaginary(
+    data,
     colors={
       "real": colors.COLOR_BLACK,
       "imaginary": colors.COLOR_BLACK,
     },
     legend=False,
   )
-  _ = mpl.plot_complex(
+  _ = mpl.plot_real_imaginary(
     drt,
     line=True,
     figure=figure,
     axes=axes,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_gamma(drt)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 
   figure, axes = mpl.plot_residuals(drt)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 .. raw:: latex
 
@@ -203,24 +202,23 @@ plot_fit
 
   from deareis import mpl
   import pyimpspec
-  from pyimpspec.mock_data import EXAMPLE
   import pyimpspec.plot.colors as colors
-  import matplotlib.pyplot as plt
 
+  data = pyimpspec.generate_mock_data("CIRCUIT_1", noise=5e-2, seed=42)[0]
   circuit = pyimpspec.parse_cdc("R(RC)(RW)")
-  fit = pyimpspec.fit_circuit(circuit, data=EXAMPLE)
+  fit = pyimpspec.fit_circuit(circuit, data=data)
 
   figure, axes = mpl.plot_fit(
     fit,
-    EXAMPLE,
+    data,
     legend=False,
     colored_axes=True,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_nyquist(
-    EXAMPLE,
+    data,
     colors={"impedance": colors.COLOR_BLACK},
     legend=False,
   )
@@ -231,10 +229,10 @@ plot_fit
     axes=axes,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_bode(
-    EXAMPLE,
+    data,
     colors={
       "magnitude": colors.COLOR_BLACK,
       "phase": colors.COLOR_BLACK,
@@ -248,78 +246,86 @@ plot_fit
     axes=axes,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_residuals(fit)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 .. raw:: latex
 
     \clearpage
 
 
-plot_tests
-~~~~~~~~~~
-:func:`~deareis.mpl.plot_tests`
+plot_kramers_kronig_tests
+~~~~~~~~~~~~~~~~~~~~~~~~~
+:func:`~deareis.mpl.plot_kramers_kronig_tests`
 
-* :func:`~deareis.mpl.plot_mu_xps`
+* :func:`~deareis.mpl.plot_pseudo_chisqr`
+* :func:`~deareis.mpl.plot_num_RC_suggestion`
 * :func:`~deareis.mpl.plot_residuals`
 * :func:`~deareis.mpl.plot_nyquist`
 * :func:`~deareis.mpl.plot_bode`
+
 
 .. plot::
 
   from deareis import mpl
   import pyimpspec
-  from pyimpspec.mock_data import EXAMPLE
   import pyimpspec.plot.colors as colors
-  import matplotlib.pyplot as plt
 
+  data = pyimpspec.generate_mock_data("CIRCUIT_1", noise=5e-2, seed=42)[0]
   mu_criterion = 0.85
-  tests = pyimpspec.perform_exploratory_tests(
-    EXAMPLE,
+  tests, suggestion = pyimpspec.perform_exploratory_kramers_kronig_tests(
+    data,
     mu_criterion=mu_criterion,
     add_capacitance=True,
   )
+  test, scores, lower_limit, upper_limit = suggestion
 
-  figure, axes = mpl.plot_tests(
+
+  figure, axes = mpl.plot_kramers_kronig_tests(
     tests,
-    mu_criterion,
-    EXAMPLE,
+    suggestion,
+    data,
     legend=False,
     colored_axes=True,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
-  figure, axes = mpl.plot_mu_xps(
+  figure, axes = mpl.plot_pseudo_chisqr(
     tests,
-    mu_criterion,
+    lower_limit=lower_limit,
+    upper_limit=upper_limit,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
-  figure, axes = mpl.plot_residuals(tests[0])
+  figure, axes = mpl.plot_num_RC_suggestion(suggestion)
   figure.tight_layout()
-  plt.show()
+  mpl.show()
+
+  figure, axes = mpl.plot_residuals(test)
+  figure.tight_layout()
+  mpl.show()
 
   figure, axes = mpl.plot_nyquist(
-    EXAMPLE,
+    data,
     colors={"impedance": colors.COLOR_BLACK},
     legend=False,
   )
   _ = mpl.plot_nyquist(
-    tests[0],
+    test,
     line=True,
     figure=figure,
     axes=axes,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
   figure, axes = mpl.plot_bode(
-    EXAMPLE,
+    data,
     colors={
       "magnitude": colors.COLOR_BLACK,
       "phase": colors.COLOR_BLACK,
@@ -327,13 +333,13 @@ plot_tests
     legend=False,
   )
   _ = mpl.plot_bode(
-    tests[0],
+    test,
     line=True,
     figure=figure,
     axes=axes,
   )
   figure.tight_layout()
-  plt.show()
+  mpl.show()
 
 .. raw:: latex
 

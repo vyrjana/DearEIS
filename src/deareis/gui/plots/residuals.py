@@ -31,6 +31,7 @@ from numpy import (
 )
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
 class Residuals(Plot):
@@ -38,6 +39,8 @@ class Residuals(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._limit: Optional[float] = kwargs.get("limit", None)
+        assert isinstance(self._limit, float) or self._limit is None
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -50,20 +53,21 @@ class Residuals(Plot):
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
                 log_scale=True,
                 no_gridlines=True,
             )
-            self._y_axis_1: int = dpg.add_plot_axis(
+            self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Re(Z) residual (%)",
             )
-            self._y_axis_2: int = dpg.add_plot_axis(
+            self._y_axis_2: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Im(Z) residual (%)",
             )
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -72,6 +76,7 @@ class Residuals(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -97,9 +102,10 @@ class Residuals(Plot):
                 )
             ):
                 if i < len(self._series):
-                    self._series[i]["frequency"] = array([])
+                    self._series[i]["frequencies"] = array([])
                     self._series[i]["real"] = array([])
                     self._series[i]["imaginary"] = array([])
+
                 dpg.set_value(series_1, [[], []])
                 dpg.set_value(series_2, [[], []])
 
@@ -110,12 +116,14 @@ class Residuals(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
+        freq: ndarray = kwargs["frequencies"]
         real: ndarray = kwargs["real"]
         imag: ndarray = kwargs["imaginary"]
+
         assert type(freq) is ndarray, freq
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
+
         i: int
         series_1: int
         series_2: int
@@ -127,19 +135,25 @@ class Residuals(Plot):
         ):
             if not (i == index or i == index + 1):
                 continue
+
             if i == index:
                 self._series[index].update(kwargs)
+
             dpg.set_value(series_1, [list(freq), list(real)])
             dpg.set_value(series_2, [list(freq), list(imag)])
+            dpg.show_item(series_1)
+            dpg.show_item(series_2)
 
     def plot(self, *args, **kwargs):
         assert len(args) == 0, args
-        freq: ndarray = kwargs["frequency"]
+        freq: ndarray = kwargs["frequencies"]
         real: ndarray = kwargs["real"]
         imag: ndarray = kwargs["imaginary"]
+
         assert type(freq) is ndarray, freq
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
+
         self._series.append(kwargs)
         x: list = list(freq)
         y: list = list(real)
@@ -170,6 +184,7 @@ class Residuals(Plot):
             ),
             themes.residuals.real,
         )
+
         y = list(imag)
         dpg.bind_item_theme(
             dpg.add_scatter_series(
@@ -197,35 +212,48 @@ class Residuals(Plot):
             return
         else:
             self.limits_adjusted()
+
         error_lim: float = 0.0
         freq: Optional[ndarray] = None
         for kwargs in self._series:
-            freq = kwargs["frequency"]
+            freq = kwargs["frequencies"]
+            if self._limit is not None:
+                break
+
             if not freq.size > 0:
                 continue
+
             real: ndarray = kwargs["real"]
             imag: ndarray = kwargs["imaginary"]
             if max(real) > error_lim:
                 error_lim = max(real)
+
             if abs(min(real)) > error_lim:
                 error_lim = abs(min(real))
+
             if max(imag) > error_lim:
                 error_lim = max(imag)
+
             if abs(min(imag)) > error_lim:
                 error_lim = abs(min(imag))
-        if error_lim <= 0.5:
-            if 0.5 - error_lim > 0.1:
-                error_lim = 0.5
-            else:
-                error_lim = 1.0
-        elif error_lim <= 5:
-            if ceil(error_lim) - error_lim > 0.1:
-                error_lim = ceil(error_lim)
-            else:
-                error_lim = ceil(error_lim) + 1.0
+
+        if self._limit is not None:
+            error_lim = 0.5
         else:
-            n: int = 5
-            error_lim = ceil(error_lim / n) * n + n
+            if error_lim <= 0.5:
+                if 0.5 - error_lim > 0.1:
+                    error_lim = 0.5
+                else:
+                    error_lim = 1.0
+            elif error_lim <= 5:
+                if ceil(error_lim) - error_lim > 0.1:
+                    error_lim = ceil(error_lim)
+                else:
+                    error_lim = ceil(error_lim) + 1.0
+            else:
+                n: int = 5
+                error_lim = ceil(error_lim / n) * n + n
+
         dpg.split_frame()
         min_x: float = min(freq) if freq.size > 0 else 0.5
         max_x: float = max(freq) if freq.size > 0 else 1.0
@@ -243,6 +271,7 @@ class Residuals(Plot):
         )
         dpg.set_axis_limits(self._y_axis_1, ymin=-error_lim, ymax=error_lim)
         dpg.set_axis_limits(self._y_axis_2, ymin=-error_lim, ymax=error_lim)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._y_axis_1)
         dpg.set_axis_limits_auto(self._y_axis_2)
@@ -264,6 +293,7 @@ class Residuals(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)

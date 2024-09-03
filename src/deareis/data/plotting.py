@@ -42,7 +42,7 @@ from pyimpspec.typing import (
     TimeConstants,
 )
 from deareis.data import DataSet
-from deareis.data.kramers_kronig import TestResult
+from deareis.data.kramers_kronig import KramersKronigResult
 from deareis.data.zhit import ZHITResult
 from deareis.data.drt import DRTResult
 from deareis.data.fitting import FitResult
@@ -68,7 +68,7 @@ class PlotSeries:
     A class that represents the data used to plot an item/series.
     """
 
-    data: Union[DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult]
+    data: Union[DataSet, KramersKronigResult, ZHITResult, DRTResult, FitResult, SimulationResult]
     label: str
     color: Tuple[float, float, float, float]
     marker: int
@@ -84,11 +84,13 @@ class PlotSeries:
     def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
         if "num_per_decade" not in signature(self.data.get_frequencies).parameters:
             return self.data.get_frequencies()
+        
         return self.data.get_frequencies(num_per_decade=num_per_decade)
 
     def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
         if "num_per_decade" not in signature(self.data.get_impedances).parameters:
             return self.data.get_impedances()
+        
         return self.data.get_impedances(num_per_decade=num_per_decade)
 
     def get_nyquist_data(
@@ -96,6 +98,7 @@ class PlotSeries:
     ) -> Tuple[Impedances, Impedances]:
         if "num_per_decade" not in signature(self.data.get_nyquist_data).parameters:
             return self.data.get_nyquist_data()
+        
         return self.data.get_nyquist_data(num_per_decade=num_per_decade)
 
     def get_bode_data(
@@ -104,11 +107,13 @@ class PlotSeries:
     ) -> Tuple[Frequencies, Impedances, Phases]:
         if "num_per_decade" not in signature(self.data.get_bode_data).parameters:
             return self.data.get_bode_data()
+        
         return self.data.get_bode_data(num_per_decade=num_per_decade)
 
     def get_time_constants(self) -> TimeConstants:
         if type(self.data) is not DRTResult:
             return array([])
+        
         return self.data.get_time_constants()
 
     def get_gammas(self) -> Tuple[Gammas, Gammas]:
@@ -117,6 +122,7 @@ class PlotSeries:
                 array([]),
                 array([]),
             )
+        
         return self.data.get_gammas()
 
     def get_drt_data(self) -> Tuple[TimeConstants, Gammas, Gammas]:
@@ -126,6 +132,7 @@ class PlotSeries:
                 array([]),
                 array([]),
             )
+        
         return self.data.get_drt_data()
 
     def get_drt_credible_intervals_data(
@@ -138,6 +145,7 @@ class PlotSeries:
                 array([]),
                 array([]),
             )
+        
         return self.data.get_drt_credible_intervals_data()
 
     def get_color(self) -> Tuple[float, float, float, float]:
@@ -185,21 +193,26 @@ class PlotExportSettings:
     def from_dict(Class, dictionary: dict) -> "PlotExportSettings":
         assert type(dictionary) is dict
         assert "version" in dictionary
+        
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+        
         parsers: Dict[int, Callable] = {
             1: _parse_export_settings_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         del dictionary["version"]
+        
         dictionary = parsers[version](dictionary)
         dictionary["units"] = PlotUnits(dictionary["units"])
         dictionary["preview_limit"] = PlotPreviewLimit(dictionary["preview_limit"])
         dictionary["legend_location"] = PlotLegendLocation(
             dictionary["legend_location"]
         )
+        
         if dictionary["extension"] not in PLOT_EXTENSIONS:
             dictionary["extension"] = ".png"
+        
         return Class(**dictionary)
 
     def to_dict(self) -> dict:
@@ -270,21 +283,27 @@ class PlotSettings:
                 self.series_order,
                 other.series_order,
             )
+            
             key: str
             for key in self.labels:
                 assert key in other.labels
                 assert self.labels[key] == other.labels[key]
+            
             for key in self.colors:
                 assert key in other.colors
                 assert self.colors[key] == other.colors[key]
+            
             for key in self.markers:
                 assert key in other.markers
                 assert self.markers[key] == other.markers[key]
+            
             for key in self.show_lines:
                 assert key in other.show_lines
                 assert self.show_lines[key] == other.show_lines[key]
+        
         except AssertionError:
             return False
+        
         return True
 
     def __repr__(self) -> str:
@@ -318,17 +337,21 @@ class PlotSettings:
     def from_dict(Class, dictionary: dict) -> "PlotSettings":
         assert type(dictionary) is dict, dictionary
         assert "version" in dictionary
+        
         version: int = dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
+        
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         del dictionary["version"]
+        
         dictionary = parsers[version](dictionary)
         dictionary["plot_type"] = PlotType(dictionary["plot_type"])
         settings = Class(**dictionary)
         settings.recreate_themes()
+        
         return settings
 
     def to_dict(self, session: bool) -> dict:
@@ -357,6 +380,7 @@ class PlotSettings:
     def set_label(self, label: str):
         if label.strip() == "":
             return
+        
         self.plot_label = label
 
     def get_type(self) -> PlotType:
@@ -367,65 +391,79 @@ class PlotSettings:
 
     def get_series_label(self, uuid: str) -> str:
         assert type(uuid) is str, uuid
+        
         return self.labels.get(uuid, "")
 
     def set_series_label(self, uuid: str, label: str):
         assert type(uuid) is str, uuid
         assert type(label) is str, label
+        
         self.labels[uuid] = label
 
     def get_series_theme(self, uuid: str) -> int:
         assert type(uuid) is str, uuid
+        
         return self.themes.get(uuid, -1)
 
     def get_series_color(self, uuid: str) -> List[float]:
         assert type(uuid) is str, uuid
+        
         color: Optional[List[float]] = self.colors.get(uuid)
         if color is None:
             return [255.0, 255.0, 255.0, 255.0]
+        
         return color
 
     def set_series_color(self, uuid: str, color: List[float]):
         assert type(uuid) is str, uuid
+        
         if type(color) is tuple:
             color = list(color)
+        
         assert type(color) is list and len(color) == 4, color
+        
         theme: int = self.themes[uuid]
         update_plot_series_theme_color(theme, color)
         self.colors[uuid] = color
 
     def get_series_marker(self, uuid: str) -> int:
         assert type(uuid) is str, uuid
+        
         return self.markers.get(uuid, -1)
 
     def set_series_marker(self, uuid: str, marker: int):
         assert type(uuid) is str, uuid
         assert issubdtype(type(marker), integer), marker
+        
         theme: int = self.themes[uuid]
+        
         if marker >= 0:
             update_plot_series_theme_marker(theme, marker)
+        
         self.markers[uuid] = marker
 
     def get_series_line(self, uuid: str) -> bool:
         assert type(uuid) is str, uuid
+        
         return self.show_lines.get(uuid, False)
 
     def set_series_line(self, uuid: str, state: bool):
         assert type(uuid) is str, uuid
         assert type(state) is bool, state
+        
         self.show_lines[uuid] = state
 
     def add_series(
         self,
         series: Union[
-            DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult
+            DataSet, KramersKronigResult, ZHITResult, DRTResult, FitResult, SimulationResult
         ],
     ):
         # TODO: Refactor so that series is replaced by uuid?
         # Include the type as another argument to determine whether or not a line should be drawn?
         for Class in [
             DataSet,
-            TestResult,
+            KramersKronigResult,
             ZHITResult,
             DRTResult,
             FitResult,
@@ -435,55 +473,67 @@ class PlotSettings:
                 break
         else:
             raise NotImplementedError(f"Unsupported series type: '{type(series)}'")
+        
         uuid: str = series.uuid
         if uuid in self.series_order:
             return
+        
         if uuid not in self.themes:
             self.labels[uuid] = ""
+            
             color: List[float]
             marker: int
             color, marker = get_random_color_marker(self.themes)
+            
             self.colors[uuid] = color
             self.markers[uuid] = marker
             self.themes[uuid] = dpg.generate_uuid()
+            
             create_plot_series_theme(
                 self.colors[uuid],
                 self.markers[uuid] if self.markers[uuid] >= 0 else 0,
                 self.themes[uuid],
+            
             )
+            
             self.show_lines[uuid] = type(series) is not DataSet
+        
         self.series_order.append(uuid)
 
     def remove_series(self, uuid: str):
         assert type(uuid) is str, uuid
+        
         if uuid not in self.series_order:
             return
+        
         self.series_order.remove(uuid)
 
     def find_series(
         self,
         uuid: str,
         data_sets: List[DataSet],
-        tests: Dict[str, List[TestResult]],
+        tests: Dict[str, List[KramersKronigResult]],
         zhits: Dict[str, List[ZHITResult]],
         drts: Dict[str, List[DRTResult]],
         fits: Dict[str, List[FitResult]],
         simulations: List[SimulationResult],
     ) -> Optional[
-        Union[DataSet, TestResult, ZHITResult, DRTResult, FitResult, SimulationResult]
+        Union[DataSet, KramersKronigResult, ZHITResult, DRTResult, FitResult, SimulationResult]
     ]:
         def find_dataset() -> Optional[DataSet]:
             data: DataSet
             for data in data_sets:
                 if data.uuid == uuid:
                     return data
+            
             return None
 
-        def find_test() -> Optional[TestResult]:
-            test: TestResult
+        def find_test() -> Optional[KramersKronigResult]:
+            test: KramersKronigResult
             for test in [test for _ in tests.values() for test in _]:
                 if test.uuid == uuid:
                     return test
+            
             return None
 
         def find_zhit() -> Optional[ZHITResult]:
@@ -491,6 +541,7 @@ class PlotSettings:
             for zhit in [zhit for _ in zhits.values() for zhit in _]:
                 if zhit.uuid == uuid:
                     return zhit
+            
             return None
 
         def find_drt() -> Optional[DRTResult]:
@@ -498,6 +549,7 @@ class PlotSettings:
             for drt in [drt for _ in drts.values() for drt in _]:
                 if drt.uuid == uuid:
                     return drt
+            
             return None
 
         def find_fit() -> Optional[FitResult]:
@@ -505,6 +557,7 @@ class PlotSettings:
             for fit in [fit for _ in fits.values() for fit in _]:
                 if fit.uuid == uuid:
                     return fit
+            
             return None
 
         def find_simulation() -> Optional[SimulationResult]:
@@ -512,21 +565,27 @@ class PlotSettings:
             for sim in simulations:
                 if sim.uuid == uuid:
                     return sim
+            
             return None
 
         data: Optional[DataSet] = find_dataset()
         if data is not None:
             return data
-        test: Optional[TestResult] = find_test()
+        
+        test: Optional[KramersKronigResult] = find_test()
         if test is not None:
             return test
+        
         zhit: Optional[ZHITResult] = find_zhit()
         if zhit is not None:
             return zhit
+        
         drt: Optional[DRTResult] = find_drt()
         if drt is not None:
             return drt
+        
         fit: Optional[FitResult] = find_fit()
         if fit is not None:
             return fit
+
         return find_simulation()

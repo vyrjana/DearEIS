@@ -34,7 +34,7 @@ from deareis.data import (
     FitResult,
     PlotSettings,
     SimulationResult,
-    TestResult,
+    KramersKronigResult,
     ZHITResult,
 )
 from deareis.utility import calculate_window_position_dimensions
@@ -48,12 +48,13 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 class SeriesBefore:
     def __init__(
         self,
-        series: Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult],
+        series: Union[DataSet, KramersKronigResult, DRTResult, FitResult, SimulationResult],
         settings: PlotSettings,
         marker_lookup: Dict[int, str],
         toggle_callback: Callable,
@@ -63,7 +64,7 @@ class SeriesBefore:
             DataSet,
             FitResult,
             SimulationResult,
-            TestResult,
+            KramersKronigResult,
             ZHITResult,
         ], series
         assert type(settings) is PlotSettings, settings
@@ -179,7 +180,7 @@ class CopyPlotAppearance:
             _: True for _ in settings.series_order
         }
         self.data_sets: List[DataSet] = project.get_data_sets()
-        self.tests: Dict[str, List[TestResult]] = project.get_all_tests()
+        self.tests: Dict[str, List[KramersKronigResult]] = project.get_all_tests()
         self.zhits: Dict[str, List[ZHITResult]] = project.get_all_zhits()
         self.drts: Dict[str, List[DRTResult]] = project.get_all_drts()
         self.fits: Dict[str, List[FitResult]] = project.get_all_fits()
@@ -250,7 +251,7 @@ class CopyPlotAppearance:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(720, 540)
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Copy appearance settings",
             modal=True,
@@ -263,7 +264,7 @@ class CopyPlotAppearance:
         ):
             with dpg.group(horizontal=True):
                 dpg.add_text("Source")
-                self.source_combo: int = dpg.generate_uuid()
+                self.source_combo: Tag = dpg.generate_uuid()
                 dpg.add_combo(
                     items=self.labels,
                     default_value=self.labels[0],
@@ -294,7 +295,7 @@ class CopyPlotAppearance:
                             for uuid in self.settings.series_order:
                                 series: Optional[
                                     Union[
-                                        DataSet, TestResult, FitResult, SimulationResult
+                                        DataSet, KramersKronigResult, FitResult, SimulationResult
                                     ]
                                 ]
                                 series = self.settings.find_series(
@@ -316,7 +317,7 @@ class CopyPlotAppearance:
                 with dpg.group():
                     dpg.add_text("After")
                     with dpg.child_window(width=348, height=-24):
-                        self.preview_table: int = dpg.generate_uuid()
+                        self.preview_table: Tag = dpg.generate_uuid()
                         with dpg.table(
                             borders_outerV=True,
                             borders_outerH=True,
@@ -338,7 +339,7 @@ class CopyPlotAppearance:
                     callback=self.accept,
                 )
                 dpg.add_spacer(width=354)
-                self.labels_checkbox: int = dpg.generate_uuid()
+                self.labels_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Labels",
                     default_value=True,
@@ -346,7 +347,7 @@ class CopyPlotAppearance:
                     callback=lambda s, a, u: self.change_source(),
                 )
                 attach_tooltip(tooltips.plotting.copy_appearance_labels)
-                self.colors_checkbox: int = dpg.generate_uuid()
+                self.colors_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Colors",
                     default_value=True,
@@ -354,7 +355,7 @@ class CopyPlotAppearance:
                     callback=lambda s, a, u: self.change_source(),
                 )
                 attach_tooltip(tooltips.plotting.copy_appearance_colors)
-                self.markers_checkbox: int = dpg.generate_uuid()
+                self.markers_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Markers",
                     default_value=True,
@@ -362,7 +363,7 @@ class CopyPlotAppearance:
                     callback=lambda s, a, u: self.change_source(),
                 )
                 attach_tooltip(tooltips.plotting.copy_appearance_markers)
-                self.lines_checkbox: int = dpg.generate_uuid()
+                self.lines_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Lines",
                     default_value=True,

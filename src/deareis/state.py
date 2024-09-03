@@ -61,6 +61,7 @@ from deareis.utility import calculate_checksum
 from deareis.gui.plotting.export import PlotExporter
 from deareis.signals import Signal
 import deareis.signals as signals
+from deareis.data.kramers_kronig import KramersKronigSuggestionSettings
 
 
 class State:
@@ -100,9 +101,15 @@ class State:
         self.data_set_palette: DataSetPalette = DataSetPalette()
         self.result_palette: ResultPalette = ResultPalette()
         self.plot_exporter: PlotExporter = PlotExporter(self.config)
+        self.kramers_kronig_suggestion_settings: KramersKronigSuggestionSettings = (
+            KramersKronigSuggestionSettings.from_dict(
+                self.config.default_kramers_kronig_suggestion_settings.to_dict()
+            )
+        )
 
     def set_active_modal_window(self, window: int, window_object: Any):
         assert type(window) is int
+
         if dpg.does_item_exist(window):
             self.active_modal_window = window
             self.active_modal_window_object = window_object
@@ -120,6 +127,7 @@ class State:
                 self.project_tabs[project.uuid],
                 existing_tab,
             )
+        
         project_tab: ProjectTab = ProjectTab(
             project.uuid,
             self.program_window.project_tab_bar.tab_bar,
@@ -131,6 +139,7 @@ class State:
             project,
             project_tab,
         )
+        
         return (
             project_tab,
             existing_tab,
@@ -138,7 +147,9 @@ class State:
 
     def remove_project(self, project: Project):
         assert project in self.projects
+        
         self.projects.remove(project)
+        
         del self.project_tabs[project.uuid]
         del self.project_lookup[project.uuid]
         del self.project_state_snapshots[project.uuid]
@@ -147,6 +158,7 @@ class State:
 
     def set_active_project(self, uuid: Optional[str]):
         assert (type(uuid) is str and uuid.strip() != "") or uuid is None
+        
         if uuid is None:
             self.active_project = None
         else:
@@ -158,6 +170,7 @@ class State:
     def get_active_project_tab(self) -> Optional[ProjectTab]:
         if self.active_project is None:
             return None
+
         return self.project_tabs[self.active_project.uuid]
 
     def get_project_tab(self, project: Project) -> Optional[ProjectTab]:
@@ -165,34 +178,45 @@ class State:
 
     def update_project_state_saved_index(self, project: Project):
         assert type(project) is Project, project
+
         index: int = self.project_state_snapshot_indices[project.uuid]
         self.project_state_saved_indices[project.uuid] = index
 
     def is_project_dirty(self, project: Project) -> bool:
         assert type(project) is Project, project
+        
         index: int = self.project_state_saved_indices[project.uuid]
+
         return index < 0 or self.get_project_state_snapshot_index(project) != index
 
     def get_project_state_snapshot_index(self, project: Project) -> int:
         assert type(project) is Project, project
+        
         return self.project_state_snapshot_indices[project.uuid]
 
     def snapshot_project_state(self, project: Project):
         assert type(project) is Project, project
+        
         if project.uuid not in self.project_state_snapshots:
             self.project_state_snapshots[project.uuid] = []
             self.project_state_snapshot_indices[project.uuid] = 0
             self.project_state_saved_indices[project.uuid] = -1
+        
         snapshots: List[str] = self.project_state_snapshots[project.uuid]
         index: int = self.get_project_state_snapshot_index(project)
+        
         while len(snapshots) - 1 > index:
             snapshots.pop()
+        
         if index < self.project_state_saved_indices[project.uuid]:
             self.project_state_saved_indices[project.uuid] = -1
+        
         snapshots.append(
             dump_json(project.to_dict(session=True)),
         )
+        
         self.project_state_snapshot_indices[project.uuid] = len(snapshots) - 1
+        
         if (
             index > 0
             and self.config.auto_backup_interval > 0
@@ -202,28 +226,38 @@ class State:
 
     def get_previous_project_state_snapshot(self, project: Project) -> Optional[str]:
         assert type(project) is Project, project
+        
         if project.uuid not in self.project_state_snapshots:
             return None
+        
         snapshots: List[str] = self.project_state_snapshots[project.uuid]
         if not snapshots:
             return None
+        
         index: int = self.get_project_state_snapshot_index(project)
         if index < 1:
             return None
+        
         self.project_state_snapshot_indices[project.uuid] = index - 1
+        
         return snapshots[index - 1]
 
     def get_next_project_state_snapshot(self, project: Project) -> Optional[str]:
         assert type(project) is Project, project
+        
         if project.uuid not in self.project_state_snapshots:
             return None
+        
         snapshots: List[str] = self.project_state_snapshots[project.uuid]
         if not snapshots:
             return None
+        
         index: int = self.get_project_state_snapshot_index(project)
         if index >= len(snapshots) - 1:
             return None
+        
         self.project_state_snapshot_indices[project.uuid] = index + 1
+        
         return snapshots[index + 1]
 
     def get_recent_projects(self) -> List[str]:
@@ -233,15 +267,19 @@ class State:
                 self.recent_projects.extend(
                     list(filter(exists, map(str.strip, fp.readlines())))
                 )
+        
         return self.recent_projects.copy()
 
     def set_recent_projects(self, *args, **kwargs):
         paths: List[str] = kwargs.get("paths")
         assert type(paths) is list, paths
+        
         for path in reversed(paths):
             if path in self.recent_projects:
                 self.recent_projects.remove(path)
+            
             self.recent_projects.insert(0, path)
+        
         self.program_window.project_tab_bar.home_tab.update_recent_projects_table(
             self.recent_projects
         )
@@ -250,12 +288,14 @@ class State:
         assert type(selected_projects) is list and all(
             map(lambda _: type(_) is str, selected_projects)
         ), selected_projects
+        
         if len(selected_projects) > 0:
             for path in selected_projects:
                 if path in self.recent_projects:
                     self.recent_projects.remove(path)
         else:
             self.recent_projects.clear()
+        
         self.program_window.project_tab_bar.home_tab.update_recent_projects_table(
             self.recent_projects
         )
@@ -264,29 +304,44 @@ class State:
         contents: str = "\n".join(
             list(filter(lambda _: exists(_), self.recent_projects))
         )
+        
         if exists(self.recent_projects_path) and contents != "":
             new_checksum: str = calculate_checksum(string=contents)
             old_checksum: str = calculate_checksum(path=self.recent_projects_path)
             if new_checksum == old_checksum:
                 return
+        
         fp: IO
         with open(self.recent_projects_path, "w") as fp:
             fp.write(contents)
 
+    def generate_project_snapshot_path(
+        self,
+        project: Project,
+        auto_backup: bool,
+    ) -> str:
+        return join(
+            self.snapshots_directory_path,
+            f"{project.uuid}{'-auto-backup' if auto_backup else ''}.json",
+        )
+
     def serialize_project_snapshots(
-        self, projects: List[Project], auto_backup: bool = False
+        self, projects: List[Project],
+        auto_backup: bool = False,
     ):
         project: Project
         for project in projects:
             snapshot: dict = project.to_dict(session=False)
             snapshot["path"] = project.get_path()
-            path: str = join(
-                self.snapshots_directory_path,
-                f"{project.uuid}{'-auto-backup' if auto_backup else ''}.json",
+            path: str = self.generate_project_snapshot_path(
+                project=project,
+                auto_backup=auto_backup,
             )
+            
             fp: IO
             with open(path, "w") as fp:
                 fp.write(dump_json(snapshot))
+        
         if not auto_backup:
             self.clear_project_backups(projects)
 
@@ -295,6 +350,7 @@ class State:
         paths: List[str]
         for root, _, paths in walk(self.snapshots_directory_path):
             break
+        
         return list(
             sorted(
                 map(
@@ -310,8 +366,10 @@ class State:
             path: str = join(
                 self.snapshots_directory_path, f"{project.uuid}-auto-backup.json"
             )
+            
             if not exists(path):
                 continue
+            
             remove(path)
 
     def show_command_palette(self):
@@ -320,6 +378,7 @@ class State:
         contexts: List[Context] = [Context.PROGRAM]
         if project is not None and project_tab is not None:
             contexts.extend([Context.PROJECT, project_tab.get_active_context()])
+        
         self.command_palette.show(contexts, project, project_tab)
 
     def show_data_set_palette(self):
@@ -327,6 +386,7 @@ class State:
         project_tab: Optional[ProjectTab] = self.get_active_project_tab()
         if project is None or project_tab is None:
             return
+        
         self.data_set_palette.show(project, project_tab)
 
     def show_result_palette(self):
@@ -334,6 +394,7 @@ class State:
         project_tab: Optional[ProjectTab] = self.get_active_project_tab()
         if project is None or project_tab is None:
             return
+        
         self.result_palette.show(project, project_tab)
 
     def show_plot_exporter(self, settings: PlotSettings, project: Project):
@@ -347,18 +408,24 @@ class State:
 
     def check_version(self):
         recent_version_path: str = join(self.state_directory_path, "recent_version")
+        
         fp: IO
         if not exists(recent_version_path):
             signals.emit(Signal.SHOW_GETTING_STARTED_WINDOW)
+            
             with open(recent_version_path, "w") as fp:
                 fp.write(PACKAGE_VERSION)
+            
             return
+        
         version: str = ""
         with open(recent_version_path, "r") as fp:
             version = fp.read().strip()
+        
         if version != PACKAGE_VERSION:
             with open(recent_version_path, "w") as fp:
                 fp.write(PACKAGE_VERSION)
+            
             signals.emit(Signal.SHOW_CHANGELOG)
 
 

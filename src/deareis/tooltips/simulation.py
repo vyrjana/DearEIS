@@ -34,6 +34,9 @@ The maximum frequency to simulate.
         "per_decade": """
 The number of frequencies per decade in the frequency range.
     """.strip(),
+        "noise_pct": """
+The standard deviation of the added noise expressed as a percentage of the absolute value of the impedance.
+    """.strip(),
         "element": """
 An element in the circuit. Elements marked with an asterisk, *, are nested within the subcircuit of a container element (e.g., a transmission line model (Tlm)). Hovering over the name will show a tooltip that includes information about which container element and the specific subcircuit.
     """.strip(),
@@ -48,9 +51,6 @@ Remove the current simulation result.
     """.strip(),
         "load_as_data_set": """
 Load the current simulation as a data set.
-    """.strip(),
-        "adjust_parameters": """
-Open a window for adjusting the values of parameters with a real-time preview.
     """.strip(),
     },
 )

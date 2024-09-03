@@ -19,9 +19,14 @@
 
 from typing import Callable, List, Optional
 import dearpygui.dearpygui as dpg
-from numpy import array, ndarray
+from numpy import (
+    array,
+    complex128,
+    ndarray,
+)
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
 class Nyquist(Plot):
@@ -29,6 +34,8 @@ class Nyquist(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+        self._admittance: bool = False
+
         with dpg.plot(
             anti_aliased=True,
             crosshairs=True,
@@ -42,16 +49,28 @@ class Nyquist(Plot):
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
-            self._x_axis: int = dpg.add_plot_axis(
+
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Re(Z) (ohm)",
                 no_gridlines=True,
             )
-            self._y_axis: int = dpg.add_plot_axis(
+
+            self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label='-Im(Z) (ohm)',
+                label="-Im(Z) (ohm)",
                 no_gridlines=True,
             )
+
+            if kwargs.get("add_tooltip", False) is True:
+                self.tooltip: Tag = dpg.generate_uuid()
+                with dpg.tooltip(
+                    parent=self._y_axis,
+                    show=False,
+                    tag=self.tooltip,
+                ):
+                    self.tooltip_text: Tag = dpg.add_text("")
+
         dpg.bind_item_theme(self._plot, themes.plot)
         dpg.bind_item_handler_registry(self._plot, self._item_handler)
 
@@ -60,6 +79,7 @@ class Nyquist(Plot):
         copy: Plot = Class(*args, **kwargs)
         for kwargs in original.get_series():
             copy.plot(**kwargs)
+
         return copy
 
     def is_blank(self) -> bool:
@@ -72,10 +92,9 @@ class Nyquist(Plot):
             self._series.clear()
         else:
             i: int
-            series: int
+            series: Tag
             for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
-                self._series[i]["real"] = array([])
-                self._series[i]["imaginary"] = array([])
+                self._series[i]["impedances"] = array([], dtype=complex128)
                 dpg.set_value(series, [[], []])
 
     def update(self, index: int, *args, **kwargs):
@@ -85,29 +104,42 @@ class Nyquist(Plot):
             len(self._series),
         )
         assert len(args) == 0, args
-        real: ndarray = kwargs["real"]
-        imag: ndarray = kwargs["imaginary"]
+
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        real: ndarray = X.real
+        imag: ndarray = X.imag * (1 if self._admittance is True else -1)
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
+
         i: int
-        series: int
+        series: Tag
         for i, series in enumerate(dpg.get_item_children(self._y_axis, slot=1)):
             if i != index:
                 continue
+
             self._series[index].update(kwargs)
-            dpg.set_value(series, [list(real), list(imag)])
+            dpg.set_value(
+                series,
+                [
+                    list(real),
+                    list(imag),
+                ],
+            )
+            dpg.show_item(series)
             break
 
     def plot(self, *args, **kwargs) -> int:
         assert len(args) == 0, args
-        real: ndarray = kwargs["real"]
-        imag: ndarray = kwargs["imaginary"]
+        X: ndarray = kwargs["impedances"] ** (-1 if self._admittance is True else 1)
+        real: ndarray = X.real
+        imag: ndarray = X.imag * (1 if self._admittance is True else -1)
         label: str = kwargs["label"]
         simulation: bool = kwargs.get("simulation", False)
         fit: bool = kwargs.get("fit", False)
         line: bool = kwargs.get("line", False)
         theme: Optional[int] = kwargs.get("theme")
         show_label: bool = kwargs.get("show_label", True)
+
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
         assert type(label) is str, label
@@ -116,6 +148,7 @@ class Nyquist(Plot):
         assert type(line) is bool, line
         assert type(theme) is int or theme is None, theme
         assert type(show_label) is bool, show_label
+
         self._series.append(kwargs)
         func: Callable = dpg.add_scatter_series if not line else dpg.add_line_series
         tag: int = func(
@@ -126,6 +159,7 @@ class Nyquist(Plot):
         )
         if theme is not None:
             dpg.bind_item_theme(tag, theme)
+
         return tag
 
     def adjust_limits(self):
@@ -136,20 +170,24 @@ class Nyquist(Plot):
             return
         else:
             self.limits_adjusted()
+
         dpg.split_frame()
         dpg.fit_axis_data(self._x_axis)
         dpg.fit_axis_data(self._y_axis)
         dpg.split_frame()
+
         x_min: float
         x_max: float
         x_min, x_max = dpg.get_axis_limits(self._x_axis)
         dx: float = (x_max - x_min) * 0.05
         dpg.set_axis_limits(self._x_axis, x_min - dx, x_max + dx)
+
         y_min: float
         y_max: float
         y_min, y_max = dpg.get_axis_limits(self._y_axis)
         dy: float = (y_max - y_min) * 0.05
         dpg.set_axis_limits(self._y_axis, y_min - dy, y_max + dy)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
@@ -169,6 +207,34 @@ class Nyquist(Plot):
         ):
             limits: List[float] = dpg.get_axis_limits(src)
             dpg.set_axis_limits(dst, *limits)
+
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis)
+
+    def set_admittance(self, admittance: bool, adjust_limits: bool = True):
+        if self._admittance == admittance:
+            return
+        else:
+            self._admittance = admittance
+
+        dpg.set_item_label(
+            self._x_axis,
+            "Re(Y) (S)" if self._admittance is True else "Re(Z) (ohm)",
+        )
+        dpg.set_item_label(
+            self._y_axis,
+            "Im(Y) (S)" if self._admittance is True else "-Im(Z) (ohm)",
+        )
+
+        for i, kwargs in enumerate(self.get_series()):
+            self.update(index=i, **kwargs)
+
+        if adjust_limits:
+            dpg.split_frame(delay=33)
+            self.queue_limits_adjustment()
+            self.adjust_limits()
+
+    @property
+    def admittance(self) -> bool:
+        return self._admittance

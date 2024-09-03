@@ -52,18 +52,24 @@ from pyimpspec import (
 )
 from deareis.data.fitting import FitResult
 from deareis.enums import (
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
     RBFShape,
     RBFType,
+    TRNNLSLambdaMethod,
+    cross_validation_method_to_label,
     drt_method_to_label,
     drt_mode_to_label,
+    label_to_cross_validation_method,
     label_to_drt_method,
     label_to_drt_mode,
     label_to_rbf_shape,
     label_to_rbf_type,
+    label_to_tr_nnls_lambda_method,
     rbf_shape_to_label,
     rbf_type_to_label,
+    tr_nnls_lambda_method_to_label,
 )
 from deareis.utility import (
     format_timestamp,
@@ -72,30 +78,61 @@ from deareis.utility import (
 from deareis.data import DataSet
 
 
-VERSION: int = 3
+VERSION: int = 4
+
+
+def _parse_settings_v4(dictionary: dict) -> dict:
+    lambda_value: float = dictionary.get("lambda_value", 1e-3)
+
+    if "cross_validation_method" not in dictionary:
+        if lambda_value <= 0.0:
+            dictionary["cross_validation_method"] = CrossValidationMethod.MGCV
+        else:
+            dictionary["cross_validation_method"] = CrossValidationMethod.NONE
+
+    if "tr_nnls_lambda_method" not in dictionary:
+        if lambda_value <= 0.0:
+            dictionary["tr_nnls_lambda_method"] = (
+                TRNNLSLambdaMethod.LC
+                if lambda_value < -1.5
+                else TRNNLSLambdaMethod.CUSTOM
+            )
+        else:
+            dictionary["tr_nnls_lambda_method"] = TRNNLSLambdaMethod.NONE
+
+    return dictionary
 
 
 def _parse_settings_v3(dictionary: dict) -> dict:
     if "fit" not in dictionary:
         dictionary["fit"] = None
+
     if "circuit" in dictionary:
         del dictionary["circuit"]
+
     if "timeout" not in dictionary:
         dictionary["timeout"] = 60
+
     return dictionary
 
 
 def _parse_settings_v2(dictionary: dict) -> dict:
     rename_dict_entry(dictionary, "W", "gaussian_width")
+
     dictionary["fit"] = None
+
     del dictionary["circuit"]
+
     return dictionary
 
 
 def _parse_settings_v1(dictionary: dict) -> dict:
     dictionary["circuit"] = ""
+
     dictionary["W"] = 0.15
+
     dictionary["num_per_decade"] = 100
+
     return dictionary
 
 
@@ -158,7 +195,7 @@ class DRTSettings:
         The maximum vertical peak-to-peak symmetry allowed.
         Used to discard results with strong oscillations.
         Smaller values provide stricter conditions.
-        BHT and TR-RBF methods only.
+        BHT method only.
 
     fit: Optional[FitResult]
         The FitResult for a circuit that contains one or more "(RQ)" or "(RC)" elements connected in series.
@@ -173,6 +210,12 @@ class DRTSettings:
     num_per_decade: int
         The number of points per decade to use when calculating a DRT.
         m(RQ)fit method only.
+
+    cross_validation_method: CrossValidationMethod
+        The cross-validation method used by the TR-RBF method to automatically determine a suitable value for lambda.
+
+    tr_nnls_lambda_method: TRNNLSLambdaMethod
+        The method used by the TR-NNLS method to automatically pick a lambda value
     """
 
     method: DRTMethod
@@ -191,6 +234,8 @@ class DRTSettings:
     fit: Optional[FitResult]
     gaussian_width: float
     num_per_decade: int
+    cross_validation_method: CrossValidationMethod
+    tr_nnls_lambda_method: TRNNLSLambdaMethod
 
     def __repr__(self) -> str:
         return f"DRTSettings ({hex(id(self))})"
@@ -214,27 +259,35 @@ class DRTSettings:
             "fit": self.fit.to_dict(session=False) if self.fit is not None else None,
             "gaussian_width": self.gaussian_width,
             "num_per_decade": self.num_per_decade,
+            "cross_validation_method": self.cross_validation_method,
+            "tr_nnls_lambda_method": self.tr_nnls_lambda_method,
         }
 
     @classmethod
     def from_dict(Class, dictionary: dict) -> "DRTSettings":
         assert type(dictionary) is dict
         assert "version" in dictionary
+
         version: int = dictionary["version"]
         del dictionary["version"]
+
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
             2: _parse_settings_v2,
             3: _parse_settings_v3,
+            4: _parse_settings_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
+            
             dictionary = p(dictionary)
+
         assert "method" in dictionary
         assert "mode" in dictionary
         assert "lambda_value" in dictionary
@@ -251,20 +304,36 @@ class DRTSettings:
         assert "fit" in dictionary
         assert "gaussian_width" in dictionary
         assert "num_per_decade" in dictionary
+        assert "cross_validation_method" in dictionary
+        assert "tr_nnls_lambda_method" in dictionary
+
         dictionary["method"] = DRTMethod(dictionary["method"])
         dictionary["mode"] = DRTMode(dictionary["mode"])
         dictionary["rbf_type"] = RBFType(dictionary["rbf_type"])
         dictionary["rbf_shape"] = RBFShape(dictionary["rbf_shape"])
+        dictionary["cross_validation_method"] = CrossValidationMethod(
+            dictionary["cross_validation_method"]
+        )
+        dictionary["tr_nnls_lambda_method"] = TRNNLSLambdaMethod(
+                dictionary["tr_nnls_lambda_method"]
+        )
+        
         if dictionary["fit"] is not None:
             dictionary["fit"] = FitResult.from_dict(dictionary["fit"])
+
         return Class(**dictionary)
 
+
+def _parse_result_v4(dictionary: dict) -> dict:
+    return dictionary
 
 def _parse_result_v3(dictionary: dict) -> dict:
     if "pseudo_chisqr" not in dictionary:
         dictionary["pseudo_chisqr"] = nan
+
     if "chisqr" in dictionary:
         del dictionary["chisqr"]
+
     return dictionary
 
 
@@ -281,6 +350,7 @@ def _parse_result_v2(dictionary: dict) -> dict:
     rename_dict_entry(dictionary, "lower_bound", "lower_bounds")
     rename_dict_entry(dictionary, "upper_bound", "upper_bounds")
     dictionary["chisqr"] = nan
+
     return dictionary
 
 
@@ -375,7 +445,9 @@ class DRTResult:
 
     @classmethod
     def from_dict(
-        Class, dictionary: dict, data: Optional[DataSet] = None
+        Class,
+        dictionary: dict,
+        data: Optional[DataSet] = None,
     ) -> "DRTResult":
         """
         Create an instance from a dictionary.
@@ -397,19 +469,24 @@ class DRTResult:
         assert "version" in dictionary
         version: int = dictionary["version"]
         del dictionary["version"]
+
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
             2: _parse_result_v2,
             3: _parse_result_v3,
+            4: _parse_result_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
         v: int
         p: Callable
         for v, p in parsers.items():
             if v < version:
                 continue
+
             dictionary = p(dictionary)
+
         assert "uuid" in dictionary
         assert "timestamp" in dictionary
         assert "time_constants" in dictionary
@@ -429,6 +506,7 @@ class DRTResult:
         assert "lambda_value" in dictionary
         assert "mask" in dictionary
         assert "settings" in dictionary
+
         dictionary["time_constants"] = array(dictionary["time_constants"])
         dictionary["real_gammas"] = array(dictionary["real_gammas"])
         dictionary["imaginary_gammas"] = array(dictionary["imaginary_gammas"])
@@ -437,10 +515,20 @@ class DRTResult:
         dictionary["lower_bounds"] = array(dictionary["lower_bounds"])
         dictionary["upper_bounds"] = array(dictionary["upper_bounds"])
         dictionary["settings"] = DRTSettings.from_dict(dictionary["settings"])
+
         mask: Dict[str, bool] = dictionary["mask"]
-        dictionary["mask"] = {
-            i: mask.get(str(i), False) for i in range(0, len(dictionary["frequencies"]))
-        }
+        if data is not None:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(data.get_frequencies(masked=None)))
+            }
+        else:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(dictionary["frequencies"]))
+            }
+        dictionary["mask"] = mask
+
         dictionary["impedances"] = array(
             list(
                 map(
@@ -454,6 +542,7 @@ class DRTResult:
         )
         del dictionary["real_impedances"]
         del dictionary["imaginary_impedances"]
+
         dictionary["residuals"] = array(
             list(
                 map(
@@ -467,6 +556,7 @@ class DRTResult:
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
+
         dictionary["scores"] = {
             k: complex(
                 dictionary["real_scores"][k],
@@ -476,21 +566,30 @@ class DRTResult:
         }
         del dictionary["real_scores"]
         del dictionary["imaginary_scores"]
+
         if isnan(dictionary["pseudo_chisqr"]):
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
                 Z_exp=data.get_impedances(),
                 Z_fit=dictionary["impedances"],
             )
+
         return Class(**dictionary)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, session: bool = True) -> dict:
         """
         Return a dictionary that can be used to recreate an instance.
+
+        Parameters
+        ----------
+        session: bool, optional
+            If False, then a minimal dictionary is generated to reduce file size.
 
         Returns
         -------
         dict
         """
+        assert type(session) is bool, session
+
         dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
@@ -510,9 +609,16 @@ class DRTResult:
             "imaginary_scores": {k: v.imag for k, v in self.scores.items()},
             "pseudo_chisqr": self.pseudo_chisqr,
             "lambda_value": self.lambda_value,
-            "mask": {k: True for k, v in self.mask.items() if v is True},
+            "mask": self.mask.copy(),
             "settings": self.settings.to_dict(),
         }
+
+        if not session:
+            # This helps to reduce the file sizes of projects.
+            dictionary["mask"] = {
+                k: v for k, v in dictionary["mask"].items() if v is True
+            }
+
         return dictionary
 
     def get_label(self) -> str:
@@ -525,6 +631,7 @@ class DRTResult:
         """
         method: str = drt_method_to_label[self.settings.method]
         timestamp: str = format_timestamp(self.timestamp)
+
         return f"{method} ({timestamp})"
 
     def get_frequencies(self) -> Frequencies:
@@ -603,11 +710,13 @@ class DRTResult:
                     "tau (s)",
                     "gamma (ohm)",
                 ]
+
         assert isinstance(columns, list)
         if self.settings.method == DRTMethod.BHT:
             assert len(columns) >= 4
         else:
             assert len(columns) >= 2
+
         real_taus: TimeConstants
         real_gammas: Gammas
         imag_taus: TimeConstants
@@ -615,6 +724,7 @@ class DRTResult:
         (real_taus, real_gammas, imag_taus, imag_gammas) = self.get_peaks(
             threshold=threshold
         )
+
         if self.settings.method != DRTMethod.BHT:
             dictionary: dict = {
                 columns[0]: real_taus,
@@ -627,6 +737,7 @@ class DRTResult:
                 columns[2]: imag_taus,
                 columns[3]: imag_gammas,
             }
+
         return DataFrame.from_dict(dictionary)
 
     def get_peaks(
@@ -670,6 +781,7 @@ class DRTResult:
         else:
             real_taus = array([])
             real_gammas = array([])
+
         imag_indices: Indices
         if self.imaginary_gammas.size > 0:
             imag_indices = filter_indices(self.imaginary_gammas)
@@ -684,6 +796,7 @@ class DRTResult:
         else:
             imag_taus = array([])
             imag_gammas = array([])
+
         if real_taus.size != imag_taus.size:
 
             def pad(
@@ -703,6 +816,7 @@ class DRTResult:
             max_size: int = max(real_taus.size, imag_taus.size)
             real_taus, real_gammas = pad(real_taus, real_gammas, max_size)
             imag_taus, imag_gammas = pad(imag_taus, imag_gammas, max_size)
+
         return (
             real_taus,
             real_gammas,
@@ -768,6 +882,7 @@ class DRTResult:
                 array([]),
                 array([]),
             )
+
         return (
             self.time_constants,
             self.mean_gammas,
@@ -825,6 +940,7 @@ class DRTResult:
         """
         if self.settings.method != DRTMethod.BHT:
             return None
+
         if columns is None:
             columns = [
                 "Score",
@@ -833,6 +949,7 @@ class DRTResult:
             ]
         assert isinstance(columns, list), columns
         assert len(columns) == 3
+
         if rows is None:
             rows = [
                 "Mean",
@@ -844,6 +961,7 @@ class DRTResult:
             ]
         assert isinstance(rows, list), rows
         assert len(rows) == 6
+
         return DataFrame.from_dict(
             {
                 columns[0]: rows,

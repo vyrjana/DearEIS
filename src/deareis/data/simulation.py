@@ -229,6 +229,7 @@ class SimulationResult:
         external_identifiers: Dict[
             Element, int
         ] = self.circuit.generate_element_identifiers(running=False)
+
         element: Element
         ident: int
         for (ident, element) in sorted(
@@ -238,12 +239,14 @@ class SimulationResult:
             element_label: str = self.circuit.get_element_name(
                 element, identifiers=external_identifiers
             )
+
             parameters: Dict[str, float] = element.get_values()
             parameter_label: str
             for parameter_label in sorted(parameters.keys()):
                 element_labels.append(element_label)
                 parameter_labels.append(parameter_label)
                 values.append(parameters[parameter_label])
+
         return DataFrame.from_dict(
             {
                 "Element": element_labels,
@@ -259,7 +262,9 @@ class SimulationResult:
         cdc: str = self.circuit.to_string()
         if cdc.startswith("[") and cdc.endswith("]"):
             cdc = cdc[1:-1]
+
         timestamp: str = format_timestamp(self.timestamp)
+
         return f"{cdc} ({timestamp})"
 
     def get_frequencies(self, num_per_decade: int = -1) -> Frequencies:
@@ -276,6 +281,7 @@ class SimulationResult:
         Frequencies
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
+
         if num_per_decade > 0:
             if num_per_decade not in self._cached_frequencies:
                 self._cached_frequencies.clear()
@@ -283,10 +289,15 @@ class SimulationResult:
                     [self.settings.min_frequency, self.settings.max_frequency],
                     num_per_decade,
                 )
+
             return self._cached_frequencies[num_per_decade]
+
         return self._frequency
 
-    def get_impedances(self, num_per_decade: int = -1) -> ComplexImpedances:
+    def get_impedances(
+        self,
+        num_per_decade: int = -1,
+    ) -> ComplexImpedances:
         """
         Get the complex impedances produced by the simulated circuit within the range of frequencies used to generate the original simulation result.
 
@@ -299,17 +310,21 @@ class SimulationResult:
         ComplexImpedances
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
+
         if num_per_decade > 0:
             if num_per_decade not in self._cached_impedances:
                 self._cached_impedances.clear()
                 self._cached_impedances[num_per_decade] = self.circuit.get_impedances(
                     self.get_frequencies(num_per_decade)
                 )
+
             return self._cached_impedances[num_per_decade]
+
         return self._impedance
 
     def get_nyquist_data(
-        self, num_per_decade: int = -1
+        self,
+        num_per_decade: int = -1,
     ) -> Tuple[Impedances, Impedances]:
         """
         Get the data required to plot the results as a Nyquist plot (-Im(Z) vs Re(Z)).
@@ -324,14 +339,17 @@ class SimulationResult:
         Tuple[Impedances, Impedances]
         """
         assert issubdtype(type(num_per_decade), integer), num_per_decade
+
         Z: ComplexImpedances = self.get_impedances(num_per_decade)
+
         return (
             Z.real,
             -Z.imag,
         )
 
     def get_bode_data(
-        self, num_per_decade: int = -1
+        self,
+        num_per_decade: int = -1,
     ) -> Tuple[Frequencies, Impedances, Phases]:
         """
         Get the data required to plot the results as a Bode plot (Mod(Z) and -Phase(Z) vs f).
@@ -375,6 +393,7 @@ class SimulationResult:
         ] = self.circuit.generate_element_identifiers(running=False)
         element_label: str
         parameters: Dict[int, Dict[str, float]]
+
         element: Element
         ident: int
         for (ident, element) in sorted(
@@ -386,12 +405,14 @@ class SimulationResult:
                 identifiers=external_identifiers,
             )
             parameters = element.get_values()
+
             parameter_label: str
             for parameter_label in sorted(parameters.keys()):
                 element_labels.append(element_label)
                 parameter_labels.append(parameter_label)
                 values.append(parameters[parameter_label])
                 units.append(element.get_unit(parameter_label))
+
         return DataFrame.from_dict(
             {
                 "Element": element_labels,

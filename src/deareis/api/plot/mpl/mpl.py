@@ -42,7 +42,7 @@ from deareis.data import (
     PlotSettings,
     Project,
     SimulationResult,
-    TestResult,
+    KramersKronigResult,
 )
 from deareis.enums import PlotType
 
@@ -170,13 +170,22 @@ def plot(
         issubdtype(type(num_per_decade), integer) and num_per_decade >= 1
     ), num_per_decade
     plot_type: PlotType = settings.get_type()
+    admittance: bool = plot_type in (
+        PlotType.ADMITTANCE_REAL,
+        PlotType.ADMITTANCE_IMAGINARY,
+        PlotType.BODE_ADMITTANCE_MAGNITUDE,
+        PlotType.BODE_ADMITTANCE_PHASE,
+        PlotType.NYQUIST_ADMITTANCE,
+    )
+
     selected_series: List[
-        Tuple[str, Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]]
+        Tuple[str, Union[DataSet, KramersKronigResult, DRTResult, FitResult, SimulationResult]]
     ] = []
+
     uuid: str
     for uuid in settings.series_order:
         series: Optional[
-            Union[DataSet, TestResult, DRTResult, FitResult, SimulationResult]
+            Union[DataSet, KramersKronigResult, DRTResult, FitResult, SimulationResult]
         ]
         series = settings.find_series(
             uuid=uuid,
@@ -189,30 +198,36 @@ def plot(
         )
         if series is None:
             continue
+
         # Filter out stuff that cannot be plotted
         if plot_type == PlotType.DRT and type(series) is not DRTResult:
             continue
+
         selected_series.append(
             (
                 uuid,
                 series,
             )
         )
+
     num_series: int = len(selected_series)
     for i, (uuid, series) in enumerate(selected_series):
         label: Optional[str] = settings.get_series_label(uuid) or series.get_label()
         if label.strip() == "" and label != "":  # type: ignore
             label = ""
+
         if label is not None and legend is None:
             legend = True
+
         color: List[float] = list(
             map(lambda _: _ / 255.0, settings.get_series_color(uuid))
         )
         has_line: bool = settings.get_series_line(uuid)
         marker: Optional[str] = MPL_MARKERS.get(settings.get_series_marker(uuid))
+
         scatter_data: List[ndarray]
         line_data: List[ndarray]
-        if plot_type == PlotType.NYQUIST:
+        if plot_type in (PlotType.NYQUIST_IMPEDANCE, PlotType.NYQUIST_ADMITTANCE):
             if has_line:
                 mpl.plot_nyquist(
                     series,
@@ -225,7 +240,9 @@ def plot(
                     axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
+
             if marker is not None:
                 mpl.plot_nyquist(
                     series,
@@ -238,8 +255,13 @@ def plot(
                     axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
-        elif plot_type == PlotType.BODE_MAGNITUDE:
+
+        elif plot_type in (
+            PlotType.BODE_IMPEDANCE_MAGNITUDE,
+            PlotType.BODE_ADMITTANCE_MAGNITUDE,
+        ):
             if has_line:
                 mpl.plot_magnitude(
                     series,
@@ -252,7 +274,9 @@ def plot(
                     axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
+
             if marker is not None:
                 mpl.plot_magnitude(
                     series,
@@ -265,8 +289,13 @@ def plot(
                     axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
-        elif plot_type == PlotType.BODE_PHASE:
+
+        elif plot_type in (
+            PlotType.BODE_IMPEDANCE_PHASE,
+            PlotType.BODE_ADMITTANCE_PHASE,
+        ):
             if has_line:
                 mpl.plot_phase(
                     series,
@@ -279,7 +308,9 @@ def plot(
                     axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
+
             if marker is not None:
                 mpl.plot_phase(
                     series,
@@ -292,7 +323,9 @@ def plot(
                     axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
+
         elif plot_type == PlotType.DRT:
             num_lines: int = len(axis.lines)
             mpl.plot_gamma(
@@ -304,7 +337,8 @@ def plot(
                 axes=[axis],
                 adjust_axes=i == num_series - 1,
             )
-        elif plot_type == PlotType.IMPEDANCE_REAL:
+
+        elif plot_type in (PlotType.IMPEDANCE_REAL, PlotType.ADMITTANCE_REAL):
             if has_line:
                 mpl.plot_real(
                     series,
@@ -317,6 +351,7 @@ def plot(
                     axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
             if marker is not None:
                 mpl.plot_real(
@@ -330,8 +365,10 @@ def plot(
                     axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
-        elif plot_type == PlotType.IMPEDANCE_IMAGINARY:
+
+        elif plot_type in (PlotType.IMPEDANCE_IMAGINARY, PlotType.ADMITTANCE_IMAGINARY):
             if has_line:
                 mpl.plot_imaginary(
                     series,
@@ -344,7 +381,9 @@ def plot(
                     axes=[axis],
                     num_per_decade=num_per_decade,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
+
             if marker is not None:
                 mpl.plot_imaginary(
                     series,
@@ -357,20 +396,28 @@ def plot(
                     axes=[axis],
                     num_per_decade=-1,
                     adjust_axes=i == num_series - 1,
+                    admittance=admittance,
                 )
         else:
-            raise Exception(f"Unsupported plot type: {plot_type=}")
+            raise NotImplementedError(f"Unsupported plot type: {plot_type=}")
+
     if x_limits is not None:
         axis.set_xlim(x_limits)
+
     if y_limits is not None:
         axis.set_ylim(y_limits)
+
     if title and settings.get_label() != "":
         figure.suptitle(settings.get_label())
+
     if legend:
         axis.legend(loc=legend_loc)
+
     axis.grid(visible=grid)
+
     if tight_layout:
         figure.tight_layout()
+
     return (
         figure,
         axes,

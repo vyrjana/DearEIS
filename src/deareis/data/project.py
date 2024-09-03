@@ -42,15 +42,12 @@ from typing import (
     Union,
 )
 from uuid import uuid4
-from numpy import (
-    inf,
-    ndarray,
-)
+from numpy import inf
 from pyimpspec.circuit.parser import Parser
 from deareis.data import DataSet
 from deareis.data.fitting import FitResult
 from deareis.data.drt import DRTResult
-from deareis.data.kramers_kronig import TestResult
+from deareis.data.kramers_kronig import KramersKronigResult
 from deareis.data.zhit import ZHITResult
 from deareis.data.simulation import SimulationResult
 from deareis.data.plotting import (
@@ -60,11 +57,19 @@ from deareis.data.plotting import (
 from deareis.enums import PlotType
 
 
-VERSION: int = 5
+VERSION: int = 6
+
+
+def _parse_v6(state: dict) -> dict:
+    # TODO: Update implementation when VERSION is incremented
+    return state
 
 
 def _parse_v5(state: dict) -> dict:
-    # TODO: Update implementation when VERSION is incremented
+    # Version number was bumped to force automatic backups of projects created
+    # with earlier versions. Not because the project structure itself changed,
+    # but because result and setting classes changed (e.g.,
+    # KramersKronigResult and KramersKronigSettings)
     return state
 
 
@@ -89,16 +94,19 @@ def _parse_v4(state: dict) -> dict:
     update_cdcs(state, tests=False)
     if "zhits" not in state:
         state["zhits"] = {}
+    
     return state
 
 
 def _parse_v3(state: dict) -> dict:
     state["drts"] = {_["uuid"]: [] for _ in state["data_sets"]}
+    
     return state
 
 
 def _parse_v2(state: dict) -> dict:
     state["data_sets"] = state["datasets"]
+    
     key: str
     for key in [
         "active_data_uuid",
@@ -113,11 +121,12 @@ def _parse_v2(state: dict) -> dict:
     ]:
         if key in state:
             del state[key]
+    
     if not state["plots"]:
         state["plots"].append(
             PlotSettings(
                 "Plot",
-                PlotType.NYQUIST,
+                PlotType.NYQUIST_IMPEDANCE,
                 [],
                 {},
                 {},
@@ -127,12 +136,14 @@ def _parse_v2(state: dict) -> dict:
                 uuid4().hex,
             ).to_dict(session=False)
         )
+
     return state
 
 
 def _parse_v1(state: dict) -> dict:
     state["active_plot_uuid"] = ""
     state["plots"] = []
+    
     return state
 
 
@@ -158,12 +169,16 @@ class Project:
         """
         if not hasattr(self, "uuid"):
             self.uuid: str = kwargs.get("uuid", uuid4().hex)
+        
         self._data_sets: List[DataSet] = list(
             map(DataSet.from_dict, kwargs.get("data_sets", []))
         )
+        
         uuid: str
         data_lookup: Dict[str, DataSet] = {_.uuid: _ for _ in self._data_sets}
+        
         self._drts: Dict[str, List[DRTResult]] = {}
+        
         for uuid, results in kwargs.get("drts", {}).items():
             data = data_lookup[uuid]
             self._drts[uuid] = list(
@@ -172,7 +187,9 @@ class Project:
                     results,
                 )
             )
+        
         self._fits: Dict[str, List[FitResult]] = {}
+        
         for uuid, results in kwargs.get("fits", {}).items():
             data = data_lookup[uuid]
             self._fits[uuid] = list(
@@ -181,7 +198,9 @@ class Project:
                     results,
                 )
             )
+        
         self._zhits: Dict[str, List[ZHITResult]] = {}
+        
         for uuid, results in kwargs.get("zhits", {}).items():
             data = data_lookup[uuid]
             self._zhits[uuid] = list(
@@ -190,19 +209,23 @@ class Project:
                     results,
                 )
             )
+        
         self._label: str = kwargs.get("label", "Project")
         self._notes: str = kwargs.get("notes", "")
+        
         path: str = kwargs.get("path", "").strip()
         if path != "":
             self.set_path(path)
+        
         self._plots: List[PlotSettings] = list(
             map(PlotSettings.from_dict, kwargs.get("plots", []))
         )
+        
         if len(self._plots) == 0:
             self._plots.append(
                 PlotSettings(
                     "Plot",
-                    PlotType.NYQUIST,
+                    PlotType.NYQUIST_IMPEDANCE,
                     [],
                     {},
                     {},
@@ -212,26 +235,48 @@ class Project:
                     uuid4().hex,
                 )
             )
+        
         self._simulations: List[SimulationResult] = list(
             map(SimulationResult.from_dict, kwargs.get("simulations", []))
         )
-        self._tests: Dict[str, List[TestResult]] = {
-            k: list(map(lambda _: TestResult.from_dict(_, data=None), v))
-            for k, v in kwargs.get("tests", {}).items()
-        }
+        
+        self._tests: Dict[str, List[KramersKronigResult]] = {}
+
+        for uuid, results in kwargs.get("tests", {}).items():
+            data = data_lookup[uuid]
+            self._tests[uuid] = list(
+                map(
+                    lambda _: KramersKronigResult.from_dict(_, data=data),
+                    results,
+                )
+            )
+        
         for uuid in data_lookup:
             if uuid not in self._drts:
                 self._drts[uuid] = []
+            
             if uuid not in self._fits:
                 self._fits[uuid] = []
+            
             if uuid not in self._zhits:
                 self._zhits[uuid] = []
+            
             if uuid not in self._tests:
                 self._tests[uuid] = []
 
     @staticmethod
-    def _parse(state: dict) -> dict:
+    def _parse(state: dict, generate_backup: bool = False) -> dict:
         assert type(state) is dict, type(state)
+
+        json_pre_migration: str = (
+            dump_json(
+                state,
+                sort_keys=True,
+            )
+            if generate_backup
+            else ""
+        )
+        
         if "version" in state:
             version: int = state["version"]
             assert type(version) is int, version
@@ -240,22 +285,62 @@ class Project:
                 VERSION,
             )
             del state["version"]
+
             parsers: Dict[int, Callable] = {
                 1: _parse_v1,
                 2: _parse_v2,
                 3: _parse_v3,
                 4: _parse_v4,
                 5: _parse_v5,
+                6: _parse_v6,
             }
             assert version in parsers, (
                 version,
                 parsers,
             )
+
+            migrated: bool = False
+
+            v: int = VERSION
+            p: Callable
             for v, p in parsers.items():
                 if v < version:
                     continue
+                elif version < v:
+                    migrated = True
+                
                 state = p(state)
+            
+            state["version"] = v
             assert type(state["uuid"]) is str
+
+            if generate_backup and json_pre_migration != "":
+                json_post_migration: str = dump_json(
+                    state,
+                    sort_keys=True,
+                )
+                if migrated or (json_pre_migration != json_post_migration):
+                    # Just as a precaution to prevent accidentally using the
+                    # post-migration string instead of the pre-migration string
+                    del json_post_migration
+
+                    backup_path: Path = Path(state["path"])
+                    i: int = 0
+
+                    backup_path = backup_path.with_suffix(f".backup{i}")
+                    while backup_path.is_file():
+                        with open(backup_path, "r") as fp:
+                            json_recent_backup: str = fp.read()
+
+                        if json_recent_backup == json_pre_migration:
+                            break
+
+                        i += 1
+                        backup_path = backup_path.with_suffix(f".backup{i}")
+                    else:
+                        with open(backup_path, "w") as fp:
+                            fp.write(json_pre_migration)
+        
         # Basic validation
         assert type(state["data_sets"]) is list
         assert type(state["fits"]) is dict
@@ -266,6 +351,7 @@ class Project:
         assert type(state["plots"]) is list
         assert type(state["simulations"]) is list
         assert type(state["tests"]) is dict
+
         return state
 
     @classmethod
@@ -299,11 +385,14 @@ class Project:
         Project
         """
         assert type(path) is str and exists(path)
+
         fp: IO
         with open(path, "r") as fp:
             state: dict = load_json(fp)
+        
         state["path"] = path
-        return Class.from_dict(state)
+        
+        return Class(**Class._parse(state, generate_backup=True))
 
     @classmethod
     def from_json(Class, json: str) -> "Project":
@@ -320,6 +409,7 @@ class Project:
         Project
         """
         assert type(json) is str
+        
         return Class.from_dict(parse_json(json))
 
     @classmethod
@@ -344,7 +434,9 @@ class Project:
 
         def extract_uuids(dictionary: dict) -> List[str]:
             assert type(dictionary) is dict, dictionary
+            
             uuids: List[str] = []
+            
             for k, v in dictionary.items():
                 if type(v) is dict:
                     uuids.extend(extract_uuids(v))
@@ -354,16 +446,20 @@ class Project:
                 elif k == "uuid":
                     assert type(v) is str, v
                     uuids.append(v)
+            
             # print(uuids)
             return list(set(uuids))
 
         def replace_uuids(dictionary: dict) -> dict:
             assert type(dictionary) is dict, dictionary
+            
             uuids: List[str] = extract_uuids(dictionary)
             json: str = dump_json(dictionary)
+            
             uuid: str
             for uuid in uuids:
                 json = json.replace(uuid, uuid4().hex)
+            
             return parse_json(json)
 
         # Merge the various items into one large dictionary.
@@ -371,6 +467,7 @@ class Project:
         # (e.g. in case one or more of the projects were initially identical copies
         # that were modified in different ways).
         state: dict = Class().to_dict(session=True)
+
         project: "Project"
         for project in projects:
             other: dict = replace_uuids(project.to_dict(session=True))
@@ -383,49 +480,66 @@ class Project:
             state["tests"].update(other["tests"])
             state["zhits"].update(other["zhits"])
             state["label"] = other["label"]
+        
         state["notes"] = state["notes"].strip()
+        
         # Check for UUID collisions.
         uuids: List[str] = []
         uuids.extend(list(map(lambda _: _["uuid"], state["data_sets"])))
+        
         for fits in state["fits"].values():
             uuids.extend(list(map(lambda _: _["uuid"], fits)))
+        
         for drts in state["drts"].values():
             uuids.extend(list(map(lambda _: _["uuid"], drts)))
+        
         for zhits in state["zhits"].values():
             uuids.extend(list(map(lambda _: _["uuid"], zhits)))
+        
         uuids.extend(list(map(lambda _: _["uuid"], state["plots"])))
         uuids.extend(list(map(lambda _: _["uuid"], state["simulations"])))
+        
         for tests in state["tests"].values():
             uuids.extend(list(map(lambda _: _["uuid"], tests)))
+        
         assert all(map(lambda _: type(_) is str, uuids)), uuids
         assert len(uuids) == len(set(uuids)), "Encountered UUID collision!"
+        
         if len(projects) > 1:
             # Make sure that labels are unique.
             # - Data sets
             labels: List[str] = []
+            
             i: int
             label: str
             data: dict
             for data in state["data_sets"]:
                 label = data["label"]
+                
                 i = 1
                 while label in labels:
                     i += 1
                     label = f"{data['label']} ({i})"
+                
                 labels.append(label)
                 data["label"] = label
+                
             # - Plot settings
             labels = []
             for plot in state["plots"]:
                 label = plot["plot_label"]
+                
                 i = 1
                 while label in labels:
                     i += 1
                     label = f"{plot['plot_label']} ({i})"
+                
                 labels.append(label)
                 plot["plot_label"] = label
+            
             # Change the project label
             state["label"] = "Merged project"
+
         return Class.from_dict(state)
 
     def to_dict(self, session: bool) -> dict:
@@ -451,10 +565,10 @@ class Project:
                 for k, v in self._fits.items()
             },
             "drts": {
-                k: list(map(lambda _: _.to_dict(), v)) for k, v in self._drts.items()
+                k: list(map(lambda _: _.to_dict(session=session), v)) for k, v in self._drts.items()
             },
             "zhits": {
-                k: list(map(lambda _: _.to_dict(), v)) for k, v in self._zhits.items()
+                k: list(map(lambda _: _.to_dict(session=session), v)) for k, v in self._zhits.items()
             },
             "label": self._label,
             "notes": self._notes,
@@ -489,6 +603,7 @@ class Project:
         """
         assert type(label) is str
         assert label.strip() != ""
+        
         self._label = label
 
     def set_path(self, path: str):
@@ -501,6 +616,7 @@ class Project:
             The path where the project's state should be saved.
         """
         assert type(path) is str, path
+        
         self._path = path
 
     def get_path(self) -> str:
@@ -534,6 +650,7 @@ class Project:
             The project notes.
         """
         assert type(notes) is str, notes
+        
         self._notes = notes
 
     def save(self, path: Optional[str] = None):
@@ -547,24 +664,32 @@ class Project:
             If this is None, then the most recently defined path is used.
         """
         assert type(path) is str or path is None, path
+        
         if path is None:
             path = self.get_path()
         else:
             self.set_path(path)
+        
         assert path != ""
         assert exists(dirname(path)), path
+        
         suffix: str = f".bak-{uuid4().hex}"
         tmp_path: str = path + suffix
         if exists(path):
             if islink(path):
                 tmp_path = str(Path(path).resolve()) + suffix
+            
             rename(path, tmp_path)
+        
         dictionary: dict = self.to_dict(session=False)
+        
         fp: IO
         with open(path, "w") as fp:
             fp.write(dump_json(dictionary, sort_keys=True, indent=1))
+        
         if exists(tmp_path):
             remove(tmp_path)
+        
         self._is_new = False
 
     def get_data_sets(self) -> List[DataSet]:
@@ -588,14 +713,18 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid not in list(map(lambda _: _.uuid, self._data_sets))
+        
         label: str = data.get_label()
         existing_labels: List[str] = list(map(lambda _: _.get_label(), self._data_sets))
+        
         if label in existing_labels:
             i: int = 1
             while label in existing_labels:
                 i += 1
                 label = f"{data.get_label()} ({i})"
+            
             data.set_label(label)
+        
         self._data_sets.append(data)
         self._fits[data.uuid] = []
         self._zhits[data.uuid] = []
@@ -618,13 +747,16 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         label = label.strip()
         if label == data.get_label():
             return
+        
         assert label != "", "The label of a data set cannot be an empty string!"
         assert label not in list(
             map(lambda _: _.get_label(), self.get_data_sets())
         ), f"Another data set already has the label '{label}'!"
+        
         data.set_label(label)
         self._data_sets.sort(key=lambda _: _.get_label())
 
@@ -643,6 +775,7 @@ class Project:
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(path) is str, path
+        
         data.set_path(path)
 
     def delete_data_set(self, data: DataSet):
@@ -656,6 +789,7 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         self._data_sets.remove(data)
         del self._fits[data.uuid]
         del self._drts[data.uuid]
@@ -663,17 +797,17 @@ class Project:
         del self._zhits[data.uuid]
         list(map(lambda _: _.remove_series(data.uuid), self._plots))
 
-    def get_all_tests(self) -> Dict[str, List[TestResult]]:
+    def get_all_tests(self) -> Dict[str, List[KramersKronigResult]]:
         """
         Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results of those data sets.
 
         Returns
         -------
-        Dict[str, List[TestResult]]
+        Dict[str, List[KramersKronigResult]]
         """
         return self._tests
 
-    def get_tests(self, data: DataSet) -> List[TestResult]:
+    def get_tests(self, data: DataSet) -> List[KramersKronigResult]:
         """
         Get the Kramers-Kronig test results associated with a specific data set.
 
@@ -684,13 +818,14 @@ class Project:
 
         Returns
         -------
-        List[TestResult]
+        List[KramersKronigResult]
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         return self._tests[data.uuid]
 
-    def add_test(self, data: DataSet, test: TestResult):
+    def add_test(self, data: DataSet, test: KramersKronigResult):
         """
         Add the provided Kramers-Kronig test result to the provided data set's list of Kramers-Kronig test results.
 
@@ -699,16 +834,17 @@ class Project:
         data: DataSet
             The data set that was tested.
 
-        test: TestResult
+        test: KramersKronigResult
             The result of the test.
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
-        assert type(test) is TestResult, test
+        assert type(test) is KramersKronigResult, test
         assert test.uuid not in list(map(lambda _: _.uuid, self._tests[data.uuid]))
+        
         self._tests[data.uuid].insert(0, test)
 
-    def delete_test(self, data: DataSet, test: TestResult):
+    def delete_test(self, data: DataSet, test: KramersKronigResult):
         """
         Delete the provided Kramers-Kronig test result from the provided data set's list of Kramers-Kronig test results.
 
@@ -717,13 +853,14 @@ class Project:
         data: DataSet
             The data set associated with the test result.
 
-        test: TestResult
+        test: KramersKronigResult
             The test result to delete.
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
-        assert type(test) is TestResult, test
+        assert type(test) is KramersKronigResult, test
         assert test in self._tests[data.uuid], test
+        
         self._tests[data.uuid].remove(test)
         list(map(lambda _: _.remove_series(test.uuid), self._plots))
 
@@ -752,6 +889,7 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         return self._zhits[data.uuid]
 
     def add_zhit(self, data: DataSet, zhit: ZHITResult):
@@ -770,6 +908,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(zhit) is ZHITResult, zhit
         assert zhit.uuid not in list(map(lambda _: _.uuid, self._zhits[data.uuid]))
+        
         self._zhits[data.uuid].insert(0, zhit)
 
     def delete_zhit(self, data: DataSet, zhit: ZHITResult):
@@ -788,6 +927,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(zhit) is ZHITResult, zhit
         assert zhit in self._zhits[data.uuid], zhit
+        
         self._zhits[data.uuid].remove(zhit)
         list(map(lambda _: _.remove_series(zhit.uuid), self._plots))
 
@@ -816,6 +956,7 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         return self._drts[data.uuid]
 
     def add_drt(self, data: DataSet, drt: DRTResult):
@@ -834,6 +975,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(drt) is DRTResult, drt
         assert drt.uuid not in list(map(lambda _: _.uuid, self._drts[data.uuid]))
+        
         self._drts[data.uuid].insert(0, drt)
 
     def delete_drt(self, data: DataSet, drt: DRTResult):
@@ -852,6 +994,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(drt) is DRTResult, drt
         assert drt in self._drts[data.uuid], drt
+        
         self._drts[data.uuid].remove(drt)
         list(map(lambda _: _.remove_series(drt.uuid), self._plots))
 
@@ -880,6 +1023,7 @@ class Project:
         """
         assert type(data) is DataSet, data
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
+        
         return self._fits[data.uuid]
 
     def add_fit(self, data: DataSet, fit: FitResult):
@@ -898,6 +1042,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit.uuid not in list(map(lambda _: _.uuid, self._fits[data.uuid]))
+        
         self._fits[data.uuid].insert(0, fit)
 
     def delete_fit(self, data: DataSet, fit: FitResult):
@@ -916,6 +1061,7 @@ class Project:
         assert data.uuid in list(map(lambda _: _.uuid, self._data_sets)), data
         assert type(fit) is FitResult, fit
         assert fit in self._fits[data.uuid], fit
+        
         self._fits[data.uuid].remove(fit)
         list(map(lambda _: _.remove_series(fit.uuid), self._plots))
 
@@ -940,6 +1086,7 @@ class Project:
         """
         assert type(simulation) is SimulationResult, simulation
         assert simulation.uuid not in list(map(lambda _: _.uuid, self._simulations))
+        
         self._simulations.insert(0, simulation)
 
     def delete_simulation(self, simulation: SimulationResult):
@@ -953,6 +1100,7 @@ class Project:
         """
         assert type(simulation) is SimulationResult, simulation
         assert simulation in self._simulations
+        
         self._simulations.remove(simulation)
         list(map(lambda _: _.remove_series(simulation.uuid), self._plots))
 
@@ -977,6 +1125,7 @@ class Project:
         """
         assert type(plot) is PlotSettings, plot
         assert plot.uuid not in list(map(lambda _: _.uuid, self._plots))
+        
         self._plots.append(plot)
         self._plots.sort(key=lambda _: _.get_label())
 
@@ -995,13 +1144,16 @@ class Project:
         """
         assert type(plot) is PlotSettings, plot
         assert plot in self._plots, plot
+        
         label = label.strip()
         if label == plot.get_label():
             return
+        
         assert label != "", "The label of a plot cannot be an empty string!"
         assert label not in list(
             map(lambda _: _.get_label(), self.get_plots())
         ), f"Another plot already has the label '{label}'!"
+        
         plot.set_label(label)
         self._plots.sort(key=lambda _: _.get_label())
 
@@ -1016,6 +1168,7 @@ class Project:
         """
         assert type(plot) is PlotSettings, plot
         assert plot in self._plots, plot
+        
         self._plots.remove(plot)
 
     def get_plot_series(
@@ -1036,18 +1189,20 @@ class Project:
         """
         assert type(plot) is PlotSettings, plot
         data_sets: List[DataSet] = self.get_data_sets()
-        tests: Dict[str, List[TestResult]] = self.get_all_tests()
-        zhits: Dict[str, List[TestResult]] = self.get_all_zhits()
+        tests: Dict[str, List[KramersKronigResult]] = self.get_all_tests()
+        zhits: Dict[str, List[ZHITResult]] = self.get_all_zhits()
         drts: Dict[str, List[DRTResult]] = self.get_all_drts()
         fits: Dict[str, List[FitResult]] = self.get_all_fits()
         simulations: List[SimulationResult] = self.get_simulations()
+        
         results: List[PlotSeries] = []
+        
         uuid: str
         for uuid in plot.series_order:
             series: Optional[
                 Union[
                     DataSet,
-                    TestResult,
+                    KramersKronigResult,
                     ZHITResult,
                     DRTResult,
                     FitResult,
@@ -1065,10 +1220,9 @@ class Project:
             )
             if series is None:
                 continue
+            
             label: str = plot.get_series_label(uuid) or series.get_label()
-            scatter_data: Tuple[ndarray, ndarray]
-            line_data: Tuple[ndarray, ndarray]
-            fill_data: Tuple[ndarray, ndarray, ndarray]
+            
             color: Tuple[float, float, float, float] = tuple(
                 map(
                     lambda _: _ / 255.0,
@@ -1077,6 +1231,7 @@ class Project:
             )
             marker: int = plot.get_series_marker(uuid)
             line: bool = plot.get_series_line(uuid)
+            
             results.append(
                 PlotSeries(
                     series,
@@ -1087,4 +1242,5 @@ class Project:
                     label.strip() != "",
                 )
             )
+
         return results

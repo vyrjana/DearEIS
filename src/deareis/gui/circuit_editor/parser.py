@@ -37,6 +37,7 @@ from pyimpspec import (
 )
 import pyimpspec
 import deareis.themes as themes
+from deareis.typing.helpers import Tag
 
 
 class Node:
@@ -61,16 +62,18 @@ class Node:
         assert isinstance(element, Element) or element is None
         assert type(input_attribute) is bool
         assert type(output_attribute) is bool
+
         self.selected: bool = False
         self.invalid: bool = False
-        self.tag: int = dpg.generate_uuid()
+        self.tag: Tag = dpg.generate_uuid()
         self.id: int = node_id
         self.label: str = ""
         self.element: Optional[Element] = element
-        self.input_attribute: int = dpg.generate_uuid() if input_attribute else -1
-        self.output_attribute: int = dpg.generate_uuid() if output_attribute else -1
+        self.input_attribute: Tag = dpg.generate_uuid() if input_attribute else -1
+        self.output_attribute: Tag = dpg.generate_uuid() if output_attribute else -1
         self.input_links: Dict[int, int] = {}
         self.output_links: Dict[int, int] = {}
+
         with dpg.node(label=label, pos=pos, tag=self.tag, parent=parent):
             if input_attribute:
                 dpg.add_node_attribute(
@@ -80,6 +83,7 @@ class Node:
                 dpg.add_node_attribute(
                     attribute_type=dpg.mvNode_Attr_Output, tag=self.output_attribute
                 )
+
         self.set_label(label)
         self.set_unselected()
 
@@ -99,6 +103,7 @@ class Node:
             return True
         elif self.output_attribute >= 0 and self.output_attribute == attribute:
             return True
+
         return False
 
     def get_num_input_links(self) -> int:
@@ -109,28 +114,32 @@ class Node:
 
     def has_link_to(self, link: int) -> bool:
         assert type(link) is int
+        
         return link in self.output_links.values()
 
     def has_link_from(self, link: int) -> bool:
         assert type(link) is int
+
         return link in self.input_links.values()
 
-    def add_link_to(self, node: "Node", link: int):
+    def add_link_to(self, node: "Node", link: Tag):
         assert type(link) is int
         self.output_links[node.id] = link
 
-    def delete_link_to(self, node: "Node") -> int:
+    def delete_link_to(self, node: "Node") -> Tag:
         link: int = self.output_links[node.id]
         del self.output_links[node.id]
+
         return link
 
-    def add_link_from(self, node: "Node", link: int):
+    def add_link_from(self, node: "Node", link: Tag):
         assert type(link) is int
         self.input_links[node.id] = link
 
-    def delete_link_from(self, node: "Node") -> int:
+    def delete_link_from(self, node: "Node") -> Tag:
         link: int = self.input_links[node.id]
         del self.input_links[node.id]
+
         return link
 
     def set_valid(self):
@@ -138,6 +147,7 @@ class Node:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_selected_node)
         else:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_unselected_node)
+
         self.invalid = False
 
     def set_invalid(self, msg: str) -> str:
@@ -145,7 +155,9 @@ class Node:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_selected_node)
         else:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_unselected_node)
+
         self.invalid = True
+
         # msg is returned to be used as an assertion message
         return msg
 
@@ -154,6 +166,7 @@ class Node:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_selected_node)
         else:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_selected_node)
+
         self.selected = True
 
     def set_unselected(self):
@@ -161,31 +174,36 @@ class Node:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.invalid_unselected_node)
         else:
             dpg.bind_item_theme(self.tag, themes.circuit_editor.valid_unselected_node)
+
         self.selected = False
 
     def set_preview(self):
         dpg.bind_item_theme(self.tag, themes.circuit_editor.preview_node)
+
         link: int
         for link in self.output_links.values():
             dpg.bind_item_theme(link, themes.circuit_editor.preview_node)
+
         for link in self.input_links.values():
             dpg.bind_item_theme(link, themes.circuit_editor.preview_node)
 
 
 class Parser:
-    def __init__(self, node_editor: int, node_handler: int = -1):
+    def __init__(self, node_editor: Tag, node_handler: Tag = -1):
         assert type(node_editor) is int, node_editor
         assert dpg.does_item_exist(node_editor) and "mvNodeEditor" in dpg.get_item_type(
             node_editor
         )
         assert type(node_handler) is int, node_handler
         assert node_handler < 0 or dpg.does_item_exist(node_handler), node_handler
+
         self.node_editor: int = node_editor
         dpg.configure_item(
             self.node_editor,
             callback=self.link,
             delink_callback=self.delink,
         )
+
         self.node_handler: int = node_handler
         self.we_node: Node = None  # type: ignore
         self.cere_node: Node = None  # type: ignore
@@ -204,45 +222,53 @@ class Parser:
     def circuit_to_nodes(self, circuit: Circuit, y_step: int = -1):
         assert type(circuit) is Circuit, circuit
         assert isinstance(y_step, int), y_step
+
         if y_step >= 0:
             self.y_step = y_step
+
         input_stack: List[Tuple[str, Union[Element, Connection]]] = circuit.to_stack()
         assert circuit.to_string() == "".join(map(lambda _: _[0], input_stack))
         self.element_identifiers: Dict[
             Element, int
         ] = circuit.generate_element_identifiers(running=False)
         self.element_counts: Dict[str, int] = {}
+
         for element in self.element_identifiers:
             symbol: str = element.get_symbol()
             if symbol not in self.element_counts:
                 self.element_counts[symbol] = 0
             self.element_counts[symbol] += 1
+
         self.clear_nodes()
+
         if circuit.to_string() not in ["[]", "()"]:
             self.generate_nodes(input_stack)
 
     def nodes_to_circuit(self, node_editor: int) -> Circuit:
         assert type(node_editor) is int, node_editor
+
         circuit: Optional[Circuit]
         msg: str
         stack: List[str]
         circuit, msg, stack = self.generate_circuit()
+
         assert type(circuit) is Circuit, circuit
         return circuit
 
     def find_node(
         self,
-        tag: int = -1,
+        tag: Tag = -1,
         node_id: int = -1,
-        attribute: int = -1,
-        link_to: int = -1,
-        link_from: int = -1,
+        attribute: Tag = -1,
+        link_to: Tag = -1,
+        link_from: Tag = -1,
     ) -> Node:
         assert type(tag) is int, tag
         assert type(node_id) is int, node_id
         assert type(attribute) is int, attribute
         assert type(link_to) is int, link_to
         assert type(link_from) is int, link_from
+
         func: Callable
         if tag >= 0:
             func = lambda _: _.tag == tag
@@ -256,14 +282,17 @@ class Parser:
             func = lambda _: _.has_link_from(link_from)
         else:
             raise Exception("Nothing has been provided to use to find a node!")
+
         node: Node
         for node in self.nodes:
             if func(node):
                 return node
+
         if func(self.we_node):
             return self.we_node
         elif func(self.cere_node):
             return self.cere_node
+
         raise Exception("Node does not exist!")
 
     def block_linking(self):
@@ -272,7 +301,7 @@ class Parser:
     def unblock_linking(self):
         self.blocked_linking = False
 
-    def link(self, sender: int, attributes: Tuple[int, int]):
+    def link(self, sender: Tag, attributes: Tuple[Tag, Tag]):
         assert type(sender) is int
         assert (
             type(attributes) is tuple
@@ -281,20 +310,25 @@ class Parser:
         )
         if self.blocked_linking is True:
             return
-        link: int = dpg.add_node_link(*attributes, parent=sender)
+
+        link: Tag = dpg.add_node_link(*attributes, parent=sender)
         src: Node = self.find_node(attribute=attributes[0])
         dst: Node = self.find_node(attribute=attributes[1])
+
         # print(f"Link: {src.label=}, {dst.label=}, {link=}, {validate=}")
         src.add_link_to(dst, link)
         dst.add_link_from(src, link)
 
-    def delink(self, sender: int, link: int):
+    def delink(self, sender: Tag, link: Tag):
         assert type(sender) is int
         assert type(link) is int
+
         if self.blocked_linking is True:
             return
+
         src: Node = self.find_node(link_to=link)
         dst: Node = self.find_node(link_from=link)
+
         # print(f"Delink: {src.label=}, {dst.label=}, {link=}")
         src.delete_link_to(dst)
         dst.delete_link_from(src)
@@ -303,6 +337,7 @@ class Parser:
     def link_nodes(self, src: Node, dst: Node):
         assert type(src) is Node
         assert type(dst) is Node
+
         src_attr = dpg.get_item_children(src.tag, slot=1)[
             1 if src != self.we_node else 0
         ]
@@ -311,17 +346,27 @@ class Parser:
 
     def add_node(self, **kwargs) -> Node:
         element: Optional[Element] = kwargs.get("element", None)
-        pos: Tuple[int, int] = kwargs.get(
-            "pos",
-            (
-                0,
-                1,
-            ),
-        )
-        pos = (
-            self.x_offset + self.x_step * pos[0],
-            self.y_offset + self.y_step * pos[1],
-        )
+        pos: Tuple[int, int]
+        if "x" in kwargs and "y" in kwargs:
+            # Raw grid coordinates
+            pos = (
+                int(round(kwargs["x"])),
+                int(round(kwargs["y"])),
+            )
+        else:
+            # Virtual grid coordinates
+            pos = kwargs.get(
+                "pos",
+                (
+                    0,
+                    1,
+                ),
+            )
+            pos = (
+                self.x_offset + self.x_step * pos[0],
+                self.y_offset + self.y_step * pos[1],
+            )
+
         self.nodes.append(
             Node(
                 parent=self.node_editor,
@@ -331,8 +376,10 @@ class Parser:
                 element=element,
             )
         )
+
         if self.node_handler > 0:
             dpg.bind_item_handler_registry(self.nodes[-1].tag, self.node_handler)
+
         return self.nodes[-1]
 
     def add_element_node(self, element: Element, **kwargs) -> Node:
@@ -346,15 +393,19 @@ class Parser:
                 self.element_counts[symbol] += 1
                 self.element_identifiers[element] = self.element_counts[symbol]
             name = f"{name}_{self.element_identifiers[element]}"
+
         kwargs["element"] = element
         if "label" not in kwargs:
             kwargs["label"] = name
+
         node_id: int = kwargs.get("node_id", -1)
         if node_id < 0:
             node_id = self.next_element()
             kwargs["node_id"] = node_id
+
         node: Node = self.add_node(**kwargs)
         node.set_label(name)
+
         return node
 
     def add_dummy_node(self, **kwargs) -> Node:
@@ -362,6 +413,7 @@ class Parser:
         node_id: int = kwargs.get("node_id", -1)
         if node_id >= -1:
             kwargs["node_id"] = self.next_dummy()
+
         return self.add_node(**kwargs)
 
     def delete_node(self, node: Node):
@@ -374,13 +426,16 @@ class Parser:
             node.delete_link_to(other)
             other.delete_link_from(node)
             dpg.delete_item(link)
+
         for other_id, link in node.input_links.copy().items():
             other = self.find_node(node_id=other_id)
             node.delete_link_from(other)
             other.delete_link_to(node)
             dpg.delete_item(link)
+
         if node in self.nodes:
             self.nodes.remove(node)
+
         dpg.delete_item(node.tag)
 
     def clear_nodes(self):
@@ -397,8 +452,10 @@ class Parser:
             ),
             input_attribute=False,
         )
+
         if self.node_handler > 0:
             dpg.bind_item_handler_registry(self.we_node.tag, self.node_handler)
+
         self.cere_node = Node(
             self.node_editor,
             999999,
@@ -409,8 +466,10 @@ class Parser:
             ),
             output_attribute=False,
         )
+
         if self.node_handler > 0:
             dpg.bind_item_handler_registry(self.cere_node.tag, self.node_handler)
+
         self.nodes = []
 
     def reset_element_counter(self):
@@ -432,16 +491,20 @@ class Parser:
     def walk_nodes(
         self,
         node: Node,
-        stack: List[str],
+        stack: List[Union[str, Element]],
         visited_nodes: Set[int],
         pending_nodes: Set[int],
     ):
         assert type(node) is Node
-        assert type(stack) is list and all(map(lambda _: type(_) is str, stack))
+        assert type(stack) is list and all(
+            map(lambda _: isinstance(_, str) or isinstance(_, Element), stack)
+        )
         assert type(visited_nodes) is set
         assert type(pending_nodes) is set
+
         if node.id in visited_nodes:
             return
+
         num_links_out: int = len(node.output_links)
         num_links_in: int
         stack_len: int
@@ -456,6 +519,7 @@ class Parser:
             if num_links_out > 1:  # Start of parallel connection
                 stack.append("(")
                 tmp_pending_nodes = set(pending_nodes)
+
                 for ident, link in node.output_links.items():
                     stack.append("[")
                     stack_len = len(stack)
@@ -469,106 +533,7 @@ class Parser:
                         stack.append("]")
                     else:  # Only one element was added
                         stack.pop(-2)
-                for ident in list(pending_nodes):
-                    if ident in tmp_pending_nodes:
-                        continue
-                    pending_nodes.remove(ident)
-                    self.walk_nodes(
-                        self.find_node(node_id=ident),
-                        stack,
-                        visited_nodes,
-                        pending_nodes,
-                    )
-            else:
-                for ident, link in node.output_links.items():
-                    self.walk_nodes(
-                        self.find_node(node_id=ident),
-                        stack,
-                        visited_nodes,
-                        pending_nodes,
-                    )
-            for node in filter(lambda _: _.id >= 0, self.nodes):  # Element nodes
-                assert node.get_num_input_links() > 0, node.set_invalid(
-                    f"{node.label.strip()} has insufficient input connections!"
-                )
-                assert node.get_num_output_links() > 0, node.set_invalid(
-                    f"{node.label.strip()} has insufficient output connections!"
-                )
-                assert node.id in visited_nodes, node.set_invalid(
-                    f"{node.label.strip()} was not visited!"
-                )
-            for node in filter(lambda _: _.id < -1, self.nodes):  # Dummy nodes
-                num_links_in = node.get_num_input_links()
-                num_links_out = node.get_num_output_links()
-                assert (num_links_in > 0 and num_links_out > 1) or (
-                    num_links_in > 1 and num_links_out > 0
-                ), node.set_invalid("A dummy node has insufficient connections!")
-                assert node.id in visited_nodes, node.set_invalid(
-                    "A dummy node was not visited!"
-                )
-            assert len(pending_nodes) == 0, "The queue for nodes to visit is not empty!"
-            # Make sure all other nodes have been visited
-            required_nodes: Set[int] = set(map(lambda _: _.id, self.nodes))
-            required_nodes.add(self.cere_node.id)
-            assert required_nodes == visited_nodes, "Disconnected node(s) detected!"
-            return
-        num_links_in = len(node.input_links)
-        if node == self.cere_node:  # CE+RE node (i.e. the end point)
-            if num_links_in > 1:  # End of a parallel connection
-                # Make sure all nodes in the parallel connection have been visited first
-                if not set(node.input_links.keys()).issubset(visited_nodes):
-                    pending_nodes.add(node.id)
-                    return
-                elif node.id in pending_nodes:
-                    return
-                if stack[-1] == "(":
-                    stack.pop()
-                elif stack[-1] != ")":
-                    stack.append(")")
-            visited_nodes.add(node.id)
-            stack.append("]")
-        else:  # Element and dummy nodes
-            element: Optional[Element] = node.element
-            if num_links_in > 1:  # End of a parallel connection
-                # Make sure all nodes in the parallel connection have been visited first
-                if not set(node.input_links.keys()).issubset(visited_nodes):
-                    pending_nodes.add(node.id)
-                    return
-                elif node.id in pending_nodes:
-                    return
-                if stack[-1] != ")":
-                    stack.append(")")
-            visited_nodes.add(node.id)
-            if element is not None:
-                assert num_links_out > 0, node.set_invalid(
-                    f"{node.label.strip()} is missing a connection!"
-                )
-                stack.append(node.element.serialize())  # type: ignore
-                # stack.append(node.element.to_string())  # DEBUGGING
-            else:
-                assert (num_links_in > 0 and num_links_out > 1) or (
-                    num_links_in > 1 and num_links_out > 0
-                ), node.set_invalid(
-                    "Dummy nodes must connect to at least one element on one side "
-                    "and at least two elements on the other side!"
-                )
-            if num_links_out > 1:
-                stack.append("(")
-                tmp_pending_nodes = set(pending_nodes)
-                for ident, link in node.output_links.items():
-                    stack.append("[")
-                    stack_len = len(stack)
-                    self.walk_nodes(
-                        self.find_node(node_id=ident),
-                        stack,
-                        visited_nodes,
-                        pending_nodes,
-                    )
-                    if len(stack) > stack_len + 1:  # More than one element was added
-                        stack.append("]")
-                    else:  # Only one element was added
-                        stack.pop(-2)
-                stack.append(")")
+
                 for ident in list(pending_nodes):
                     if ident in tmp_pending_nodes:
                         continue
@@ -588,29 +553,225 @@ class Parser:
                         pending_nodes,
                     )
 
+            for node in filter(lambda _: _.id >= 0, self.nodes):  # Element nodes
+                assert node.get_num_input_links() > 0, node.set_invalid(
+                    f"{node.label.strip()} has insufficient input connections!"
+                )
+                assert node.get_num_output_links() > 0, node.set_invalid(
+                    f"{node.label.strip()} has insufficient output connections!"
+                )
+                assert node.id in visited_nodes, node.set_invalid(
+                    f"{node.label.strip()} was not visited!"
+                )
+
+            for node in filter(lambda _: _.id < -1, self.nodes):  # Dummy nodes
+                num_links_in = node.get_num_input_links()
+                num_links_out = node.get_num_output_links()
+                assert (num_links_in > 0 and num_links_out > 1) or (
+                    num_links_in > 1 and num_links_out > 0
+                ), node.set_invalid("A dummy node has insufficient connections!")
+                assert node.id in visited_nodes, node.set_invalid(
+                    "A dummy node was not visited!"
+                )
+
+            assert len(pending_nodes) == 0, "The queue for nodes to visit is not empty!"
+            # Make sure all other nodes have been visited
+            required_nodes: Set[int] = set(map(lambda _: _.id, self.nodes))
+            required_nodes.add(self.cere_node.id)
+            assert required_nodes == visited_nodes, "Disconnected node(s) detected!"
+            return
+
+        num_links_in = len(node.input_links)
+        if node == self.cere_node:  # CE+RE node (i.e. the end point)
+            if num_links_in > 1:  # End of a parallel connection
+                # Make sure all nodes in the parallel connection have been visited first
+                if not set(node.input_links.keys()).issubset(visited_nodes):
+                    pending_nodes.add(node.id)
+                    return
+                elif node.id in pending_nodes:
+                    return
+
+                if stack[-1] == "(":
+                    stack.pop()
+                elif stack[-1] != ")":
+                    stack.append(")")
+
+            visited_nodes.add(node.id)
+            stack.append("]")
+
+        else:  # Element and dummy nodes
+            element: Optional[Element] = node.element
+            if num_links_in > 1:  # End of a parallel connection
+                # Make sure all nodes in the parallel connection have been visited first
+                if not set(node.input_links.keys()).issubset(visited_nodes):
+                    pending_nodes.add(node.id)
+                    return
+                elif node.id in pending_nodes:
+                    return
+
+                if stack[-1] != ")":
+                    stack.append(")")
+
+            visited_nodes.add(node.id)
+            if element is not None:
+                assert num_links_out > 0, node.set_invalid(
+                    f"{node.label.strip()} is missing a connection!"
+                )
+                stack.append(node.element)  # type: ignore
+                # stack.append(node.element.to_string())  # DEBUGGING
+            else:
+                assert (num_links_in > 0 and num_links_out > 1) or (
+                    num_links_in > 1 and num_links_out > 0
+                ), node.set_invalid(
+                    "Dummy nodes must connect to at least one element on one side "
+                    "and at least two elements on the other side!"
+                )
+
+            if num_links_out > 1:
+                stack.append("(")
+                tmp_pending_nodes = set(pending_nodes)
+
+                for ident, link in node.output_links.items():
+                    stack.append("[")
+                    stack_len = len(stack)
+                    self.walk_nodes(
+                        self.find_node(node_id=ident),
+                        stack,
+                        visited_nodes,
+                        pending_nodes,
+                    )
+                    if len(stack) > stack_len + 1:  # More than one element was added
+                        stack.append("]")
+                    else:  # Only one element was added
+                        stack.pop(-2)
+
+                stack.append(")")
+
+                for ident in list(pending_nodes):
+                    if ident in tmp_pending_nodes:
+                        continue
+                    pending_nodes.remove(ident)
+                    self.walk_nodes(
+                        self.find_node(node_id=ident),
+                        stack,
+                        visited_nodes,
+                        pending_nodes,
+                    )
+
+            else:
+                for ident, link in node.output_links.items():
+                    self.walk_nodes(
+                        self.find_node(node_id=ident),
+                        stack,
+                        visited_nodes,
+                        pending_nodes,
+                    )
+
     def generate_circuit(self) -> Tuple[Optional[Circuit], str, List[str]]:
         circuit: Optional[Circuit] = None
         msg: str = "OK"
-        stack: List[str] = []
+        stack: List[Union[str, Element]] = []
         visited_nodes: Set[int] = set({})
         pending_nodes: Set[int] = set({})
+
         if self.we_node is not None:
             self.we_node.set_valid()
+
         if self.cere_node is not None:
             self.cere_node.set_valid()
+
+        string_stack: List[str]
         list(map(lambda _: _.set_valid(), self.nodes))
         try:
             self.walk_nodes(self.we_node, stack, visited_nodes, pending_nodes)
-            circuit = pyimpspec.parse_cdc("".join(stack))
+            string_stack = [
+                t.serialize() if isinstance(t, Element) else t for t in stack
+            ]
         except AssertionError as e:
+            string_stack = [
+                t.serialize() if isinstance(t, Element) else t for t in stack
+            ]
             msg = str(e)
-        except ParsingError as e:
-            msg = str(e)
+        else:
+            try:
+                circuit = pyimpspec.parse_cdc("".join(string_stack))
+            except ParsingError as e:
+                msg = str(e)
+            else:
+                self.replace_elements_in_circuit(circuit, stack)
+
         return (
             circuit,
             msg,
-            stack,
+            string_stack,
         )
+
+    def replace_elements_in_circuit(
+        self,
+        circuit: Circuit,
+        stack: List[Union[str, Element]],
+    ):
+        if len(stack) == 0:
+            return
+
+        cdc_before: str = circuit.serialize()
+        ids_before: Set[int] = set(
+            [id(_) for _ in circuit.get_elements()]
+        )
+
+        connections: List[Connection] = circuit.get_connections(recursive=False)
+        assert len(connections) == 1, connections
+
+        def process_connection(cls, end: str):
+            stack.pop(0)
+            assert isinstance(connections[0], cls), (connections, cls)
+            con: Connection = connections.pop(0)
+
+            element_or_connection: Union[Element, Connection]
+            for element_or_connection in con:
+                if isinstance(element_or_connection, Element):
+                    assert isinstance(element_or_connection, type(stack[0])), (
+                        element_or_connection,
+                        stack,
+                    )
+                    i: int = con.index(element_or_connection)
+                    con.pop(i)
+                    con.insert(i, stack.pop(0))
+
+                elif isinstance(element_or_connection, Connection):
+                    connections.insert(0, element_or_connection)
+                    if stack[0] == "[":
+                        process_connection(Series, "]")
+                    elif stack[0] == "(":
+                        process_connection(Parallel, ")")
+                    else:
+                        raise ValueError(f"Unexpected item on stack: {type(stack[0])=}")
+
+                else:
+                    raise ValueError(
+                        f"Expected Element or Connection instead of: {type(element_or_connection)=}"
+                    )
+
+            assert stack[0] == end, (stack, end)
+            stack.pop(0)
+
+        if stack[0] == "[":
+            process_connection(Series, "]")
+        elif stack[0] == "(":
+            process_connection(Parallel, ")")
+        else:
+            raise ValueError(f"Unexpected item on stack: {type(stack[0])=}")
+
+        assert len(connections) == 0, connections
+        assert len(stack) == 0, stack
+
+        cdc_after: str = circuit.serialize()
+        ids_after: Set[int] = set(
+            [id(_) for _ in circuit.get_elements()]
+        )
+        assert cdc_before == cdc_after, (cdc_before, cdc_after)
+        assert len(ids_before) == len(ids_after), (len(ids_before), len(ids_after))
+        assert ids_before != ids_after, (ids_before, ids_after)
 
     def generate_nodes(self, input_stack):
         element_stack: List[Union[Connection, Element]] = []
@@ -630,6 +791,7 @@ class Parser:
         def is_dummy_node(item) -> bool:
             if type(item) is Node:
                 return item.id < -1 and item.id > self.we_node.id
+
             return False
 
         def pop_input() -> Tuple[str, Union[Element, Series, Parallel]]:
@@ -667,6 +829,7 @@ class Parser:
                             other = node_stack[-2]
                         else:
                             other = node_stack.pop(-2)
+
                         self.link_nodes(other, node)  # type: ignore
                 else:
                     others = node_stack.pop()
@@ -678,8 +841,10 @@ class Parser:
                 else:
                     other = node_stack.pop()
                 self.link_nodes(other, node)  # type: ignore
+
             node_stack.append(node)
             element_stack.pop()
+
             return (1, 0)
 
         def process_series_dummy(x: int, y: int) -> Tuple[int, int]:
@@ -693,10 +858,13 @@ class Parser:
                 and symbol_stack[-1] == "]"
             ):
                 node = self.add_dummy_node(pos=(x, y))
+
                 for other in node_stack.pop():  # type: ignore
                     self.link_nodes(other, node)
+
                 node_stack.append(node)
                 return (1, 0)
+
             return (0, 0)
 
         def process_series(this: Series, x: int, y: int) -> Tuple[int, int]:
@@ -706,6 +874,7 @@ class Parser:
             nonlocal symbol_stack
             width = 0
             height = 0
+
             # Main processing of the series connection
             symbol, element = pop_input()
             while element is not this:
@@ -722,16 +891,20 @@ class Parser:
                 else:
                     w, h = process_series_element(element, x + width, y)
                     width += w
+
                 symbol, element = pop_input()
+
             assert element_stack.pop() is this
             assert element_stack.pop() is this
             # Add a dummy node, if necessary
             w, h = process_series_dummy(x + width, y)
             width += w
+
             # Clean up
             if len(node_stack) > 1 and type(node_stack[-2]) is list:
                 assert type(node_stack[-1]) is Node
                 node_stack[-2].append(node_stack.pop())  # type: ignore
+
             return (max(1, width), max(1, height))
 
         def process_parallel_element(this: Element, x: int, y: int) -> Tuple[int, int]:
@@ -748,6 +921,7 @@ class Parser:
             assert type(node_stack[-1]) is list
             node_stack[-1].append(node)  # type: ignore
             element_stack.pop()
+
             return (1, 1)
 
         def process_parallel_dummy(x: int, y: int) -> Tuple[int, int]:
@@ -766,6 +940,7 @@ class Parser:
                     else:
                         assert type(node_stack[-2]) is Node
                         self.link_nodes(node_stack[-2], node)  # type: ignore
+
                     node_stack.append(node)
                 elif symbol_stack[-1] == "(" and (
                     symbol_stack[-2] == ")"
@@ -777,7 +952,9 @@ class Parser:
                     node_stack.append(node)
                 else:
                     return (0, 0)
+
                 return (1, 0)
+
             return (0, 0)
 
         def process_parallel(this: Parallel, x: int, y: int) -> Tuple[int, int]:
@@ -790,6 +967,7 @@ class Parser:
             # Add a dummy node, if necessary
             dummy_width: int
             dummy_width, _ = process_parallel_dummy(x, y)
+
             # Main processing of the parallel connection
             node_stack.append([])
             symbol, element = pop_input()
@@ -811,9 +989,12 @@ class Parser:
                     if w > width:
                         width = w
                     height += h
+
                 symbol, element = pop_input()
+
             assert element_stack.pop() is this
             assert element_stack.pop() is this
+
             # Clean up
             if (
                 len(node_stack) > 1
@@ -821,12 +1002,14 @@ class Parser:
                 and node_stack[-2] != self.we_node
             ):
                 node_stack.pop(-2)
+
             return (max(1, width + dummy_width), max(1, height))
 
         input_length: int = len(input_stack)
         symbol, element = pop_input()
         assert symbol == "[" and type(element) is Series
         width, height = process_series(element, 1, 0)
+
         assert len(element_stack) == 0, element_stack
         assert len(symbol_stack) == input_length
         assert node_stack.pop(0) == self.we_node
@@ -836,6 +1019,7 @@ class Parser:
                 self.link_nodes(node, self.cere_node)
         else:
             self.link_nodes(node_stack[-1], self.cere_node)
+
         dpg.configure_item(
             self.cere_node.tag,
             pos=(

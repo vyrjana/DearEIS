@@ -10,12 +10,12 @@ Kramers-Kronig testing
 Classes
 -------
 .. automodule:: deareis
-   :members: TestResult, TestSettings
+   :members: KramersKronigResult, KramersKronigSettings, KramersKronigSuggestionSettings
 
 Enums
 -----
 .. automodule:: deareis
-   :members: CNLSMethod, TestMode, Test
+   :members: CNLSMethod, KramersKronigMode, KramersKronigTest, KramersKronigRepresentation
 
 .. raw:: latex
 

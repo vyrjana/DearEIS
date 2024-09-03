@@ -73,5 +73,8 @@ Setting this to 'Auto' results in attempts to use all of them separately and cho
         "load_as_data_set": """
 Load the current Z-HIT analysis result as a data set.
     """.strip(),
+        "representation": """
+Perform the Z-HIT analysis using this immittance representation.
+    """.strip(),
     },
 )

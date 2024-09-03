@@ -125,7 +125,7 @@ class TestElements(TestCase):
         self.assertEqual(type(self.control_elements), type(self.elements))
 
     def test_return_values(self):
-        self.assertTrue(len(self.control_elements) > 0)
+        self.assertGreater(len(self.control_elements), 0)
         self.assertEqual(len(self.control_elements), len(self.elements))
         self.assertEqual(list(self.control_elements.keys()), list(self.elements.keys()))
         self.assertEqual(
@@ -177,88 +177,123 @@ class TestCDC(TestCase):
         self.assertEqual(builder.to_string(), self.circuit.to_string())
 
 
+# TODO: Update tests
 class TestKramersKronig(TestCase):
     @classmethod
     def setUpClass(cls):
         control_data: pyimpspec.DataSet = pyimpspec.parse_data(TEST_DATA_PATH)[0]
         cls.data: deareis.DataSet = deareis.parse_data(TEST_DATA_PATH)[0]
-        settings: deareis.TestSettings = deareis.TestSettings(
-            test=deareis.Test.COMPLEX,
-            mode=deareis.TestMode.AUTO,
-            num_RC=cls.data.get_num_points(),
-            mu_criterion=0.7,
-            add_capacitance=True,
-            add_inductance=False,
-            method=deareis.CNLSMethod.LEASTSQ,
-            max_nfev=50,
+
+        suggestion_settings: deareis.KramersKronigSuggestionSettings 
+        suggestion_settings = deareis.KramersKronigSuggestionSettings(
+            methods=[],
+            use_mean=False,
+            use_ranking=False,
+            use_sum=False,
+            lower_limit=0,
+            upper_limit=0,
+            limit_delta=0,
+            m1_mu_criterion=0.7,
+            m1_beta=0.75,
         )
-        cls.control_result: deareis.TestResult = deareis.perform_test(
+
+        test_settings: deareis.KramersKronigSettings
+        test_settings = deareis.KramersKronigSettings(
+            test=deareis.KramersKronigTest.COMPLEX_LEASTSQ,
+            mode=deareis.KramersKronigMode.AUTO,
+            representation=deareis.KramersKronigRepresentation.AUTO,
+            add_capacitance=True,
+            add_inductance=True,
+            num_RC=0,
+            min_log_F_ext=-1.0,
+            max_log_F_ext=1.0,
+            log_F_ext=0.0,
+            num_F_ext_evaluations=20,
+            rapid_F_ext_evaluations=True,
+            cnls_method=deareis.CNLSMethod.LEASTSQ,
+            max_nfev=50,
+            timeout=60,
+            suggestion_settings=suggestion_settings,
+        )
+        
+        cls.control_result: deareis.KramersKronigResult = pyimpspec.perform_kramers_kronig_test(
             control_data,
-            settings,
+            test="complex",
+            admittance=None,
+            add_capacitance=True,
+            add_inductance=True,
+            num_RC=0,
+            min_log_F_ext=-1.0,
+            max_log_F_ext=1.0,
+            log_F_ext=0.0,
+            num_F_ext_evaluations=20,
+            rapid_F_ext_evaluations=True,
+            cnls_method="leastsq",
+            max_nfev=50,
+            timeout=60,
         )
-        cls.result: deareis.TestResult = deareis.perform_test(cls.data, settings)
-        settings = deareis.TestSettings(
-            test=deareis.Test.COMPLEX,
-            mode=deareis.TestMode.EXPLORATORY,
+        
+        cls.result: deareis.KramersKronigResult = deareis.perform_kramers_kronig_test(
+            cls.data,
+            settings=test_settings,
+        )
+        
+        test_settings = deareis.KramersKronigSettings(
+            test=deareis.KramersKronigTest.COMPLEX_LEASTSQ,
+            mode=deareis.KramersKronigMode.EXPLORATORY,
+            representation=deareis.KramersKronigRepresentation.AUTO,
             num_RC=cls.data.get_num_points(),
-            mu_criterion=0.7,
             add_capacitance=True,
             add_inductance=False,
-            method=deareis.CNLSMethod.LEASTSQ,
+            min_log_F_ext=-1.0,
+            max_log_F_ext=1.0,
+            log_F_ext=0.0,
+            num_F_ext_evaluations=20,
+            rapid_F_ext_evaluations=True,
+            cnls_method=deareis.CNLSMethod.LEASTSQ,
             max_nfev=50,
+            timeout=60,
+            suggestion_settings=suggestion_settings,
         )
+        
         cls.control_exploratory_results: List[
-            pyimpspec.TestResult
-        ] = pyimpspec.perform_exploratory_tests(
+            pyimpspec.KramersKronigResult
+        ] = pyimpspec.perform_exploratory_kramers_kronig_tests(
             cls.data,
             test="complex",
-            num_RCs=list([_ for _ in range(1, cls.data.get_num_points() + 1)]),
+            num_RCs=None,
             mu_criterion=0.7,
             add_capacitance=True,
-            add_inductance=False,
+            add_inductance=True,
             method="leastsq",
             max_nfev=50,
         )
+        
         cls.exploratory_results: List[
-            deareis.TestResult
-        ] = deareis.perform_exploratory_tests(
+            deareis.KramersKronigResult
+        ] = deareis.perform_exploratory_kramers_kronig_tests(
             cls.data,
-            settings,
+            settings=test_settings,
         )
 
-    def test_return_type(self):
-        self.assertIsInstance(self.control_result, deareis.TestResult)
-        self.assertIsInstance(self.result, deareis.TestResult)
-        self.assertTrue(
-            type(self.control_exploratory_results) is list
-            and all(
-                map(
-                    lambda _: type(_) is pyimpspec.TestResult,
-                    self.control_exploratory_results,
-                )
-            )
-        )
-        self.assertTrue(
-            type(self.exploratory_results) is list
-            and all(
-                map(lambda _: type(_) is deareis.TestResult, self.exploratory_results)
-            )
-        )
+    def test_result(self):
+        self.assertIsInstance(self.control_result, pyimpspec.KramersKronigResult)
+        self.assertIsInstance(self.result, deareis.KramersKronigResult)
 
     def test_settings(self):
-        res: deareis.TestResult
-        for res in [self.result, self.control_result]:
-            self.assertEqual(res.settings.test, deareis.Test.COMPLEX)
-            self.assertEqual(res.settings.mode, deareis.TestMode.AUTO)
-            self.assertEqual(res.settings.mu_criterion, 0.7)
-            self.assertEqual(res.settings.add_capacitance, True)
-            self.assertEqual(res.settings.add_inductance, False)
-            self.assertEqual(res.settings.method, deareis.CNLSMethod.LEASTSQ)
-            self.assertEqual(res.settings.max_nfev, 50)
+        self.assertEqual(self.result.settings.test, deareis.KramersKronigTest.COMPLEX_LEASTSQ)
+        self.assertEqual(self.result.settings.mode, deareis.KramersKronigMode.AUTO)
+        self.assertEqual(self.result.settings.representation, deareis.KramersKronigRepresentation.AUTO)
+        self.assertEqual(self.result.settings.add_capacitance, True)
+        self.assertEqual(self.result.settings.add_inductance, True)
+        self.assertEqual(self.result.settings.cnls_method, deareis.CNLSMethod.LEASTSQ)
+        self.assertEqual(self.result.settings.max_nfev, 50)
 
     def test_num_RC(self):
         self.assertEqual(self.control_result.num_RC, self.result.num_RC)
-        self.assertTrue(self.result.num_RC < self.data.get_num_points())
+        # Because the data is not noisy and the test implementation is set to
+        # complex (least squares).
+        self.assertGreater(self.result.num_RC, self.data.get_num_points())
 
     def test_pseudo_chisqr(self):
         self.assertEqual(self.control_result.pseudo_chisqr, self.result.pseudo_chisqr)
@@ -269,45 +304,74 @@ class TestKramersKronig(TestCase):
         self.assertTrue(type(data_impedance) == type(test_impedance))
         self.assertEqual(type(test_impedance), ndarray)
         self.assertEqual(len(test_impedance), len(data_impedance))
-        self.assertTrue(abs(sum(data_impedance.real - test_impedance.real)) < 6e-2)
-        self.assertTrue(abs(sum(data_impedance.imag - test_impedance.imag)) < 2e-1)
+        self.assertLess(abs(sum(data_impedance.real - test_impedance.real)), 6e-2)
+        self.assertLess(abs(sum(data_impedance.imag - test_impedance.imag)), 2e-1)
 
     def test_exploratory_results(self):
-        self.assertEqual(
-            len(self.control_exploratory_results), len(self.exploratory_results)
-        )
-        for i in range(0, len(self.exploratory_results)):
+        self.assertIsInstance(self.control_exploratory_results, tuple)
+        self.assertIsInstance(self.exploratory_results, tuple)
+
+        self.assertEqual(len(self.control_exploratory_results), 2)
+        self.assertEqual(len(self.exploratory_results), 2)
+
+        self.assertIsInstance(self.control_exploratory_results[0], list)
+        self.assertIsInstance(self.exploratory_results[0], list)
+        self.assertEqual(len(self.control_exploratory_results[0]), len(self.exploratory_results[0]))
+
+        self.assertIsInstance(self.control_exploratory_results[1], tuple)
+        self.assertIsInstance(self.exploratory_results[1], tuple)
+        self.assertEqual(len(self.control_exploratory_results[1]), 4)
+        self.assertEqual(len(self.exploratory_results[1]), 4)
+        self.assertIsInstance(self.control_exploratory_results[1][0], pyimpspec.KramersKronigResult)
+        self.assertIsInstance(self.exploratory_results[1][0], deareis.KramersKronigResult)
+        self.assertIsInstance(self.control_exploratory_results[1][1], dict)
+        self.assertIsInstance(self.exploratory_results[1][1], dict)
+        self.assertIsInstance(self.control_exploratory_results[1][2], int)
+        self.assertIsInstance(self.exploratory_results[1][2], int)
+        self.assertIsInstance(self.control_exploratory_results[1][3], int)
+        self.assertIsInstance(self.exploratory_results[1][3], int)
+
+        for i in range(0, len(self.exploratory_results[0])):
             self.assertEqual(
-                self.control_exploratory_results[i].num_RC,
-                self.exploratory_results[i].num_RC,
+                self.control_exploratory_results[0][i].num_RC,
+                self.exploratory_results[0][i].num_RC,
             )
-        self.assertEqual(self.exploratory_results[0].settings.mu_criterion, 0.7)
-        self.assertEqual(
-            self.exploratory_results[0].calculate_score(0.7),
-            self.control_exploratory_results[0].calculate_score(0.7),
-        )
-        control_scores: List[float] = list(
-            map(
-                lambda _: _.calculate_score(0.7),
-                self.control_exploratory_results,
-            )
-        )
-        scores: List[float] = list(
-            map(lambda _: _.calculate_score(0.7), self.exploratory_results)
-        )
-        self.assertTrue(allclose(scores, control_scores))
-        self.assertEqual(scores[0], max(scores))
 
     def test_to_statistics_dataframe(self):
         df: DataFrame = self.result.to_statistics_dataframe()
         self.assertIsInstance(df, DataFrame)
-        markdown: str = df.to_markdown()
-        self.assertTrue("Log pseudo chi-squared" in markdown)
-        self.assertTrue("Mu" in markdown)
-        self.assertTrue("Number of parallel RC elements" in markdown)
-        self.assertTrue("Series resistance (ohm)" in markdown)
-        self.assertTrue("Series capacitance (F)" in markdown)
-        self.assertTrue("Series inductance (H)" in markdown)
+        markdown_lines: List[str] = df.to_markdown().strip().split("\n")[2:]
+        label_lines: List[str] = [
+            "Log pseudo chi-squared",
+            "Number of RC elements",
+            "Log Fext (extension factor for time constant range)",
+            "Parallel resistance (ohm)",
+            "Parallel capacitance (F)",
+            "Parallel inductance (H)",
+            "Mean of residuals, real (% of |Z|)",
+            "Mean of residuals, imag. (% of |Z|)",
+            "SD of residuals, real (% of |Z|)",
+            "SD of residuals, imag. (% of |Z|)",
+            "Residuals within 1 SD, real (%)",
+            "Residuals within 1 SD, imag. (%)",
+            "Residuals within 2 SD, real (%)",
+            "Residuals within 2 SD, imag. (%)",
+            "Residuals within 3 SD, real (%)",
+            "Residuals within 3 SD, imag. (%)",
+            "Lilliefors test p-value, real",
+            "Lilliefors test p-value, imag.",
+            "Shapiro-Wilk test p-value, real",
+            "Shapiro-Wilk test p-value, imag.",
+            "Estimated SD of Gaussian noise (% of |Z|)",
+            "One-sample Kolmogorov-Smirnov test p-value, real",
+            "One-sample Kolmogorov-Smirnov test p-value, imag.",
+        ]
+        self.assertEqual(len(markdown_lines), len(label_lines))
+
+        md: str
+        label: str
+        for md, label in zip(markdown_lines, label_lines):
+            self.assertTrue(label in md)
 
 
 class TestFitting(TestCase):
@@ -320,6 +384,7 @@ class TestFitting(TestCase):
             method=deareis.CNLSMethod.LEAST_SQUARES,
             weight=deareis.Weight.PROPORTIONAL,
             max_nfev=200,
+            timeout=60,
         )
         cls.control_result: deareis.FitResult = deareis.fit_circuit(
             cls.control_data, cls.settings
@@ -397,8 +462,8 @@ class TestFitting(TestCase):
         self.assertTrue(type(data_impedance) == type(fit_impedance))
         self.assertEqual(type(fit_impedance), ndarray)
         self.assertEqual(len(fit_impedance), len(data_impedance))
-        self.assertTrue(abs(sum(data_impedance.real - fit_impedance.real)) < 2)
-        self.assertTrue(abs(sum(data_impedance.imag - fit_impedance.imag)) < 2)
+        self.assertLess(abs(sum(data_impedance.real - fit_impedance.real)), 2)
+        self.assertLess(abs(sum(data_impedance.imag - fit_impedance.imag)), 2)
 
     def test_markdown(self):
         markdown: str = self.result.to_parameters_dataframe().to_markdown()
@@ -575,11 +640,12 @@ class TestMPL(TestCase):
         fig, axis = deareis.mpl.plot(plots[0], project)
 
 
+# TODO: Update tests
 class TestDRT(TestCase):
     @classmethod
     def setUpClass(cls):
         control_data: pyimpspec.DataSet = pyimpspec.parse_data(TEST_DATA_PATH)[0]
-        data: deareis.DataSet = deareis.parse_data(TEST_DATA_PATH)[0]
+        cls.data: deareis.DataSet = deareis.parse_data(TEST_DATA_PATH)[0]
         cls.control_drt: pyimpspec.DRTResult = pyimpspec.calculate_drt(control_data)
         settings: deareis.DRTSettings = deareis.DRTSettings(
             method=deareis.DRTMethod.TR_NNLS,
@@ -598,8 +664,10 @@ class TestDRT(TestCase):
             fit=None,
             gaussian_width=0.15,
             num_per_decade=100,
+            cross_validation_method=deareis.CrossValidationMethod.MGCV,
+            tr_nnls_lambda_method=deareis.TRNNLSLambdaMethod.CUSTOM,
         )
-        cls.drt: deareis.DRTResult = deareis.calculate_drt(data, settings)
+        cls.drt: deareis.DRTResult = deareis.calculate_drt(cls.data, settings)
 
     def test_final_lambda_value(self):
         self.assertEqual(self.control_drt.lambda_value, self.drt.lambda_value)
@@ -640,7 +708,93 @@ class TestDRT(TestCase):
             self.assertTrue(df is None)
             return
 
+    def test_tr_rbf(self):
+        deareis.calculate_drt(
+            self.data,
+            settings=deareis.DRTSettings(
+                method=deareis.DRTMethod.TR_RBF,
+                mode=deareis.DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=deareis.RBFType.GAUSSIAN,
+                derivative_order=1,
+                rbf_shape=deareis.RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=60,
+                num_samples=2000,
+                num_attempts=10,
+                maximum_symmetry=0.5,
+                fit=None,
+                gaussian_width=0.15,
+                num_per_decade=100,
+                cross_validation_method=deareis.CrossValidationMethod.MGCV,
+                tr_nnls_lambda_method=deareis.TRNNLSLambdaMethod.CUSTOM,
+            )
+        )
 
+    def test_bht(self):
+        deareis.calculate_drt(
+            self.data,
+            settings=deareis.DRTSettings(
+                method=deareis.DRTMethod.BHT,
+                mode=deareis.DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=deareis.RBFType.GAUSSIAN,
+                derivative_order=1,
+                rbf_shape=deareis.RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=60,
+                num_samples=2000,
+                num_attempts=10,
+                maximum_symmetry=0.5,
+                fit=None,
+                gaussian_width=0.15,
+                num_per_decade=100,
+                cross_validation_method=deareis.CrossValidationMethod.MGCV,
+                tr_nnls_lambda_method=deareis.TRNNLSLambdaMethod.CUSTOM,
+            )
+        )
+
+    def test_mrq_fit(self):
+        fit: deareis.FitResult = deareis.fit_circuit(
+            data=self.data,
+            settings=deareis.FitSettings(
+                cdc="R(RQ)(RQ)",
+                method=deareis.CNLSMethod.LEAST_SQUARES,
+                weight=deareis.Weight.PROPORTIONAL,
+                max_nfev=200,
+                timeout=60,
+            )
+        )
+        deareis.calculate_drt(
+            self.data,
+            settings=deareis.DRTSettings(
+                method=deareis.DRTMethod.BHT,
+                mode=deareis.DRTMode.COMPLEX,
+                lambda_value=-1.0,
+                rbf_type=deareis.RBFType.GAUSSIAN,
+                derivative_order=1,
+                rbf_shape=deareis.RBFShape.FWHM,
+                shape_coeff=0.5,
+                inductance=False,
+                credible_intervals=False,
+                timeout=60,
+                num_samples=2000,
+                num_attempts=10,
+                maximum_symmetry=0.5,
+                fit=fit,
+                gaussian_width=0.15,
+                num_per_decade=100,
+                cross_validation_method=deareis.CrossValidationMethod.MGCV,
+                tr_nnls_lambda_method=deareis.TRNNLSLambdaMethod.CUSTOM,
+            )
+        )
+
+
+# TODO: Update tests
 class TestZHIT(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -648,7 +802,7 @@ class TestZHIT(TestCase):
         data: deareis.DataSet = deareis.parse_data(TEST_DATA_PATH)[0]
         cls.control_zhit: pyimpspec.ZHITResult = pyimpspec.perform_zhit(control_data)
         settings: deareis.ZHITSettings = deareis.ZHITSettings(
-            smoothing=deareis.ZHITSmoothing.LOWESS,
+            smoothing=deareis.ZHITSmoothing.MODSINC,
             num_points=3,
             polynomial_order=2,
             num_iterations=3,
@@ -656,6 +810,7 @@ class TestZHIT(TestCase):
             window=deareis.ZHITWindow.AUTO,
             window_center=1.5,
             window_width=3.0,
+            representation=deareis.ZHITRepresentation.IMPEDANCE,
         )
         cls.zhit: deareis.ZHITResult = deareis.perform_zhit(data, settings)
 

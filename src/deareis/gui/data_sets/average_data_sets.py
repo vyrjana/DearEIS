@@ -54,10 +54,12 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+import deareis.tooltips as tooltips
+from deareis.typing.helpers import Tag
 
 
 class AverageDataSets:
-    def __init__(self, data_sets: List[DataSet], callback: Callable):
+    def __init__(self, data_sets: List[DataSet], callback: Callable, admittance: bool):
         assert type(data_sets) is list and all(
             map(lambda _: type(_) is DataSet, data_sets)
         )
@@ -70,12 +72,14 @@ class AverageDataSets:
             )
         )
         self.final_data: Optional[DataSet] = None
-        self.create_window()
+        self.create_window(admittance=admittance)
         self.register_keybindings()
         self.update_preview([])
+        self.toggle_plot_admittance(admittance)
 
     def register_keybindings(self):
         callbacks: Dict[Keybinding, Callable] = {}
+
         # Cancel
         kb: Keybinding = Keybinding(
             key=dpg.mvKey_Escape,
@@ -85,6 +89,7 @@ class AverageDataSets:
             action=Action.CANCEL,
         )
         callbacks[kb] = self.close
+
         # Accept
         for kb in STATE.config.keybindings:
             if kb.action is Action.PERFORM_ACTION:
@@ -98,6 +103,7 @@ class AverageDataSets:
                 action=Action.PERFORM_ACTION,
             )
         callbacks[kb] = self.accept
+
         # Select filtered
         for kb in STATE.config.keybindings:
             if kb.action is Action.SELECT_ALL_PLOT_SERIES:
@@ -111,6 +117,7 @@ class AverageDataSets:
                 action=Action.SELECT_ALL_PLOT_SERIES,
             )
         callbacks[kb] = lambda: self.select_all(flag=True)
+
         # Unselect filtered
         for kb in STATE.config.keybindings:
             if kb.action is Action.UNSELECT_ALL_PLOT_SERIES:
@@ -124,6 +131,7 @@ class AverageDataSets:
                 action=Action.UNSELECT_ALL_PLOT_SERIES,
             )
         callbacks[kb] = lambda: self.select_all(flag=False)
+
         # Previous plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.PREVIOUS_PLOT_TAB:
@@ -137,6 +145,7 @@ class AverageDataSets:
                 action=Action.PREVIOUS_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=-1)
+
         # Next plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.NEXT_PLOT_TAB:
@@ -150,6 +159,7 @@ class AverageDataSets:
                 action=Action.NEXT_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=1)
+
         # Focus filter input
         kb = Keybinding(
             key=dpg.mvKey_F,
@@ -159,18 +169,19 @@ class AverageDataSets:
             action=Action.CUSTOM,
         )
         callbacks[kb] = self.focus_filter
+
         # Create the handler
         self.keybinding_handler: TemporaryKeybindingHandler = (
             TemporaryKeybindingHandler(callbacks=callbacks)
         )
 
-    def create_window(self):
+    def create_window(self, admittance: bool):
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions()
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Average of multiple data sets",
             modal=True,
@@ -183,7 +194,7 @@ class AverageDataSets:
             with dpg.group(horizontal=True):
                 with dpg.group():
                     with dpg.child_window(border=False, width=300, height=-1):
-                        self.filter_input: int = dpg.generate_uuid()
+                        self.filter_input: Tag = dpg.generate_uuid()
                         with dpg.group(horizontal=True):
                             dpg.add_input_text(
                                 hint="Filter...",
@@ -191,7 +202,8 @@ class AverageDataSets:
                                 tag=self.filter_input,
                                 callback=lambda s, a, u: self.filter_data_sets(a),
                             )
-                        self.data_set_table: int = dpg.generate_uuid()
+
+                        self.data_set_table: Tag = dpg.generate_uuid()
                         with dpg.table(
                             borders_outerV=True,
                             borders_outerH=True,
@@ -205,6 +217,7 @@ class AverageDataSets:
                         ):
                             dpg.add_table_column(label="", width_fixed=True)
                             dpg.add_table_column(label="Label", width_fixed=True)
+
                             data: DataSet
                             for data in self.data_sets:
                                 with dpg.table_row(filter_key=data.get_label().lower()):
@@ -214,12 +227,14 @@ class AverageDataSets:
                                     label: str = data.get_label()
                                     dpg.add_text(label)
                                     attach_tooltip(label)
+
                         with dpg.group(horizontal=True):
                             dpg.add_text("Label")
                             attach_tooltip(
-                                "The label for the new data set that will be generated"
+                                "The label for the new data set that will be generated."
                             )
-                            self.label_input: int = dpg.generate_uuid()
+
+                            self.label_input: Tag = dpg.generate_uuid()
                             self.final_data_series: int = -1
                             dpg.add_input_text(
                                 hint="REQUIRED",
@@ -228,23 +243,32 @@ class AverageDataSets:
                                 tag=self.label_input,
                                 callback=lambda s, a, u: self.update_label(a),
                             )
+
                         with dpg.group(horizontal=True):
-                            button_pad: int = 12
                             dpg.add_button(
-                                label="Accept".ljust(button_pad),
+                                label=" Accept ",
                                 callback=self.accept,
                             )
                             dpg.add_button(
-                                label="Select all".ljust(button_pad),
+                                label="Select all",
                                 callback=lambda: self.select_all(True),
                             )
                             dpg.add_button(
-                                label="Unselect all".ljust(button_pad),
+                                label="Unselect all",
                                 callback=lambda: self.select_all(False),
-                                width=-1,
                             )
+
+                            self.admittance_checkbox: Tag = dpg.generate_uuid()
+                            dpg.add_checkbox(
+                                label="Y",
+                                default_value=admittance,
+                                callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                                tag=self.admittance_checkbox,
+                            )
+                            attach_tooltip(tooltips.general.plot_admittance)
+
                 with dpg.child_window(border=False, width=-1, height=-1):
-                    self.plot_tab_bar: int = dpg.generate_uuid()
+                    self.plot_tab_bar: Tag = dpg.generate_uuid()
                     with dpg.tab_bar(tag=self.plot_tab_bar):
                         with dpg.tab(label="Nyquist"):
                             self.nyquist_plot: Nyquist = Nyquist(
@@ -254,6 +278,7 @@ class AverageDataSets:
                                 legend_outside=False,
                                 legend_location=dpg.mvPlot_Location_NorthEast,
                             )
+
                         with dpg.tab(label="Bode - magnitude"):
                             self.magnitude_plot: BodeMagnitude = BodeMagnitude(
                                 width=-1,
@@ -262,6 +287,7 @@ class AverageDataSets:
                                 legend_outside=False,
                                 legend_location=dpg.mvPlot_Location_NorthEast,
                             )
+
                         with dpg.tab(label="Bode - phase"):
                             self.phase_plot: BodePhase = BodePhase(
                                 width=-1,
@@ -270,7 +296,13 @@ class AverageDataSets:
                                 legend_outside=False,
                                 legend_location=dpg.mvPlot_Location_NorthEast,
                             )
+
                     pad_tab_labels(self.plot_tab_bar)
+
+    def toggle_plot_admittance(self, admittance: bool):
+        self.nyquist_plot.set_admittance(admittance)
+        self.magnitude_plot.set_admittance(admittance)
+        self.phase_plot.set_admittance(admittance)
 
     def close(self):
         dpg.hide_item(self.window)
@@ -281,9 +313,11 @@ class AverageDataSets:
     def accept(self):
         if self.final_data is None:
             return
+
         label: str = dpg.get_value(self.label_input).strip()
         if label == "":
             return
+
         self.final_data.set_label(label)
         self.callback(self.final_data)
         self.close()
@@ -291,6 +325,7 @@ class AverageDataSets:
     def get_selection(self) -> List[DataSet]:
         indices: List[int] = []
         data_sets: List[DataSet] = []
+
         i: int
         row: int
         for i, row in enumerate(dpg.get_item_children(self.data_set_table, slot=1)):
@@ -301,11 +336,13 @@ class AverageDataSets:
                     data_sets.append(self.data_sets[i])
                     indices.append(i)
                 break
+
         if data_sets:
             frequency: ndarray = data_sets[0].get_frequencies(masked=None)
             for i, row in enumerate(dpg.get_item_children(self.data_set_table, slot=1)):
                 if i in indices:
                     continue
+
                 data: DataSet = self.data_sets[i]
                 if not (
                     data.get_num_points(masked=None) == frequency.size
@@ -319,6 +356,7 @@ class AverageDataSets:
         else:
             for i, row in enumerate(dpg.get_item_children(self.data_set_table, slot=1)):
                 dpg.show_item(dpg.get_item_children(row, slot=1)[0])
+
         return data_sets
 
     def get_plot_theme(self, index: int) -> int:
@@ -335,45 +373,44 @@ class AverageDataSets:
         from_empty: bool = False
         if len(self.nyquist_plot.get_series()) == 0:
             from_empty = True
+
         self.nyquist_plot.clear()
         self.magnitude_plot.clear()
         self.phase_plot.clear()
         selection: List[DataSet] = self.get_selection()
+
         i: int
         data: DataSet
         label: str
         theme: int
-        real: ndarray
-        imag: ndarray
+        Z: ndarray
         freq: ndarray
-        mag: ndarray
-        phase: ndarray
         for i, data in enumerate(selection):
             label = data.get_label()
             theme = self.plot_themes[i % 12]
-            real, imag = data.get_nyquist_data(masked=None)
+            Z = data.get_impedances(masked=None)
             self.nyquist_plot.plot(
-                real=real,
-                imaginary=imag,
+                impedances=Z,
                 label=label,
                 line=False,
                 theme=theme,
             )
-            freq, mag, phase = data.get_bode_data(masked=None)
+            freq = data.get_frequencies(masked=None)
             self.magnitude_plot.plot(
-                frequency=freq,
-                magnitude=mag,
+                frequencies=freq,
+                impedances=Z,
                 label=label,
                 line=False,
                 theme=theme,
             )
             self.phase_plot.plot(
-                frequency=freq,
-                phase=phase,
+                frequencies=freq,
+                impedances=Z,
                 label=label,
                 line=False,
                 theme=theme,
             )
+
         self.final_data_series = -1
         if len(selection) > 1:
             try:
@@ -384,31 +421,31 @@ class AverageDataSets:
                 assert self.final_data is not None
                 label = self.final_data.get_label()
                 theme = themes.nyquist.data
-                real, imag = self.final_data.get_nyquist_data(masked=None)
+                Z = self.final_data.get_impedances(masked=None)
                 self.final_data_series = self.nyquist_plot.plot(
-                    real=real,
-                    imaginary=imag,
+                    impedances=Z,
                     label=label,
                     line=True,
                     theme=theme,
                 )
-                freq, mag, phase = self.final_data.get_bode_data(masked=None)
+                freq = self.final_data.get_frequencies(masked=None)
                 self.magnitude_plot.plot(
-                    frequency=freq,
-                    magnitude=mag,
+                    frequencies=freq,
+                    impedances=Z,
                     label=label,
                     line=True,
                     theme=theme,
                 )
                 self.phase_plot.plot(
-                    frequency=freq,
-                    phase=phase,
+                    frequencies=freq,
+                    impedances=Z,
                     label=label,
                     line=True,
                     theme=theme,
                 )
             except AssertionError:
                 self.final_data = None
+
         if from_empty:
             self.nyquist_plot.queue_limits_adjustment()
             self.magnitude_plot.queue_limits_adjustment()
@@ -420,11 +457,13 @@ class AverageDataSets:
             self.final_data_series
         ):
             return
+
         # TODO: Apply a theme that attracts attention when no label is provided?
         if label == "":
             pass
         else:
             pass
+
         dpg.set_item_label(self.final_data_series, label)
 
     def filter_data_sets(self, fltr: str):
@@ -432,22 +471,27 @@ class AverageDataSets:
 
     def select_all(self, flag: bool):
         data_sets: Dict[DataSet, int] = {}
+
         fltr: str = dpg.get_value(self.filter_input)
         i: int
         row: int
         for i, row in enumerate(dpg.get_item_children(self.data_set_table, slot=1)):
             if not is_filtered_item_visible(row, fltr):
                 continue
-            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+
+            checkbox: Tag = dpg.get_item_children(row, slot=1)[0]
             if not dpg.is_item_visible(checkbox):
                 continue
+
             if flag is True:
                 data_sets[self.data_sets[i]] = checkbox
             else:
                 dpg.set_value(checkbox, False)
+
         if flag is False:
             self.update_preview([])
             return
+
         frequencies: Optional[ndarray] = None
         data: DataSet
         for data, checkbox in data_sets.items():
@@ -461,12 +505,13 @@ class AverageDataSets:
                 rtol=1e-3,
             ):
                 dpg.set_value(checkbox, True)
+
         self.update_preview([])
 
     def focus_filter(self):
         dpg.focus_item(self.filter_input)
 
     def cycle_plot_tab(self, step: int):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + step
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])

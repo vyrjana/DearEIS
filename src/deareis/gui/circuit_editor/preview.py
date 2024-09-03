@@ -27,11 +27,12 @@ from deareis.gui.circuit_editor.parser import (
     Node,
     Parser,
 )
+from deareis.typing.helpers import Tag
 
 
 class CircuitPreview:
     def __init__(self, width: int = -1, height: int = -1):
-        self.node_editor: int = dpg.generate_uuid()
+        self.node_editor: Tag = dpg.generate_uuid()
         dpg.add_node_editor(
             width=width,
             height=height,

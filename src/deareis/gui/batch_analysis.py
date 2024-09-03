@@ -40,6 +40,8 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
+
 
 
 @dataclass
@@ -142,7 +144,8 @@ class BatchAnalysis:
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(width=500, height=400)
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Batch analysis",
             modal=True,
@@ -154,7 +157,7 @@ class BatchAnalysis:
             no_resize=True,
         ):
             with dpg.group(horizontal=True):
-                self.filter_input: int = dpg.generate_uuid()
+                self.filter_input: Tag = dpg.generate_uuid()
                 dpg.add_input_text(
                     hint="Filter...",
                     width=-80,
@@ -162,7 +165,8 @@ class BatchAnalysis:
                     tag=self.filter_input,
                 )
                 attach_tooltip(tooltips.batch_analysis.filter)
-                self.select_unselect_button: int = dpg.generate_uuid()
+
+                self.select_unselect_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Select",
                     width=-1,
@@ -170,7 +174,8 @@ class BatchAnalysis:
                     tag=self.select_unselect_button,
                 )
                 attach_tooltip(tooltips.batch_analysis.select)
-            self.table: int = dpg.generate_uuid()
+
+            self.table: Tag= dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -186,11 +191,13 @@ class BatchAnalysis:
                     width_fixed=True,
                 )
                 attach_tooltip(tooltips.batch_analysis.checkbox)
+
                 dpg.add_table_column(
                     label="Label",
                     width_fixed=False,
                 )
-            self.accept_button: int = dpg.generate_uuid()
+
+            self.accept_button: Tag = dpg.generate_uuid()
             dpg.add_button(
                 label="Cancel",
                 callback=self.accept,
@@ -208,13 +215,14 @@ class BatchAnalysis:
                 filter_key=label.lower(),
                 parent=self.table,
             ) as row:
-                checkbox: int = dpg.add_checkbox(
+                checkbox: Tag = dpg.add_checkbox(
                     default_value=False,
                     user_data=data,
                     callback=lambda s, a, u: self.toggle(),
                 )
                 dpg.add_text(label)
                 attach_tooltip(label)
+
                 self.entries.append(
                     Entry(
                         data=data,
@@ -229,19 +237,24 @@ class BatchAnalysis:
         for entry in self.entries:
             if filter_string != "" and not entry.is_visible(filter_string):
                 continue
+
             selection[entry] = entry.is_ticked()
+
         if not isinstance(flag, bool):
             flag = not all(map(lambda _: _ is True, selection.values()))
+
         for entry in selection:
             dpg.set_value(entry.checkbox, flag)
+
         self.toggle()
 
     def toggle(self, index: int = -1):
         if index >= 0:
             # This is primarily for use in the GUI tests.
-            row: int = dpg.get_item_children(self.table, slot=1)[index]
-            checkbox: int = dpg.get_item_children(row, slot=1)[0]
+            row: Tag = dpg.get_item_children(self.table, slot=1)[index]
+            checkbox: Tag = dpg.get_item_children(row, slot=1)[0]
             dpg.set_value(checkbox, not dpg.get_value(checkbox))
+
         num_data_sets: int = len(self.get_selection())
         dpg.set_item_label(
             self.accept_button,
@@ -265,6 +278,7 @@ class BatchAnalysis:
         for entry in self.entries:
             if entry.is_ticked():
                 selection.append(entry)
+
         return selection
 
     def filter_possible_series(self, filter_string: str):
@@ -283,6 +297,7 @@ class BatchAnalysis:
         if not selection:
             self.close()
             return
+
         self.close()
         dpg.split_frame(delay=60)
         self.callback([_.data for _ in selection])
@@ -290,4 +305,5 @@ class BatchAnalysis:
     def focus_filter_input(self):
         if dpg.is_item_active(self.filter_input):
             return
+
         dpg.focus_item(self.filter_input)

@@ -43,6 +43,7 @@ from pyimpspec import (
 )
 from deareis.enums import (
     ZHITInterpolation,
+    ZHITRepresentation,
     ZHITSmoothing,
     ZHITWindow,
     value_to_zhit_interpolation,
@@ -55,7 +56,14 @@ from deareis.enums import (
 from deareis.utility import format_timestamp
 from deareis.data import DataSet
 
-VERSION: int = 1
+VERSION: int = 2
+
+
+def _parse_settings_v2(dictionary: dict) -> dict:
+    if "representation" not in dictionary:
+        dictionary["representation"] = ZHITRepresentation.IMPEDANCE
+
+    return dictionary
 
 
 def _parse_settings_v1(dictionary: dict) -> dict:
@@ -74,7 +82,7 @@ class ZHITSettings:
 
     num_points: int
         The number of points to consider when smoothing a point.
-        
+
     polynomial_order: int
         The order of the polynomial to use in the Savitzky-Golay algorithm.
 
@@ -92,6 +100,9 @@ class ZHITSettings:
 
     window_width: float
         The width of the window function on the logarithmic frequency scale (e.g., 2.0 means 1 decade on each side of the window center).
+
+    representation: ZHITRepresentation
+        Which immittance representation to operate on.
     """
 
     smoothing: ZHITSmoothing
@@ -102,6 +113,7 @@ class ZHITSettings:
     window: ZHITWindow
     window_center: float
     window_width: float
+    representation: ZHITRepresentation
 
     def __repr__(self) -> str:
         return f"ZHITSettings ({hex(id(self))})"
@@ -122,11 +134,13 @@ class ZHITSettings:
         """
         assert type(dictionary) is dict
         assert "version" in dictionary
+
         version: int = dictionary["version"]
         del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_settings_v1,
+            2: _parse_settings_v2,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         v: int
@@ -135,6 +149,7 @@ class ZHITSettings:
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         assert "smoothing" in dictionary
         assert "num_points" in dictionary
         assert "polynomial_order" in dictionary
@@ -143,9 +158,13 @@ class ZHITSettings:
         assert "window" in dictionary
         assert "window_center" in dictionary
         assert "window_width" in dictionary
+        assert "representation" in dictionary
+
         dictionary["smoothing"] = ZHITSmoothing(dictionary["smoothing"])
         dictionary["interpolation"] = ZHITInterpolation(dictionary["interpolation"])
         dictionary["window"] = ZHITWindow(dictionary["window"])
+        dictionary["representation"] = ZHITRepresentation(dictionary["representation"])
+
         return Class(**dictionary)
 
     def to_dict(self) -> dict:
@@ -166,7 +185,12 @@ class ZHITSettings:
             "window": self.window,
             "window_center": self.window_center,
             "window_width": self.window_width,
+            "representation": self.representation,
         }
+
+
+def _parse_result_v2(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_result_v1(dictionary: dict) -> dict:
@@ -255,11 +279,13 @@ class ZHITResult:
         assert isinstance(dictionary, dict), dictionary
         assert data is None or isinstance(data, DataSet), data
         assert "version" in dictionary
+
         version: int = dictionary["version"]
         del dictionary["version"]
         assert version <= VERSION, f"{version=} > {VERSION=}"
         parsers: Dict[int, Callable] = {
             1: _parse_result_v1,
+            2: _parse_result_v2,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
         v: int
@@ -268,6 +294,7 @@ class ZHITResult:
             if v < version:
                 continue
             dictionary = p(dictionary)
+
         assert "uuid" in dictionary
         assert "timestamp" in dictionary
         assert "frequencies" in dictionary
@@ -295,10 +322,20 @@ class ZHITResult:
         )
         del dictionary["real_impedances"]
         del dictionary["imaginary_impedances"]
+
         mask: Dict[str, bool] = dictionary["mask"]
-        dictionary["mask"] = {
-            i: mask.get(str(i), False) for i in range(0, len(dictionary["frequencies"]))
-        }
+        if data is not None:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(data.get_frequencies(masked=None)))
+            }
+        else:
+            mask = {
+                i: mask.get(str(i), False)
+                for i in range(0, len(dictionary["frequencies"]))
+            }
+        dictionary["mask"] = mask
+
         dictionary["residuals"] = array(
             list(
                 map(
@@ -312,23 +349,33 @@ class ZHITResult:
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
-        if isnan(dictionary["pseudo_chisqr"]):
+
+        if data is not None and isnan(dictionary["pseudo_chisqr"]):
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
                 Z_exp=data.get_impedances(),
                 Z_fit=dictionary["impedances"],
             )
+
         dictionary["settings"] = ZHITSettings.from_dict(dictionary["settings"])
+
         return Class(**dictionary)
 
-    def to_dict(self) -> dict:
+    def to_dict(self, session: bool = True) -> dict:
         """
         Return a dictionary that can be used to recreate an instance.
+
+        Parameters
+        ----------
+        session: bool, optional
+            If False, then a minimal dictionary is generated to reduce file size.
 
         Returns
         -------
         dict
         """
-        return {
+        assert type(session) is bool, session
+
+        dictionary: dict = {
             "version": VERSION,
             "uuid": self.uuid,
             "timestamp": self.timestamp,
@@ -337,13 +384,21 @@ class ZHITResult:
             "imaginary_impedances": list(self.impedances.imag),
             "real_residuals": list(self.residuals.real),
             "imaginary_residuals": list(self.residuals.imag),
-            "mask": {k: True for k, v in self.mask.items() if v is True},
+            "mask": self.mask.copy(),
             "pseudo_chisqr": self.pseudo_chisqr,
             "smoothing": self.smoothing,
             "interpolation": self.interpolation,
             "window": self.window,
             "settings": self.settings.to_dict(),
         }
+
+        if not session:
+            # This helps to reduce the file sizes of projects.
+            dictionary["mask"] = {
+                k: v for k, v in dictionary["mask"].items() if v is True
+            }
+
+        return dictionary
 
     def to_statistics_dataframe(self) -> DataFrame:
         """
@@ -369,6 +424,7 @@ class ZHITResult:
                 self.window,
             ),
         }
+
         return DataFrame.from_dict(
             {
                 "Label": list(statistics.keys()),
@@ -378,6 +434,7 @@ class ZHITResult:
 
     def get_label(self) -> str:
         timestamp: str = format_timestamp(self.timestamp)
+
         return f"Z-HIT ({timestamp})"
 
     def get_frequencies(self) -> Frequencies:

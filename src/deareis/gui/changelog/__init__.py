@@ -39,6 +39,7 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 def format_changelog(changelog: str, width: int) -> str:
@@ -130,12 +131,13 @@ class ChangelogWindow:
         )
 
     def create_window(self, versions: List[List[str]]):
-        self.window: int = dpg.generate_uuid()
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions(640, 540)
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Changelog",
             modal=True,

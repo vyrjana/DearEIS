@@ -25,6 +25,7 @@ from typing import (
 )
 from numpy import (
     array,
+    complex128,
     ndarray,
 )
 import dearpygui.dearpygui as dpg
@@ -49,10 +50,17 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
 
 
 class CopyMask:
-    def __init__(self, data: DataSet, data_sets: List[DataSet], callback: Callable):
+    def __init__(
+        self,
+        data: DataSet,
+        data_sets: List[DataSet],
+        callback: Callable,
+        admittance: bool,
+    ):
         assert type(data) is DataSet, data
         assert type(data_sets) is list and all(
             map(lambda _: type(_) is DataSet, data_sets)
@@ -64,15 +72,17 @@ class CopyMask:
         ]
         self.labels: List[str] = list(map(lambda _: _.get_label(), self.data_sets))
         self.callback: Callable = callback
-        self.create_window()
+        self.create_window(admittance=admittance)
         self.register_keybindings()
         self.select_source(self.labels[0])
         self.nyquist_plot.queue_limits_adjustment()
         self.magnitude_plot.queue_limits_adjustment()
         self.phase_plot.queue_limits_adjustment()
+        self.toggle_plot_admittance(admittance)
 
     def register_keybindings(self):
         callbacks: Dict[Keybinding, Callable] = {}
+
         # Cancel
         kb: Keybinding = Keybinding(
             key=dpg.mvKey_Escape,
@@ -82,6 +92,7 @@ class CopyMask:
             action=Action.CANCEL,
         )
         callbacks[kb] = self.close
+
         # Accept
         for kb in STATE.config.keybindings:
             if kb.action is Action.PERFORM_ACTION:
@@ -95,6 +106,7 @@ class CopyMask:
                 action=Action.PERFORM_ACTION,
             )
         callbacks[kb] = self.accept
+
         # Previous source
         for kb in STATE.config.keybindings:
             if kb.action is Action.PREVIOUS_PRIMARY_RESULT:
@@ -108,6 +120,7 @@ class CopyMask:
                 action=Action.PREVIOUS_PRIMARY_RESULT,
             )
         callbacks[kb] = lambda: self.cycle_source(-1)
+
         # Next source
         for kb in STATE.config.keybindings:
             if kb.action is Action.NEXT_PRIMARY_RESULT:
@@ -121,6 +134,7 @@ class CopyMask:
                 action=Action.NEXT_PRIMARY_RESULT,
             )
         callbacks[kb] = lambda: self.cycle_source(1)
+
         # Previous plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.PREVIOUS_PLOT_TAB:
@@ -134,6 +148,7 @@ class CopyMask:
                 action=Action.PREVIOUS_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=-1)
+
         # Next plot tab
         for kb in STATE.config.keybindings:
             if kb.action is Action.NEXT_PLOT_TAB:
@@ -147,18 +162,20 @@ class CopyMask:
                 action=Action.NEXT_PLOT_TAB,
             )
         callbacks[kb] = lambda: self.cycle_plot_tab(step=1)
+
         # Create the handler
         self.keybinding_handler: TemporaryKeybindingHandler = (
             TemporaryKeybindingHandler(callbacks=callbacks)
         )
 
-    def create_window(self):
+    def create_window(self, admittance: bool):
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions()
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Copy mask",
             modal=True,
@@ -174,7 +191,8 @@ class CopyMask:
             with dpg.group(horizontal=True):
                 dpg.add_text("Source")
                 attach_tooltip(tooltips.data_sets.copy_mask_source)
-                self.combo: int = dpg.generate_uuid()
+
+                self.combo: Tag = dpg.generate_uuid()
                 dpg.add_combo(
                     items=self.labels,
                     default_value=self.labels[0],
@@ -182,11 +200,28 @@ class CopyMask:
                     tag=self.combo,
                     callback=lambda s, a, u: self.select_source(a),
                 )
+
             self.create_plots()
-            dpg.add_button(
-                label="Accept".ljust(12),
-                callback=self.accept,
-            )
+            
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Accept".ljust(12),
+                    callback=self.accept,
+                )
+
+                self.admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    default_value=admittance,
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
+
+    def toggle_plot_admittance(self, admittance: bool):
+        self.nyquist_plot.set_admittance(admittance)
+        self.magnitude_plot.set_admittance(admittance)
+        self.phase_plot.set_admittance(admittance)
 
     def create_plots(self):
         settings: List[dict] = [
@@ -206,11 +241,12 @@ class CopyMask:
             },
         ]
         with dpg.child_window(height=-24, border=False):
-            self.plot_tab_bar: int = dpg.generate_uuid()
+            self.plot_tab_bar: Tag = dpg.generate_uuid()
             with dpg.tab_bar(tag=self.plot_tab_bar):
                 self.create_nyquist_plot(settings)
                 self.create_magnitude_plot(settings)
                 self.create_phase_plot(settings)
+
             pad_tab_labels(self.plot_tab_bar)
 
     def create_nyquist_plot(self, settings: List[dict]):
@@ -218,8 +254,7 @@ class CopyMask:
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-1)
             for kwargs in settings:
                 self.nyquist_plot.plot(
-                    real=array([]),
-                    imaginary=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -228,8 +263,8 @@ class CopyMask:
             self.magnitude_plot: BodeMagnitude = BodeMagnitude(width=-1, height=-1)
             for kwargs in settings:
                 self.magnitude_plot.plot(
-                    frequency=array([]),
-                    magnitude=array([]),
+                    frequencies=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -238,8 +273,8 @@ class CopyMask:
             self.phase_plot: BodePhase = BodePhase(width=-1, height=-1)
             for kwargs in settings:
                 self.phase_plot.plot(
-                    frequency=array([]),
-                    phase=array([]),
+                    frequencies=array([]),
+                    impedances=array([], dtype=complex128),
                     **kwargs,
                 )
 
@@ -262,48 +297,70 @@ class CopyMask:
         self.update_phase_plot(self.preview_data)
 
     def update_nyquist_plot(self, data: DataSet):
-        data: List[Tuple[ndarray, ndarray]] = [
-            data.get_nyquist_data(masked=True),
-            data.get_nyquist_data(masked=False),
-            data.get_nyquist_data(masked=False),
+        data: List[ndarray] = [
+            data.get_impedances(masked=True),
+            data.get_impedances(masked=False),
+            data.get_impedances(masked=False),
         ]
-        for i, (real, imag) in enumerate(data):
+
+        i: int
+        Z: ndarray
+        for i, Z in enumerate(data):
             self.nyquist_plot.update(
                 index=i,
-                real=real,
-                imaginary=imag,
+                impedances=Z,
             )
 
     def update_magnitude_plot(self, data: DataSet):
-        data: List[Tuple[ndarray, ndarray, ndarray]] = [
-            data.get_bode_data(masked=True),
-            data.get_bode_data(masked=False),
-            data.get_bode_data(masked=False),
+        data: List[Tuple[ndarray, ndarray]] = [
+            (
+                data.get_frequencies(masked=True),
+                data.get_impedances(masked=True),
+            ),
+            (
+                data.get_frequencies(masked=False),
+                data.get_impedances(masked=False),
+            ),
+            (
+                data.get_frequencies(masked=False),
+                data.get_impedances(masked=False),
+            ),
         ]
+
         i: int
         freq: ndarray
-        mag: ndarray
-        for i, (freq, mag, _) in enumerate(data):
+        Z: ndarray
+        for i, (freq, Z) in enumerate(data):
             self.magnitude_plot.update(
                 index=i,
-                frequency=freq,
-                magnitude=mag,
+                frequencies=freq,
+                impedances=Z,
             )
 
     def update_phase_plot(self, data: DataSet):
-        data: List[Tuple[ndarray, ndarray, ndarray]] = [
-            data.get_bode_data(masked=True),
-            data.get_bode_data(masked=False),
-            data.get_bode_data(masked=False),
+        data: List[Tuple[ndarray, ndarray]] = [
+            (
+                data.get_frequencies(masked=True),
+                data.get_impedances(masked=True),
+            ),
+            (
+                data.get_frequencies(masked=False),
+                data.get_impedances(masked=False),
+            ),
+            (
+                data.get_frequencies(masked=False),
+                data.get_impedances(masked=False),
+            ),
         ]
+
         i: int
         freq: ndarray
-        phase: ndarray
-        for i, (freq, _, phase) in enumerate(data):
+        Z: ndarray
+        for i, (freq, Z) in enumerate(data):
             self.phase_plot.update(
                 index=i,
-                frequency=freq,
-                phase=phase,
+                frequencies=freq,
+                impedances=Z,
             )
 
     def close(self):
@@ -319,6 +376,6 @@ class CopyMask:
         self.close()
 
     def cycle_plot_tab(self, step: int):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + step
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])

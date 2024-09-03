@@ -34,13 +34,14 @@ The 'Auto' setting performs parallel fits with each of the fitting methods and r
         "weight": f"""
 The 'Auto' setting performs parallel fits with each of the weight functions listed above and returns the results with the smallest chi-squared value.
 
-Reference: {boukamp1995}
+References:
+- Boukamp (1995, {boukamp1995})
     """.strip(),
         "nfev": """
 The maximum number of function evaluations to perform. This setting can be used to limit the amount of time spent performing a fit. If this setting is set to zero, then no limit is applied.
     """.strip(),
-        "adjust_parameters": """
-Open a window for adjusting the initial values of parameters with a real-time preview.
+        "timeout": """
+The amount of time in seconds that a single fit is allowed to take before being timed out. If this values is less than one, then no time limit is imposed.
     """.strip(),
         "perform": """
 Sometimes a circuit, which ostensibly should be capable of providing a good fit, does not fit well. If the starting values of the parameters have been left at their default values, then rough adjustments may be all that is required. For example, if a circuit contains two parallel RC subcircuits in series (i.e. the CDC contains '(RC)(RC)'), then setting one of the capacitances to be one order of magnitude greater than the other may be sufficient.
@@ -95,6 +96,9 @@ Some values may be highlighted to indicate a possible issue. For example, if the
     """.strip(),
         "delete": """
 Delete the current fit result.
+    """.strip(),
+        "apply_fitted_as_initial": """
+Copy the fitted circuit so that its values can be used as initial values.
     """.strip(),
     }
 )

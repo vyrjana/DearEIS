@@ -32,6 +32,7 @@ from deareis.utility import calculate_window_position_dimensions
 import deareis.themes as themes
 from deareis.tooltips import attach_tooltip
 import deareis.tooltips as tooltips
+from deareis.typing.helpers import Tag
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,7 @@ class BasePalette:
         self.options_history: List[Option] = []
 
     def create_window(self, title: str, tooltip: str):
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label=title,
             no_close=True,
@@ -57,14 +58,15 @@ class BasePalette:
             show=False,
             tag=self.window,
         ):
-            self.filter_input: int = dpg.generate_uuid()
+            self.filter_input: Tag = dpg.generate_uuid()
             dpg.add_input_text(
                 tag=self.filter_input,
                 width=-1,
                 callback=lambda s, a, u: self.filter_options(a.strip().lower()),
             )
             attach_tooltip(tooltip + tooltips.general.palette)
-            self.options_table: int = dpg.generate_uuid()
+
+            self.options_table: Tag = dpg.generate_uuid()
             self.num_rows: int = 9
             with dpg.table(
                 borders_outerV=True,
@@ -85,7 +87,7 @@ class BasePalette:
                         )
 
     def register_keybindings(self):
-        self.key_handler: int = dpg.generate_uuid()
+        self.key_handler: Tag = dpg.generate_uuid()
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(
                 key=dpg.mvKey_Escape,

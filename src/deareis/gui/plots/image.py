@@ -24,6 +24,7 @@ from typing import (
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
+from deareis.typing.helpers import Tag
 
 
 class Image(Plot):
@@ -41,14 +42,14 @@ class Image(Plot):
             height=height,
             tag=self._plot,
         ):
-            self._x_axis: int = dpg.add_plot_axis(
+            self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="",
                 no_tick_labels=True,
                 no_tick_marks=True,
                 no_gridlines=True,
             )
-            self._y_axis: int = dpg.add_plot_axis(
+            self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="",
                 no_tick_labels=True,
@@ -70,6 +71,7 @@ class Image(Plot):
         texture: int = kwargs["texture"]
         bounds_min: Tuple[int, int] = kwargs["bounds_min"]
         bounds_max: Tuple[int, int] = kwargs["bounds_max"]
+
         assert type(texture) is int and texture > 0, texture
         assert type(bounds_min) is tuple and all(
             map(lambda _: type(_) is int, bounds_min)
@@ -77,13 +79,15 @@ class Image(Plot):
         assert type(bounds_max) is tuple and all(
             map(lambda _: type(_) is int, bounds_max)
         ), bounds_max
+
         self._series.append(kwargs)
-        tag: int = dpg.add_image_series(
+        tag: Tag = dpg.add_image_series(
             texture,
             bounds_min,
             bounds_max,
             parent=self._y_axis,
         )
+
         return tag
 
     def adjust_limits(self):

@@ -27,6 +27,8 @@ from typing import (
 )
 from numpy import (
     array,
+    complex128,
+    inf,
     ndarray,
 )
 import pyimpspec
@@ -76,8 +78,136 @@ from deareis.data import (
     SimulationResult,
     SimulationSettings,
 )
-from deareis.gui.fitting.parameter_adjustment import ParameterAdjustment
+from deareis.gui.widgets.combo import Combo
+from deareis.typing.helpers import Tag
+from deareis.enums import Action
+from deareis.keybindings import (
+    Keybinding,
+    TemporaryKeybindingHandler,
+)
 
+
+STATE = None
+_DEFAULT_NOISE: float = 0.0
+
+
+class NoiseAdditionWindow:
+    def __init__(
+        self,
+        **kwargs,
+    ):
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions(
+            width=250,
+            height=60,
+        )
+
+        self.window: Tag = dpg.generate_uuid()
+        with dpg.window(
+            label="Added noise",
+            modal=True,
+            pos=(
+                x,
+                y,
+            ),
+            width=w,
+            height=h,
+            no_resize=True,
+            no_move=True,
+            on_close=self.close,
+            tag=self.window,
+        ):
+            with dpg.group(horizontal=True):
+                dpg.add_text("Noise SD")
+                attach_tooltip(tooltips.simulation.noise_pct)
+                
+                self.noise_input: Tag = dpg.generate_uuid()
+                dpg.add_input_float(
+                    label="% x |Z|",
+                    default_value=_DEFAULT_NOISE,
+                    min_value=0.0,
+                    max_value=100.0,
+                    min_clamped=True,
+                    max_clamped=True,
+                    on_enter=True,
+                    format="%.3g",
+                    step=0.0,
+                    width=-56,
+                    tag=self.noise_input,
+                )
+
+            dpg.add_spacer(height=16)
+
+            self.accept_button: Tag = dpg.generate_uuid()
+            dpg.add_button(
+                label="Proceed",
+                width=-1,
+                callback=lambda s, a, u: self.accept(),
+                user_data=kwargs,
+                tag=self.accept_button,
+            )
+
+        self.register_keybindings()
+        dpg.focus_item(self.noise_input)
+
+    def register_keybindings(self):
+        callbacks: Dict[Keybinding, Callable] = {}
+
+        # Cancel
+        kb: Keybinding = Keybinding(
+            key=dpg.mvKey_Escape,
+            mod_alt=False,
+            mod_ctrl=False,
+            mod_shift=False,
+            action=Action.CANCEL,
+        )
+        callbacks[kb] = self.close
+
+        # Accept
+        for kb in STATE.config.keybindings:
+            if kb.action is Action.PERFORM_ACTION:
+                break
+        else:
+            kb = Keybinding(
+                key=dpg.mvKey_Return,
+                mod_alt=True,
+                mod_ctrl=False,
+                mod_shift=False,
+                action=Action.PERFORM_ACTION,
+            )
+        callbacks[kb] = self.accept
+
+
+        # Create the handler
+        self.keybinding_handler: TemporaryKeybindingHandler = (
+            TemporaryKeybindingHandler(callbacks=callbacks)
+        )
+
+    def close(self):
+        dpg.hide_item(self.window)
+        dpg.delete_item(self.window)
+        self.keybinding_handler.delete()
+        signals.emit(Signal.UNBLOCK_KEYBINDINGS)
+
+    def accept(self):
+        global _DEFAULT_NOISE
+
+        noise_pct: float = dpg.get_value(self.noise_input)
+        _DEFAULT_NOISE = max((0.0, noise_pct))
+
+        kwargs = dpg.get_item_user_data(self.accept_button)
+        if kwargs is None:
+            return
+
+        kwargs["noise_pct"] = noise_pct
+        self.close()
+        signals.emit(
+            Signal.LOAD_SIMULATION_AS_DATA_SET,
+            **kwargs,
+        )
 
 class SettingsMenu:
     def __init__(
@@ -85,34 +215,41 @@ class SettingsMenu:
         default_settings: SimulationSettings,
         label_pad: int,
         circuit_editor: Optional[CircuitEditor] = None,
+        editor_callback: Optional[Callable] = None,
     ):
         self.circuit_editor: Optional[CircuitEditor] = circuit_editor
         with dpg.group(horizontal=True):
             dpg.add_text("Circuit".rjust(label_pad))
             attach_tooltip(tooltips.simulation.cdc)
-            self.cdc_input: int = dpg.generate_uuid()
+
+            self.cdc_input: Tag = dpg.generate_uuid()
             dpg.add_input_text(
                 width=-50 if circuit_editor is not None else -1,
                 tag=self.cdc_input,
                 on_enter=True,
                 callback=lambda s, a, u: self.parse_cdc(a, s),
             )
-            self.cdc_tooltip: int = dpg.generate_uuid()
+            self.cdc_tooltip: Tag = dpg.generate_uuid()
             attach_tooltip("", tag=self.cdc_tooltip, parent=self.cdc_input)
+            
             dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
+
             if circuit_editor is not None:
-                self.editor_button: int = dpg.generate_uuid()
+                self.editor_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Edit",
-                    callback=self.show_circuit_editor,
+                    callback=editor_callback,
                     width=-1,
                     tag=self.editor_button,
+                    user_data={},
                 )
                 attach_tooltip(tooltips.general.open_circuit_editor)
+
         with dpg.group(horizontal=True):
             dpg.add_text("Maximum frequency".rjust(label_pad))
             attach_tooltip(tooltips.simulation.max_freq)
-            self.max_freq_input: int = dpg.generate_uuid()
+            
+            self.max_freq_input: Tag = dpg.generate_uuid()
             dpg.add_input_float(
                 label="Hz",
                 default_value=1e5,
@@ -126,10 +263,12 @@ class SettingsMenu:
                 width=-18,
                 tag=self.max_freq_input,
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("Minimum frequency".rjust(label_pad))
             attach_tooltip(tooltips.simulation.min_freq)
-            self.min_freq_input: int = dpg.generate_uuid()
+            
+            self.min_freq_input: Tag = dpg.generate_uuid()
             dpg.add_input_float(
                 label="Hz",
                 default_value=1e-2,
@@ -143,10 +282,12 @@ class SettingsMenu:
                 width=-18,
                 tag=self.min_freq_input,
             )
+
         with dpg.group(horizontal=True):
             dpg.add_text("Num. points per decade".rjust(label_pad))
             attach_tooltip(tooltips.simulation.per_decade)
-            self.per_decade_input: int = dpg.generate_uuid()
+            
+            self.per_decade_input: Tag = dpg.generate_uuid()
             dpg.add_input_int(
                 default_value=10,
                 min_value=1,
@@ -156,6 +297,7 @@ class SettingsMenu:
                 tag=self.per_decade_input,
                 width=-1,
             )
+
         self.set_settings(default_settings)
 
     def get_settings(self) -> SimulationSettings:
@@ -163,6 +305,7 @@ class SettingsMenu:
         circuit: Optional[Circuit] = dpg.get_item_user_data(self.cdc_input)
         if circuit is None or cdc != circuit.to_string():
             circuit = self.parse_cdc(cdc, self.cdc_input)
+
         min_f: float = dpg.get_value(self.min_freq_input)
         max_f: float = dpg.get_value(self.max_freq_input)
         if min_f > max_f:
@@ -170,6 +313,7 @@ class SettingsMenu:
             min_f = dpg.get_value(self.max_freq_input)
             dpg.set_value(self.min_freq_input, min_f)
             dpg.set_value(self.max_freq_input, max_f)
+
         return SimulationSettings(
             cdc=circuit.serialize() if circuit is not None else "",
             min_frequency=min_f,
@@ -188,6 +332,7 @@ class SettingsMenu:
         assert type(cdc) is str, cdc
         assert type(sender) is int, sender
         circuit: Optional[Circuit]
+
         msg: str
         try:
             circuit, msg = process_cdc(cdc)
@@ -197,46 +342,21 @@ class SettingsMenu:
                 traceback=format_exc(),
             )
             return None
+
         if circuit is None:
             dpg.bind_item_theme(self.cdc_input, themes.cdc.invalid)
             update_tooltip(self.cdc_tooltip, msg)
             dpg.show_item(dpg.get_item_parent(self.cdc_tooltip))
             dpg.set_item_user_data(self.cdc_input, None)
             return None
+
         dpg.bind_item_theme(self.cdc_input, themes.cdc.valid)
         dpg.hide_item(dpg.get_item_parent(self.cdc_tooltip))
         dpg.set_item_user_data(self.cdc_input, circuit)
         if sender != self.cdc_input:
             dpg.set_value(self.cdc_input, circuit.to_string())
-        return circuit
 
-    def show_circuit_editor(self):
-        if self.circuit_editor is None:
-            return
-        x: int
-        y: int
-        w: int
-        h: int
-        x, y, w, h = calculate_window_position_dimensions()
-        dpg.configure_item(
-            self.circuit_editor.window,
-            pos=(
-                x,
-                y,
-            ),
-            width=w,
-            height=h,
-        )
-        circuit: Optional[Circuit] = self.parse_cdc(
-            self.get_settings().cdc,
-            sender=self.cdc_input,
-        )
-        signals.emit(
-            Signal.BLOCK_KEYBINDINGS,
-            window=self.circuit_editor.window,
-            window_object=self.circuit_editor,
-        )
-        self.circuit_editor.show(circuit)
+        return circuit
 
     def has_active_input(self) -> bool:
         return (
@@ -249,9 +369,9 @@ class SettingsMenu:
 
 class ParametersTable:
     def __init__(self):
-        self._header: int = dpg.generate_uuid()
+        self._header: Tag = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Parameters", leaf=True, tag=self._header):
-            self._table: int = dpg.generate_uuid()
+            self._table: Tag = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -267,11 +387,13 @@ class ParametersTable:
                     width_fixed=True,
                 )
                 attach_tooltip(tooltips.simulation.element)
+
                 dpg.add_table_column(
                     label="Parameter",
                     width_fixed=True,
                 )
                 attach_tooltip(tooltips.simulation.parameter)
+
                 dpg.add_table_column(
                     label="Value",
                     width_fixed=True,
@@ -281,6 +403,7 @@ class ParametersTable:
     def clear(self, hide: bool):
         if hide:
             dpg.hide_item(self._header)
+
         dpg.delete_item(self._table, children_only=True, slot=1)
 
     def populate(self, simulation: SimulationResult):
@@ -295,32 +418,38 @@ class ParametersTable:
                 dpg.add_text("".ljust(column_pads[0]))
                 dpg.add_text("".ljust(column_pads[1]))
                 dpg.add_text("".ljust(column_pads[2]))
+
             return
+
         element_names: List[str] = []
         element_tooltips: List[str] = []
+
         parameter_labels: List[str] = []
         parameter_tooltips: List[str] = []
+
         values: List[str] = []
         value_tooltips: List[str] = []
+
         internal_identifiers: Dict[int, Element] = {
             v: k
             for k, v in simulation.circuit.generate_element_identifiers(
                 running=True
             ).items()
         }
-        external_identifiers: Dict[
-            Element, int
-        ] = simulation.circuit.generate_element_identifiers(running=False)
+        external_identifiers: Dict[Element, int] = (
+            simulation.circuit.generate_element_identifiers(running=False)
+        )
         parent_containers: Dict[Element, Container] = find_parent_containers(
             simulation.circuit
         )
+
         element_name: str
         element_tooltip: str
         parameter_label: str
         parameter_tooltip: str
         value: str
         value_tooltip: str
-        for (_, element) in sorted(internal_identifiers.items(), key=lambda _: _[0]):
+        for _, element in sorted(internal_identifiers.items(), key=lambda _: _[0]):
             element_name = simulation.circuit.get_element_name(
                 element,
                 identifiers=external_identifiers,
@@ -331,6 +460,7 @@ class ParametersTable:
                 if line.strip().startswith(":math:"):
                     break
                 lines.append(line)
+
             element_tooltip = "\n".join(lines).strip()
             if element in parent_containers:
                 parent_name: str = simulation.circuit.get_element_name(
@@ -344,10 +474,13 @@ class ParametersTable:
                 ):
                     if subcircuit is None:
                         continue
+
                     if element in subcircuit:
                         break
+
                 element_name = f"*{element_name}"
                 element_tooltip = f"*Nested inside {parent_name}'s {subcircuit_name} subcircuit\n\n{element_tooltip}"
+
             float_value: float
             for parameter_label, float_value in element.get_values().items():
                 element_names.append(element_name)
@@ -364,6 +497,7 @@ class ParametersTable:
                 value_tooltips.append(
                     f"{format_number(float_value, decimals=6).strip()} {unit}".strip()
                 )
+
         values = align_numbers(values)
         num_rows: int = 0
         for (
@@ -389,15 +523,16 @@ class ParametersTable:
                 dpg.add_text(value.ljust(column_pads[2]))
                 attach_tooltip(value_tooltip)
                 num_rows += 1
+
         dpg.set_item_height(self._table, 18 + 23 * max(1, num_rows))
 
 
 class SettingsTable:
     def __init__(self):
         label_pad: int = 23
-        self._header: int = dpg.generate_uuid()
+        self._header: Tag = dpg.generate_uuid()
         with dpg.collapsing_header(label=" Settings", leaf=True, tag=self._header):
-            self._table: int = dpg.generate_uuid()
+            self._table: Tag = dpg.generate_uuid()
             with dpg.table(
                 borders_outerV=True,
                 borders_outerH=True,
@@ -412,10 +547,12 @@ class SettingsTable:
                     label="Label".rjust(label_pad),
                     width_fixed=True,
                 )
+
                 dpg.add_table_column(
                     label="Value",
                     width_fixed=True,
                 )
+
                 label: str
                 for label in [
                     "Circuit",
@@ -425,12 +562,14 @@ class SettingsTable:
                 ]:
                     with dpg.table_row():
                         dpg.add_text(label.rjust(label_pad))
-                        tooltip_tag: int = dpg.generate_uuid()
+                        tooltip_tag: Tag = dpg.generate_uuid()
                         dpg.add_text("", user_data=tooltip_tag)
                         attach_tooltip("", tag=tooltip_tag)
+
             dpg.add_spacer(height=8)
+
             with dpg.group(horizontal=True):
-                self._apply_button: int = dpg.generate_uuid()
+                self._apply_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Apply settings",
                     callback=lambda s, a, u: signals.emit(
@@ -441,24 +580,31 @@ class SettingsTable:
                     width=154,
                 )
                 attach_tooltip(tooltips.general.apply_settings)
-                self._load_as_data_button: int = dpg.generate_uuid()
+
+                self._load_as_data_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Load as data set",
-                    callback=lambda s, a, u: signals.emit(
-                        Signal.LOAD_SIMULATION_AS_DATA_SET,
-                        **u,
-                    ),
+                    callback=lambda s, a, u: self.show_noise_addition_window(**u),
                     tag=self._load_as_data_button,
                     width=-1,
                 )
                 attach_tooltip(tooltips.simulation.load_as_data_set)
 
+    def show_noise_addition_window(self, **kwargs):
+        window: NoiseAdditionWindow = NoiseAdditionWindow(**kwargs)
+        signals.emit(
+            Signal.BLOCK_KEYBINDINGS,
+            window=window.window,
+            window_object=window,
+        )
+
     def clear(self, hide: bool):
         if hide:
             dpg.hide_item(self._header)
+
         row: int
         for row in dpg.get_item_children(self._table, slot=1):
-            tag: int = dpg.get_item_children(row, slot=1)[1]
+            tag: Tag = dpg.get_item_children(row, slot=1)[1]
             dpg.set_value(tag, "")
             dpg.hide_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
 
@@ -467,18 +613,22 @@ class SettingsTable:
         dpg.show_item(self._header)
         rows: List[int] = []
         cells: List[Tuple[int, int]] = []
+
         row: int
         for row in dpg.get_item_children(self._table, slot=1):
             rows.append(row)
             cells.append(dpg.get_item_children(row, slot=1))
+
         assert len(rows) == len(cells) == 4, (
             rows,
             cells,
         )
+
         circuit: Circuit = pyimpspec.parse_cdc(settings.cdc)
+
         tag: int
         value: str
-        for (row, tag, value) in [
+        for row, tag, value in [
             (
                 rows[0],
                 cells[0][1],
@@ -503,6 +653,7 @@ class SettingsTable:
             dpg.set_value(tag, value.split("\n")[0])
             update_tooltip(dpg.get_item_user_data(tag), value)
             dpg.show_item(dpg.get_item_parent(dpg.get_item_user_data(tag)))
+
         dpg.set_item_height(self._table, 18 + 23 * 4)
         dpg.set_item_user_data(
             self._apply_button,
@@ -518,7 +669,7 @@ class DataSetsCombo:
     def __init__(self, label: str, width: int, callback: Callable):
         self.labels: List[str] = []
         dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
+        self.tag: Tag = dpg.generate_uuid()
         dpg.add_combo(
             callback=callback,
             user_data={},
@@ -533,6 +684,7 @@ class DataSetsCombo:
         label: str = dpg.get_value(self.tag) or ""
         if labels and label not in labels:
             label = ""
+
         dpg.configure_item(
             self.tag,
             default_value=label,
@@ -558,26 +710,32 @@ class DataSetsCombo:
         lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.tag)
         if not lookup:
             return None
+
         labels: List[str] = list(lookup.keys())
         current_label: str = dpg.get_value(self.tag)
         if current_label not in labels:
             return lookup[labels[0]]
+
         index: int = labels.index(current_label) + 1
         if index == len(labels):
             return None
+
         return lookup[labels[index % len(labels)]]
 
     def get_previous(self) -> Optional[DataSet]:
         lookup: Dict[str, DataSet] = dpg.get_item_user_data(self.tag)
         if not lookup:
             return None
+
         labels: List[str] = list(lookup.keys())
         current_label: str = dpg.get_value(self.tag)
         if current_label not in labels:
             return lookup[labels[-1]]
+
         index: int = labels.index(current_label) - 1
         if index == -1:
             return None
+
         return lookup[labels[index % len(labels)]]
 
 
@@ -585,7 +743,7 @@ class ResultsCombo:
     def __init__(self, label: str, width: int, callback: Callable):
         self.labels: Dict[str, str] = {}
         dpg.add_text(label)
-        self.tag: int = dpg.generate_uuid()
+        self.tag: Tag = dpg.generate_uuid()
         dpg.add_combo(
             callback=callback,
             user_data={},
@@ -610,7 +768,9 @@ class ResultsCombo:
             new_key: str = f"{cdc.ljust(longest_cdc)} {timestamp}"
             self.labels[old_key] = new_key
             lookup[new_key] = simulation
+
         labels = list(lookup.keys())
+
         dpg.configure_item(
             self.tag,
             default_value=labels[0] if labels else "",
@@ -639,38 +799,46 @@ class ResultsCombo:
         lookup: Dict[str, SimulationResult] = dpg.get_item_user_data(self.tag)
         if not lookup:
             return None
+
         labels: List[str] = list(lookup.keys())
         index: int = labels.index(self.labels[dpg.get_value(self.tag)]) + 1
+
         return lookup[labels[index % len(labels)]]
 
     def get_previous(self) -> Optional[SimulationResult]:
         lookup: Dict[str, SimulationResult] = dpg.get_item_user_data(self.tag)
         if not lookup:
             return None
+
         labels: List[str] = list(lookup.keys())
         index: int = labels.index(self.labels[dpg.get_value(self.tag)]) - 1
+
         return lookup[labels[index % len(labels)]]
 
 
 class SimulationTab:
     def __init__(self, state):
+        global STATE
+
+        STATE = state
+
         self.state = state
         self.queued_update: Optional[Callable] = None
         self.create_tab(state)
         self.set_settings(self.state.config.default_simulation_settings)
 
     def create_tab(self, state):
-        self.tab: int = dpg.generate_uuid()
+        self.tab: Tag = dpg.generate_uuid()
         with dpg.tab(label="Simulation", tag=self.tab):
             self.sidebar_width: int = 350
-            settings_height: int = 150
+            settings_height: int = 128
             label_pad: int = 24
             with dpg.group(horizontal=True):
                 self.create_sidebar(state, label_pad, settings_height)
                 self.create_plots()
 
     def create_sidebar(self, state, label_pad: int, settings_height: int):
-        self.sidebar_window: int = dpg.generate_uuid()
+        self.sidebar_window: Tag = dpg.generate_uuid()
         with dpg.child_window(
             border=False,
             width=self.sidebar_width,
@@ -692,28 +860,19 @@ class SimulationTab:
                 callback=self.accept_circuit,
                 keybindings=state.config.keybindings,
             )
+
             self.settings_menu: SettingsMenu = SettingsMenu(
                 state.config.default_simulation_settings,
                 label_pad,
                 circuit_editor=self.circuit_editor,
+                editor_callback=self.show_circuit_editor,
             )
+
             with dpg.group(horizontal=True):
-                dpg.add_text(
-                    "?".rjust(label_pad),
-                )
-                attach_tooltip(tooltips.simulation.adjust_parameters)
-                self.parameter_adjustment_button: int = dpg.generate_uuid()
-                dpg.add_button(
-                    label="Adjust parameters",
-                    callback=self.show_parameter_adjustment,
-                    user_data=None,
-                    width=-1,
-                    tag=self.parameter_adjustment_button,
-                )
-            with dpg.group(horizontal=True):
-                self.visibility_item: int = dpg.generate_uuid()
+                self.visibility_item: Tag = dpg.generate_uuid()
                 dpg.add_text("".rjust(label_pad), tag=self.visibility_item)
-                self.perform_sim_button: int = dpg.generate_uuid()
+
+                self.perform_sim_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Perform",
                     callback=lambda s, a, u: signals.emit(
@@ -739,6 +898,7 @@ class SimulationTab:
                         data=u.get(a),
                     ),
                 )
+
             with dpg.group(horizontal=True):
                 self.results_combo: ResultsCombo = ResultsCombo(
                     label="Result".rjust(label_pad),
@@ -749,30 +909,31 @@ class SimulationTab:
                         simulation=u.get(a),
                     ),
                 )
-                self.delete_button: int = dpg.generate_uuid()
+
+                self.delete_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Delete",
                     callback=lambda s, a, u: signals.emit(
-                        Signal.DELETE_SIMULATION_RESULT, simulation=u
+                        Signal.DELETE_SIMULATION_RESULT,
+                        simulation=u,
                     ),
                     width=-1,
                     tag=self.delete_button,
                 )
                 attach_tooltip(tooltips.simulation.remove)
+
             with dpg.group(horizontal=True):
                 dpg.add_text("Output".rjust(label_pad))
-                # TODO: Split into combo class?
                 output_items: List[str] = [
                     _ for _ in label_to_fit_sim_output.keys() if "statistics" not in _
                 ]
-                self.output_combo: int = dpg.generate_uuid()
-                dpg.add_combo(
+                self.output_combo: Combo = Combo(
                     items=output_items,
-                    default_value=output_items[0],
-                    tag=self.output_combo,
+                    user_data=label_to_fit_sim_output,
                     width=-60,
                 )
-                self.copy_output_button: int = dpg.generate_uuid()
+
+                self.copy_output_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Copy",
                     callback=lambda s, a, u: signals.emit(
@@ -788,14 +949,14 @@ class SimulationTab:
 
     def create_results_tables(self):
         with dpg.child_window(width=-1, height=-1):
-            self.result_group: int = dpg.generate_uuid()
+            self.result_group: Tag = dpg.generate_uuid()
             with dpg.group(tag=self.result_group):
                 self.parameters_table: ParametersTable = ParametersTable()
                 dpg.add_spacer(height=8)
                 self.settings_table: SettingsTable = SettingsTable()
 
     def create_plots(self):
-        self.plot_window: int = dpg.generate_uuid()
+        self.plot_window: Tag = dpg.generate_uuid()
         with dpg.child_window(
             border=False,
             width=-1,
@@ -810,11 +971,13 @@ class SimulationTab:
             ):
                 dpg.add_text("Simulated circuit")
                 self.circuit_preview: CircuitPreview = CircuitPreview()
-            self.plot_tab_bar: int = dpg.generate_uuid()
+
+            self.plot_tab_bar: Tag = dpg.generate_uuid()
             with dpg.tab_bar(tag=self.plot_tab_bar):
                 self.create_nyquist_plot()
                 self.create_bode_plot()
                 self.create_impedance_plot()
+
             pad_tab_labels(self.plot_tab_bar)
             self.plots: List[Plot] = [
                 self.nyquist_plot,
@@ -826,37 +989,35 @@ class SimulationTab:
         with dpg.tab(label="Nyquist"):
             self.nyquist_plot: Nyquist = Nyquist(width=-1, height=-24)
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Data",
                 line=False,
                 theme=themes.nyquist.data,
             )
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Sim.",
                 line=False,
                 simulation=True,
                 theme=themes.nyquist.simulation,
             )
             self.nyquist_plot.plot(
-                real=array([]),
-                imaginary=array([]),
+                impedances=array([], dtype=complex128),
                 label="Sim.",
                 line=True,
                 simulation=True,
                 theme=themes.nyquist.simulation,
                 show_label=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_nyquist_button: int = dpg.generate_uuid()
-                self.adjust_nyquist_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_nyquist_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_nyquist,
                     tag=self.enlarge_nyquist_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -866,6 +1027,8 @@ class SimulationTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_nyquist_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
@@ -873,16 +1036,23 @@ class SimulationTab:
                 )
                 attach_tooltip(tooltips.general.adjust_nyquist_limits)
 
+                self.nyquist_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.nyquist_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
+
     def create_bode_plot(self):
         with dpg.tab(label="Bode"):
             self.bode_plot: Bode = Bode(width=-1, height=-24)
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), d.",
-                    "Phase(Z), d.",
+                    "Mod(data)",
+                    "Phase(data)",
                 ),
                 line=False,
                 themes=(
@@ -891,12 +1061,11 @@ class SimulationTab:
                 ),
             )
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), s.",
-                    "Phase(Z), s.",
+                    "Mod(sim.)",
+                    "Phase(sim.)",
                 ),
                 line=False,
                 simulation=True,
@@ -906,12 +1075,11 @@ class SimulationTab:
                 ),
             )
             self.bode_plot.plot(
-                frequency=array([]),
-                magnitude=array([]),
-                phase=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Mod(Z), s.",
-                    "Phase(Z), s.",
+                    "Mod(sim.)",
+                    "Phase(sim.)",
                 ),
                 line=True,
                 simulation=True,
@@ -921,14 +1089,15 @@ class SimulationTab:
                 ),
                 show_labels=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_bode_button: int = dpg.generate_uuid()
-                self.adjust_bode_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_bode_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_bode,
                     tag=self.enlarge_bode_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -938,6 +1107,8 @@ class SimulationTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_bode_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
@@ -945,16 +1116,23 @@ class SimulationTab:
                 )
                 attach_tooltip(tooltips.general.adjust_bode_limits)
 
+                self.bode_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.bode_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
+
     def create_impedance_plot(self):
-        with dpg.tab(label="Real & Imag."):
+        with dpg.tab(label="Real & imag."):
             self.impedance_plot: Impedance = Impedance(width=-1, height=-24)
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), d.",
-                    "Im(Z), d.",
+                    "Re(data)",
+                    "Im(data)",
                 ),
                 line=False,
                 themes=(
@@ -963,12 +1141,11 @@ class SimulationTab:
                 ),
             )
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), s.",
-                    "Im(Z), s.",
+                    "Re(sim.)",
+                    "Im(sim.)",
                 ),
                 line=False,
                 simulation=True,
@@ -978,12 +1155,11 @@ class SimulationTab:
                 ),
             )
             self.impedance_plot.plot(
-                frequency=array([]),
-                real=array([]),
-                imaginary=array([]),
+                frequencies=array([]),
+                impedances=array([], dtype=complex128),
                 labels=(
-                    "Re(Z), s.",
-                    "Im(Z), s.",
+                    "Re(sim.)",
+                    "Im(sim.)",
                 ),
                 line=True,
                 simulation=True,
@@ -993,14 +1169,15 @@ class SimulationTab:
                 ),
                 show_labels=False,
             )
+
             with dpg.group(horizontal=True):
-                self.enlarge_impedance_button: int = dpg.generate_uuid()
-                self.adjust_impedance_limits_checkbox: int = dpg.generate_uuid()
+                self.enlarge_impedance_button: Tag = dpg.generate_uuid()
                 dpg.add_button(
                     label="Enlarge plot",
                     callback=self.show_enlarged_impedance,
                     tag=self.enlarge_impedance_button,
                 )
+
                 dpg.add_button(
                     label="Copy as CSV",
                     callback=lambda s, a, u: signals.emit(
@@ -1010,12 +1187,22 @@ class SimulationTab:
                     ),
                 )
                 attach_tooltip(tooltips.general.copy_plot_data_as_csv)
+
+                self.adjust_impedance_limits_checkbox: Tag = dpg.generate_uuid()
                 dpg.add_checkbox(
                     label="Adjust limits",
                     default_value=True,
                     tag=self.adjust_impedance_limits_checkbox,
                 )
                 attach_tooltip(tooltips.general.adjust_impedance_limits)
+
+                self.impedance_admittance_checkbox: Tag = dpg.generate_uuid()
+                dpg.add_checkbox(
+                    label="Y",
+                    callback=lambda s, a, u: self.toggle_plot_admittance(a),
+                    tag=self.impedance_admittance_checkbox,
+                )
+                attach_tooltip(tooltips.general.plot_admittance)
 
     def is_visible(self) -> bool:
         return dpg.is_item_visible(self.visibility_item)
@@ -1026,21 +1213,38 @@ class SimulationTab:
     def set_settings(self, settings: SimulationSettings):
         self.settings_menu.set_settings(settings)
 
+    def toggle_plot_admittance(self, admittance: bool):
+        tag: int
+        for tag in (
+            self.nyquist_admittance_checkbox,
+            self.bode_admittance_checkbox,
+            self.impedance_admittance_checkbox,
+        ):
+            dpg.set_value(tag, admittance)
+
+        self.nyquist_plot.set_admittance(admittance)
+        self.bode_plot.set_admittance(admittance)
+        self.impedance_plot.set_admittance(admittance)
+        editor_kwargs: dict = dpg.get_item_user_data(self.settings_menu.editor_button)
+        editor_kwargs["admittance"] = admittance
+
     def resize(self, width: int, height: int):
         if not self.is_visible():
             return
+
         width, height = dpg.get_item_rect_size(self.plot_window)
         height -= self.circuit_preview_height + 24 * 3 - 21
+
         for plot in self.plots:
             plot.resize(-1, height)
 
     def next_plot_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) + 1
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
     def previous_plot_tab(self):
-        tabs: List[int] = dpg.get_item_children(self.plot_tab_bar, slot=1)
+        tabs: List[Tag] = dpg.get_item_children(self.plot_tab_bar, slot=1)
         index: int = tabs.index(dpg.get_value(self.plot_tab_bar)) - 1
         dpg.set_value(self.plot_tab_bar, tabs[index % len(tabs)])
 
@@ -1063,11 +1267,13 @@ class SimulationTab:
         assert type(lookup) is dict, lookup
         if not lookup:
             self.clear()
+
         self.results_combo.populate(lookup)
         data: Optional[DataSet] = dpg.get_item_user_data(self.perform_sim_button)
         if not self.results_combo.labels:
             self.select_simulation_result(None, data)
             return
+
         signals.emit(
             Signal.SELECT_SIMULATION_RESULT,
             simulation=self.results_combo.get(),
@@ -1090,32 +1296,29 @@ class SimulationTab:
         assert type(data) is DataSet or data is None, data
         self.clear()
         dpg.set_item_user_data(self.perform_sim_button, data)
+        editor_kwargs: dict = dpg.get_item_user_data(self.settings_menu.editor_button)
+        editor_kwargs["data"] = data
         if data is None:
             return
+
         self.data_sets_combo.set(data.get_label())
-        real: ndarray
-        imag: ndarray
-        real, imag = data.get_nyquist_data()
+
+        Z: ndarray = data.get_impedances()
         self.nyquist_plot.update(
             index=0,
-            real=real,
-            imaginary=imag,
+            impedances=Z,
         )
-        freq: ndarray
-        mag: ndarray
-        phase: ndarray
-        freq, mag, phase = data.get_bode_data()
+
+        freq: ndarray = data.get_frequencies()
         self.bode_plot.update(
             index=0,
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq,
+            impedances=Z,
         )
         self.impedance_plot.update(
             index=0,
-            frequency=freq,
-            real=real,
-            imaginary=imag,
+            frequencies=freq,
+            impedances=Z,
         )
 
     def select_simulation_result(
@@ -1136,85 +1339,128 @@ class SimulationTab:
                 "data": data,
             },
         )
+
         if not self.is_visible():
             self.queued_update = lambda: self.select_simulation_result(simulation, data)
             return
+
         self.queued_update = None
         self.select_data_set(data)
         if simulation is None:
             if dpg.get_value(self.adjust_nyquist_limits_checkbox):
                 self.nyquist_plot.queue_limits_adjustment()
+
             if dpg.get_value(self.adjust_bode_limits_checkbox):
                 self.bode_plot.queue_limits_adjustment()
+
             if dpg.get_value(self.adjust_impedance_limits_checkbox):
                 self.impedance_plot.queue_limits_adjustment()
+
             return
+
         self.results_combo.set(simulation.get_label())
         self.parameters_table.populate(simulation)
         self.settings_table.populate(simulation)
         self.circuit_preview.update(pyimpspec.parse_cdc(simulation.settings.cdc))
-        real: ndarray
-        imag: ndarray
-        real, imag = simulation.get_nyquist_data()
-        freq: ndarray
-        mag: ndarray
-        phase: ndarray
-        freq, mag, phase = simulation.get_bode_data()
-        self.nyquist_plot.update(
-            index=1,
-            real=real,
-            imaginary=imag,
-        )
-        self.bode_plot.update(
-            index=1,
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
-        )
-        self.impedance_plot.update(
-            index=1,
-            frequency=freq,
-            real=real,
-            imaginary=imag,
-        )
-        real, imag = simulation.get_nyquist_data(
+
+        freq_markers: ndarray = simulation.get_frequencies()
+        freq_line: ndarray = simulation.get_frequencies(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
-        freq, mag, phase = simulation.get_bode_data(
+        Z_markers: ndarray = simulation.get_impedances()
+        Z_line: ndarray = simulation.get_impedances(
             num_per_decade=self.state.config.num_per_decade_in_simulated_lines
         )
         self.nyquist_plot.update(
+            index=1,
+            impedances=Z_markers,
+        )
+        self.bode_plot.update(
+            index=1,
+            frequencies=freq_markers,
+            impedances=Z_markers,
+        )
+        self.impedance_plot.update(
+            index=1,
+            frequencies=freq_markers,
+            impedances=Z_markers,
+        )
+
+        self.nyquist_plot.update(
             index=2,
-            real=real,
-            imaginary=imag,
+            impedances=Z_line,
         )
         self.bode_plot.update(
             index=2,
-            frequency=freq,
-            magnitude=mag,
-            phase=phase,
+            frequencies=freq_line,
+            impedances=Z_line,
         )
         self.impedance_plot.update(
             index=2,
-            frequency=freq,
-            real=real,
-            imaginary=imag,
+            frequencies=freq_line,
+            impedances=Z_line,
         )
+
         if dpg.get_value(self.adjust_nyquist_limits_checkbox):
             self.nyquist_plot.queue_limits_adjustment()
+
         if dpg.get_value(self.adjust_bode_limits_checkbox):
             self.bode_plot.queue_limits_adjustment()
+
         if dpg.get_value(self.adjust_impedance_limits_checkbox):
             self.impedance_plot.queue_limits_adjustment()
 
     def show_circuit_editor(self):
-        self.settings_menu.show_circuit_editor()
+        if self.settings_menu.circuit_editor is None:
+            return
+
+        x: int
+        y: int
+        w: int
+        h: int
+        x, y, w, h = calculate_window_position_dimensions()
+        dpg.configure_item(
+            self.settings_menu.circuit_editor.window,
+            pos=(x, y),
+            width=w,
+            height=h,
+        )
+
+        settings: SimulationSettings = self.settings_menu.get_settings()
+        circuit: Optional[Circuit] = self.settings_menu.parse_cdc(
+            settings.cdc,
+            sender=self.settings_menu.cdc_input,
+        )
+
+        editor_kwargs: dict = dpg.get_item_user_data(self.settings_menu.editor_button)
+        if editor_kwargs["data"] is None:
+            editor_kwargs = editor_kwargs.copy()
+            f: Frequencies = _interpolate(
+                [settings.max_frequency, settings.min_frequency],
+                num_per_decade=settings.num_per_decade,
+            )
+            editor_kwargs["data"] = DataSet(
+                frequencies=f,
+                impedances=array([complex(inf, inf)] * len(f), dtype=ComplexImpedance),
+            )
+
+        signals.emit(
+            Signal.BLOCK_KEYBINDINGS,
+            window=self.settings_menu.circuit_editor.window,
+            window_object=self.settings_menu.circuit_editor,
+        )
+        self.settings_menu.circuit_editor.show(
+            circuit=circuit,
+            num_per_decade=self.state.config.num_per_decade_in_simulated_lines,
+            **editor_kwargs,
+        )
 
     def accept_circuit(self, circuit: Optional[Circuit]):
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
         self.circuit_editor.hide()
         if circuit is None:
             return
+
         self.settings_menu.parse_cdc(circuit.serialize())
 
     def show_enlarged_nyquist(self):
@@ -1222,6 +1468,7 @@ class SimulationTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.nyquist_plot,
             adjust_limits=dpg.get_value(self.adjust_nyquist_limits_checkbox),
+            admittance=dpg.get_value(self.nyquist_admittance_checkbox),
         )
 
     def show_enlarged_bode(self):
@@ -1229,6 +1476,7 @@ class SimulationTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.bode_plot,
             adjust_limits=dpg.get_value(self.adjust_bode_limits_checkbox),
+            admittance=dpg.get_value(self.bode_admittance_checkbox),
         )
 
     def show_enlarged_impedance(self):
@@ -1236,44 +1484,17 @@ class SimulationTab:
             Signal.SHOW_ENLARGED_PLOT,
             plot=self.impedance_plot,
             adjust_limits=dpg.get_value(self.adjust_impedance_limits_checkbox),
-        )
-
-    def show_parameter_adjustment(self):
-        settings: SimulationSettings = self.get_settings()
-        circuit: Optional[Circuit]
-        circuit, _ = process_cdc(self.get_settings().cdc)
-        if circuit is None or len(circuit.get_elements()) == 0:
-            return
-        data: Optional[DataSet] = dpg.get_item_user_data(self.perform_sim_button)
-        hide_data: bool = False
-        if data is None:
-            hide_data = True
-            f: Frequencies = _interpolate(
-                [settings.max_frequency, settings.min_frequency],
-                num_per_decade=settings.num_per_decade,
-            )
-            data = DataSet(
-                frequencies=f,
-                impedances=array([0.0 for _ in f], dtype=ComplexImpedance),
-            )
-        window: ParameterAdjustment = ParameterAdjustment(
-            data=data,
-            circuit=circuit,
-            callback=self.accept_parameters,
-            hide_data=hide_data,
-            keybindings=self.state.config.keybindings,
-        )
-        signals.emit(
-            Signal.BLOCK_KEYBINDINGS,
-            window=window.window,
-            window_object=window,
+            admittance=dpg.get_value(self.impedance_admittance_checkbox),
         )
 
     def accept_parameters(self, circuit: Circuit):
         self.settings_menu.parse_cdc(circuit.serialize())
 
     def get_active_output(self) -> Optional[FitSimOutput]:
-        return label_to_fit_sim_output.get(dpg.get_value(self.output_combo))
+        return self.output_combo.get_value()
 
     def has_active_input(self) -> bool:
         return self.settings_menu.has_active_input()
+
+    def show_admittance_plots(self) -> bool:
+        return dpg.get_value(self.nyquist_admittance_checkbox)

@@ -18,13 +18,15 @@
 # the LICENSES folder.
 
 import dearpygui.dearpygui as dpg
+from deareis.typing.helpers import Tag
 
 
 class BusyMessage:
     def __init__(self):
         self.width: int = 159
         self.height: int = 159
-        self.window: int = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             autosize=True,
             menubar=False,
@@ -49,12 +51,13 @@ class BusyMessage:
                 ),
             )
             with dpg.group(horizontal=True):
-                self.message_spacer: int = dpg.generate_uuid()
+                self.message_spacer: Tag = dpg.generate_uuid()
                 dpg.add_spacer(tag=self.message_spacer)
                 self.message_wrap: int = 140
-                self.message_text: int = dpg.generate_uuid()
+                self.message_text: Tag = dpg.generate_uuid()
                 dpg.add_text(tag=self.message_text, wrap=self.message_wrap)
-            self.progress_bar: int = dpg.generate_uuid()
+
+            self.progress_bar: Tag = dpg.generate_uuid()
             dpg.add_progress_bar(
                 width=self.width - 16,
                 height=12,
@@ -67,10 +70,12 @@ class BusyMessage:
     def show(self, message: str = "", progress: float = -1.0):
         assert type(message) is str, message
         assert type(progress) is float and progress <= 1.0, progress
+
         dpg.split_frame(delay=33)
         if not self.is_visible():
             dpg.split_frame()
             dpg.show_item(self.window)
+        
         if message == "":
             dpg.hide_item(self.message_text)
         else:
@@ -88,6 +93,7 @@ class BusyMessage:
                 ),
             )
             dpg.set_value(self.message_text, message)
+
         if progress < 0.0:
             dpg.hide_item(self.progress_bar)
         else:

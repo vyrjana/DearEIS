@@ -56,6 +56,8 @@ from deareis.keybindings import (
     Keybinding,
     TemporaryKeybindingHandler,
 )
+from deareis.typing.helpers import Tag
+
 
 _initialize_window_functions()
 
@@ -134,8 +136,9 @@ class WeightsPreview:
         y: int
         w: int
         h: int
+
         x, y, w, h = calculate_window_position_dimensions()
-        self.window: int = dpg.generate_uuid()
+        self.window: Tag = dpg.generate_uuid()
         with dpg.window(
             label="Preview weights",
             modal=True,
@@ -150,7 +153,7 @@ class WeightsPreview:
                 self.create_plot()
 
     def create_table(self):
-        self.table: int = dpg.generate_uuid()
+        self.table: Tag = dpg.generate_uuid()
         with dpg.table(
             borders_outerV=True,
             borders_outerH=True,

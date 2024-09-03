@@ -28,7 +28,15 @@ from .bode import (
     BodePhase,
 )
 from .image import Image
-from .mu_xps import MuXps
+from .pseudo_chisqr import PseudoChisqrAndScore
+from .kramers_kronig_methods import (
+    Method1,
+    Method2,
+    Method3,
+    Method4,
+    Method5,
+    Method6,
+)
 from .nyquist import Nyquist
 from .residuals import Residuals
 from .drt import DRT
@@ -37,10 +45,21 @@ from .impedance import (
     ImpedanceReal,
     ImpedanceImaginary,
 )
+from .log_F_ext import (
+    LogFextStatistic,
+    PseudoChisqr,
+)
+from deareis.typing.helpers import Tag
 
 
 class ModalPlotWindow:
-    def __init__(self, original: Plot, adjust_limits: bool):
+    def __init__(
+        self,
+        original: Plot,
+        adjust_limits: bool,
+        admittance: bool,
+        frequency: bool,
+    ):
         labels: dict = {
             Bode: "Bode",
             BodeMagnitude: "Bode - magnitude",
@@ -52,13 +71,16 @@ class ModalPlotWindow:
             ImpedanceImaginary: "Imaginary impedance",
             ImpedanceReal: "Real impedance",
         }
+
         x: int
         y: int
         w: int
         h: int
         x, y, w, h = calculate_window_position_dimensions()
-        self.window: int = dpg.generate_uuid()
-        self.key_handler = dpg.generate_uuid()
+
+        self.window: Tag = dpg.generate_uuid()
+        self.key_handler: Tag = dpg.generate_uuid()
+        
         with dpg.window(
             label=labels.get(type(original), "Unknown plot type"),
             modal=True,
@@ -73,6 +95,13 @@ class ModalPlotWindow:
                 copy.queue_limits_adjustment()
             else:
                 copy.copy_limits(original)
+
+        if hasattr(copy, "set_admittance") and callable(copy.set_admittance):
+            copy.set_admittance(admittance, adjust_limits=False)
+
+        if hasattr(copy, "set_frequency") and callable(copy.set_frequency):
+            copy.set_frequency(frequency, adjust_limits=False)
+
         with dpg.handler_registry(tag=self.key_handler):
             dpg.add_key_release_handler(key=dpg.mvKey_Escape, callback=self.close)
 
@@ -82,10 +111,25 @@ class ModalPlotWindow:
         signals.emit(Signal.UNBLOCK_KEYBINDINGS)
 
 
-def show_modal_plot_window(original: Plot, adjust_limits: bool = True):
+def show_modal_plot_window(
+    original: Plot,
+    adjust_limits: bool = True,
+    admittance: bool = False,
+    frequency: bool = False,
+):
     assert hasattr(original, "duplicate"), type(original)
-    assert type(adjust_limits) is bool, adjust_limits
-    modal_window: ModalPlotWindow = ModalPlotWindow(original, adjust_limits)
+    assert callable(original.duplicate), type(original)
+    assert isinstance(adjust_limits, bool), adjust_limits
+    assert isinstance(admittance, bool), admittance
+    assert isinstance(frequency, bool), frequency
+
+    modal_window: ModalPlotWindow = ModalPlotWindow(
+        original,
+        adjust_limits=adjust_limits,
+        admittance=admittance,
+        frequency=frequency,
+    )
+
     signals.emit(
         Signal.BLOCK_KEYBINDINGS,
         window=modal_window.window,

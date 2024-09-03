@@ -19,6 +19,7 @@
 
 from uuid import uuid4 as _uuid4
 from time import time as _time
+from typing import Dict
 from numpy import array
 import pyimpspec as _pyimpspec
 from deareis.data import DataSet
@@ -27,21 +28,25 @@ from deareis.data.drt import (
     DRTSettings,
 )
 from deareis.enums import (
+    CrossValidationMethod,
     DRTMethod,
     DRTMode,
     RBFShape,
     RBFType,
+    TRNNLSLambdaMethod,
+    cross_validation_method_to_value as _cross_validation_method_to_value,
     drt_method_to_value as _drt_method_to_value,
     drt_mode_to_value as _drt_mode_to_value,
     rbf_shape_to_value as _rbf_shape_to_value,
     rbf_type_to_value as _rbf_type_to_value,
+    tr_nnls_lambda_method_to_value as _tr_nnls_lambda_method_to_value,
 )
 
 
 def calculate_drt(
     data: DataSet,
     settings: DRTSettings,
-    num_procs: int = 0,
+    num_procs: int = -1,
 ) -> DRTResult:
     """
     Wrapper for the `pyimpspec.calculate_drt` function.
@@ -70,14 +75,21 @@ def calculate_drt(
     num_procs: int, optional
         The maximum number of processes to use.
         A value less than 1 will result in an attempt to automatically figure out a suitable value.
+        Negative values are used as offsets relative to the number of cores detected.
     """
     if settings.method == DRTMethod.MRQ_FIT:
         assert settings.fit is not None, "A fitted circuit has not been provided!"
+
+    lambda_value: float = settings.lambda_value
+    if settings.method is DRTMethod.TR_NNLS and settings.tr_nnls_lambda_method in (TRNNLSLambdaMethod.CUSTOM, TRNNLSLambdaMethod.LC):
+        lambda_value = _tr_nnls_lambda_method_to_value[settings.tr_nnls_lambda_method]
+
     result: _pyimpspec.DRTResult = _pyimpspec.calculate_drt(
         data=data,
         method=_drt_method_to_value[settings.method],
         mode=_drt_mode_to_value[settings.mode],
-        lambda_value=settings.lambda_value,
+        lambda_value=lambda_value,
+        cross_validation=_cross_validation_method_to_value.get(settings.cross_validation_method, ""),
         rbf_type=_rbf_type_to_value[settings.rbf_type],
         derivative_order=settings.derivative_order,
         rbf_shape=_rbf_shape_to_value[settings.rbf_shape],
@@ -95,9 +107,13 @@ def calculate_drt(
     )
     real_gammas: _pyimpspec.Gammas = result.real_gammas if hasattr(result, "real_gammas") else result.gammas
     imaginary_gammas: _pyimpspec.Gammas = result.imaginary_gammas if hasattr(result, "imaginary_gammas") else array([])
+
+    time: float = _time()
+    mask: Dict[int, bool] = data.get_mask().copy()
+
     return DRTResult(
         uuid=_uuid4().hex,
-        timestamp=_time(),
+        timestamp=time,
         time_constants=result.time_constants,
         real_gammas=real_gammas,
         imaginary_gammas=imaginary_gammas,
@@ -114,6 +130,6 @@ def calculate_drt(
         scores=result.scores if hasattr(result, "scores") else {},
         pseudo_chisqr=result.pseudo_chisqr,
         lambda_value=result.lambda_value if hasattr(result, "lambda_value") else -1.0,
-        mask=data.get_mask().copy(),
+        mask=mask,
         settings=settings,
     )

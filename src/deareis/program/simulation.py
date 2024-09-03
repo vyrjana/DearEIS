@@ -41,11 +41,14 @@ def select_simulation_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     simulation: Optional[SimulationResult] = kwargs.get("simulation")
     data: Optional[DataSet] = kwargs.get("data")
+
     is_busy_message_visible: bool = STATE.is_busy_message_visible()
     if not is_busy_message_visible:
         signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Loading simulation result")
+
     project_tab.select_simulation_result(simulation, data)
     if not is_busy_message_visible:
         signals.emit(Signal.HIDE_BUSY_MESSAGE)
@@ -56,9 +59,11 @@ def delete_simulation_result(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     simulation: Optional[SimulationResult] = kwargs.get("simulation")
     if simulation is None:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Deleting simulation result")
     settings: Optional[PlotSettings] = project_tab.get_active_plot()
     update_plot: bool = (
@@ -66,13 +71,16 @@ def delete_simulation_result(*args, **kwargs):
     )
     project.delete_simulation(simulation)
     project_tab.populate_simulations(project)
+
     if settings is not None:
         project_tab.plotting_tab.populate_simulations(
             project.get_simulations(),
             settings,
         )
+
     if update_plot:
         signals.emit(Signal.SELECT_PLOT_SETTINGS, settings=settings)
+
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
@@ -82,9 +90,11 @@ def apply_simulation_settings(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[SimulationSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     project_tab.set_simulation_settings(settings)
 
 
@@ -93,15 +103,18 @@ def perform_simulation(*args, **kwargs):
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
     if project is None or project_tab is None:
         return
+
     settings: Optional[SimulationSettings] = kwargs.get("settings")
     if settings is None:
         return
+
     assert (
         settings.min_frequency != settings.max_frequency
     ), "The minimum and maximum frequencies cannot be the same!"
     circuit: pyimpspec.Circuit = pyimpspec.parse_cdc(settings.cdc)
     if len(circuit.get_elements()) == 0:
         return
+
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Performing simulation")
     simulation: SimulationResult = api.simulate_spectrum(settings)
     project.add_simulation(simulation)
