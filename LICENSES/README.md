@@ -8,11 +8,6 @@
 - License: GPLv3 or later
 - Dependency via _pyimpspec_.
 
-# cvxpy
-- https://github.com/cvxpy/cvxpy
-- License: Apache License version 2.0
-- Optional dependency.
-
 # Dear PyGui
 - https://github.com/hoffstadt/DearPyGui
 - License: MIT
@@ -47,6 +42,11 @@
 - https://github.com/matplotlib/matplotlib
 - License: custom license
 - Dependency via _pyimpspec_.
+
+# nearestSPD
+- https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd
+- License: BSD 2-clause
+- _pyimpspec_ uses code ported to Python by the developers of pyDRTtools for use in the TR-RBF DRT method.
 
 # numdifftools
 - https://github.com/pbrod/numdifftools 
