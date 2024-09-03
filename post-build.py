@@ -19,17 +19,7 @@
 
 from dataclasses import dataclass
 from datetime import date
-from os import (
-    makedirs,
-    remove,
-    walk,
-)
-from os.path import (
-    exists,
-    isdir,
-    join,
-    splitext,
-)
+from pathlib import Path
 from re import search
 from shutil import (
     copy,
@@ -44,19 +34,27 @@ from typing import (
     Union,
 )
 
+PARENT_DIRECTORY: Path = Path(__file__).parent
 
-def copy_html(src: str, dst: str):
-    if exists(dst):
+
+def copy_html(src: Path, dst: Path):
+    if dst.is_dir():
         rmtree(dst)
-    files: List[str] = []
-    for _, _, files in walk(src):
-        break
+
+    files: List[Path] = []
+
+    path: Path
+    for path in src.glob("*"):
+        if path.is_file():
+            files.append(path)
+
     assert len(files) > 0
+
     files = [
-        _
-        for _ in files
-        if not _.startswith(".")
-        and splitext(_)[1]
+        path
+        for path in files
+        if not str(path).startswith(".")
+        and path.suffix.lower()
         in (
             ".html",
             ".js",
@@ -65,26 +63,33 @@ def copy_html(src: str, dst: str):
             ".svg",
         )
     ]
-    dirs: List[str] = ["_images", "_static", "_sources"]
-    if not isdir(dst):
-        makedirs(dst)
-    name: str
-    for name in files:
-        copy(join(src, name), join(dst, name))
-    for name in dirs:
-        copytree(join(src, name), join(dst, name))
+
+    dirs: List[Path] = list(map(Path, ("_images", "_static", "_sources")))
+
+    if not dst.is_dir():
+        dst.mkdir(parents=True)
+
+    for path in files:
+        copy(src.joinpath(path.name), dst.joinpath(path.name))
+
+    for path in dirs:
+        copytree(src.joinpath(path.name), dst.joinpath(path.name))
 
 
-def copy_pdf(src: str, dst: str, name: str, version_path: str):
+def copy_pdf(src: Path, dst: Path, name: str, version_path: Path):
     version: str = ""
+
     fp: IO
     with open(version_path, "r") as fp:
         version = fp.read().strip().replace(".", "-")
+
     assert version != ""
-    ext: str = splitext(src)[1]
-    dst = join(dst, f"{name}-{version}{ext}")
-    if exists(dst):
-        remove(dst)
+
+    ext: str = src.suffix
+    dst = dst.joinpath(f"{name}-{version}{ext}")
+    if dst.is_file():
+        dst.unlink()
+
     copy(src, dst)
 
 
@@ -98,7 +103,7 @@ class Version:
     day: int
 
 
-def validate_changelog(path: str):
+def validate_changelog(path: Path):
     def parse_version(match: Match) -> Version:
         return Version(
             major=int(match.group("major")),
@@ -110,7 +115,8 @@ def validate_changelog(path: str):
         )
 
     def validate_date(
-        version: Version, comparison: Union[Version, date] = date.today()
+        version: Version,
+        comparison: Union[Version, date] = date.today(),
     ):
         assert version.year <= comparison.year, (version, comparison)
         assert 1 <= version.month <= 12, version
@@ -122,24 +128,32 @@ def validate_changelog(path: str):
 
     def validate_version(earlier: Version, current: Version):
         assert earlier.major <= current.major, (earlier, current)
+
         if earlier.major < current.major:
             return
+        
         assert earlier.minor <= current.minor, (earlier, current)
+        
         if earlier.minor < current.minor:
             return
+        
         assert earlier.patch < current.patch, (earlier, current)
 
-    assert exists(path), path
+    assert path.is_file(), path
+
     fp: IO
     with open(path, "r") as fp:
         lines: List[str] = fp.readlines()
+
     pattern: str = (
         r"# (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
         r" \((?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})\)"
     )
+
     try:
         match: Optional[Match] = search(pattern, lines.pop(0))
         assert match is not None, pattern
+
         versions: List[Version] = list(
             map(
                 parse_version,
@@ -151,25 +165,28 @@ def validate_changelog(path: str):
                 ],
             )
         )
+
         list(map(validate_date, versions))
+        
         while len(versions) > 1:
             current: Version = versions.pop(0)
             earlier = versions[0]
             validate_date(earlier, current)
             validate_version(earlier, current)
+    
     except AssertionError:
         raise Exception("The changelog needs to be updated!")
 
 
 if __name__ == "__main__":
     copy_html(
-        src="./docs/build/html",
-        dst="./dist/html",
+        src=PARENT_DIRECTORY.joinpath("docs", "build", "html"),
+        dst=PARENT_DIRECTORY.joinpath("dist", "html"),
     )
     copy_pdf(
-        src="./docs/build/latex/latex/deareis.pdf",
-        dst="./dist",
+        src=PARENT_DIRECTORY.joinpath("docs", "build", "latex", "latex", "deareis.pdf"),
+        dst=PARENT_DIRECTORY.joinpath("dist"),
         name="DearEIS",
-        version_path="./version.txt",
+        version_path=PARENT_DIRECTORY.joinpath("version.txt"),
     )
-    validate_changelog("./CHANGELOG.md")
+    validate_changelog(PARENT_DIRECTORY.joinpath("CHANGELOG.md"))

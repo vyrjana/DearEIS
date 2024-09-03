@@ -91,7 +91,7 @@ if [ "$(git status --porcelain=v1 | wc -l)" -ne 0 ]; then
 fi
 
 # Check for major issues
-flake8 . --select=E9,F63,F7,F82 --show-source --statistics
+flake8 ./src/deareis --select=E9,F63,F7,F82 --show-source --statistics
 echo "flake8 didn't find any issues..."
 echo
 
