@@ -1,3 +1,8 @@
+# 5.0.1 (2024/09/10)
+
+- Fixed a bug where merging the user and default configurations would raise an exception because key-value pairs could have differing value types (e.g., an enum in the user configuration and an integer in another default configuration).
+
+
 # 5.0.0 (2024/09/03)
 
 ## Kramers-Kronig

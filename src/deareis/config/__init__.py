@@ -495,9 +495,13 @@ class Config:
         for v, p in parsers.items():
             if v < version:
                 continue
+
             dictionary = p(dictionary)
 
-        dictionary = self.merge_dicts(dictionary, self.to_dict())
+        dictionary = self.merge_dicts(
+            parse_json(dump_json(dictionary)),
+            parse_json(dump_json(self.to_dict()))
+        )
         self.from_dict(dictionary)
 
     def validate_keybindings(self, keybindings: List[Keybinding]):
