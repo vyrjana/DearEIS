@@ -33,16 +33,16 @@ def update_file(src: Path, dst: Path):
         return
 
     src_contents: str = ""
-    
+
     fp: IO
     with open(src, "r") as fp:
         src_contents = fp.read()
-    
+
     if dst.is_file():
         with open(dst, "r") as fp:
             if fp.read() == src_contents:
                 return
-    
+
     with open(dst, "w") as fp:
         fp.write(src_contents)
 
@@ -51,9 +51,11 @@ def copy_additional_files(files: List[Path]):
     src_dir: Path = PARENT_DIRECTORY
     dst_dir: Path = src_dir.joinpath("src", "deareis")
     licenses_dir: Path = dst_dir.joinpath("LICENSES")
-    if not licenses_dir.is_dir():
-        licenses_dir.mkdir(parents=True)
-    
+    if licenses_dir.is_dir():
+        rmtree(licenses_dir)
+
+    licenses_dir.mkdir(parents=True)
+
     path: Path
     for path in files:
         update_file(src_dir.joinpath(path), dst_dir.joinpath(path))
