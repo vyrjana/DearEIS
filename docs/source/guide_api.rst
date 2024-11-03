@@ -521,9 +521,9 @@ Equations for the impedances of elements and circuits can be obtained in the for
    >>> data: DataSet = project.get_data_sets()[0]
    >>> fit: FitResult = project.get_fits(data)[0]
    >>> print(fit.circuit.to_sympy())
-   R_0 + 1/(2*I*pi*C_2*f + 1/R_1) + 1/(sqrt(2)*sqrt(pi)*Y_4*sqrt(I*f) + 1/R_3)
+   R_0 + 1/(2*I*pi*C_2*f + 1/R_1) + 1/(Y_4*(2*I*pi*f)**n_4 + 1/R_3)
    >>> print(fit.circuit.to_latex())
-   Z = R_{0} + \frac{1}{2 i \pi C_{2} f + \frac{1}{R_{1}}} + \frac{1}{\sqrt{2} \sqrt{\pi} Y_{4} \sqrt{i f} + \frac{1}{R_{3}}}
+   Z = R_{0} + \frac{1}{2 i \pi C_{2} f + \frac{1}{R_{1}}} + \frac{1}{Y_{4} \left(2 i \pi f\right)^{n_{4}} + \frac{1}{R_{3}}}
 
 .. raw:: latex
 

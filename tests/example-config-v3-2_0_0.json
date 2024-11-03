@@ -1,0 +1,488 @@
+{
+  "auto_backup_interval": 10,
+  "colors": {
+    "bode_magnitude_data": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "bode_magnitude_simulation": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "bode_phase_data": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "bode_phase_simulation": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "mu_Xps_Xps": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "mu_Xps_Xps_highlight": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "mu_Xps_mu": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "mu_Xps_mu_criterion": [
+      255.0,
+      255.0,
+      255.0,
+      128.0
+    ],
+    "mu_Xps_mu_highlight": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "nyquist_data": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "nyquist_simulation": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "residuals_imaginary": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "residuals_real": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ]
+  },
+  "default_fit_settings": {
+    "cdc": "R([RW]C)",
+    "max_nfev": 1000,
+    "method": 1,
+    "version": 1,
+    "weight": 1
+  },
+  "default_simulation_settings": {
+    "cdc": "R([RW]C)",
+    "max_frequency": 100000.0,
+    "min_frequency": 0.01,
+    "num_per_decade": 1,
+    "version": 2
+  },
+  "default_test_settings": {
+    "add_capacitance": true,
+    "add_inductance": true,
+    "max_nfev": 1000,
+    "method": 2,
+    "mode": 2,
+    "mu_criterion": 0.85,
+    "num_RC": 999,
+    "test": 2,
+    "version": 1
+  },
+  "export_dpi": 100,
+  "export_experimental_clear_registry": true,
+  "export_experimental_disable_previews": false,
+  "export_extension": 4,
+  "export_grid": false,
+  "export_height": 6.0,
+  "export_legend": true,
+  "export_legend_location": 0,
+  "export_num_per_decade": 100,
+  "export_preview": 4,
+  "export_tight": false,
+  "export_title": true,
+  "export_units": 1,
+  "export_width": 10.0,
+  "keybindings": [
+    {
+      "action": "new-project",
+      "key": "N",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "load-project",
+      "key": "O",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "exit-program",
+      "key": "Q",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "next-program-tab",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "previous-program-tab",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "show-settings-appearance",
+      "key": "F1",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-settings-defaults",
+      "key": "F2",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-settings-keybindings",
+      "key": "F3",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-help-licenses",
+      "key": "F11",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-help-about",
+      "key": "F12",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-command-palette",
+      "key": "P",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "save-project",
+      "key": "S",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "save-project-as",
+      "key": "S",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "close-project",
+      "key": "W",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "undo",
+      "key": "Z",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "redo",
+      "key": "Z",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "next-project-tab",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-project-tab",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-data-sets-tab",
+      "key": "D",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-fitting-tab",
+      "key": "F",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-kramers-kronig-tab",
+      "key": "K",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-overview-tab",
+      "key": "O",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-plotting-tab",
+      "key": "P",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-simulation-tab",
+      "key": "S",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "perform-action",
+      "key": "Enter",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "delete-result",
+      "key": "Delete",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "next-primary-result",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-primary-result",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "next-secondary-result",
+      "key": "Page down",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-secondary-result",
+      "key": "Page up",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "apply-settings",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "apply-mask",
+      "key": "M",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-nyquist",
+      "key": "N",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-bode",
+      "key": "B",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-residuals",
+      "key": "R",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-circuit-editor",
+      "key": "E",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-nyquist-data",
+      "key": "N",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-bode-data",
+      "key": "B",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-residuals-data",
+      "key": "R",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-output",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "average-data-sets",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "toggle-data-points",
+      "key": "T",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-data-set-mask",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "subtract-impedance",
+      "key": "S",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "select-all-plot-series",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "unselect-all-plot-series",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-plot-appearance",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-plot-data",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "expand-collapse-sidebar",
+      "key": "E",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "export-plot",
+      "key": "P",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    }
+  ],
+  "markers": {
+    "bode_magnitude_data": 0,
+    "bode_magnitude_simulation": 7,
+    "bode_phase_data": 1,
+    "bode_phase_simulation": 8,
+    "mu_Xps_Xps": 1,
+    "mu_Xps_mu": 0,
+    "nyquist_data": 0,
+    "nyquist_simulation": 7,
+    "residuals_imaginary": 1,
+    "residuals_real": 0
+  },
+  "num_per_decade_in_simulated_lines": 100,
+  "version": 3
+}

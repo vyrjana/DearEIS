@@ -326,17 +326,18 @@ def plot(
                     admittance=admittance,
                 )
 
-        elif plot_type == PlotType.DRT:
-            num_lines: int = len(axis.lines)
-            mpl.plot_gamma(
-                series,
-                colors={"gamma": color},
-                label=label,
-                legend=False,
-                figure=figure,
-                axes=[axis],
-                adjust_axes=i == num_series - 1,
-            )
+        elif plot_type in (PlotType.DRT, PlotType.DRT_FREQUENCY):
+            if isinstance(series, DRTResult):
+                mpl.plot_gamma(
+                    series,
+                    colors={"gamma": color},
+                    label=label,
+                    legend=False,
+                    figure=figure,
+                    axes=[axis],
+                    adjust_axes=i == num_series - 1,
+                    frequency=plot_type == PlotType.DRT_FREQUENCY,
+                )
 
         elif plot_type in (PlotType.IMPEDANCE_REAL, PlotType.ADMITTANCE_REAL):
             if has_line:

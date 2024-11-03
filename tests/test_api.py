@@ -17,6 +17,7 @@
 # The licenses of DearEIS' dependencies and/or sources of portions of code are included in
 # the LICENSES folder.
 
+from pathlib import Path
 from os.path import (
     dirname,
     join,
@@ -40,6 +41,7 @@ from numpy import (
 import matplotlib
 import pyimpspec
 import deareis
+from deareis.config import Config
 
 matplotlib.use("Agg")
 
@@ -149,7 +151,7 @@ class TestCDC(TestCase):
         self.assertTrue(str(self.control_circuit) == str(self.circuit) == "[R([RW]C)]")
         self.assertEqual(
             self.circuit.to_string(1),
-            "[R{R=5.3E+01/0.0E+00/inf:sol}([R{R=3.3E+02/0.0E+00/inf:ct}W{Y=1.0E-03/1.0E-24/inf}]C{C=1.7E-11/1.0E-24/1.0E+03:dl})]",
+            "[R{R=5.3E+01/0.0E+00/inf:sol}([R{R=3.3E+02/0.0E+00/inf:ct}W{Y=1.0E-03/1.0E-24/inf,n=5.0E-01F/0.0E+00/1.0E+00}]C{C=1.7E-11/1.0E-24/1.0E+03:dl})]",
         )
 
     def test_circuit_builder(self):
@@ -175,6 +177,23 @@ class TestCDC(TestCase):
                     series += deareis.Warburg()
                 parallel += deareis.Capacitor(C=1.68e-11).set_label("dl")
         self.assertEqual(builder.to_string(), self.circuit.to_string())
+
+
+class TestConfig(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        tests_dir: Path = Path(__file__).parent
+        cls.config_paths: List[Path] = [
+            path
+            for path in sorted(tests_dir.glob("*.json"), key=lambda p: p.name)
+            if path.name.startswith("example-config-v")
+        ]
+
+    def test_migration_to_latest_version(self):
+        path: Path
+        for path in self.config_paths:
+            config: Config = Config()
+            self.assertTrue(config.load(str(path)), msg=path.name)
 
 
 # TODO: Update tests
@@ -428,7 +447,7 @@ class TestFitting(TestCase):
                 "R": (5.00e2, 2e0, False, "ohm"),
             },
             "W_1": {
-                "Y": (4.00e-4, 1e-5, False, "S*s^(1/2)"),
+                "Y": (4.00e-4, 1e-5, False, "S*s^n"),
                 "n": (0.5, 0.1, True, ""),
             },
             "C_2": {
@@ -470,20 +489,57 @@ class TestFitting(TestCase):
         lines: List[str] = markdown.split("\n")
         self.assertTrue(lines[0].startswith("|    | Element   | Parameter   |"))
         self.assertTrue(
-            lines[0].endswith("Value |   Std. err. (%) | Unit      | Fixed   |")
+            lines[0].endswith("Value |   Std. err. (%) | Unit   | Fixed   |"),
+            msg=f"{lines[0]=}",
         )
-        self.assertTrue(lines[1].startswith("|---:|:----------|:------------|"))
-        self.assertTrue(lines[1].endswith(":|----------------:|:----------|:--------|"))
-        self.assertTrue(lines[2].startswith("|  0 | R_1       | R           |"))
-        self.assertTrue(lines[2].endswith("| ohm       | No      |"))
-        self.assertTrue(lines[3].startswith("|  1 | R_2       | R           |"))
-        self.assertTrue(lines[3].endswith("| ohm       | No      |"))
-        self.assertTrue(lines[4].startswith("|  2 | C_1       | C           |"))
-        self.assertTrue(lines[4].endswith("| F         | No      |"))
-        self.assertTrue(lines[5].startswith("|  3 | R_3       | R           |"))
-        self.assertTrue(lines[5].endswith("| ohm       | No      |"))
-        self.assertTrue(lines[6].startswith("|  4 | W_1       | Y           |"))
-        self.assertTrue(lines[6].endswith("| S*s^(1/2) | No      |"))
+        self.assertTrue(
+            lines[1].startswith("|---:|:----------|:------------|"),
+            msg=f"{lines[1]=}",
+        )
+        self.assertTrue(
+            lines[1].endswith(":|----------------:|:-------|:--------|"),
+            msg=f"{lines[1]=}",
+        )
+        self.assertTrue(
+            lines[2].startswith("|  0 | R_1       | R           |"),
+            msg=f"{lines[2]=}",
+        )
+        self.assertTrue(
+            lines[2].endswith("| ohm    | No      |"),
+            msg=f"{lines[2]=}",
+        )
+        self.assertTrue(
+            lines[3].startswith("|  1 | R_2       | R           |"),
+            msg=f"{lines[3]=}",
+        )
+        self.assertTrue(
+            lines[3].endswith("| ohm    | No      |"),
+            msg=f"{lines[3]=}",
+        )
+        self.assertTrue(
+            lines[4].startswith("|  2 | C_1       | C           |"),
+            msg=f"{lines[4]=}",
+        )
+        self.assertTrue(
+            lines[4].endswith("| F      | No      |"),
+            msg=f"{lines[4]=}",
+        )
+        self.assertTrue(
+            lines[5].startswith("|  3 | R_3       | R           |"),
+            msg=f"{lines[5]=}",
+        )
+        self.assertTrue(
+            lines[5].endswith("| ohm    | No      |"),
+            msg=f"{lines[5]=}",
+        )
+        self.assertTrue(
+            lines[6].startswith("|  4 | W_1       | Y           |"),
+            msg=f"{lines[6]=}",
+        )
+        self.assertTrue(
+            lines[6].endswith("| S*s^n  | No      |"),
+            msg=f"{lines[6]=}",
+        )
 
     def test_latex(self):
         latex: str = (
@@ -509,9 +565,10 @@ class TestFitting(TestCase):
         self.assertTrue(lines[7].startswith(r"3 & R_3 & R & "))
         self.assertTrue(lines[7].endswith(r" & ohm & No \\"))
         self.assertTrue(lines[8].startswith(r"4 & W_1 & Y & "))
-        self.assertTrue(lines[8].endswith(r" & S*s^(1/2) & No \\"))
-        self.assertEqual(lines[9], r"\bottomrule")
-        self.assertEqual(lines[10], r"\end{tabular}")
+        self.assertTrue(lines[8].endswith(r" & S*s^n & No \\"))
+        self.assertEqual(lines[9], r"5 & W_1 & n & 0.5 & nan &  & Yes \\")
+        self.assertEqual(lines[10], r"\bottomrule")
+        self.assertEqual(lines[11], r"\end{tabular}")
 
     def test_to_statistics_dataframe(self):
         df: DataFrame = self.result.to_statistics_dataframe()
@@ -806,7 +863,7 @@ class TestZHIT(TestCase):
             num_points=3,
             polynomial_order=2,
             num_iterations=3,
-            interpolation=deareis.ZHITInterpolation.AKIMA,
+            interpolation=deareis.ZHITInterpolation.MAKIMA,
             window=deareis.ZHITWindow.AUTO,
             window_center=1.5,
             window_width=3.0,

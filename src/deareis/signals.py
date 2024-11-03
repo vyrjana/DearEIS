@@ -63,6 +63,7 @@ class Signal(IntEnum):
     EXPORT_PLOT = auto()
     HIDE_BUSY_MESSAGE = auto()
     LOAD_DATA_SET_FILES = auto()
+    LOAD_TEST_AS_DATA_SET = auto()
     LOAD_PROJECT_FILES = auto()
     LOAD_SIMULATION_AS_DATA_SET = auto()
     LOAD_ZHIT_AS_DATA_SET = auto()

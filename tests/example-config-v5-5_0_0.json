@@ -1,0 +1,710 @@
+{
+  "auto_backup_interval": 10,
+  "colors": {
+    "bode_magnitude_data": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "bode_magnitude_simulation": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "bode_phase_data": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "bode_phase_simulation": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "drt_credible_intervals": [
+      238.0,
+      119.0,
+      51.0,
+      48.0
+    ],
+    "drt_imaginary_gamma": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "drt_mean_gamma": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "drt_real_gamma": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "impedance_imaginary_data": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "impedance_imaginary_simulation": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "impedance_real_data": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "impedance_real_simulation": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "mu_Xps_Xps": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ],
+    "mu_Xps_Xps_highlight": [
+      238.0,
+      119.0,
+      51.0,
+      190.0
+    ],
+    "mu_Xps_mu": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "mu_Xps_mu_criterion": [
+      255.0,
+      255.0,
+      255.0,
+      128.0
+    ],
+    "mu_Xps_mu_highlight": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "nyquist_data": [
+      51.0,
+      187.0,
+      238.0,
+      190.0
+    ],
+    "nyquist_simulation": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "residuals_imaginary": [
+      238.0,
+      51.0,
+      119.0,
+      190.0
+    ],
+    "residuals_real": [
+      0.0,
+      153.0,
+      136.0,
+      190.0
+    ]
+  },
+  "default_drt_settings": {
+    "credible_intervals": false,
+    "cross_validation_method": 3,
+    "derivative_order": 1,
+    "fit": null,
+    "gaussian_width": 0.15,
+    "inductance": false,
+    "lambda_value": 0.001,
+    "maximum_symmetry": 0.5,
+    "method": 2,
+    "mode": 1,
+    "num_attempts": 10,
+    "num_per_decade": 100,
+    "num_samples": 2000,
+    "rbf_shape": 1,
+    "rbf_type": 6,
+    "shape_coeff": 0.5,
+    "timeout": 60,
+    "tr_nnls_lambda_method": 2,
+    "version": 4
+  },
+  "default_element_parameters": {},
+  "default_fit_settings": {
+    "cdc": "R([RW]C)",
+    "max_nfev": 1000,
+    "method": 1,
+    "timeout": 0,
+    "version": 3,
+    "weight": 1
+  },
+  "default_kramers_kronig_settings": {
+    "add_capacitance": true,
+    "add_inductance": true,
+    "cnls_method": 2,
+    "log_F_ext": 0.0,
+    "max_log_F_ext": 1.0,
+    "max_nfev": 0,
+    "min_log_F_ext": -1.0,
+    "mode": 1,
+    "num_F_ext_evaluations": 20,
+    "num_RC": 999,
+    "rapid_F_ext_evaluations": true,
+    "representation": 1,
+    "suggestion_settings": {
+      "limit_delta": 0,
+      "lower_limit": 0,
+      "m1_beta": 0.75,
+      "m1_mu_criterion": 0.85,
+      "methods": [],
+      "upper_limit": 0,
+      "use_mean": false,
+      "use_ranking": false,
+      "use_sum": false,
+      "version": 3
+    },
+    "test": 7,
+    "timeout": 60,
+    "version": 3
+  },
+  "default_plot_export_settings": {
+    "clear_registry": true,
+    "disable_preview": false,
+    "dpi": 100,
+    "extension": ".png",
+    "has_tight_layout": true,
+    "height": 6.0,
+    "legend_location": 0,
+    "num_per_decade": 100,
+    "preview_limit": 10,
+    "show_grid": false,
+    "show_legend": true,
+    "show_title": true,
+    "units": 1,
+    "version": 1,
+    "width": 10.0
+  },
+  "default_simulation_settings": {
+    "cdc": "R([RW]C)",
+    "max_frequency": 100000.0,
+    "min_frequency": 0.01,
+    "num_per_decade": 1,
+    "version": 2
+  },
+  "default_zhit_settings": {
+    "interpolation": 2,
+    "num_iterations": 3,
+    "num_points": 3,
+    "polynomial_order": 2,
+    "representation": 2,
+    "smoothing": 6,
+    "version": 2,
+    "window": 11,
+    "window_center": 1.5,
+    "window_width": 3.0
+  },
+  "keybindings": [
+    {
+      "action": "new-project",
+      "key": "N",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "load-project",
+      "key": "O",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "exit-program",
+      "key": "Q",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "next-program-tab",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "previous-program-tab",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "show-settings-appearance",
+      "key": "F1",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-settings-defaults",
+      "key": "F2",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-settings-keybindings",
+      "key": "F3",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-help-licenses",
+      "key": "F11",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-help-about",
+      "key": "F12",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-command-palette",
+      "key": "P",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "show-data-set-palette",
+      "key": "P",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "show-result-palette",
+      "key": "P",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "save-project",
+      "key": "S",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "save-project-as",
+      "key": "S",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "close-project",
+      "key": "W",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "undo",
+      "key": "Z",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "redo",
+      "key": "Z",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": true
+    },
+    {
+      "action": "next-project-tab",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-project-tab",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-data-sets-tab",
+      "key": "D",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-fitting-tab",
+      "key": "F",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-kramers-kronig-tab",
+      "key": "K",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-zhit-tab",
+      "key": "Z",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-drt-tab",
+      "key": "T",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-home-tab",
+      "key": "Home",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "select-overview-tab",
+      "key": "O",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-plotting-tab",
+      "key": "P",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "select-simulation-tab",
+      "key": "S",
+      "mod_alt": true,
+      "mod_ctrl": true,
+      "mod_shift": false
+    },
+    {
+      "action": "perform-action",
+      "key": "Enter",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "batch-perform-action",
+      "key": "Enter",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "delete-result",
+      "key": "Delete",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "next-primary-result",
+      "key": "Page down",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-primary-result",
+      "key": "Page up",
+      "mod_alt": false,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "next-secondary-result",
+      "key": "Page down",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "previous-secondary-result",
+      "key": "Page up",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "apply-settings",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "apply-mask",
+      "key": "M",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-nyquist",
+      "key": "N",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-drt",
+      "key": "D",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-impedance",
+      "key": "R",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-enlarged-bode",
+      "key": "B",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "show-circuit-editor",
+      "key": "E",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-drt-data",
+      "key": "D",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-impedance-data",
+      "key": "I",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-nyquist-data",
+      "key": "N",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-bode-data",
+      "key": "B",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-residuals-data",
+      "key": "R",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-output",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "average-data-sets",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "toggle-data-points",
+      "key": "T",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-data-set-mask",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "subtract-impedance",
+      "key": "S",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "interpolate-points",
+      "key": "I",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "select-all-plot-series",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "unselect-all-plot-series",
+      "key": "A",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "copy-plot-appearance",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "copy-plot-data",
+      "key": "C",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "expand-collapse-sidebar",
+      "key": "E",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "export-plot",
+      "key": "P",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "load-simulation-as-data-set",
+      "key": "L",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "load-zhit-as-data-set",
+      "key": "L",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "preview-zhit-weights",
+      "key": "W",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "duplicate-plot",
+      "key": "D",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": false
+    },
+    {
+      "action": "next-plot-tab",
+      "key": "Page down",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    },
+    {
+      "action": "previous-plot-tab",
+      "key": "Page up",
+      "mod_alt": true,
+      "mod_ctrl": false,
+      "mod_shift": true
+    }
+  ],
+  "markers": {
+    "bode_magnitude_data": 0,
+    "bode_magnitude_simulation": 7,
+    "bode_phase_data": 1,
+    "bode_phase_simulation": 8,
+    "impedance_imaginary_data": 1,
+    "impedance_imaginary_simulation": 8,
+    "impedance_real_data": 0,
+    "impedance_real_simulation": 7,
+    "mu_Xps_Xps": 1,
+    "mu_Xps_mu": 0,
+    "nyquist_data": 0,
+    "nyquist_simulation": 7,
+    "residuals_imaginary": 1,
+    "residuals_real": 0
+  },
+  "num_per_decade_in_simulated_lines": 100,
+  "num_procs": -1,
+  "user_defined_elements_path": "",
+  "version": 5
+}

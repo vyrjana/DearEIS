@@ -343,5 +343,11 @@ References:
 - Massey (1951, {massey1951})
 - Yrjänä and Bobacka (2024, {yrjana2024})
     """.strip(),
+        "load_as_data_set": """
+Load the current Kramers-Kronig result as a data set.
+    """.strip(),
+        "copy_cdc": """
+Copy the circuit description code (CDC) for the fitted circuit.
+    """.strip(),
     }
 )

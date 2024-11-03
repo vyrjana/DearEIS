@@ -2303,6 +2303,15 @@ class PlottingTab:
                                 legend_outside=False,
                             )
 
+                            self.plot_types[PlotType.DRT_FREQUENCY] = DRT(
+                                width=-1,
+                                height=self.plot_height,
+                                legend_horizontal=False,
+                                legend_location=dpg.mvPlot_Location_NorthEast,
+                                legend_outside=False,
+                            )
+                            self.plot_types[PlotType.DRT_FREQUENCY].set_frequency(True)
+
                             self.plot_types[PlotType.NYQUIST_ADMITTANCE] = Nyquist(
                                 width=-1,
                                 height=self.plot_height,
@@ -2669,7 +2678,7 @@ class PlottingTab:
                         theme=theme,
                         show_label=show_label,
                     )
-            elif plot_type == PlotType.DRT:
+            elif plot_type in (PlotType.DRT, PlotType.DRT_FREQUENCY):
                 if type(series) is not DRTResult:
                     continue
 

@@ -1,3 +1,16 @@
+# 5.1.0 (2024/11/03)
+
+- Added support for plotting DRT as a function of frequency in the `Plotting` tab.
+- Added the ability to load Kramers-Kronig results as data sets.
+- Added the ability to copy the circuit description code (CDC) of the fitted circuit from a Kramers-Kronig result.
+- Added support for using the modified Akima spline as part of the Z-HIT analysis and set it as the new default.
+- Updated support for migrating old user configuration file versions and testing of the process.
+- Updated tooltips.
+- Fixed a bug that caused parts of some modal windows to not be fully visible on some operating systems and/or desktop environments.
+- Fixed a bug where plotting DRT as a function of frequency used the angular frequency on the x-axis but was labeled as frequency.
+- Fixed a bug that caused an exception to be raised if a `DataSet` instance was included in a `PlotSettings` instance that was made to plot distributions of relaxation times.
+
+
 # 5.0.1 (2024/09/10)
 
 - Fixed a bug where merging the user and default configurations would raise an exception because key-value pairs could have differing value types (e.g., an enum in the user configuration and an integer in another default configuration).

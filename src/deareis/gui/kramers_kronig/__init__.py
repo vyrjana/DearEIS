@@ -854,6 +854,32 @@ class SettingsTable:
                 )
                 attach_tooltip(tooltips.general.apply_mask)
 
+            with dpg.group(horizontal=True):
+                self._load_as_data_button: Tag = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Load as data set",
+                    callback=lambda s, a, u: signals.emit(
+                        Signal.LOAD_TEST_AS_DATA_SET,
+                        **u,
+                    ),
+                    tag=self._load_as_data_button,
+                    width=154,
+                )
+                attach_tooltip(tooltips.kramers_kronig.load_as_data_set)
+
+                self._copy_cdc_button: Tag = dpg.generate_uuid()
+                dpg.add_button(
+                    label="Copy CDC",
+                    callback=lambda s, a, u: (
+                        dpg.set_clipboard_text(u["test"].circuit.to_string(12))
+                        if u.get("test", None) is not None
+                        else ""
+                    ),
+                    tag=self._copy_cdc_button,
+                    width=-1,
+                )
+                attach_tooltip(tooltips.kramers_kronig.copy_cdc)
+
     def clear(self, hide: bool):
         if hide:
             dpg.hide_item(self._header)
@@ -997,6 +1023,19 @@ class SettingsTable:
             {
                 "data": data,
                 "mask": test.mask,
+                "test": test,
+            },
+        )
+        dpg.set_item_user_data(
+            self._load_as_data_button,
+            {
+                "test": test,
+                "data": data,
+            },
+        )
+        dpg.set_item_user_data(
+            self._copy_cdc_button,
+            {
                 "test": test,
             },
         )

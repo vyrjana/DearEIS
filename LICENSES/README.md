@@ -13,6 +13,11 @@
 - License: MIT
 - Dependency.
 
+# DRT-from-Loewner-framework
+- https://github.com/projectsEECandDRI/DRT-from-Loewner-framework
+- License: MIT
+- _pyimpspec_ copied/ported code to implement calculation of the distribution of relaxation times (DRT).
+
 # DRT-python-code
 - https://github.com/akulikovsky/DRT-python-code
 - License: GPLv3 or later

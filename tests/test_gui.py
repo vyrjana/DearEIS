@@ -405,6 +405,7 @@ def test_plotting_tab():
 
     print("\n- Plotting tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.PLOTTING_TAB, context
 
@@ -848,6 +849,7 @@ Element & Parameter & Value & Unit \\
 
     print("\n- Simulation tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.SIMULATION_TAB, context
 
@@ -1301,6 +1303,7 @@ Score & Real (\%) & Imag. (\%) \\"""
 
     print("\n- DRT tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.DRT_TAB, context
 
@@ -1825,6 +1828,7 @@ Element & Parameter & Value & Std. err. (\%) & Unit & Fixed \\
 
     print("\n- Fitting tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.FITTING_TAB, context
 
@@ -2116,6 +2120,7 @@ def test_zhit_tab():
 
     print("\n- Z-HIT tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.ZHIT_TAB, context
 
@@ -2471,6 +2476,7 @@ def test_kramers_kronig_tab():
 
     print("\n- Kramers-Kronig tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.KRAMERS_KRONIG_TAB, context
 
@@ -2742,6 +2748,7 @@ def test_data_sets_tab():
 
     print("\n- Data sets tab")
     switch_tab()
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.DATA_SETS_TAB, context
 
@@ -2778,6 +2785,7 @@ def test_overview_tab():
         signals.emit(Signal.RENAME_PROJECT, label="Test project")
 
     print("\n- Overview tab")
+    sleep(0.5)
     context: Context = project_tab.get_active_context()
     assert context == Context.OVERVIEW_TAB, context
     rename_project()

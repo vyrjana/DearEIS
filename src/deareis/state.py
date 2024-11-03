@@ -79,6 +79,7 @@ class State:
         )
         self.recent_projects: List[str] = []
         self.config: Config = Config()
+        self.config.load()
         self.program_window: ProgramWindow = ProgramWindow()
         self.latest_project_directory: str = getcwd()
         self.latest_data_set_directory: str = getcwd()

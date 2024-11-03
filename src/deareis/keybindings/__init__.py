@@ -525,6 +525,13 @@ class KeybindingHandler:
             elif action == Action.LOAD_SIMULATION_AS_DATA_SET:
                 if context == Context.SIMULATION_TAB:
                     project_tab.start_loading_simulation_as_data_set()
+            elif action == Action.LOAD_TEST_AS_DATA_SET:
+                if context == Context.KRAMERS_KRONIG_TAB:
+                    signals.emit(
+                        Signal.LOAD_TEST_AS_DATA_SET,
+                        test=project_tab.get_active_test(),
+                        data=project_tab.get_active_data_set(),
+                    )
             elif action == Action.LOAD_ZHIT_AS_DATA_SET:
                 if context == Context.ZHIT_TAB:
                     signals.emit(

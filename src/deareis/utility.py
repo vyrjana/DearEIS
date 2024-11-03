@@ -69,8 +69,9 @@ MATH_REGISTRY: Tag = dpg.add_texture_registry()
 
 
 def rename_dict_entry(dictionary: dict, old: str, new: str):
-    assert new not in dictionary
-    dictionary[new] = dictionary[old]
+    if new not in dictionary:
+        dictionary[new] = dictionary[old]
+
     del dictionary[old]
 
 
@@ -103,7 +104,7 @@ def calculate_window_position_dimensions(
         issubdtype(type(width), integer) and height > 0
     )
 
-    viewport_width: Tag = dpg.get_viewport_width()
+    viewport_width: Tag = dpg.get_viewport_client_width()
     x: int
     if issubdtype(type(width), floating):
         x = floor(viewport_width * (1.0 - width) / 2)
@@ -111,7 +112,7 @@ def calculate_window_position_dimensions(
     else:
         x = floor((viewport_width - width) / 2)
 
-    viewport_height: Tag = dpg.get_viewport_height()
+    viewport_height: Tag = dpg.get_viewport_client_height()
     y: int
     if issubdtype(type(height), floating):
         y = floor(viewport_height * (1.0 - height) / 2)

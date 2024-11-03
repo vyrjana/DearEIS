@@ -482,6 +482,13 @@ DEFAULT_KEYBINDINGS: List[Keybinding] = [
         mod_alt=True,
         mod_ctrl=False,
         mod_shift=False,
+        action=Action.LOAD_TEST_AS_DATA_SET,
+    ),
+    Keybinding(
+        key=dpg.mvKey_L,
+        mod_alt=True,
+        mod_ctrl=False,
+        mod_shift=False,
         action=Action.LOAD_SIMULATION_AS_DATA_SET,
     ),
     Keybinding(
@@ -760,7 +767,7 @@ DEFAULT_ZHIT_SETTINGS: ZHITSettings = ZHITSettings(
     num_points=3,
     polynomial_order=2,
     num_iterations=3,
-    interpolation=ZHITInterpolation.AKIMA,
+    interpolation=ZHITInterpolation.MAKIMA,
     window=ZHITWindow.HANN,
     window_center=1.5,
     window_width=3.0,

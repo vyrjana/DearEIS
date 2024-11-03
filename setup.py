@@ -13,15 +13,15 @@ entry_points = {
 dependencies = [
     "dearpygui~=1.11",  # Used to implement the GUI.
     "requests~=2.32",  # Used to check package status on PyPI.
-    "pyimpspec~=5.0",  # Used for parsing, fitting, and analyzing impedance spectra.
+    "pyimpspec~=5.1",  # Used for parsing, fitting, and analyzing impedance spectra.
 ]
 
 dev_dependencies = [
     "build~=1.2",
     "flake8~=7.1",
-    "setuptools~=74.0",
-    "sphinx~=8.0",
-    "sphinx-rtd-theme~=2.0",
+    "setuptools~=75.3",
+    "sphinx~=8.1",
+    "sphinx-rtd-theme~=3.0",
 ]
 
 optional_dependencies = {
@@ -32,7 +32,7 @@ optional_dependencies = {
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "5.0.1"
+version = "5.1.0"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:

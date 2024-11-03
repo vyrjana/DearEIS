@@ -27,6 +27,7 @@ from numpy import (
     floor,
     log10 as log,
     ndarray,
+    pi,
 )
 import dearpygui.dearpygui as dpg
 import deareis.themes as themes
@@ -140,7 +141,7 @@ class DRT(Plot):
             gamma.shape,
         )
 
-        x = list(tau ** (-1 if self._frequency else 1))
+        x = list((1/(2*pi*tau)) if self._frequency else tau)
         y = list(gamma)
 
         i: int
@@ -183,14 +184,14 @@ class DRT(Plot):
         tag: int
         if gamma is not None:
             tag = dpg.add_line_series(
-                x=list(tau ** (-1 if self._frequency else 1)),
+                x=list((1/(2*pi*tau)) if self._frequency else tau),
                 y=list(gamma),
                 label=label if show_label else None,
                 parent=self._y_axis,
             )
         elif lower is not None and upper is not None:
             tag = dpg.add_shade_series(
-                x=list(tau ** (-1 if self._frequency else 1)),
+                x=list((1/(2*pi*tau)) if self._frequency else tau),
                 y1=list(lower),  # Lower bounds
                 y2=list(upper),  # Upper bounds
                 label=label if show_label else None,
@@ -223,7 +224,7 @@ class DRT(Plot):
         for kwargs in self._series:
             tau: ndarray = kwargs["tau"]
             if tau.size > 0:
-                x = tau ** (-1 if self._frequency else 1)
+                x = (1/(2*pi*tau)) if self._frequency else tau
                 if x_min is None or min(x) < x_min:
                     x_min = min(x)
                 

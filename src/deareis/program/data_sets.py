@@ -119,6 +119,39 @@ def load_zhit_as_data_set(*args, **kwargs):
 
     signals.emit(Signal.HIDE_BUSY_MESSAGE)
 
+def load_test_as_data_set(*args, **kwargs):
+    project: Optional[Project] = STATE.get_active_project()
+    project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
+    if project is None or project_tab is None:
+        return
+
+    test: Optional[KramersKronigResult] = kwargs.get("test")
+    data: Optional[DataSet] = kwargs.get("data")
+    if test is None or data is None:
+        return
+
+    signals.emit(
+        Signal.SHOW_BUSY_MESSAGE,
+        message="Loading Kramers-Kronig test result as data set",
+    )
+
+    new_data: DataSet = DataSet(
+        test.get_frequencies(),
+        test.get_impedances(),
+        mask={},
+        label=f"{data.get_label()} - {test.get_label()}",
+    )
+    project.add_data_set(new_data)
+    project_tab.populate_data_sets(project)
+    signals.emit(Signal.SELECT_DATA_SET, data=new_data)
+    signals.emit(
+        Signal.SELECT_PLOT_SETTINGS,
+        settings=project_tab.get_active_plot(),
+    )
+    signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
+
+    signals.emit(Signal.HIDE_BUSY_MESSAGE)
+
 
 def load_simulation_as_data_set(*args, **kwargs):
     project: Optional[Project] = STATE.get_active_project()

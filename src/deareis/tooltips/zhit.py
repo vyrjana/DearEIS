@@ -23,7 +23,7 @@ from types import SimpleNamespace
 zhit = SimpleNamespace(
     **{
         "smoothing": """
-The type of smoothing to apply to the phase data. LOWESS is the default smoothing algorithm since Savitzky-Golay expects evenly spaced data, but the latter may provide better results in some cases. Setting this to 'Auto' results in attempts to use all of them separately and choosing the result with the best fit.
+The type of smoothing to apply to the phase data. Modified sinc kernel is the default smoothing algorithm. Setting this to 'Auto' results in attempts to use all of them separately and choosing the result with the best fit.
     """.strip(),
         "num_points": """
 The number of points to take into consideration when smoothing any given point.
@@ -35,7 +35,7 @@ The order of the polynomial that is used in the Savitzky-Golay algorithm.
 The number of iterations to perform in the LOWESS algorithm.
     """.strip(),
         "interpolation": """
-The type of spline to use for interpolation. The Akima spline should be a good choice in most cases. Setting this to 'Auto' results in attempts to use all of them separately and choosing the result with the best fit.
+The type of spline to use for interpolation. The (modified) Akima spline should be a good choice in most cases. Setting this to 'Auto' results in attempts to use all of them separately and choosing the result with the best fit.
     """.strip(),
         "window": """
 The type of window function that is used to generate weights for offset adjustment. Setting this to 'Auto' results in attempts to use all of them separately and choosing the result with the best fit.

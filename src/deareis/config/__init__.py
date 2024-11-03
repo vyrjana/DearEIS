@@ -18,12 +18,14 @@
 # the LICENSES folder.
 
 from json import (
+    JSONDecodeError,
     dumps as dump_json,
     load as load_json,
     loads as parse_json,
 )
 from os import makedirs
 from os.path import (
+    dirname,
     exists,
     isdir,
     join,
@@ -225,9 +227,17 @@ def _parse_v1(dictionary: dict) -> dict:
 
 
 class Config:
-    def __init__(self):
-        self.config_dir_path: str = join(xdg_config_home(), "DearEIS")
-        self.config_path: str = join(self.config_dir_path, "config.json")
+    def __init__(self, config_path: Optional[str] = None):
+        self.config_dir_path: str = (
+            dirname(config_path)
+            if config_path is not None else
+            join(xdg_config_home(), "DearEIS")
+        )
+        self.config_path: str = (
+            config_path
+            if config_path is not None else
+            join(self.config_dir_path, "config.json")
+        )
         self.auto_backup_interval: int = None  # type: ignore
         self.num_per_decade_in_simulated_lines: int = None  # type: ignore
         self.default_suggestion_settings: KramersKronigSuggestionSettings = None  # type: ignore
@@ -245,21 +255,6 @@ class Config:
         self.from_dict(self.default_settings())
         if not exists(self.config_path):
             self.save()
-        else:
-            try:
-                self.load()
-            except AssertionError:
-                signals.emit(
-                    Signal.SHOW_ERROR_MESSAGE,
-                    traceback=format_exc(),
-                    message="Encountered malformed config! Using defaults...",
-                )
-            except Exception:
-                signals.emit(
-                    Signal.SHOW_ERROR_MESSAGE,
-                    traceback=format_exc(),
-                    message="Encountered issue while parsing config! Using defaults...",
-                )
 
     def default_settings(self) -> dict:
         return {
@@ -473,13 +468,32 @@ class Config:
 
         return result
 
-    def load(self):
-        with open(self.config_path, "r") as fp:
-            dictionary: dict = load_json(fp)
+    def load(self, path: Optional[str] = None) -> bool:
+        if path is None:
+            path = self.config_path
 
-        assert "version" in dictionary
-        version: int = dictionary["version"]
-        assert version <= VERSION, f"{version=} > {VERSION=}"
+        try:
+            with open(path, "r") as fp:
+                dictionary: dict = load_json(fp)
+        except JSONDecodeError:
+            signals.emit(
+                Signal.SHOW_ERROR_MESSAGE,
+                traceback=format_exc(),
+                message="Encountered issue while parsing config! Using defaults...",
+            )
+
+            return False
+
+        try:
+            version: int = dictionary["version"]
+        except KeyError:
+            signals.emit(
+                Signal.SHOW_ERROR_MESSAGE,
+                traceback=format_exc(),
+                message="Encountered malformed config! Using defaults...",
+            )
+            
+            return False
 
         parsers: Dict[int, Callable] = {
             1: _parse_v1,
@@ -488,7 +502,18 @@ class Config:
             4: _parse_v4,
             5: _parse_v5,
         }
-        assert version in parsers, f"{version=} not in {parsers.keys()=}"
+
+        try:
+            assert version <= VERSION, f"{version=} > {VERSION=}"
+            assert version in parsers, f"{version=} not in {parsers.keys()=}"
+        except AssertionError:
+            signals.emit(
+                Signal.SHOW_ERROR_MESSAGE,
+                traceback=format_exc(),
+                message=f"Unsupported config version ({version=})! Using defaults...",
+            )
+            
+            return False
         
         v: int
         p: Callable
@@ -496,13 +521,24 @@ class Config:
             if v < version:
                 continue
 
-            dictionary = p(dictionary)
+            try:
+                dictionary = p(dictionary)
+            except Exception:
+                signals.emit(
+                    Signal.SHOW_ERROR_MESSAGE,
+                    traceback=format_exc(),
+                    message="Unable to migrate config! Using defaults...",
+                )
+                
+                return False
 
         dictionary = self.merge_dicts(
             parse_json(dump_json(dictionary)),
             parse_json(dump_json(self.to_dict()))
         )
         self.from_dict(dictionary)
+
+        return True
 
     def validate_keybindings(self, keybindings: List[Keybinding]):
         stringified: List[str] = list(map(str, keybindings))

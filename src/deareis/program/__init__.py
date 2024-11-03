@@ -81,6 +81,7 @@ from .data_sets import (
     delete_data_set,
     load_data_set_files,
     load_simulation_as_data_set,
+    load_test_as_data_set,
     load_zhit_as_data_set,
     modify_data_set_path,
     rename_data_set,
@@ -517,8 +518,8 @@ def select_project_tab(*args, **kwargs):
     STATE.set_active_project(uuid)
     signals.emit(
         Signal.VIEWPORT_RESIZED,
-        width=dpg.get_viewport_width(),
-        height=dpg.get_viewport_height(),
+        width=dpg.get_viewport_client_width(),
+        height=dpg.get_viewport_client_height(),
     )
 
 
@@ -920,8 +921,8 @@ def initialize_program(args: Namespace):
     dpg.set_viewport_resize_callback(
         lambda: signals.emit(
             Signal.VIEWPORT_RESIZED,
-            width=dpg.get_viewport_width(),
-            height=dpg.get_viewport_height(),
+            width=dpg.get_viewport_client_width(),
+            height=dpg.get_viewport_client_height(),
         )
     )
     
@@ -1031,6 +1032,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SELECT_TEST_RESULT, select_test_result)
     signals.register(Signal.DELETE_TEST_RESULT, delete_test_result)
     signals.register(Signal.APPLY_TEST_SETTINGS, apply_test_settings)
+    signals.register(Signal.LOAD_TEST_AS_DATA_SET, load_test_as_data_set)
 
     # Signals for the Z-HIT tab
     signals.register(Signal.APPLY_ZHIT_SETTINGS, apply_zhit_settings)
@@ -1087,8 +1089,8 @@ def initialize_program(args: Namespace):
     # Program is actually starting to function at this point
     dpg.split_frame(delay=100)
     STATE.program_window.busy_message.resize(
-        dpg.get_viewport_width(),
-        dpg.get_viewport_height(),
+        dpg.get_viewport_client_width(),
+        dpg.get_viewport_client_height(),
     )
 
     signals.emit(Signal.SHOW_BUSY_MESSAGE, message="Rendering assets")

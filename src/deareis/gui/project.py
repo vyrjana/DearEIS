@@ -84,8 +84,8 @@ class ProjectTab:
                 assert tab is not None
                 
                 tab.resize(
-                    width=dpg.get_viewport_width(),
-                    height=dpg.get_viewport_height(),
+                    width=dpg.get_viewport_client_width(),
+                    height=dpg.get_viewport_client_height(),
                 )
                 
                 if hasattr(tab, "queued_update") and tab.queued_update is not None:

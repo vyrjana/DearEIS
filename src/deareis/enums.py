@@ -117,6 +117,7 @@ class Action(IntEnum):
     # - Simulation tab
     APPLY_MASK = auto()
     # - Kramers-Kronig tab
+    LOAD_TEST_AS_DATA_SET = auto()
     # - DRT tab
     # - Fitting tab
     SHOW_ENLARGED_NYQUIST = auto()
@@ -346,6 +347,7 @@ action_contexts: Dict[Action, List[Context]] = {
         Context.FITTING_TAB,
         Context.SIMULATION_TAB,
     ],
+    Action.LOAD_TEST_AS_DATA_SET: [Context.KRAMERS_KRONIG_TAB],
     Action.LOAD_SIMULATION_AS_DATA_SET: [Context.SIMULATION_TAB],
     Action.LOAD_ZHIT_AS_DATA_SET: [Context.ZHIT_TAB],
     Action.AVERAGE_DATA_SETS: [Context.DATA_SETS_TAB],
@@ -388,6 +390,7 @@ action_to_string: Dict[Action, str] = {
     Action.EXPAND_COLLAPSE_SIDEBAR: "expand-collapse-sidebar",
     Action.EXPORT_PLOT: "export-plot",
     Action.INTERPOLATE_POINTS: "interpolate-points",
+    Action.LOAD_TEST_AS_DATA_SET: "load-test-as-data-set",
     Action.LOAD_PROJECT: "load-project",
     Action.LOAD_SIMULATION_AS_DATA_SET: "load-simulation-as-data-set",
     Action.LOAD_ZHIT_AS_DATA_SET: "load-zhit-as-data-set",
@@ -698,6 +701,9 @@ Collapse/expand the sidebar while in the 'Plotting' tab.
     Action.EXPORT_PLOT: """
 Export the current plot using matplotlib.
 """.strip(),
+    Action.LOAD_TEST_AS_DATA_SET: """
+Load the current Kramers-Kronig test result as a data set.
+""".strip(),
     Action.LOAD_SIMULATION_AS_DATA_SET: """
 Load the current simulation as a data set.
 """.strip(),
@@ -952,6 +958,7 @@ class PlotType(IntEnum):
     - BODE_ADMITTANCE_PHASE: Phase(Y) vs f
     - ADMITTANCE_REAL: Re(Y) vs f
     - ADMITTANCE_IMAGINARY: Im(Y) vs f
+    - DRT_FREQUENCY: gamma vs f
     """
 
     NYQUIST_IMPEDANCE = 1
@@ -965,6 +972,7 @@ class PlotType(IntEnum):
     BODE_ADMITTANCE_PHASE = 9
     ADMITTANCE_REAL = 10
     ADMITTANCE_IMAGINARY = 11
+    DRT_FREQUENCY = 12
 
 
 plot_type_to_label: Dict[PlotType, str] = {
@@ -975,6 +983,7 @@ plot_type_to_label: Dict[PlotType, str] = {
     PlotType.BODE_IMPEDANCE_MAGNITUDE: "Bode - impedance magnitude",
     PlotType.BODE_IMPEDANCE_PHASE: "Bode - impedance phase",
     PlotType.DRT: "Distribution of relaxation times",
+    PlotType.DRT_FREQUENCY: "Distribution of relaxation times (vs frequency)",
     PlotType.IMPEDANCE_IMAGINARY: "Impedance - imaginary",
     PlotType.IMPEDANCE_REAL: "Impedance - real",
     PlotType.NYQUIST_ADMITTANCE: "Nyquist - admittance",
@@ -1537,12 +1546,14 @@ class ZHITInterpolation(IntEnum):
     - AKIMA: `Akima spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html#scipy.interpolate.Akima1DInterpolator>`_
     - CUBIC: `cubic spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.CubicSpline.html#scipy.interpolate.CubicSpline>`_
     - PCHIP: `Piecewise Cubic Hermite Interpolating Polynomial <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.PchipInterpolator.html#scipy.interpolate.PchipInterpolator>`_
+    - MAKIMA: `Modified Akima spline <https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.Akima1DInterpolator.html#scipy.interpolate.Akima1DInterpolator>`_
     """
 
     AUTO = 1
     AKIMA = 2
     CUBIC = 3
     PCHIP = 4
+    MAKIMA = 5
 
 
 label_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
@@ -1550,6 +1561,7 @@ label_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
     "Akima": ZHITInterpolation.AKIMA,
     "Cubic": ZHITInterpolation.CUBIC,
     "PCHIP": ZHITInterpolation.PCHIP,
+    "Modified Akima": ZHITInterpolation.MAKIMA,
 }
 zhit_interpolation_to_label: Dict[ZHITInterpolation, str] = {
     v: k for k, v in label_to_zhit_interpolation.items()
@@ -1559,6 +1571,7 @@ zhit_interpolation_to_value: Dict[ZHITInterpolation, str] = {
     ZHITInterpolation.AKIMA: "akima",
     ZHITInterpolation.CUBIC: "cubic",
     ZHITInterpolation.PCHIP: "pchip",
+    ZHITInterpolation.MAKIMA: "makima",
 }
 value_to_zhit_interpolation: Dict[str, ZHITInterpolation] = {
     v: k for k, v in zhit_interpolation_to_value.items()

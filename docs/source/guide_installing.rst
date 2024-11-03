@@ -65,39 +65,41 @@ If there are no errors, then run the following command to install DearEIS and it
 
 .. code:: bash
 
+   # If pipx is used to automatically manage the virtual environment.
+   pipx install deareis
+
    # If manually managing the virtual environment,
    # follow the relevant pip documentation for creating
    # and activating a virtual environment before running
    # the following command.
    pip install deareis
 
-   # If pipx is used to automatically manage the virtual environment.
-   pipx install deareis
-
 
 DearEIS should now be available as a command in the terminal and possibly also some application launchers.
 
-If you wish to install the optional dependencies, then they can be specified explicitly when installing DearEIS via pip:
-
-.. code:: bash
-
-   pip install deareis[cvxopt]
-
-
-Optional dependencies can also be install after the fact if pipx was used:
+If you wish to install the optional dependencies, then they can be installed using the following command:
 
 .. code:: bash
 
    pipx inject deareis cvxopt
 
 
+If pip was used instead of pipx, then the optional dependencies can be installed using the following command:
+
+.. code:: bash
+
+   pip install deareis[cvxopt]
+
+
 Newer versions of DearEIS can be installed in the following ways:
 
 .. code:: bash
-   
-   pip install deareis --upgrade
 
    pipx upgrade deareis --include-injected
+
+   # or
+
+   pip install deareis --upgrade
 
 
 Running the GUI program
