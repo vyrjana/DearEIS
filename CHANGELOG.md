@@ -1,4 +1,4 @@
-# 5.1.1 (2025/MM/DD)
+# 5.1.1 (2025/03/02)
 
 - Added support for Python 3.13 and DearPyGui 2.0.
   - Using Python 3.10, 3.11, or 3.12, which use DearPyGui 1.x by default, is strongly recommended for the time being.
