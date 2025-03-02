@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,13 @@ import deareis.themes as themes
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
+class NodeNotFound(Exception):
+    pass
+
+
 class Node:
     def __init__(
         self,
@@ -75,13 +82,30 @@ class Node:
         self.output_links: Dict[int, int] = {}
 
         with dpg.node(label=label, pos=pos, tag=self.tag, parent=parent):
-            if input_attribute:
-                dpg.add_node_attribute(
-                    attribute_type=dpg.mvNode_Attr_Input, tag=self.input_attribute
-                )
+            if DPG_VERSION_1:
+                if input_attribute:
+                    dpg.add_node_attribute(
+                        attribute_type=dpg.mvNode_Attr_Input,
+                        tag=self.input_attribute,
+                    )
+            else:
+                if input_attribute:
+                    with dpg.node_attribute(
+                        attribute_type=dpg.mvNode_Attr_Input,
+                        tag=self.input_attribute,
+                    ):
+                        dpg.add_text("")
+                else:
+                    dummy_node: Tag
+                    with dpg.node_attribute(attribute_type=dpg.mvNode_Attr_Input) as dummy_node:
+                        dpg.add_text("")
+
+                    dpg.bind_item_theme(dummy_node, themes._preview_node)
+
             if output_attribute:
                 dpg.add_node_attribute(
-                    attribute_type=dpg.mvNode_Attr_Output, tag=self.output_attribute
+                    attribute_type=dpg.mvNode_Attr_Output,
+                    tag=self.output_attribute,
                 )
 
         self.set_label(label)
@@ -213,7 +237,7 @@ class Parser:
         self.x_offset: int = 10
         self.y_offset: int = 10
         self.x_step: int = 90
-        self.y_step: int = 70
+        self.y_step: int = 70 if DPG_VERSION_1 else 90
         self.elements: Dict[str, Element] = {
             _.get_description(): _ for _ in pyimpspec.get_elements().values()
         }
@@ -293,7 +317,7 @@ class Parser:
         elif func(self.cere_node):
             return self.cere_node
 
-        raise Exception("Node does not exist!")
+        raise NodeNotFound("Node does not exist!")
 
     def block_linking(self):
         self.blocked_linking = True
@@ -311,9 +335,13 @@ class Parser:
         if self.blocked_linking is True:
             return
 
+        try:
+            src: Node = self.find_node(attribute=attributes[0])
+            dst: Node = self.find_node(attribute=attributes[1])
+        except NodeNotFound:
+            return
+
         link: Tag = dpg.add_node_link(*attributes, parent=sender)
-        src: Node = self.find_node(attribute=attributes[0])
-        dst: Node = self.find_node(attribute=attributes[1])
 
         # print(f"Link: {src.label=}, {dst.label=}, {link=}, {validate=}")
         src.add_link_to(dst, link)
@@ -326,8 +354,11 @@ class Parser:
         if self.blocked_linking is True:
             return
 
-        src: Node = self.find_node(link_to=link)
-        dst: Node = self.find_node(link_from=link)
+        try:
+            src: Node = self.find_node(link_to=link)
+            dst: Node = self.find_node(link_from=link)
+        except NodeNotFound:
+            return
 
         # print(f"Delink: {src.label=}, {dst.label=}, {link=}")
         src.delete_link_to(dst)
@@ -338,9 +369,13 @@ class Parser:
         assert type(src) is Node
         assert type(dst) is Node
 
-        src_attr = dpg.get_item_children(src.tag, slot=1)[
-            1 if src != self.we_node else 0
-        ]
+        if DPG_VERSION_1:
+            src_attr = dpg.get_item_children(src.tag, slot=1)[
+                1 if src != self.we_node else 0
+            ]
+        else:
+            src_attr = dpg.get_item_children(src.tag, slot=1)[1]
+
         dst_attr = dpg.get_item_children(dst.tag, slot=1)[0]
         self.link(self.node_editor, (src_attr, dst_attr))
 

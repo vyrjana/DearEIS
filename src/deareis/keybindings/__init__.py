@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,20 +48,32 @@ from deareis.data import (
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 def is_shift_down() -> bool:
-    return dpg.is_key_down(dpg.mvKey_Shift) or dpg.is_key_down(dpg.mvKey_RShift)
+    if DPG_VERSION_1:
+        return dpg.is_key_down(dpg.mvKey_Shift) or dpg.is_key_down(dpg.mvKey_RShift)
+    else:
+        return dpg.is_key_down(dpg.mvKey_ModShift)
 
 
 def is_control_down() -> bool:
-    return (
-        dpg.is_key_down(dpg.mvKey_Control)
-        or dpg.is_key_down(dpg.mvKey_LControl)
-        or dpg.is_key_down(dpg.mvKey_RControl)
-    )
+    if DPG_VERSION_1:
+        return (
+            dpg.is_key_down(dpg.mvKey_Control)
+            or dpg.is_key_down(dpg.mvKey_LControl)
+            or dpg.is_key_down(dpg.mvKey_RControl)
+        )
+    else:
+        return dpg.is_key_down(dpg.mvKey_ModCtrl)
 
 
 def is_alt_down() -> bool:
-    return dpg.is_key_down(dpg.mvKey_Alt)
+    if DPG_VERSION_1:
+        return dpg.is_key_down(dpg.mvKey_Alt)
+    else:
+        return dpg.is_key_down(dpg.mvKey_ModAlt)
 
 
 def filter_keybindings(key: int, keybindings: List[Keybinding]) -> List[Keybinding]:

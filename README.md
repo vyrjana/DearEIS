@@ -72,7 +72,7 @@ See [CONTRIBUTORS](CONTRIBUTORS) for a list of people who have contributed to th
 
 ## License
 
-Copyright 2024 DearEIS developers
+Copyright 2025 DearEIS developers
 
 DearEIS is licensed under the [GPLv3 or later](https://www.gnu.org/licenses/gpl-3.0.html).
 

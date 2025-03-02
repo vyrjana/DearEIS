@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -494,8 +494,21 @@ class ToggleDataPoints:
 
     def accept(self):
         plot: Plot = self.plot_tabs[dpg.get_value(self.plot_tab_bar)]
-        if dpg.is_plot_queried(plot._plot):
-            sx, ex, sy, ey = dpg.get_plot_query_area(plot._plot)
+
+        query_corners: List[float] = []
+        if hasattr(dpg, "get_plot_query_rects"):
+            # DPG version 2.x
+            query_corners = dpg.get_plot_query_rects(plot._plot)
+            if len(query_corners) > 0:
+                sx, sy, ex, ey = query_corners[0]
+                query_corners = [sx, ex, sy, ey]
+
+        elif hasattr(dpg, "is_plot_queried") and dpg.is_plot_queried(plot._plot):
+            # DPG version 1.x
+            query_corners = dpg.get_plot_query_area(plot._plot)
+
+        if len(query_corners) > 0:
+            sx, ex, sy, ey = query_corners
             admittance: bool = dpg.get_value(self.admittance_checkbox)
             if plot == self.nyquist_plot:
                 for i, Z in enumerate(self.data.get_impedances(masked=None)):

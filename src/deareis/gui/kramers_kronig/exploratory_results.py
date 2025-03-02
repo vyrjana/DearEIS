@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -225,7 +225,7 @@ class SuggestionSettingsMenu:
                 dpg.add_text("Auto/exploratory settings")
                 attach_tooltip(tooltips.kramers_kronig.suggestion_settings)
 
-                dpg.add_separator(label="Number of RC elements limits")
+                dpg.add_separator()
                 with dpg.group(horizontal=True):
                     dpg.add_text("Lower limit".rjust(label_pad))
                     attach_tooltip(tooltips.kramers_kronig.lower_limit)
@@ -269,7 +269,7 @@ class SuggestionSettingsMenu:
                         tag=self.limit_delta_input,
                     )
 
-                dpg.add_separator(label="Suggestion methods")
+                dpg.add_separator()
                 with dpg.group(horizontal=True):
                     dpg.add_text("Use".rjust(label_pad))
                     attach_tooltip(
@@ -317,7 +317,7 @@ class SuggestionSettingsMenu:
                         dpg.add_text(f"Method {i}")
                         format_and_attach_tooltip(tooltip)
 
-        dpg.add_separator(label="Methods")
+        dpg.add_separator()
         with dpg.group(horizontal=True):
             dpg.add_text("µ-criterion".rjust(label_pad))
             format_and_attach_tooltip(tooltips.kramers_kronig.method_1_mu_criterion)

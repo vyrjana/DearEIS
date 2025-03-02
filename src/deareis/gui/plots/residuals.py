@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,9 @@ from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 class Residuals(Plot):
     def __init__(self, width: int = -1, height: int = -1, *args, **kwargs):
         assert type(width) is int, width
@@ -41,31 +44,46 @@ class Residuals(Plot):
         super().__init__()
         self._limit: Optional[float] = kwargs.get("limit", None)
         assert isinstance(self._limit, float) or self._limit is None
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            x_axis_kwargs = {}
+            y2_axis_kwargs = {}
+            if DPG_VERSION_1:
+                x_axis_kwargs["log_scale"] = True
+            else:
+                x_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
-                log_scale=True,
                 no_gridlines=True,
+                **x_axis_kwargs,
             )
             self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Re(Z) residual (%)",
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label="Im(Z) residual (%)",
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)

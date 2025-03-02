@@ -73,7 +73,8 @@ This feature can be used to get rid of outliers or to analyze a fragment of a da
 Individual data points can be masked via the checkboxes along the left-hand side of the table of data points (:numref:`data_tab`).
 Ranges of data points can be toggled via the window that is accessible via the **Toggle points** button below the table of data points.
 This can be used to, e.g., quickly mask multiple points or to remove the mask from all points (:numref:`toggle_figure`).
-Middle-mouse clicking and dragging a region in a plot in that window can also be used to choose the points to toggle.
+Middle-mouse clicking (DearPyGui 1.x) and dragging a region in a plot in that window can also be used to choose the points to toggle.
+If DearPyGui 2.x is installed, then the same action can be performed instead with the right-mouse button while holding down Ctrl.
 
 
 .. _toggle_figure:

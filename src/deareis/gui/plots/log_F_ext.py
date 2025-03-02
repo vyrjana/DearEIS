@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,17 +37,25 @@ from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 class LogFextStatistic(Plot):
     def __init__(self, width: int = -1, height: int = -1, *args, **kwargs):
         assert isinstance(width, int), width
         assert isinstance(height, int), height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
@@ -57,13 +65,11 @@ class LogFextStatistic(Plot):
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="log Fext",
-                log_scale=False,
                 no_gridlines=True,
             )
             self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="Minimized statistic",
-                log_scale=False,
                 no_gridlines=True,
             )
 
@@ -233,12 +239,17 @@ class PseudoChisqr(Plot):
         assert isinstance(width, int), width
         assert isinstance(height, int), height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
@@ -248,13 +259,11 @@ class PseudoChisqr(Plot):
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
-                log_scale=False,
                 no_gridlines=True,
             )
             self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
                 label="log X² (pseudo)",
-                log_scale=False,
                 no_gridlines=True,
             )
 

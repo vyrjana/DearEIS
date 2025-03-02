@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,29 +37,46 @@ from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 class Impedance(Plot):
     def __init__(self, width: int = -1, height: int = -1, *args, **kwargs):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
         self._admittance: bool = False
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=kwargs.get("legend_horizontal", True),
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
+
+            x_axis_kwargs = {}
+            y2_axis_kwargs = {}
+            if DPG_VERSION_1:
+                x_axis_kwargs["log_scale"] = True
+            else:
+                x_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
-                log_scale=True,
                 no_gridlines=True,
+                **x_axis_kwargs,
             )
             self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
@@ -67,9 +84,10 @@ class Impedance(Plot):
                 no_gridlines=True,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label="-Im(Z) (ohm)",
                 no_gridlines=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -328,23 +346,35 @@ class ImpedanceSingleAxis(Plot):
         super().__init__()
         self._admittance: bool = False
         self._imaginary: bool = False
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=kwargs.get("legend_horizontal", True),
                 location=kwargs.get("legend_location", dpg.mvPlot_Location_North),
                 outside=kwargs.get("legend_outside", True),
             )
+
+            x_axis_kwargs = {}
+            if DPG_VERSION_1:
+                x_axis_kwargs["log_scale"] = True
+            else:
+                x_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="f (Hz)",
-                log_scale=True,
                 no_gridlines=True,
+                **x_axis_kwargs,
             )
             self._y_axis: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,

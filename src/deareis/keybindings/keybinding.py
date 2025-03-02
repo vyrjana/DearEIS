@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@ from typing import Dict
 from dataclasses import dataclass
 import dearpygui.dearpygui as dpg
 from deareis.enums import Action, action_to_string, string_to_action
+
+
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
 
 
 dpg_to_string: Dict[int, str] = {
@@ -192,16 +195,23 @@ class Keybinding:
         assert key in dpg_to_string, key
         if self.key == key:
             return True
-        elif self.mod_alt and key == dpg.mvKey_Alt:
+
+        elif self.mod_alt and key == (dpg.mvKey_Alt if DPG_VERSION_1 else dpg.mvKey_ModAlt):
             return True
+
         elif self.mod_ctrl and (
-            key == dpg.mvKey_Control
+            key == (dpg.mvKey_Control if DPG_VERSION_1 else dpg.mvKey_ModCtrl)
             or key == dpg.mvKey_LControl
             or key == dpg.mvKey_RControl
         ):
             return True
-        elif self.mod_shift and (key == dpg.mvKey_Shift or key == dpg.mvKey_RShift):
+
+        elif self.mod_shift and (
+            key == (dpg.mvKey_Shift if DPG_VERSION_1 else dpg.mvKey_ModShift)
+            or key == dpg.mvKey_RShift
+        ):
             return True
+
         return False
 
     def __str__(self) -> str:
@@ -210,13 +220,18 @@ class Keybinding:
 
     def __repr__(self) -> str:
         string: str = dpg_to_string[self.key]
+
         if self.mod_shift:
             string = f"Shift+{string}"
+
         if self.mod_ctrl:
             string = f"Ctrl+{string}"
+
         if self.mod_alt:
             string = f"Alt+{string}"
+
         string = f"{string}: {action_to_string[self.action]}"
+
         return string
 
     def to_dict(self) -> dict:

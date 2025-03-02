@@ -1,3 +1,11 @@
+# 5.1.1 (2025/MM/DD)
+
+- Added support for Python 3.13 and DearPyGui 2.0.
+  - Using Python 3.10, 3.11, or 3.12, which use DearPyGui 1.x by default, is strongly recommended for the time being.
+- Fixed a bug that caused "Copy as CSV" to provide values in the frequency column as angular frequencies instead of frequencies.
+- Fixed a bug that caused exceptions in the `Data sets` tab when all points were masked and the mouse cursor was moved around the Nyquist plot while the `Show frequency` setting was enabled.
+
+
 # 5.1.0 (2024/11/03)
 
 - Added support for plotting DRT as a function of frequency in the `Plotting` tab.

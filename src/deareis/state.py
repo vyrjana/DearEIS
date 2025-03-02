@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -409,25 +409,25 @@ class State:
 
     def check_version(self):
         recent_version_path: str = join(self.state_directory_path, "recent_version")
-        
+
         fp: IO
         if not exists(recent_version_path):
-            signals.emit(Signal.SHOW_GETTING_STARTED_WINDOW)
-            
             with open(recent_version_path, "w") as fp:
                 fp.write(PACKAGE_VERSION)
-            
+
+            signals.emit(Signal.SHOW_GETTING_STARTED_WINDOW)
             return
-        
+
         version: str = ""
         with open(recent_version_path, "r") as fp:
             version = fp.read().strip()
-        
+
         if version != PACKAGE_VERSION:
             with open(recent_version_path, "w") as fp:
                 fp.write(PACKAGE_VERSION)
-            
+
             signals.emit(Signal.SHOW_CHANGELOG)
+            return
 
 
 STATE: State = State()

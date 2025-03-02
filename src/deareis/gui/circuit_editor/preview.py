@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ from deareis.gui.circuit_editor.parser import (
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 class CircuitPreview:
     def __init__(self, width: int = -1, height: int = -1):
         self.node_editor: Tag = dpg.generate_uuid()
@@ -50,7 +53,10 @@ class CircuitPreview:
         self.clear()
         if circuit is None:
             return
-        self.parser.circuit_to_nodes(circuit, y_step=50)
+        self.parser.circuit_to_nodes(
+            circuit,
+            y_step=50 if DPG_VERSION_1 else 70,
+        )
         self.parser.block_linking()
         nodes: List[Node] = [self.parser.we_node, self.parser.cere_node]
         nodes.extend(self.parser.nodes)

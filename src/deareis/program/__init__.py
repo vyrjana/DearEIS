@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ from numpy import (
     angle,
     array,
     ndarray,
+    pi,
 )
 import webbrowser
 from pyimpspec import (
@@ -749,7 +750,7 @@ def copy_plot_data(*args, **kwargs):
             dictionary[
                 ("f (Hz)" if frequency else "tau (s)")
                 + suffix
-            ] = series["tau"] ** (-1 if frequency else 1)
+            ] = (1 / (2 * pi * series["tau"])) if frequency else series["tau"]
             if "imaginary" in series:
                 if "gamma" in series:
                     dictionary[f"gamma_real (ohm){suffix}"] = series["gamma"]
@@ -1154,6 +1155,13 @@ def program_closing():
 def main():
     set_start_method("spawn")
     args: Namespace = parse_arguments()
+
+    if dpg.get_dearpygui_version().startswith("2."):
+        dpg.configure_app(
+            anti_aliased_fill=True,
+            anti_aliased_lines=True,
+        )
+
     dpg.create_viewport(title="DearEIS")
     dpg.set_viewport_min_width(800)
     dpg.set_viewport_min_height(600)

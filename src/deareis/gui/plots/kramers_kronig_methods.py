@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,23 +34,38 @@ from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
 
 
+DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
+
+
 class Method1(Plot):
     def __init__(self, width: int = -1, height: int = -1, *args, **kwargs):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y2_axis_kwargs = {}
+            y3_axis_kwargs = {}
+            if not DPG_VERSION_1:
+                y2_axis_kwargs["opposite"] = True
+                y3_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -61,16 +76,18 @@ class Method1(Plot):
                 no_gridlines=True,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label="S",
                 no_gridlines=True,
+                **y2_axis_kwargs,
             )
             self._y_axis_3: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis3,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y3_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -275,18 +292,32 @@ class Method2(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y1_axis_kwargs = {}
+            y2_axis_kwargs = {}
+            if DPG_VERSION_1:
+                y1_axis_kwargs["log_scale"] = True
+            else:
+                y1_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -295,14 +326,15 @@ class Method2(Plot):
                 dpg.mvYAxis,
                 label="Norm of fitted variables",
                 no_gridlines=True,
-                log_scale=True,
+                **y1_axis_kwargs,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -445,18 +477,32 @@ class Method3(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y1_axis_kwargs = {}
+            y2_axis_kwargs = {}
+            if DPG_VERSION_1:
+                y1_axis_kwargs["log_scale"] = True
+            else:
+                y1_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -465,14 +511,15 @@ class Method3(Plot):
                 dpg.mvYAxis,
                 label="Norm of curvatures",
                 no_gridlines=True,
-                log_scale=True,
+                **y1_axis_kwargs,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -615,18 +662,28 @@ class Method4(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y2_axis_kwargs = {}
+            if not DPG_VERSION_1:
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -637,11 +694,12 @@ class Method4(Plot):
                 no_gridlines=True,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -779,18 +837,28 @@ class Method5(Plot):
         assert type(width) is int, width
         assert type(height) is int, height
         super().__init__()
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y2_axis_kwargs = {}
+            if not DPG_VERSION_1:
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -801,11 +869,12 @@ class Method5(Plot):
                 no_gridlines=True,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -944,18 +1013,28 @@ class Method6(Plot):
         assert type(height) is int, height
         super().__init__()
         admittance: bool = kwargs.get("admittance", False)
+
+        plot_kwargs = {}
+        if DPG_VERSION_1:
+            plot_kwargs["anti_aliased"] = True
+
         with dpg.plot(
-            anti_aliased=True,
             crosshairs=True,
             width=width,
             height=height,
             tag=self._plot,
+            **plot_kwargs,
         ):
             dpg.add_plot_legend(
                 horizontal=True,
                 location=dpg.mvPlot_Location_North,
                 outside=kwargs.get("legend_outside", True),
             )
+
+            y2_axis_kwargs = {}
+            if not DPG_VERSION_1:
+                y2_axis_kwargs["opposite"] = True
+
             self._x_axis: Tag = dpg.add_plot_axis(
                 dpg.mvXAxis,
                 label="Number of RC elements",
@@ -966,11 +1045,12 @@ class Method6(Plot):
                 no_gridlines=True,
             )
             self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis,
+                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
                 label=None,
                 no_gridlines=True,
                 no_tick_labels=True,
                 no_tick_marks=True,
+                **y2_axis_kwargs,
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)

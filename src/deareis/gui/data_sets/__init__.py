@@ -1,5 +1,5 @@
 # DearEIS is licensed under the GPLv3 or later (https://www.gnu.org/licenses/gpl-3.0.html).
-# Copyright 2024 DearEIS developers
+# Copyright 2025 DearEIS developers
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -570,16 +570,19 @@ class DataSetsTab:
         if data is None:
             return
 
+        immittance: ndarray = data.get_impedances()
+        if len(immittance) == 0:
+            dpg.set_value(self.nyquist_plot.tooltip_text, "")
+            return
+
+        admittance: bool = dpg.get_value(self.admittance_checkbox)
+        immittance = immittance ** (-1 if admittance else 1)
+
         mouse_x: float
         mouse_y: float
         mouse_x, mouse_y = dpg.get_plot_mouse_pos()
 
-        admittance: bool = dpg.get_value(self.admittance_checkbox)
-        immittance: ndarray = data.get_impedances() ** (
-            -1 if admittance is True else 1
-        )
         imag_sign: int = 1 if admittance is True else -1
-
         distances: List[Tuple[int, float]] = sorted(
             (
                 (i, sqrt((X.real - mouse_x) ** 2 + (imag_sign * X.imag - mouse_y) ** 2))

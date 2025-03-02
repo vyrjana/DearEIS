@@ -16,7 +16,7 @@ The package **may** also work on other platforms depending on whether or not tho
 Requirements
 ------------
 
-- `Python <https://www.python.org>`_ (3.10, 3.11, or 3.12)
+- `Python <https://www.python.org>`_ (3.10, 3.11, 3.12, or 3.13)
 - The following Python packages
 
   - `dearpygui <https://github.com/hoffstadt/DearPyGui>`_
@@ -24,6 +24,12 @@ Requirements
   - pyimpspec_
 
 These Python packages (and their dependencies) are installed automatically when DearEIS is installed using `pip <https://pip.pypa.io/en/stable/>`_.
+
+.. note::
+
+   Python 3.10, 3.11, or 3.12, and DearPyGui 1.x are strongly recommended.
+   However, since DearPyGui 1.x is not available for Python 3.13, version 2.x is installed instead in that scenario.
+
 
 The following Python packages can be installed as optional dependencies for additional functionality:
 
