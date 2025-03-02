@@ -1,0 +1,471 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application programming interface &mdash; DearEIS 5.1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1bd908e2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Documentation" href="apidocs.html" />
+    <link rel="prev" title="Palettes" href="guide_palettes.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_data.html">Processing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_fitting.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Application programming interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-loading-a-project">Creating/loading a project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-importing-data-sets">Batch importing data sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-plotting-results">Batch plotting results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#customized-plots">Customized plots</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-tables">Generating tables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-circuit-diagrams">Generating circuit diagrams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generating-equations">Generating equations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Application programming interface</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_api.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="application-programming-interface">
+<h1>Application programming interface<a class="headerlink" href="#application-programming-interface" title="Link to this heading"></a></h1>
+<p>The GUI is the primary interface of DearEIS but an API is also included for some batch processing capabilities.
+However, if an API is the desired interface for performing various tasks, then using <a class="reference external" href="https://vyrjana.github.io/pyimpspec/">pyimpspec</a> directly may be preferable.</p>
+<section id="creating-loading-a-project">
+<h2>Creating/loading a project<a class="headerlink" href="#creating-loading-a-project" title="Link to this heading"></a></h2>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="n">Project</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Create a new project</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load an existing project</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-importing-data-sets">
+<h2>Batch importing data sets<a class="headerlink" href="#batch-importing-data-sets" title="Link to this heading"></a></h2>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="n">DataSet</span><span class="p">,</span> <span class="n">Project</span><span class="p">,</span> <span class="n">parse_data</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">:</span> <span class="n">DataSet</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">parse_data</span><span class="p">(</span><span class="s2">&quot;./tests/data-1.idf&quot;</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="n">project</span><span class="o">.</span><span class="n">add_data_set</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Remember to save the project somewhere as well!</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># project.save(&quot;./tests/batch-imported-data.json&quot;)</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-plotting-results">
+<h2>Batch plotting results<a class="headerlink" href="#batch-plotting-results" title="Link to this heading"></a></h2>
+<p>In the following example we will load a project, iterate over data sets, various results, simulations, and plots.
+A single example of each of these will be plotted.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="gp">... </span>  <span class="n">DRTResult</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">DataSet</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">FitResult</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">PlotSettings</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">Project</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">SimulationResult</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">KramersKronigResult</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">ZHITResult</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">mpl</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">:</span> <span class="n">DataSet</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_data_sets</span><span class="p">():</span>
+<span class="gp">... </span>  <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_data</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Iterate over Kramers-Kronig results</span>
+<span class="gp">... </span>  <span class="n">test</span><span class="p">:</span> <span class="n">KramersKronigResult</span>
+<span class="gp">... </span>  <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_tests</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_fit</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">test</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">... </span>    <span class="k">break</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Iterate over Z-HIT results</span>
+<span class="gp">... </span>  <span class="n">zhit</span><span class="p">:</span> <span class="n">ZHITResult</span>
+<span class="gp">... </span>  <span class="k">for</span> <span class="n">zhit</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_zhits</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_fit</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">zhit</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">... </span>    <span class="k">break</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Iterate over DRT results</span>
+<span class="gp">... </span>  <span class="n">drt</span><span class="p">:</span> <span class="n">DRTResult</span>
+<span class="gp">... </span>  <span class="k">for</span> <span class="n">drt</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_drts</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_drt</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">drt</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">... </span>    <span class="k">break</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Iterate over circuit fits</span>
+<span class="gp">... </span>  <span class="n">fit</span><span class="p">:</span> <span class="n">FitResult</span>
+<span class="gp">... </span>  <span class="k">for</span> <span class="n">fit</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_fits</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_fit</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">fit</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">... </span>    <span class="k">break</span>
+<span class="gp">... </span>  <span class="k">break</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Iterate over simulations</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sim</span><span class="p">:</span> <span class="n">SimulationResult</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">sim</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_simulations</span><span class="p">():</span>
+<span class="gp">... </span>  <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_nyquist</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">sim</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">line</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">colored_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="p">)</span>
+<span class="gp">... </span>  <span class="k">break</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Iterate over plots</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plot</span><span class="p">:</span> <span class="n">PlotSettings</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">plot</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_plots</span><span class="p">():</span>
+<span class="gp">... </span>  <span class="n">figure</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plot</span><span class="p">,</span> <span class="n">project</span><span class="p">)</span>
+<span class="gp">... </span>  <span class="k">break</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s2">&quot;all&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(<a class="reference download internal" download="" href="_downloads/6cc72b2aa9308da991695f2fbaacfe77/guide_api-1.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-1.svg" class="plot-directive" src="_images/guide_api-1.svg" />
+</figure>
+<p>(<a class="reference download internal" download="" href="_downloads/531a22632d04c49c2d9e8ec0ea7332eb/guide_api-2.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-2.svg" class="plot-directive" src="_images/guide_api-2.svg" />
+</figure>
+<p>(<a class="reference download internal" download="" href="_downloads/c4614fc79a01f37cbb0a785c9f2af7de/guide_api-3.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<p>(<a class="reference download internal" download="" href="_downloads/9fb70cfa7e67d262db38698f6c9e09c8/guide_api-4.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-4.svg" class="plot-directive" src="_images/guide_api-4.svg" />
+</figure>
+<p>(<a class="reference download internal" download="" href="_downloads/c48825fc61235d8347dc675a63af0f73/guide_api-5.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-5.svg" class="plot-directive" src="_images/guide_api-5.svg" />
+</figure>
+<p>(<a class="reference download internal" download="" href="_downloads/2b9ed8a88f7b5e2e0ef314f77594d621/guide_api-6.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-6.svg" class="plot-directive" src="_images/guide_api-6.svg" />
+</figure>
+<p>(<a class="reference download internal" download="" href="_downloads/4bc0053e2335f928e4b16ca92588b6c9/guide_api-7.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-7.svg" class="plot-directive" src="_images/guide_api-7.svg" />
+</figure>
+</section>
+<section id="customized-plots">
+<h2>Customized plots<a class="headerlink" href="#customized-plots" title="Link to this heading"></a></h2>
+<p>The approach used in the previous example could be used as the basis for creating more complicated plots (i.e., select the data sets and results programmatically).
+However, it may be more convenient to use DearEIS’ GUI to select the data sets, results, etc. and assign colors, markers, etc.
+The resulting <code class="xref py py-class docutils literal notranslate"><span class="pre">PlotSettings</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">PlotSeries</span></code> objects can then be used as the foundation for generating the final plot using either the plotting functions included with DearEIS or another plotting library.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="gp">... </span>  <span class="n">PlotSeries</span><span class="p">,</span>   <span class="c1"># Wrapper class for DataSet, KramersKronigResult, etc.</span>
+<span class="gp">... </span>  <span class="n">PlotSettings</span><span class="p">,</span> <span class="c1"># The settings class for plots created via DearEIS&#39; GUI</span>
+<span class="gp">... </span>  <span class="n">PlotType</span><span class="p">,</span>     <span class="c1"># Enum for different types of plots (e.g., Nyquist)</span>
+<span class="gp">... </span>  <span class="n">Project</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">mpl</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="kn">import</span> <span class="n">Figure</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="gp">... </span>  <span class="n">Optional</span><span class="p">,</span>
+<span class="gp">... </span>  <span class="n">Tuple</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Prepare the figure that will be used to create a custom Nyquist plot.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">figure</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load the project of interest.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Get the settings for the plot that contains the series (data sets,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># fit results, etc.) that we wish to plot.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plot</span><span class="p">:</span> <span class="n">PlotSettings</span> <span class="o">=</span> <span class="p">[</span>
+<span class="gp">... </span>  <span class="n">plot</span> <span class="k">for</span> <span class="n">plot</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_plots</span><span class="p">()</span>
+<span class="gp">... </span>  <span class="k">if</span> <span class="n">plot</span><span class="o">.</span><span class="n">get_label</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;Noisy&quot;</span>
+<span class="gp">... </span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Each data set, fit result, etc. can be represented as a PlotSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># object that contains the required data and the style (color, marker, etc.).</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="p">:</span> <span class="n">PlotSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">project</span><span class="o">.</span><span class="n">get_plot_series</span><span class="p">(</span><span class="n">plot</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="c1"># Figure out if the series should be included in the figure legend.</span>
+<span class="gp">... </span>  <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="gp">... </span>  <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_legend</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">label</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_label</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Figure out the color and marker.</span>
+<span class="gp">... </span>  <span class="n">color</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span>
+<span class="gp">... </span>  <span class="n">marker</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">MPL_MARKERS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">get_marker</span><span class="p">())</span>
+<span class="gp">...</span>
+<span class="gp">... </span>  <span class="c1"># Determine whether or not the series should be plotted using markers,</span>
+<span class="gp">... </span>  <span class="c1"># a line, or both.</span>
+<span class="gp">... </span>  <span class="c1"># We will use the plotting functions provided by DearEIS in this example</span>
+<span class="gp">... </span>  <span class="c1"># but you could use any plotting library that you wish. However, you</span>
+<span class="gp">... </span>  <span class="c1"># would need to call, e.g., series.get_frequencies() and/or</span>
+<span class="gp">... </span>  <span class="c1"># series.get_impedances() to get the relevant data.</span>
+<span class="gp">... </span>  <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_line</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_nyquist</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">series</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">color</span><span class="p">},</span>
+<span class="gp">... </span>      <span class="n">markers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">marker</span><span class="p">},</span>
+<span class="gp">... </span>      <span class="n">line</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">label</span><span class="o">=</span><span class="n">label</span> <span class="k">if</span> <span class="n">marker</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">figure</span><span class="o">=</span><span class="n">figure</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">num_per_decade</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">... </span>    <span class="k">if</span> <span class="n">marker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="gp">... </span>      <span class="n">_</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_nyquist</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">series</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">colors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">color</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="n">markers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">marker</span><span class="p">},</span>
+<span class="gp">... </span>        <span class="n">line</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">figure</span><span class="o">=</span><span class="n">figure</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">num_per_decade</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="p">)</span>
+<span class="gp">... </span>  <span class="k">elif</span> <span class="n">marker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">plot_nyquist</span><span class="p">(</span>
+<span class="gp">... </span>      <span class="n">series</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">colors</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">color</span><span class="p">},</span>
+<span class="gp">... </span>      <span class="n">markers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;impedance&quot;</span><span class="p">:</span> <span class="n">marker</span><span class="p">},</span>
+<span class="gp">... </span>      <span class="n">line</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">figure</span><span class="o">=</span><span class="n">figure</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span>
+<span class="gp">... </span>      <span class="n">num_per_decade</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Add the figure title and legend.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="n">figure</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">plot</span><span class="o">.</span><span class="n">get_label</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>(<a class="reference download internal" download="" href="_downloads/f014cecaf4e6b7f10e6d92e243844e73/guide_api-8.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-8.svg" class="plot-directive" src="_images/guide_api-8.svg" />
+</figure>
+</section>
+<section id="generating-tables">
+<h2>Generating tables<a class="headerlink" href="#generating-tables" title="Link to this heading"></a></h2>
+<p>Several of the various <code class="docutils literal notranslate"><span class="pre">*Result</span></code> classes have <code class="docutils literal notranslate"><span class="pre">to_*_dataframe</span></code> methods that return tables as <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code> objects, which can be used to output, e.g., Markdown or LaTeX tables.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="n">DataSet</span><span class="p">,</span> <span class="n">FitResult</span><span class="p">,</span> <span class="n">Project</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">:</span> <span class="n">DataSet</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_data_sets</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fit</span><span class="p">:</span> <span class="n">FitResult</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_fits</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">to_parameters_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="go">| Element   | Parameter   |         Value |   Std. err. (%) | Unit      | Fixed   |</span>
+<span class="go">|:----------|:------------|--------------:|----------------:|:----------|:--------|</span>
+<span class="go">| R_1       | R           |  99.9527      |      0.0270272  | ohm       | No      |</span>
+<span class="go">| R_2       | R           | 200.295       |      0.0161674  | ohm       | No      |</span>
+<span class="go">| C_1       | C           |   7.98618e-07 |      0.00251014 | F         | No      |</span>
+<span class="go">| R_3       | R           | 499.93        |      0.0228817  | ohm       | No      |</span>
+<span class="go">| W_1       | Y           |   0.000400664 |      0.0303242  | S*s^(1/2) | No      |</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">to_parameters_dataframe</span><span class="p">(</span><span class="n">running</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="go">| Element   | Parameter   |         Value |   Std. err. (%) | Unit      | Fixed   |</span>
+<span class="go">|:----------|:------------|--------------:|----------------:|:----------|:--------|</span>
+<span class="go">| R_0       | R           |  99.9527      |      0.0270272  | ohm       | No      |</span>
+<span class="go">| R_1       | R           | 200.295       |      0.0161674  | ohm       | No      |</span>
+<span class="go">| C_2       | C           |   7.98618e-07 |      0.00251014 | F         | No      |</span>
+<span class="go">| R_3       | R           | 499.93        |      0.0228817  | ohm       | No      |</span>
+<span class="go">| W_4       | Y           |   0.000400664 |      0.0303242  | S*s^(1/2) | No      |</span>
+</pre></div>
+</div>
+</section>
+<section id="generating-circuit-diagrams">
+<h2>Generating circuit diagrams<a class="headerlink" href="#generating-circuit-diagrams" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Circuit</span></code> objects can be used to draw circuit diagrams.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="n">DataSet</span><span class="p">,</span> <span class="n">FitResult</span><span class="p">,</span> <span class="n">Project</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">:</span> <span class="n">DataSet</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_data_sets</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fit</span><span class="p">:</span> <span class="n">FitResult</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_fits</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_circuitikz</span><span class="p">())</span>
+<span class="go">\begin{circuitikz}</span>
+<span class="go">  \draw (0,0) to[short, o-] (1,0);</span>
+<span class="go">  \draw (1.0,0.0) to[R=$R_{\rm 1}$] (3.0,0.0);</span>
+<span class="go">  \draw (3.0,-0.0) to[R=$R_{\rm 2}$] (5.0,-0.0);</span>
+<span class="go">  \draw (3.0,-1.5) to[capacitor=$C_{\rm 1}$] (5.0,-1.5);</span>
+<span class="go">  \draw (3.0,-0.0) to[short] (3.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[short] (5.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[R=$R_{\rm 3}$] (7.0,-0.0);</span>
+<span class="go">  \draw (5.0,-1.5) to[generic=$W_{\rm 1}$] (7.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[short] (5.0,-1.5);</span>
+<span class="go">  \draw (7.0,-0.0) to[short] (7.0,-1.5);</span>
+<span class="go">  \draw (7.0,0) to[short, -o] (8.0,0);</span>
+<span class="go">\end{circuitikz}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_circuitikz</span><span class="p">(</span><span class="n">running</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="go">\begin{circuitikz}</span>
+<span class="go">  \draw (0,0) to[short, o-] (1,0);</span>
+<span class="go">  \draw (1.0,0.0) to[R=$R_{\rm 0}$] (3.0,0.0);</span>
+<span class="go">  \draw (3.0,-0.0) to[R=$R_{\rm 1}$] (5.0,-0.0);</span>
+<span class="go">  \draw (3.0,-1.5) to[capacitor=$C_{\rm 2}$] (5.0,-1.5);</span>
+<span class="go">  \draw (3.0,-0.0) to[short] (3.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[short] (5.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[R=$R_{\rm 3}$] (7.0,-0.0);</span>
+<span class="go">  \draw (5.0,-1.5) to[generic=$W_{\rm 4}$] (7.0,-1.5);</span>
+<span class="go">  \draw (5.0,-0.0) to[short] (5.0,-1.5);</span>
+<span class="go">  \draw (7.0,-0.0) to[short] (7.0,-1.5);</span>
+<span class="go">  \draw (7.0,0) to[short, -o] (8.0,0);</span>
+<span class="go">\end{circuitikz}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">figure</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_drawing</span><span class="p">()</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">figure</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_drawing</span><span class="p">(</span><span class="n">running</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>(<a class="reference download internal" download="" href="_downloads/8753420582b20032111e1d50a50935e0/guide_api-9.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="_images/guide_api-9_00.svg" class="plot-directive" src="_images/guide_api-9_00.svg" />
+</figure>
+<figure class="align-default">
+<img alt="_images/guide_api-9_01.svg" class="plot-directive" src="_images/guide_api-9_01.svg" />
+</figure>
+</section>
+<section id="generating-equations">
+<span id="id1"></span><h2>Generating equations<a class="headerlink" href="#generating-equations" title="Link to this heading"></a></h2>
+<p>Equations for the impedances of elements and circuits can be obtained in the form of <a class="reference external" href="https://www.sympy.org/en/index.html">SymPy</a> expressions or LaTeX strings.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Equations <strong>always</strong> make use of a running count of the elements as the lower index in variables to avoid conflicting/duplicate variable names from different elements.
+Circuit diagrams and tables can also make use of running counts as lower indices if explicitly told to (e.g., <code class="docutils literal notranslate"><span class="pre">circuit.to_drawing(running=True)</span></code>, <code class="docutils literal notranslate"><span class="pre">circuit.to_circuitikz(running=True)</span></code>, or <code class="docutils literal notranslate"><span class="pre">fit.to_parameters_dataframe(running=True)</span></code>).</p>
+</div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">deareis</span> <span class="kn">import</span> <span class="n">DataSet</span><span class="p">,</span> <span class="n">FitResult</span><span class="p">,</span> <span class="n">Project</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">project</span><span class="p">:</span> <span class="n">Project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;./tests/example-project-v6.json&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="p">:</span> <span class="n">DataSet</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_data_sets</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fit</span><span class="p">:</span> <span class="n">FitResult</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">get_fits</span><span class="p">(</span><span class="n">data</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_sympy</span><span class="p">())</span>
+<span class="go">R_0 + 1/(2*I*pi*C_2*f + 1/R_1) + 1/(Y_4*(2*I*pi*f)**n_4 + 1/R_3)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">circuit</span><span class="o">.</span><span class="n">to_latex</span><span class="p">())</span>
+<span class="go">Z = R_{0} + \frac{1}{2 i \pi C_{2} f + \frac{1}{R_{1}}} + \frac{1}{Y_{4} \left(2 i \pi f\right)^{n_{4}} + \frac{1}{R_{3}}}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_palettes.html" class="btn btn-neutral float-left" title="Palettes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs.html" class="btn btn-neutral float-right" title="API Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

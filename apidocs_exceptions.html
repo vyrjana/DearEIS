@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exceptions &mdash; DearEIS 5.1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1bd908e2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Typing" href="apidocs_typing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_project.html">Projects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Exceptions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ConnectionWithoutElements"><code class="docutils literal notranslate"><span class="pre">ConnectionWithoutElements</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.DRTError"><code class="docutils literal notranslate"><span class="pre">DRTError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.DuplicateParameterDefinition"><code class="docutils literal notranslate"><span class="pre">DuplicateParameterDefinition</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ExpectedNumericValue"><code class="docutils literal notranslate"><span class="pre">ExpectedNumericValue</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ExpectedParameterIdentifier"><code class="docutils literal notranslate"><span class="pre">ExpectedParameterIdentifier</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.FittingError"><code class="docutils literal notranslate"><span class="pre">FittingError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ImpedanceError"><code class="docutils literal notranslate"><span class="pre">ImpedanceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InfiniteImpedance"><code class="docutils literal notranslate"><span class="pre">InfiniteImpedance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InfiniteLimit"><code class="docutils literal notranslate"><span class="pre">InfiniteLimit</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InsufficientElementsInParallelConnection"><code class="docutils literal notranslate"><span class="pre">InsufficientElementsInParallelConnection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InsufficientTokens"><code class="docutils literal notranslate"><span class="pre">InsufficientTokens</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidElementSymbol"><code class="docutils literal notranslate"><span class="pre">InvalidElementSymbol</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidEquation"><code class="docutils literal notranslate"><span class="pre">InvalidEquation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidNumericValue"><code class="docutils literal notranslate"><span class="pre">InvalidNumericValue</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidParameterDefinition"><code class="docutils literal notranslate"><span class="pre">InvalidParameterDefinition</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidParameterKey"><code class="docutils literal notranslate"><span class="pre">InvalidParameterKey</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidParameterLowerLimit"><code class="docutils literal notranslate"><span class="pre">InvalidParameterLowerLimit</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.InvalidParameterUpperLimit"><code class="docutils literal notranslate"><span class="pre">InvalidParameterUpperLimit</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.KramersKronigError"><code class="docutils literal notranslate"><span class="pre">KramersKronigError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.NotANumberImpedance"><code class="docutils literal notranslate"><span class="pre">NotANumberImpedance</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ParsingError"><code class="docutils literal notranslate"><span class="pre">ParsingError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.TokenizingError"><code class="docutils literal notranslate"><span class="pre">TokenizingError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.TooManyParameterDefinitions"><code class="docutils literal notranslate"><span class="pre">TooManyParameterDefinitions</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.UnexpectedCharacter"><code class="docutils literal notranslate"><span class="pre">UnexpectedCharacter</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.UnexpectedIdentifier"><code class="docutils literal notranslate"><span class="pre">UnexpectedIdentifier</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.UnexpectedToken"><code class="docutils literal notranslate"><span class="pre">UnexpectedToken</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.UnsupportedFileFormat"><code class="docutils literal notranslate"><span class="pre">UnsupportedFileFormat</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.exceptions.ZHITError"><code class="docutils literal notranslate"><span class="pre">ZHITError</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Exceptions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_exceptions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-deareis.exceptions">
+<span id="exceptions"></span><h1>Exceptions<a class="headerlink" href="#module-deareis.exceptions" title="Link to this heading"></a></h1>
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ConnectionWithoutElements">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ConnectionWithoutElements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Class</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.ConnectionWithoutElements" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.DRTError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">DRTError</span></span><a class="headerlink" href="#deareis.exceptions.DRTError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.DuplicateParameterDefinition">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">DuplicateParameterDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remaining_keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Class</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.DuplicateParameterDefinition" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>)</p></li>
+<li><p><strong>remaining_keys</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ExpectedNumericValue">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ExpectedNumericValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.ExpectedNumericValue" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ExpectedParameterIdentifier">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ExpectedParameterIdentifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Class</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.ExpectedParameterIdentifier" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.FittingError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">FittingError</span></span><a class="headerlink" href="#deareis.exceptions.FittingError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ImpedanceError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ImpedanceError</span></span><a class="headerlink" href="#deareis.exceptions.ImpedanceError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InfiniteImpedance">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InfiniteImpedance</span></span><a class="headerlink" href="#deareis.exceptions.InfiniteImpedance" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InfiniteLimit">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InfiniteLimit</span></span><a class="headerlink" href="#deareis.exceptions.InfiniteLimit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InsufficientElementsInParallelConnection">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InsufficientElementsInParallelConnection</span></span><a class="headerlink" href="#deareis.exceptions.InsufficientElementsInParallelConnection" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InsufficientTokens">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InsufficientTokens</span></span><a class="headerlink" href="#deareis.exceptions.InsufficientTokens" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidElementSymbol">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidElementSymbol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.InvalidElementSymbol" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidEquation">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidEquation</span></span><a class="headerlink" href="#deareis.exceptions.InvalidEquation" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidNumericValue">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidNumericValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.InvalidNumericValue" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidParameterDefinition">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidParameterDefinition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid_keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Class</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.InvalidParameterDefinition" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>)</p></li>
+<li><p><strong>valid_keys</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidParameterKey">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidParameterKey</span></span><a class="headerlink" href="#deareis.exceptions.InvalidParameterKey" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidParameterLowerLimit">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidParameterLowerLimit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.InvalidParameterLowerLimit" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>float</em>)</p></li>
+<li><p><strong>limit</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.InvalidParameterUpperLimit">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidParameterUpperLimit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.InvalidParameterUpperLimit" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>float</em>)</p></li>
+<li><p><strong>limit</strong> (<em>float</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.KramersKronigError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">KramersKronigError</span></span><a class="headerlink" href="#deareis.exceptions.KramersKronigError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.NotANumberImpedance">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">NotANumberImpedance</span></span><a class="headerlink" href="#deareis.exceptions.NotANumberImpedance" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ParsingError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ParsingError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.ParsingError" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.TokenizingError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">TokenizingError</span></span><a class="headerlink" href="#deareis.exceptions.TokenizingError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.TooManyParameterDefinitions">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">TooManyParameterDefinitions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Class</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.TooManyParameterDefinitions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.UnexpectedCharacter">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">UnexpectedCharacter</span></span><a class="headerlink" href="#deareis.exceptions.UnexpectedCharacter" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.UnexpectedIdentifier">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">UnexpectedIdentifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.UnexpectedIdentifier" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>expected_value</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.UnexpectedToken">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">UnexpectedToken</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.exceptions.UnexpectedToken" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.UnsupportedFileFormat">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">UnsupportedFileFormat</span></span><a class="headerlink" href="#deareis.exceptions.UnsupportedFileFormat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="deareis.exceptions.ZHITError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.exceptions.</span></span><span class="sig-name descname"><span class="pre">ZHITError</span></span><a class="headerlink" href="#deareis.exceptions.ZHITError" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_typing.html" class="btn btn-neutral float-left" title="Typing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

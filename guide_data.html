@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Processing data &mdash; DearEIS 5.1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1bd908e2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Validation" href="guide_validation.html" />
+    <link rel="prev" title="Projects" href="guide_projects.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="guide.html">Getting started</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="guide_installing.html">Installing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_projects.html">Projects</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Processing data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-data-sets-tab">The <strong>Data sets</strong> tab</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-file-formats">Supported file formats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#masking-data-points">Masking data points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processing-data-sets">Processing data sets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#averaging">Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#interpolation">Interpolation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-parallel-impedances">Adding parallel impedances</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#subtracting-impedances">Subtracting impedances</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="guide_validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_fitting.html">Fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_simulation.html">Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_plotting.html">Plotting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_batch.html">Batch analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_settings.html">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_palettes.html">Palettes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guide_api.html">Application programming interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apidocs.html">API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="guide.html">Getting started</a></li>
+      <li class="breadcrumb-item active">Processing data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/guide_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="processing-data">
+<h1>Processing data<a class="headerlink" href="#processing-data" title="Link to this heading"></a></h1>
+<section id="the-data-sets-tab">
+<h2>The <strong>Data sets</strong> tab<a class="headerlink" href="#the-data-sets-tab" title="Link to this heading"></a></h2>
+<p>Multiple impedance spectra (or <em>data sets</em>) can be loaded and processed in the <strong>Data sets</strong> tab (<a class="reference internal" href="#data-tab"><span class="std std-numref">Fig. 3</span></a>) that contains the following:</p>
+<ul class="simple">
+<li><p><strong>Data set</strong> combo for switching between data sets that have been loaded via the <strong>Load</strong> button.</p></li>
+<li><p><strong>Label</strong> input for modifying the label assigned to the current data set.</p></li>
+<li><p><strong>Path</strong> input for modifying the file path assigned to the current data set.</p></li>
+<li><p><strong>Process</strong> button for opening a popup window with buttons for accessing features that enable further processing of the current data set.</p></li>
+<li><p>A table of data points with the ability to mask (i.e., hide/exclude) individual points (e.g., outliers).</p></li>
+<li><p><strong>Toggle points</strong> button for (un)masking multiple points at once.</p></li>
+<li><p><strong>Copy mask</strong> button for copying a mask from another data set and applying it to the current data set.</p></li>
+<li><p><strong>Enlarge/show plot</strong> button for viewing a larger version of the current plot type.</p></li>
+<li><p><strong>Adjust limits</strong> checkbox for enabling/disabling automatic adjustment of plot limits when switching between data sets.</p></li>
+<li><p>Plot type combo for switching between plot types. This is primarily for use when the program window is so narrow that the plots are hidden in order to keep the table of data points from becoming to narrow.</p></li>
+</ul>
+<figure class="align-default" id="id1">
+<span id="data-tab"></span><img alt="The Data sets tab of a project" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 3 </span><span class="caption-text">The data point around 50 Hz has been omitted from this rather noisy data set as an outlier.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="supported-file-formats">
+<h2>Supported file formats<a class="headerlink" href="#supported-file-formats" title="Link to this heading"></a></h2>
+<p>Several different file formats are supported:</p>
+<ul class="simple">
+<li><p>BioLogic: <code class="docutils literal notranslate"><span class="pre">.mpt</span></code></p></li>
+<li><p>Eco Chemie: <code class="docutils literal notranslate"><span class="pre">.dfr</span></code></p></li>
+<li><p>Gamry: <code class="docutils literal notranslate"><span class="pre">.dta</span></code></p></li>
+<li><p>Ivium: <code class="docutils literal notranslate"><span class="pre">.idf</span></code> and <code class="docutils literal notranslate"><span class="pre">.ids</span></code></p></li>
+<li><p>PalmSens: <code class="docutils literal notranslate"><span class="pre">.pssession</span></code></p></li>
+<li><p>ZView: <code class="docutils literal notranslate"><span class="pre">.z</span></code></p></li>
+<li><p>Spreadsheets: <code class="docutils literal notranslate"><span class="pre">.xlsx</span></code> and <code class="docutils literal notranslate"><span class="pre">.ods</span></code></p></li>
+<li><p>Plain-text character-separated values (CSV): <code class="docutils literal notranslate"><span class="pre">.csv</span></code> and <code class="docutils literal notranslate"><span class="pre">.txt</span></code></p></li>
+</ul>
+<p>Additional file formats may be supported in the future.</p>
+<p>Not all CSV files and spreadsheets are necessarily supported as-is but the parsing of those types of files should be quite flexible in terms of, e.g., the characters that are used as separators.
+The parsers expect to find at least a column with frequencies (Hz) and columns for either the real and imaginary parts of the impedance (<span class="math notranslate nohighlight">\(\Omega\)</span>), or the absolute magnitude (<span class="math notranslate nohighlight">\(\Omega\)</span>) and the phase angle/shift (degrees).
+The supported column headers are:</p>
+<ul class="simple">
+<li><p>frequency: <code class="docutils literal notranslate"><span class="pre">frequency</span></code>, <code class="docutils literal notranslate"><span class="pre">freq</span></code>, or <code class="docutils literal notranslate"><span class="pre">f</span></code></p></li>
+<li><p>real: <code class="docutils literal notranslate"><span class="pre">z'</span></code>, <code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">re</span></code>, <code class="docutils literal notranslate"><span class="pre">z_re</span></code>, <code class="docutils literal notranslate"><span class="pre">zre</span></code>, <code class="docutils literal notranslate"><span class="pre">real</span></code>, or <code class="docutils literal notranslate"><span class="pre">re</span></code></p></li>
+<li><p>imaginary: <code class="docutils literal notranslate"><span class="pre">z&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">z''</span></code>, <code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">im</span></code>, <code class="docutils literal notranslate"><span class="pre">z_im</span></code>, <code class="docutils literal notranslate"><span class="pre">zim</span></code>, <code class="docutils literal notranslate"><span class="pre">imaginary</span></code>, <code class="docutils literal notranslate"><span class="pre">imag</span></code>, or <code class="docutils literal notranslate"><span class="pre">im</span></code></p></li>
+<li><p>magnitude: <code class="docutils literal notranslate"><span class="pre">|z|</span></code>, <code class="docutils literal notranslate"><span class="pre">z</span></code>, <code class="docutils literal notranslate"><span class="pre">magnitude</span></code>, <code class="docutils literal notranslate"><span class="pre">modulus</span></code>, <code class="docutils literal notranslate"><span class="pre">mag</span></code>, or <code class="docutils literal notranslate"><span class="pre">mod</span></code></p></li>
+<li><p>phase: <code class="docutils literal notranslate"><span class="pre">phase</span></code>, <code class="docutils literal notranslate"><span class="pre">phz</span></code>, or <code class="docutils literal notranslate"><span class="pre">phi</span></code></p></li>
+</ul>
+<p>The identification of column headers is case insensitive (i.e., <code class="docutils literal notranslate"><span class="pre">Zre</span></code> and <code class="docutils literal notranslate"><span class="pre">zre</span></code> are considered to be the same).
+The sign of the imaginary part of the impedance and/or the phase angle/shift may be negative, but then that has to be indicated in the column header with a <code class="docutils literal notranslate"><span class="pre">-</span></code> prefix (e.g., <code class="docutils literal notranslate"><span class="pre">-Zim</span></code> or <code class="docutils literal notranslate"><span class="pre">-phase</span></code>).</p>
+</section>
+<section id="masking-data-points">
+<h2>Masking data points<a class="headerlink" href="#masking-data-points" title="Link to this heading"></a></h2>
+<p>Masks can be applied to hide data points in several ways and masked data points are excluded from plots and analyses.
+This feature can be used to get rid of outliers or to analyze a fragment of a data set.
+Individual data points can be masked via the checkboxes along the left-hand side of the table of data points (<a class="reference internal" href="#data-tab"><span class="std std-numref">Fig. 3</span></a>).
+Ranges of data points can be toggled via the window that is accessible via the <strong>Toggle points</strong> button below the table of data points.
+This can be used to, e.g., quickly mask multiple points or to remove the mask from all points (<a class="reference internal" href="#toggle-figure"><span class="std std-numref">Fig. 4</span></a>).
+Middle-mouse clicking (DearPyGui 1.x) and dragging a region in a plot in that window can also be used to choose the points to toggle.
+If DearPyGui 2.x is installed, then the same action can be performed instead with the right-mouse button while holding down Ctrl.</p>
+<figure class="align-default" id="id2">
+<span id="toggle-figure"></span><img alt="Masking multiple points" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-toggle.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 4 </span><span class="caption-text">The <strong>Toggle points</strong> can be used to (un)mask multiple data points in several ways.
+A preview of what the current data set would look like with the new mask is also included.
+Here a region has been highlighted in one of the plots by holding down the middle-mouse button and dragging.
+All of the points are included, which means that the points within the highlighted region will be toggled (i.e., excluded) when the <strong>Accept</strong> button is clicked.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>If multiple data sets will need to have the same (or very similar) masks, then the <strong>Copy mask</strong> window can be used to copy the applied mask from another data set to the current data set (<a class="reference internal" href="#mask-figure"><span class="std std-numref">Fig. 5</span></a>).</p>
+<figure class="align-default" id="id3">
+<span id="mask-figure"></span><img alt="Copying a mask from another data set" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-copy.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 5 </span><span class="caption-text">The <strong>Copy mask</strong> includes a preview of what the current data set would look like with the mask that was applied to another data set in <a class="reference internal" href="#toggle-figure"><span class="std std-numref">Fig. 4</span></a>.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="processing-data-sets">
+<h2>Processing data sets<a class="headerlink" href="#processing-data-sets" title="Link to this heading"></a></h2>
+<p>DearEIS includes a few functions for processing data sets: averaging, interpolation, addition of parallel impedances, and subtraction of impedances.
+All of these functions are available via the <strong>Process</strong> button that can be found above the table of data points (<a class="reference internal" href="#data-tab"><span class="std std-numref">Fig. 3</span></a>).
+The results of these functions are added to the project as a new data set (i.e., without getting rid of the original data set).</p>
+<section id="averaging">
+<h3>Averaging<a class="headerlink" href="#averaging" title="Link to this heading"></a></h3>
+<p>The averaging feature can be used to obtain a less noisy spectrum by averaging multiple measurements (<a class="reference internal" href="#averaging-figure"><span class="std std-numref">Fig. 6</span></a>).
+This can be useful in cases where the noise cannot be reduced by adjusting some aspect of the experimental setup (e.g., by improving the shielding).
+Only data sets with the same frequencies can be averaged.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Make sure that the measurements differ due to random noise rather than, e.g., drift before using this feature.</p>
+</div>
+<figure class="align-default" id="id4">
+<span id="averaging-figure"></span><img alt="Averaging of multiple data sets" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-averaging.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 6 </span><span class="caption-text">Two data sets have been chosen (markers) and an average data set has been generated (line).
+The other data sets do not have the same frequencies as the two chosen data sets and thus cannot be selected while at least one of those two data sets is selected.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="interpolation">
+<h3>Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading"></a></h3>
+<p>The interpolation feature can be used to replace an outlier rather than simply omitting it (<a class="reference internal" href="#interpolation-figure"><span class="std std-numref">Fig. 7</span></a>).
+Some specific methods of analysis may be sensitive to the spacing of data points, which is why interpolation may be preferred over omission.
+The data set is smoothed using <a class="reference external" href="https://en.wikipedia.org/wiki/Local_regression">LOWESS</a> and interpolated using an <a class="reference external" href="https://en.wikipedia.org/wiki/Akima_spline">Akima spline</a> while ignoring any masked points.
+Individual data points can then be replaced with a point on this spline by ticking the checkbox next to that data point.
+Alternatively, if the smoothing and interpolation cannot provide a reasonable result, then values for the real and/or imaginary part of the data point can be inputted directly.</p>
+<figure class="align-default" id="id5">
+<span id="interpolation-figure"></span><img alt="Interpolation of data points" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-interpolation.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 7 </span><span class="caption-text">The outlier (red marker), which was masked in <a class="reference internal" href="#data-tab"><span class="std std-numref">Fig. 3</span></a>, has been replaced with a value (orange marker) along the interpolated spline (green line).</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="adding-parallel-impedances">
+<span id="parallel-impedances"></span><h3>Adding parallel impedances<a class="headerlink" href="#adding-parallel-impedances" title="Link to this heading"></a></h3>
+<p>Impedance data that include negative differential resistances may present some challenges.
+For example, such spectra cannot be validated directly using linear Kramers-Kronig tests if only the impedance representation is tested.
+However, they can be validated if the admittance representation is tested.
+Alternatively, one can add a suitable parallel resistance to the impedance data.
+The addition of a parallel resistance does not affect the Kramers-Kronig compliance of the data.</p>
+<p>(<a class="reference download internal" download="" href="_downloads/8d9b713214ef6c52b5b0fef1c72cd302/guide_data-1.py"><code class="xref download docutils literal notranslate"><span class="pre">Source</span> <span class="pre">code</span></code></a>)</p>
+<figure class="align-default">
+<img alt="A circuit where the a parallel resistance, R, has been added to the original impedance data, Z." class="plot-directive" src="_images/guide_data-1.svg" />
+</figure>
+<p>The magnitude of the parallel resistance to add depends on the original impedance data.
+In the example below (<a class="reference internal" href="#parallel-figure"><span class="std std-numref">Fig. 8</span></a>), a resistance of 50 <span class="math notranslate nohighlight">\(\Omega\)</span> was chosen.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Equivalent circuits can be fitted to the original impedance data that include negative differential resistances provided that negative resistances are allowed (i.e., the lower limits of resistances are disabled or modified prior to fitting).</p>
+</div>
+<figure class="align-default" id="id6">
+<span id="parallel-figure"></span><img alt="Addition of parallel impedance to impedance data" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-parallel.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 8 </span><span class="caption-text">An impedance spectrum that includes a negative differential resistance was generated for this example (marked here as <strong>Before</strong>).
+Performing Kramers-Kronig tests on the impedance representation would fail despite the original data being compliant.
+Adding a parallel resistance of 50 <span class="math notranslate nohighlight">\(\Omega\)</span> produces impedance data (marked here as <strong>After</strong>) that can be validated.
+The added parallel resistance is always Kramers-Kronig compliant, which means that the compliance of the resulting circuit and its impedance data depends on the compliance of the original data.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="subtracting-impedances">
+<h3>Subtracting impedances<a class="headerlink" href="#subtracting-impedances" title="Link to this heading"></a></h3>
+<p>The recorded impedances can also be corrected by subtracting one of the following (<a class="reference internal" href="#subtraction-figure"><span class="std std-numref">Fig. 9</span></a>):</p>
+<ul class="simple">
+<li><p>a fixed impedance</p></li>
+<li><p>a circuit</p></li>
+<li><p>a fitted circuit</p></li>
+<li><p>another data set</p></li>
+</ul>
+<p>This feature can be used to, e.g., correct for some aspect of a measurement setup that is independent of the sample itself.</p>
+<figure class="align-default" id="id7">
+<span id="subtraction-figure"></span><img alt="Subtraction of impedances from a recorded spectrum" src="https://raw.githubusercontent.com/wiki/vyrjana/DearEIS/images/data-sets-tab-subtraction.png" />
+<figcaption>
+<p><span class="caption-number">Fig. 9 </span><span class="caption-text">A resistance of 50 <span class="math notranslate nohighlight">\(\Omega\)</span> is subtracted from a data set.</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guide_projects.html" class="btn btn-neutral float-left" title="Projects" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="guide_validation.html" class="btn btn-neutral float-right" title="Validation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

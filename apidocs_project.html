@@ -1,0 +1,707 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects &mdash; DearEIS 5.1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1bd908e2"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Kramers-Kronig testing" href="apidocs_kramers_kronig.html" />
+    <link rel="prev" title="Data parsing" href="apidocs_data.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            DearEIS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="guide.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="apidocs.html">API Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.get_default_num_procs"><code class="docutils literal notranslate"><span class="pre">get_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs.html#deareis.set_default_num_procs"><code class="docutils literal notranslate"><span class="pre">set_default_num_procs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_data.html">Data parsing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Projects</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deareis.Project"><code class="docutils literal notranslate"><span class="pre">Project</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_data_set"><code class="docutils literal notranslate"><span class="pre">Project.add_data_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_drt"><code class="docutils literal notranslate"><span class="pre">Project.add_drt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_fit"><code class="docutils literal notranslate"><span class="pre">Project.add_fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_plot"><code class="docutils literal notranslate"><span class="pre">Project.add_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_simulation"><code class="docutils literal notranslate"><span class="pre">Project.add_simulation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_test"><code class="docutils literal notranslate"><span class="pre">Project.add_test()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.add_zhit"><code class="docutils literal notranslate"><span class="pre">Project.add_zhit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_data_set"><code class="docutils literal notranslate"><span class="pre">Project.delete_data_set()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_drt"><code class="docutils literal notranslate"><span class="pre">Project.delete_drt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_fit"><code class="docutils literal notranslate"><span class="pre">Project.delete_fit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_plot"><code class="docutils literal notranslate"><span class="pre">Project.delete_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_simulation"><code class="docutils literal notranslate"><span class="pre">Project.delete_simulation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_test"><code class="docutils literal notranslate"><span class="pre">Project.delete_test()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.delete_zhit"><code class="docutils literal notranslate"><span class="pre">Project.delete_zhit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.edit_data_set_label"><code class="docutils literal notranslate"><span class="pre">Project.edit_data_set_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.edit_data_set_path"><code class="docutils literal notranslate"><span class="pre">Project.edit_data_set_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.edit_plot_label"><code class="docutils literal notranslate"><span class="pre">Project.edit_plot_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.from_dict"><code class="docutils literal notranslate"><span class="pre">Project.from_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.from_file"><code class="docutils literal notranslate"><span class="pre">Project.from_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.from_json"><code class="docutils literal notranslate"><span class="pre">Project.from_json()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_all_drts"><code class="docutils literal notranslate"><span class="pre">Project.get_all_drts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_all_fits"><code class="docutils literal notranslate"><span class="pre">Project.get_all_fits()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_all_tests"><code class="docutils literal notranslate"><span class="pre">Project.get_all_tests()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_all_zhits"><code class="docutils literal notranslate"><span class="pre">Project.get_all_zhits()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_data_sets"><code class="docutils literal notranslate"><span class="pre">Project.get_data_sets()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_drts"><code class="docutils literal notranslate"><span class="pre">Project.get_drts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_fits"><code class="docutils literal notranslate"><span class="pre">Project.get_fits()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_label"><code class="docutils literal notranslate"><span class="pre">Project.get_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_notes"><code class="docutils literal notranslate"><span class="pre">Project.get_notes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_path"><code class="docutils literal notranslate"><span class="pre">Project.get_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_plot_series"><code class="docutils literal notranslate"><span class="pre">Project.get_plot_series()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_plots"><code class="docutils literal notranslate"><span class="pre">Project.get_plots()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_simulations"><code class="docutils literal notranslate"><span class="pre">Project.get_simulations()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_tests"><code class="docutils literal notranslate"><span class="pre">Project.get_tests()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.get_zhits"><code class="docutils literal notranslate"><span class="pre">Project.get_zhits()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.merge"><code class="docutils literal notranslate"><span class="pre">Project.merge()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.save"><code class="docutils literal notranslate"><span class="pre">Project.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.set_label"><code class="docutils literal notranslate"><span class="pre">Project.set_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.set_notes"><code class="docutils literal notranslate"><span class="pre">Project.set_notes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.set_path"><code class="docutils literal notranslate"><span class="pre">Project.set_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.to_dict"><code class="docutils literal notranslate"><span class="pre">Project.to_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deareis.Project.update"><code class="docutils literal notranslate"><span class="pre">Project.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_kramers_kronig.html">Kramers-Kronig testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_zhit.html">Z-HIT analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_drt.html">Distribution of relaxation times analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_circuit.html">Equivalent circuits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_fitting.html">Circuit fitting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_plot_mpl.html">Plotting - matplotlib</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_typing.html">Typing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="apidocs_exceptions.html">Exceptions</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">DearEIS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="apidocs.html">API Documentation</a></li>
+      <li class="breadcrumb-item active">Projects</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/apidocs_project.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-deareis">
+<span id="projects"></span><h1>Projects<a class="headerlink" href="#module-deareis" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="deareis.Project">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">deareis.</span></span><span class="sig-name descname"><span class="pre">Project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project" title="Link to this definition"></a></dt>
+<dd><p>A class representing a collection of notes, data sets, analysis results, simulation results, and complex plots.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_data_set">
+<span class="sig-name descname"><span class="pre">add_data_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_data_set" title="Link to this definition"></a></dt>
+<dd><p>Add a data set to the project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set to add.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_drt">
+<span class="sig-name descname"><span class="pre">add_drt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_drt" title="Link to this definition"></a></dt>
+<dd><p>Add the provided DRT analysis result to the provided data set’s list of DRT analysis results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set that was analyzed.</p></li>
+<li><p><strong>drt</strong> (<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a>) – The result of the analysis.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_fit">
+<span class="sig-name descname"><span class="pre">add_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_fit" title="Link to this definition"></a></dt>
+<dd><p>Add the provided fit result to the provided data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set that a circuit was fit to.</p></li>
+<li><p><strong>fit</strong> (<a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a>) – The result of the circuit fit.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_plot">
+<span class="sig-name descname"><span class="pre">add_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_plot" title="Link to this definition"></a></dt>
+<dd><p>Add the provided plot to the list of plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>plot</strong> (<em>PlotSettings</em>) – The settings for the plot.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_simulation">
+<span class="sig-name descname"><span class="pre">add_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_simulation" title="Link to this definition"></a></dt>
+<dd><p>Add the provided simulation result to the list of simulation results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>simulation</strong> (<em>SimulationResult</em>) – The result of the simulation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_test">
+<span class="sig-name descname"><span class="pre">add_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_test" title="Link to this definition"></a></dt>
+<dd><p>Add the provided Kramers-Kronig test result to the provided data set’s list of Kramers-Kronig test results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set that was tested.</p></li>
+<li><p><strong>test</strong> (<a class="reference internal" href="apidocs_kramers_kronig.html#deareis.KramersKronigResult" title="deareis.KramersKronigResult"><em>KramersKronigResult</em></a>) – The result of the test.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.add_zhit">
+<span class="sig-name descname"><span class="pre">add_zhit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zhit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.add_zhit" title="Link to this definition"></a></dt>
+<dd><p>Add the provided Z-HIT analysis result result to the provided data set’s list of Z-HIT analysis results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set that was tested.</p></li>
+<li><p><strong>zhit</strong> (<a class="reference internal" href="apidocs_zhit.html#deareis.ZHITResult" title="deareis.ZHITResult"><em>ZHITResult</em></a>) – The result of the analysis.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_data_set">
+<span class="sig-name descname"><span class="pre">delete_data_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_data_set" title="Link to this definition"></a></dt>
+<dd><p>Delete a data set (and its associated test and fit results) from the project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set to remove.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_drt">
+<span class="sig-name descname"><span class="pre">delete_drt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_drt" title="Link to this definition"></a></dt>
+<dd><p>Delete the provided DRT analysis result from the provided data set’s list of DRT analysis results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set associated with the analysis result.</p></li>
+<li><p><strong>drt</strong> (<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult"><em>DRTResult</em></a>) – The analysis result to delete.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_fit">
+<span class="sig-name descname"><span class="pre">delete_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_fit" title="Link to this definition"></a></dt>
+<dd><p>Delete the provided fit result from the provided data set’s list of fit results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set associated with the fit result.</p></li>
+<li><p><strong>fit</strong> (<a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult"><em>FitResult</em></a>) – The fit result to delete.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_plot">
+<span class="sig-name descname"><span class="pre">delete_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_plot" title="Link to this definition"></a></dt>
+<dd><p>Delete the provided plot from the list of plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>plot</strong> (<em>PlotSettings</em>) – The plot settings to delete.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_simulation">
+<span class="sig-name descname"><span class="pre">delete_simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_simulation" title="Link to this definition"></a></dt>
+<dd><p>Remove the provided simulation result from the list of simulation results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>simulation</strong> (<em>SimulationResult</em>) – The simulation result to delete.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_test">
+<span class="sig-name descname"><span class="pre">delete_test</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_test" title="Link to this definition"></a></dt>
+<dd><p>Delete the provided Kramers-Kronig test result from the provided data set’s list of Kramers-Kronig test results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set associated with the test result.</p></li>
+<li><p><strong>test</strong> (<a class="reference internal" href="apidocs_kramers_kronig.html#deareis.KramersKronigResult" title="deareis.KramersKronigResult"><em>KramersKronigResult</em></a>) – The test result to delete.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.delete_zhit">
+<span class="sig-name descname"><span class="pre">delete_zhit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zhit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.delete_zhit" title="Link to this definition"></a></dt>
+<dd><p>Delete the provided Z-HIT analysis result from the provided data set’s list of Z-HIT analysis results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set associated with the test result.</p></li>
+<li><p><strong>zhit</strong> (<a class="reference internal" href="apidocs_zhit.html#deareis.ZHITResult" title="deareis.ZHITResult"><em>ZHITResult</em></a>) – The analysis result to delete.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.edit_data_set_label">
+<span class="sig-name descname"><span class="pre">edit_data_set_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.edit_data_set_label" title="Link to this definition"></a></dt>
+<dd><p>Edit the label of a data set in the project.
+Ensures that each data set has a unique label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set to rename.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – The new label.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.edit_data_set_path">
+<span class="sig-name descname"><span class="pre">edit_data_set_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.edit_data_set_path" title="Link to this definition"></a></dt>
+<dd><p>Edit the path of a data set in the project.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set to edit.</p></li>
+<li><p><strong>path</strong> (<em>str</em>) – The new path.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.edit_plot_label">
+<span class="sig-name descname"><span class="pre">edit_plot_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.edit_plot_label" title="Link to this definition"></a></dt>
+<dd><p>Edit the label of a plot in the project.
+Ensures that each plot has a unique label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot</strong> (<em>PlotSettings</em>) – The plot settings to edit.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – The new label.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.from_dict" title="Link to this definition"></a></dt>
+<dd><p>Create an instance from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – A dictionary-based representation of a project state.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Project" title="deareis.Project">Project</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.from_file">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.from_file" title="Link to this definition"></a></dt>
+<dd><p>Create an instance by parsing a file containing a Project that has been serialized using JSON.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – The path to a file containing a serialized project state.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Project" title="deareis.Project">Project</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.from_json">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.from_json" title="Link to this definition"></a></dt>
+<dd><p>Create an instance by parsing a JSON string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>json</strong> (<em>str</em>) – A JSON representation of a project state.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Project" title="deareis.Project">Project</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_all_drts">
+<span class="sig-name descname"><span class="pre">get_all_drts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_all_drts" title="Link to this definition"></a></dt>
+<dd><p>Get a mapping of data set UUIDs to the corresponding DRT analysis results of those data sets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult">DRTResult</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_all_fits">
+<span class="sig-name descname"><span class="pre">get_all_fits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_all_fits" title="Link to this definition"></a></dt>
+<dd><p>Get a mapping of data set UUIDs to the corresponding list of fit results of those data sets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[<a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult">FitResult</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_all_tests">
+<span class="sig-name descname"><span class="pre">get_all_tests</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_all_tests" title="Link to this definition"></a></dt>
+<dd><p>Get a mapping of data set UUIDs to the corresponding Kramers-Kronig test results of those data sets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[<a class="reference internal" href="apidocs_kramers_kronig.html#deareis.KramersKronigResult" title="deareis.KramersKronigResult">KramersKronigResult</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_all_zhits">
+<span class="sig-name descname"><span class="pre">get_all_zhits</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_all_zhits" title="Link to this definition"></a></dt>
+<dd><p>Get a mapping of data set UUIDs to the corresponding Z-HIT analysis results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[<a class="reference internal" href="apidocs_zhit.html#deareis.ZHITResult" title="deareis.ZHITResult">ZHITResult</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_data_sets">
+<span class="sig-name descname"><span class="pre">get_data_sets</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_data_sets" title="Link to this definition"></a></dt>
+<dd><p>Get the project’s data sets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet">DataSet</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_drts">
+<span class="sig-name descname"><span class="pre">get_drts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_drts" title="Link to this definition"></a></dt>
+<dd><p>Get the DRT analysis results associated with a specific data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set whose analyses to get.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="apidocs_drt.html#deareis.DRTResult" title="deareis.DRTResult">DRTResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_fits">
+<span class="sig-name descname"><span class="pre">get_fits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_fits" title="Link to this definition"></a></dt>
+<dd><p>Get fit results associated with a specific data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set whose fits to get.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="apidocs_fitting.html#deareis.FitResult" title="deareis.FitResult">FitResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_label">
+<span class="sig-name descname"><span class="pre">get_label</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_label" title="Link to this definition"></a></dt>
+<dd><p>Get the project’s label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_notes">
+<span class="sig-name descname"><span class="pre">get_notes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_notes" title="Link to this definition"></a></dt>
+<dd><p>Get the project’s notes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_path">
+<span class="sig-name descname"><span class="pre">get_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_path" title="Link to this definition"></a></dt>
+<dd><p>Get the project’s currrent path.
+An empty string signifies that no path has been set previously.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_plot_series">
+<span class="sig-name descname"><span class="pre">get_plot_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_plot_series" title="Link to this definition"></a></dt>
+<dd><p>Get PlotSeries instances of each of the plotted items/series in a specific plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>plot</strong> (<em>PlotSettings</em>) – The plot whose items/series to get.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[PlotSeries]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_plots">
+<span class="sig-name descname"><span class="pre">get_plots</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_plots" title="Link to this definition"></a></dt>
+<dd><p>Get all of the plots.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[PlotSettings]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_simulations">
+<span class="sig-name descname"><span class="pre">get_simulations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_simulations" title="Link to this definition"></a></dt>
+<dd><p>Get all of the simulation results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[SimulationResult]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_tests">
+<span class="sig-name descname"><span class="pre">get_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_tests" title="Link to this definition"></a></dt>
+<dd><p>Get the Kramers-Kronig test results associated with a specific data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set whose tests to get.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="apidocs_kramers_kronig.html#deareis.KramersKronigResult" title="deareis.KramersKronigResult">KramersKronigResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.get_zhits">
+<span class="sig-name descname"><span class="pre">get_zhits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.get_zhits" title="Link to this definition"></a></dt>
+<dd><p>Get the Z-HIT analysis results associated with a specific data set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<a class="reference internal" href="apidocs_data.html#deareis.DataSet" title="deareis.DataSet"><em>DataSet</em></a>) – The data set whose tests to get.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference internal" href="apidocs_zhit.html#deareis.ZHITResult" title="deareis.ZHITResult">ZHITResult</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.merge">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">projects</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.merge" title="Link to this definition"></a></dt>
+<dd><p>Create an instance by merging multiple Project instances.
+All UUIDs are replaced to avoid collisions.
+The labels of some objects are also replaced to avoid collisions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>projects</strong> (<em>List</em><em>[</em><a class="reference internal" href="#deareis.Project" title="deareis.Project"><em>Project</em></a><em>]</em>) – A list of the Project instances to merge.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#deareis.Project" title="deareis.Project">Project</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.save" title="Link to this definition"></a></dt>
+<dd><p>Serialize the project as a file containing a JSON string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – The path to write the project state to.
+If this is None, then the most recently defined path is used.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.set_label">
+<span class="sig-name descname"><span class="pre">set_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.set_label" title="Link to this definition"></a></dt>
+<dd><p>Set the project’s label.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>label</strong> (<em>str</em>) – The new label.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.set_notes">
+<span class="sig-name descname"><span class="pre">set_notes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">notes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.set_notes" title="Link to this definition"></a></dt>
+<dd><p>Set the project’s notes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>notes</strong> (<em>str</em>) – The project notes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.set_path">
+<span class="sig-name descname"><span class="pre">set_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.set_path" title="Link to this definition"></a></dt>
+<dd><p>Set the path to use when calling the <cite>save</cite> method without arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – The path where the project’s state should be saved.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary containing the project state.
+The dictionary can be used to recreate a project or to restore a project state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>session</strong> (<em>bool</em>) – If true, then data minimization is not performed.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="deareis.Project.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#deareis.Project.update" title="Link to this definition"></a></dt>
+<dd><p>Used when restoring project states.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="apidocs_data.html" class="btn btn-neutral float-left" title="Data parsing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apidocs_kramers_kronig.html" class="btn btn-neutral float-right" title="Kramers-Kronig testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, DearEIS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
