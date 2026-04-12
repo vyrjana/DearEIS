@@ -122,7 +122,10 @@ class Plot:
         return self._series.copy()
 
     def is_visible(self) -> bool:
-        return dpg.is_item_visible(self._plot)
+        return (
+            dpg.does_item_exist(self._plot)
+            and dpg.is_item_visible(self._plot)
+        )
 
     def clear(self, *args, **kwargs):
         raise Exception("'clear' method has not been implemented!")

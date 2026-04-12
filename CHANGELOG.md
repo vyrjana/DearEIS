@@ -12,7 +12,8 @@
 - Removed assertions that were causing exception messages in the terminal when altering elements in the subcircuits of a general transmission line model.
 - Removed unnecessary uses of the `global` and `nonlocal` keywords.
 - Fixed a bug that prevented opening the `Appearance` settings window.
-- Fixed a bug that where the callback function for showing a tool tip with the frequency of the nearest point in a Nyquist plot would attempt to use an item that might no longer exist.
+- Fixed a bug where the callback function for showing a tool tip with the frequency of the nearest point in a Nyquist plot would attempt to use an item that might no longer exist.
+- Fixed a bug where checking if a plot was visible might query a plot that doesn't exist anymore.
 
 
 # 5.1.1 (2025/03/02)
