@@ -1,3 +1,8 @@
+# 5.1.2 (2025/04/12)
+
+- Updated minimum versions for dependencies.
+
+
 # 5.1.1 (2025/03/02)
 
 - Added support for Python 3.13 and DearPyGui 2.0.

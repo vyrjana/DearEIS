@@ -11,18 +11,18 @@ entry_points = {
 }
 
 dependencies = [
-    'dearpygui~=2.0;python_version>="3.13"',  # Used to implement the GUI.
+    'dearpygui~=2.2;python_version>="3.13"',  # Used to implement the GUI.
     'dearpygui~=1.11;python_version<="3.12"',  # Used to implement the GUI.
-    "requests~=2.32",  # Used to check package status on PyPI.
+    "requests~=2.33",  # Used to check package status on PyPI.
     "pyimpspec~=5.1",  # Used for parsing, fitting, and analyzing impedance spectra.
 ]
 
 dev_dependencies = [
-    "build~=1.2",
-    "flake8~=7.1",
-    "setuptools~=75.3",
-    "sphinx~=8.1",
-    "sphinx-rtd-theme~=3.0",
+    "build~=1.4",
+    "flake8~=7.3",
+    "setuptools~=82.0",
+    "sphinx~=9.1",
+    "sphinx-rtd-theme~=3.1",
 ]
 
 optional_dependencies = {

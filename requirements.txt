@@ -1,4 +1,4 @@
-dearpygui~=2.0;python_version>="3.13"
+dearpygui~=2.2;python_version>="3.13"
 dearpygui~=1.11;python_version<="3.12"
-requests~=2.32
+requests~=2.33
 pyimpspec~=5.1
