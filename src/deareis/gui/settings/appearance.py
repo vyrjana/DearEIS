@@ -44,6 +44,7 @@ from numpy import (
     log10 as log,
     logspace,
     ndarray,
+    zeros,
 )
 from numpy.random import normal
 from pyimpspec import Circuit
@@ -578,20 +579,13 @@ This affects how smooth the lines will look when plotting the impedance response
                 num=23,
             ),
         )
-        Z: complex
         sd: float = 0.01
         if noise is None:
-            noise = array(
-                list(
-                    map(
-                        lambda Z: complex(
-                            abs(Z) * normal(0, sd, 1),
-                            abs(Z) * normal(0, sd, 1),
-                        ),
-                        data.get_impedances(),
-                    )
-                )
-            )
+            Z = data.get_impedances()
+            noise = zeros(len(Z), dtype=Z.dtype)
+            noise.real = abs(Z) * normal(0, sd, len(Z))
+            noise.imag = abs(Z) * normal(0, sd, len(Z))
+
         data.subtract_impedances(-noise)
         sim_data: DataSet = pyimpspec.simulate_spectrum(
             circuit,
@@ -620,6 +614,7 @@ This affects how smooth the lines will look when plotting the impedance response
                 )
             )
         )
+
         f: ndarray = smooth_data.get_frequencies()
         tau: ndarray = 1 / f
         gamma: ndarray = array(
