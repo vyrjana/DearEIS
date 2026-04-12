@@ -4,6 +4,7 @@
 - Updated minimum versions for dependencies.
 - Updated how plot limits are automatically adjusted to avoid bugs/issues observed in DearPyGui 2.x.
   - Plots of residuals now only have one y-axis because setting and resetting limits on the second y-axis would prevent the user from zooming in/out on the second y-axis.
+  - Nyquist plots now do a simple adjustment of the axis limits to fit the data.
 - Switched from using `xdg` to `xdg-base-dirs`.
 - Fixed a bug that prevented opening the `Appearance` settings window.
 - Fixed a bug that where the callback function for showing a tool tip with the frequency of the nearest point in a Nyquist plot would attempt to use an item that might no longer exist.

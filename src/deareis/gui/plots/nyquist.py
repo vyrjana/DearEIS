@@ -178,6 +178,12 @@ class Nyquist(Plot):
         else:
             self.limits_adjusted()
 
+        if not DPG_VERSION_1:
+            dpg.split_frame()
+            dpg.fit_axis_data(self._x_axis)
+            dpg.fit_axis_data(self._y_axis)
+            return
+
         dpg.split_frame()
         dpg.fit_axis_data(self._x_axis)
         dpg.fit_axis_data(self._y_axis)
@@ -200,6 +206,12 @@ class Nyquist(Plot):
         dpg.set_axis_limits_auto(self._y_axis)
 
     def copy_limits(self, other: Plot):
+        if not DPG_VERSION_1:
+            dpg.split_frame()
+            dpg.fit_axis_data(self._x_axis)
+            dpg.fit_axis_data(self._y_axis)
+            return
+
         src: int
         dst: int
         for src, dst in zip(
