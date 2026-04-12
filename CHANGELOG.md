@@ -4,6 +4,7 @@
 - Updated minimum versions for dependencies.
 - Switched from using `xdg` to `xdg-base-dirs`.
 - Fixed a bug that prevented opening the `Appearance` settings window.
+- Fixed a bug that where the callback function for showing a tool tip with the frequency of the nearest point in a Nyquist plot would attempt to use an item that might no longer exist.
 
 
 # 5.1.1 (2025/03/02)

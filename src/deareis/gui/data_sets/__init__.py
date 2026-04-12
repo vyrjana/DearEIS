@@ -563,7 +563,7 @@ class DataSetsTab:
         dpg.set_item_user_data(self.enlarge_plot_button, plot_lookup)
 
     def nyquist_tooltip_callback(self, sender: int, app_data, user_data):
-        if not dpg.is_item_hovered(self.nyquist_plot._plot):
+        if not (dpg.does_item_exist(self.nyquist_plot._plot) or dpg.is_item_hovered(self.nyquist_plot._plot)):
             return
 
         data: Optional[DataSet] = dpg.get_item_user_data(self.delete_button)
