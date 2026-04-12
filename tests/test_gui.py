@@ -20,7 +20,6 @@
 from json import dumps
 from math import isclose
 from os import (
-    getcwd,
     remove,
     walk,
 )
@@ -80,16 +79,10 @@ from deareis.enums import (
 )
 from deareis.gui.settings import refresh_user_defined_elements
 from deareis.data import (
-    DRTResult,
     DRTSettings,
-    DataSet,
-    FitResult,
     FitSettings,
-    PlotSettings,
     Project,
-    SimulationResult,
     SimulationSettings,
-    KramersKronigResult,
     KramersKronigSettings,
     KramersKronigSuggestionSettings,
     ZHITSettings,
@@ -2885,7 +2878,7 @@ def test_project_versions():
 
         while project_paths:
             path = project_paths.pop(0)
-            print(f"  - {basename(path)}")
+            print(f"  - Loading {basename(path)}")
             signals.emit(Signal.LOAD_PROJECT_FILES, paths=[path])
             sleep(1.0)
             backup_path: str = path.replace(".json", ".backup0")
@@ -2897,6 +2890,7 @@ def test_project_versions():
             project: Optional[Project] = STATE.get_active_project()
             project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
             for action in actions:
+                print(f"    - Performing {action=} and sleeping")
                 STATE.keybinding_handler.perform_action(
                     action=action,
                     context=Context.PROJECT,
