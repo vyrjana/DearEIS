@@ -96,6 +96,7 @@ from deareis.data import (
 )
 from deareis.data.project import VERSION as LATEST_PROJECT_VERSION
 from deareis.gui import ProjectTab
+from deareis.utility import sleep
 
 
 PARENT_FOLDER: str = dirname(__file__)
@@ -104,10 +105,6 @@ TMP_PROJECT: str = join(TMP_FOLDER, "deareis_temporary_test_project.json")
 
 
 START_TIME: float = 0.0
-
-
-def sleep(delay):
-    dpg.split_frame(delay=round(delay * 1000))
 
 
 def selection_window():

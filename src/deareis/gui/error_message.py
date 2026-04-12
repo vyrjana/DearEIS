@@ -32,6 +32,7 @@ from deareis.keybindings import (
     TemporaryKeybindingHandler,
 )
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class ErrorMessage:
@@ -70,7 +71,7 @@ class ErrorMessage:
         assert type(message) is str
         print(f"\n{traceback}")
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         if message.strip() == "":
             message = """
 An exception has been raised! The very end of the traceback (see below) may offer a hint on how to solve the cause for the error that just occurred. If it doesn't, then please copy the traceback to your clipboard and include it in a bug report. Bug reports can be submitted at github.com/vyrjana/DearEIS/issues.

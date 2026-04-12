@@ -108,6 +108,7 @@ from pyimpspec import (
     Frequencies,
 )
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 METHOD_TOOLTIPS: List[str] = [
@@ -509,7 +510,7 @@ class ExploratoryResults:
             type(Y_evaluations) is list
             and all(map(lambda _: type(_) is tuple, Y_evaluations))
         ) or Y_evaluations is None, Y_evaluations
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         self.callback: Callable = callback
 
         self.window: Tag = dpg.generate_uuid()
@@ -1502,7 +1503,7 @@ class ExploratoryResults:
             self.refresh(*args, **kwargs)
         except:
             self.close()
-            dpg.split_frame(delay=60)
+            sleep(0.1)
             signals.emit(Signal.SHOW_ERROR_MESSAGE, traceback=format_exc())
 
     # TODO: Hide and show busy message?
@@ -1627,7 +1628,7 @@ class ExploratoryResults:
 
         max_x: int = min((max(self.num_RCs) + 1, upper_limit + 10))
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         self.log_F_ext_plot.queue_limits_adjustment()
         self.pseudo_chisqr_vs_num_RC_plot.queue_limits_adjustment()
         self.pseudo_chisqr_and_score_plot.plot(
@@ -1834,7 +1835,7 @@ class ExploratoryResults:
 
         self.plot_num_RC(default_label)
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         self.pseudo_chisqr_and_score_plot.queue_limits_adjustment()
         for plot in self.method_plots.values():
             plot.queue_limits_adjustment()
@@ -2086,7 +2087,7 @@ class ExploratoryResults:
         self.bode_plot.set_admittance(admittance, adjust_limits=False)
         self.impedance_plot.set_admittance(admittance, adjust_limits=False)
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         for plot in (self.nyquist_plot, self.bode_plot, self.impedance_plot):
             plot.queue_limits_adjustment()
             plot.adjust_limits()

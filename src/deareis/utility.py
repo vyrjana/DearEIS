@@ -20,6 +20,7 @@
 from datetime import datetime
 from hashlib import sha1
 from os.path import exists
+from time import time
 from typing import (
     Any,
     Dict,
@@ -512,3 +513,9 @@ class HorizontalWidgets:
             parent=self.table,
         )
         dpg.set_item_width(tag, -1)
+
+
+def sleep(delay: float):
+    start = time()
+    while (time() - start) < delay:
+        dpg.split_frame()

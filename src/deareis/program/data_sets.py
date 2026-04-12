@@ -61,6 +61,7 @@ from deareis.gui.data_sets.toggle_data_points import ToggleDataPoints
 from deareis.gui.file_dialog import FileDialog
 from deareis.signals import Signal
 from deareis.state import STATE
+from deareis.utility import sleep
 import deareis.signals as signals
 
 
@@ -433,7 +434,7 @@ def apply_data_set_mask(*args, **kwargs):
 def select_data_sets_to_average(*args, **kwargs):
     if "popup" in kwargs:
         dpg.hide_item(kwargs["popup"])
-        dpg.split_frame(delay=33)
+        sleep(0.1)
 
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -521,7 +522,7 @@ def select_data_set_mask_to_copy(*args, **kwargs):
 def select_impedance_to_subtract(*args, **kwargs):
     if "popup" in kwargs:
         dpg.hide_item(kwargs["popup"])
-        dpg.split_frame(delay=33)
+        sleep(0.1)
 
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -558,7 +559,7 @@ def select_impedance_to_subtract(*args, **kwargs):
 def select_points_to_interpolate(*args, **kwargs):
     if "popup" in kwargs:
         dpg.hide_item(kwargs["popup"])
-        dpg.split_frame(delay=33)
+        sleep(0.1)
 
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()
@@ -593,7 +594,7 @@ def select_points_to_interpolate(*args, **kwargs):
 def select_parallel_impedance(*args, **kwargs):
     if "popup" in kwargs:
         dpg.hide_item(kwargs["popup"])
-        dpg.split_frame(delay=33)
+        sleep(0.1)
 
     project: Optional[Project] = STATE.get_active_project()
     project_tab: Optional[ProjectTab] = STATE.get_active_project_tab()

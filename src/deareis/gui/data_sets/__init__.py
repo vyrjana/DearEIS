@@ -53,6 +53,7 @@ import deareis.tooltips as tooltips
 import deareis.themes as themes
 from deareis.data import DataSet
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class DataTable:
@@ -704,14 +705,14 @@ class DataSetsTab:
         is_showing_frequency: bool = dpg.get_value(self.nyquist_show_frequency_checkbox)
         if is_showing_frequency is True:
             self.toggle_nyquist_show_frequency(False)
-            dpg.split_frame(delay=33)
+            sleep(0.1)
 
         self.nyquist_plot.set_admittance(admittance)
         self.bode_plot.set_admittance(admittance)
         self.impedance_plot.set_admittance(admittance)
 
         if is_showing_frequency is True:
-            dpg.split_frame(delay=33)
+            sleep(0.1)
             self.toggle_nyquist_show_frequency(True)
 
     def resize(self, width: int, height: int):

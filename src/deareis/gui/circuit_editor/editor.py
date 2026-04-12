@@ -65,6 +65,7 @@ from deareis.keybindings import (
 )
 from deareis.data.data_sets import DataSet
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 FIRST_TIME_OPENING: bool = True
@@ -604,7 +605,7 @@ class CircuitEditor:
 
         if FIRST_TIME_OPENING:
             FIRST_TIME_OPENING = False
-            dpg.split_frame(delay=67)
+            sleep(0.1)
             dpg.set_value(self.sidebar_tab_bar, self.sidebar_node_tab)
 
     def hide(self):
@@ -1036,14 +1037,14 @@ class CircuitEditor:
 
             self.hide()
 
-            dpg.split_frame(delay=33)
+            sleep(0.1)
 
             subcircuit_editor: "CircuitEditor"
             subcircuit_editor = None  # type: ignore
 
             def callback(circuit: Optional[Circuit]):
                 subcircuit_editor.hide()
-                dpg.split_frame(delay=33)
+                sleep(0.1)
                 dpg.delete_item(subcircuit_editor.window)
 
                 dpg.show_item(self.window)

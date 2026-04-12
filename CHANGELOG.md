@@ -7,6 +7,7 @@
   - Bode plots with two y-axes now do a simple adjustment of the axis limits to fit the data.
   - Plots of the real and imaginary impedances with two y-axes now do a simple adjustment of the axis limits to fit the data.
   - Nyquist plots now do a simple adjustment of the axis limits to fit the data.
+- Updated how sleeping works since the `delay` parameter in the `split_frame` function has been deprecated in DearPyGui 2.2.
 - Switched from using `xdg` to `xdg-base-dirs`.
 - Removed assertions that were causing exception messages in the terminal when altering elements in the subcircuits of a general transmission line model.
 - Removed unnecessary uses of the `global` and `nonlocal` keywords.

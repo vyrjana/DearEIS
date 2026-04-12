@@ -68,6 +68,7 @@ from deareis.tooltips import (
 )
 import deareis.tooltips as tooltips
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 SI_PREFIXES: Dict[str, float] = {
@@ -494,12 +495,12 @@ class ParameterAdjustment:
                     )
 
         self.update()
-        dpg.split_frame(delay=67)
+        sleep(0.1)
 
         self.nyquist_plot.queue_limits_adjustment()
         self.bode_plot.queue_limits_adjustment()
         self.impedance_plot.queue_limits_adjustment()
-        dpg.split_frame(delay=67)
+        sleep(0.1)
 
     def set_data(self, data: DataSet, num_per_decade: int):
         self.data = data
@@ -934,9 +935,9 @@ class ParameterAdjustment:
             Z_markers = array([], dtype=complex128)
             Z_line = array([], dtype=complex128)
         except Exception:
-            dpg.split_frame(delay=60)
+            sleep(0.1)
             self.callback(None)
-            dpg.split_frame(delay=60)
+            sleep(0.1)
             signals.emit(
                 Signal.SHOW_ERROR_MESSAGE,
                 traceback=format_exc(),

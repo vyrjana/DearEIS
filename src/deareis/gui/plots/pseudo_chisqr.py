@@ -31,6 +31,7 @@ from numpy import (
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
@@ -253,7 +254,7 @@ class PseudoChisqrAndScore(Plot):
             ymax=max_pseudo_chisqr + 0.1,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_2)
 

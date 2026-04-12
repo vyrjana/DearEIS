@@ -203,6 +203,7 @@ from deareis.gui.settings import (
 )
 import deareis.themes as themes
 from deareis.version import PACKAGE_VERSION
+from deareis.utility import sleep
 
 
 # Hook into the progress callbacks implemented in pyimpspec
@@ -1088,7 +1089,7 @@ def initialize_program(args: Namespace):
     signals.register(Signal.SHOW_CHANGELOG, show_changelog)
 
     # Program is actually starting to function at this point
-    dpg.split_frame(delay=100)
+    sleep(0.1)
     STATE.program_window.busy_message.resize(
         dpg.get_viewport_client_width(),
         dpg.get_viewport_client_height(),

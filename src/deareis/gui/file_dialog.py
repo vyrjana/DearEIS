@@ -52,6 +52,7 @@ from deareis.signals import Signal
 import deareis.signals as signals
 import deareis.themes as themes
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class FileDialog:
@@ -348,7 +349,7 @@ class FileDialog:
         dpg.delete_item(self._window)
         
         if cancel is True and callable(self._cancel_callback):
-            dpg.split_frame(delay=33)
+            sleep(0.1)
             self._cancel_callback()
 
     def create_directory(self, keybinding: bool = False):
@@ -357,7 +358,7 @@ class FileDialog:
             return
         
         self.hide()
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         
         x: int
         y: int

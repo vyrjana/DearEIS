@@ -65,6 +65,7 @@ from deareis.keybindings import (
     TemporaryKeybindingHandler,
 )
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class SettingsMenu:
@@ -794,7 +795,7 @@ class PlotExporter:
 
         extension: str = self.settings_menu.get_settings().extension
         self.close()
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         signals.emit(
             Signal.SAVE_PLOT,
             figure=figure,

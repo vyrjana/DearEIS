@@ -19,6 +19,7 @@
 
 import dearpygui.dearpygui as dpg
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class BusyMessage:
@@ -71,7 +72,7 @@ class BusyMessage:
         assert type(message) is str, message
         assert type(progress) is float and progress <= 1.0, progress
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         if not self.is_visible():
             dpg.split_frame()
             dpg.show_item(self.window)

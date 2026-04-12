@@ -51,6 +51,7 @@ from deareis.utility import (
 )
 import deareis.signals as signals
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 def new_project(*args, **kwargs):
@@ -417,7 +418,7 @@ def close_project(*args, **kwargs):
 
     def save():
         close()
-        dpg.split_frame(delay=60)
+        sleep(0.1)
         signals.emit(Signal.SAVE_PROJECT, close_project=True)
 
     x: int

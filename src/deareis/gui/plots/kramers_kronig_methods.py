@@ -32,6 +32,7 @@ import dearpygui.dearpygui as dpg
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
@@ -281,7 +282,7 @@ class Method1(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
         dpg.set_axis_limits_auto(self._y_axis_2)
@@ -467,7 +468,7 @@ class Method2(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
 
@@ -652,7 +653,7 @@ class Method3(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
 
@@ -827,7 +828,7 @@ class Method4(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
 
@@ -1002,7 +1003,7 @@ class Method5(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
 
@@ -1206,6 +1207,6 @@ class Method6(Plot):
             ymax=1.0,
         )
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)

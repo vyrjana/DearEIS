@@ -60,6 +60,7 @@ from deareis.keybindings import (
     TemporaryKeybindingHandler,
 )
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 class ParallelImpedance:
@@ -601,7 +602,7 @@ class ParallelImpedance:
         )
         dpg.show_item(self.preview_window)
 
-        dpg.split_frame(delay=33)
+        sleep(0.1)
         self.update_preview()
 
     def cycle_options(self, step: int):

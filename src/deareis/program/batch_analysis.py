@@ -47,6 +47,7 @@ from deareis.gui.batch_analysis import BatchAnalysis
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.state import STATE
+from deareis.utility import sleep
 
 
 Settings = Union[KramersKronigSettings, ZHITSettings, DRTSettings, FitSettings]
@@ -84,7 +85,7 @@ def batch_perform_analyses(data_sets: List[DataSet], settings: Settings):
             except FittingError:
                 errors.append((data, format_exc()))
 
-        dpg.split_frame(delay=60)
+        sleep(0.1)
 
     signals.emit(Signal.CREATE_PROJECT_SNAPSHOT)
     if len(errors) == 0:

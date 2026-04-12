@@ -49,6 +49,7 @@ from deareis.keybindings import (
     TemporaryKeybindingHandler,
 )
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 DEFAULT_ELEMENTS: Dict[str, Type[Element]] = get_elements()
@@ -98,14 +99,14 @@ def refresh(
 
     if close_window is not None:
         close_window()
-        dpg.split_frame(delay=33)
+        sleep(0.1)
 
     if path != "" and exists(path):
         signals.emit(
             Signal.SHOW_BUSY_MESSAGE,
             message="Loading user-defined elements...",
         )
-        dpg.split_frame(delay=1000)
+        sleep(0.1)
         loader = SourceFileLoader("user_defined_elements", path)
         mod = ModuleType(loader.name)
         loader.exec_module(mod)
@@ -128,7 +129,7 @@ def select_script(path_input: int, window: int, close_window: Callable):
         dir_path = getcwd()
 
     dpg.hide_item(window)
-    dpg.split_frame(delay=33)
+    sleep(0.1)
 
     FileDialog(
         cwd=dir_path,

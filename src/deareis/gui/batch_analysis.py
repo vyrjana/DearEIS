@@ -41,7 +41,7 @@ from deareis.keybindings import (
     TemporaryKeybindingHandler,
 )
 from deareis.typing.helpers import Tag
-
+from deareis.utility import sleep
 
 
 @dataclass
@@ -299,7 +299,7 @@ class BatchAnalysis:
             return
 
         self.close()
-        dpg.split_frame(delay=60)
+        sleep(0.1)
         self.callback([_.data for _ in selection])
 
     def focus_filter_input(self):

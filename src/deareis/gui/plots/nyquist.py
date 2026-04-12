@@ -27,6 +27,7 @@ from numpy import (
 import deareis.themes as themes
 from deareis.gui.plots.base import Plot
 from deareis.typing.helpers import Tag
+from deareis.utility import sleep
 
 
 DPG_VERSION_1: bool = dpg.get_dearpygui_version().startswith("1.")
@@ -250,7 +251,7 @@ class Nyquist(Plot):
             self.update(index=i, **kwargs)
 
         if adjust_limits:
-            dpg.split_frame(delay=33)
+            sleep(0.1)
             self.queue_limits_adjustment()
             self.adjust_limits()
 
