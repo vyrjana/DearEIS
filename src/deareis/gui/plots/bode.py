@@ -228,6 +228,13 @@ class Bode(Plot):
         else:
             self.limits_adjusted()
 
+        if not DPG_VERSION_1:
+            dpg.split_frame()
+            dpg.fit_axis_data(self._x_axis)
+            dpg.fit_axis_data(self._y_axis_1)
+            dpg.fit_axis_data(self._y_axis_2)
+            return
+
         x_min: Optional[float] = None
         x_max: Optional[float] = None
         y1_min: Optional[float] = None
@@ -295,6 +302,13 @@ class Bode(Plot):
         dpg.set_axis_limits_auto(self._y_axis_2)
 
     def copy_limits(self, other: Plot):
+        if not DPG_VERSION_1:
+            dpg.split_frame()
+            dpg.fit_axis_data(self._x_axis)
+            dpg.fit_axis_data(self._y_axis_1)
+            dpg.fit_axis_data(self._y_axis_2)
+            return
+
         src: int
         dst: int
         for src, dst in zip(
