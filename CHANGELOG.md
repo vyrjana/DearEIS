@@ -1,5 +1,6 @@
 # 5.1.2 (2025/04/12)
 
+- Updated supported Python versions (dropped 3.10 and added 3.14)
 - Updated minimum versions for dependencies.
 
 
