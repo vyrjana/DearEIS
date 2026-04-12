@@ -193,14 +193,13 @@ def emit(signal: Signal, *args, **kwargs):
 
 def register(signal: Signal, callback: Callable) -> int:
     global _UUID_COUNTER
-    global _REGISTERED_CALLBACKS
-    
+
     assert type(signal) is Signal, signal
-    
+
     try:
         if signal not in _REGISTERED_CALLBACKS:
             _REGISTERED_CALLBACKS[signal] = []
-        
+
         _UUID_COUNTER += 1
         _REGISTERED_CALLBACKS[signal].append(
             (
@@ -208,18 +207,18 @@ def register(signal: Signal, callback: Callable) -> int:
                 _UUID_COUNTER,
             )
         )
-        
+
         if DEBUG:
             print(f"\nsignals.register: {str(signal)}")
             print(f"- callback: {callback} ({_UUID_COUNTER})")
-        
+
         return _UUID_COUNTER
     except Exception:
         if signal == Signal.SHOW_ERROR_MESSAGE:
             print(format_exc())
         else:
             emit(Signal.SHOW_ERROR_MESSAGE, format_exc())
-        
+
         return -1
 
 
@@ -228,8 +227,6 @@ def unregister(
     callback: Optional[Callable] = None,
     uuid: Optional[int] = None,
 ):
-    global _REGISTERED_CALLBACKS
-
     if DEBUG:
         print(f"\nsignals.unregister: {str(signal)}")
         print(f"- callback: {callback}")
@@ -261,8 +258,6 @@ def unregister(
 
 
 def clear(signal: Signal):
-    global _REGISTERED_CALLBACKS
-
     if DEBUG:
         print(f"\nsignals.clear: {str(signal)}")
     

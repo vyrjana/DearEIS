@@ -193,7 +193,6 @@ def modify_plot_series_theme(*args, **kwargs):
     states.extend([hash_state(), hash_state()])
 
     def update_color(new_color: List[float]):
-        nonlocal states
         nonlocal color
         new_color = list(map(lambda _: _ * 255.0, new_color))
         color = new_color[:]
@@ -203,7 +202,6 @@ def modify_plot_series_theme(*args, **kwargs):
     color_edit: Tag = dpg.generate_uuid()
 
     def randomize_color():
-        nonlocal states
         nonlocal color
         new_color: List[float]
         new_color, _ = get_random_color_marker({})
@@ -219,7 +217,6 @@ def modify_plot_series_theme(*args, **kwargs):
         assert project is not None
         assert project_tab is not None
         assert settings is not None
-        nonlocal states
         nonlocal marker
         marker = themes.PLOT_MARKERS.get(label, -1)
         settings.set_series_marker(uuid, marker)  # type: ignore
@@ -238,7 +235,6 @@ def modify_plot_series_theme(*args, **kwargs):
         assert project is not None
         assert project_tab is not None
         assert settings is not None
-        nonlocal states
         nonlocal show_line
         show_line = state
         settings.set_series_line(uuid, state)  # type: ignore

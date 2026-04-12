@@ -9,6 +9,7 @@
   - Nyquist plots now do a simple adjustment of the axis limits to fit the data.
 - Switched from using `xdg` to `xdg-base-dirs`.
 - Removed assertions that were causing exception messages in the terminal when altering elements in the subcircuits of a general transmission line model.
+- Removed unnecessary uses of the `nonlocal` keyword.
 - Fixed a bug that prevented opening the `Appearance` settings window.
 - Fixed a bug that where the callback function for showing a tool tip with the frequency of the nearest point in a Nyquist plot would attempt to use an item that might no longer exist.
 

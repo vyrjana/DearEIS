@@ -839,7 +839,6 @@ class Parser:
             assert isinstance(this, Element), type(element)
             assert type(x) is int
             assert type(y) is int
-            nonlocal symbol_stack
             node = self.add_element_node(
                 this,
                 pos=(x, y),
@@ -903,7 +902,6 @@ class Parser:
             assert type(this) is Series
             assert type(x) is int
             assert type(y) is int
-            nonlocal symbol_stack
             width = 0
             height = 0
 
@@ -943,7 +941,6 @@ class Parser:
             assert isinstance(this, Element), type(element)
             assert type(x) is int
             assert type(y) is int
-            nonlocal symbol_stack
             node = self.add_element_node(
                 this,
                 pos=(x, y),
@@ -993,7 +990,6 @@ class Parser:
             assert type(this) is Parallel
             assert type(x) is int
             assert type(y) is int
-            nonlocal symbol_stack
             width = 0
             height = 0
             # Add a dummy node, if necessary

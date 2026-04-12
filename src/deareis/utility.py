@@ -384,8 +384,6 @@ def find_parent_containers(circuit: Circuit) -> Dict[Element, Container]:
     parent_containers: Dict[Element, Container] = {}
 
     def mark_elements(connection: Connection, container: Optional[Container]):
-        nonlocal parent_containers
-
         elem_or_con: Union[Element, Connection]
         for elem_or_con in connection:
             if isinstance(elem_or_con, Connection):
