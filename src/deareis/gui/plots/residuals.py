@@ -62,28 +62,24 @@ class Residuals(Plot):
                 outside=kwargs.get("legend_outside", True),
             )
 
-            x_axis_kwargs = {}
-            y2_axis_kwargs = {}
             if DPG_VERSION_1:
-                x_axis_kwargs["log_scale"] = True
+                self._x_axis: Tag = dpg.add_plot_axis(
+                    dpg.mvXAxis,
+                    label="f (Hz)",
+                    no_gridlines=True,
+                    log_scale=True,
+                )
             else:
-                x_axis_kwargs["scale"] = dpg.mvPlotScale_Log10
-                y2_axis_kwargs["opposite"] = True
+                self._x_axis: Tag = dpg.add_plot_axis(
+                    dpg.mvXAxis,
+                    label="f (Hz)",
+                    no_gridlines=True,
+                    scale=dpg.mvPlotScale_Log10,
+                )
 
-            self._x_axis: Tag = dpg.add_plot_axis(
-                dpg.mvXAxis,
-                label="f (Hz)",
-                no_gridlines=True,
-                **x_axis_kwargs,
-            )
             self._y_axis_1: Tag = dpg.add_plot_axis(
                 dpg.mvYAxis,
-                label="Re(Z) residual (%)",
-            )
-            self._y_axis_2: Tag = dpg.add_plot_axis(
-                dpg.mvYAxis if DPG_VERSION_1 else dpg.mvYAxis2,
-                label="Im(Z) residual (%)",
-                **y2_axis_kwargs,
+                label="Residual (%)",
             )
 
         dpg.bind_item_theme(self._plot, themes.plot)
@@ -98,34 +94,32 @@ class Residuals(Plot):
         return copy
 
     def is_blank(self) -> bool:
-        return (
-            len(dpg.get_item_children(self._y_axis_1, slot=1)) == 0
-            and len(dpg.get_item_children(self._y_axis_2, slot=1)) == 0
-        )
+        return len(dpg.get_item_children(self._y_axis_1, slot=1)) == 0
+
 
     def clear(self, *args, **kwargs):
         delete: bool = kwargs.get("delete", True)
         if delete:
             dpg.delete_item(self._y_axis_1, children_only=True)
-            dpg.delete_item(self._y_axis_2, children_only=True)
             self._series.clear()
-        else:
-            i: int
-            series_1: int
-            series_2: int
-            for i, (series_1, series_2) in enumerate(
-                zip(
-                    dpg.get_item_children(self._y_axis_1, slot=1),
-                    dpg.get_item_children(self._y_axis_2, slot=1),
-                )
-            ):
-                if i < len(self._series):
-                    self._series[i]["frequencies"] = array([])
-                    self._series[i]["real"] = array([])
-                    self._series[i]["imaginary"] = array([])
+            return
 
-                dpg.set_value(series_1, [[], []])
-                dpg.set_value(series_2, [[], []])
+        i: int = 0
+        j: int = 0
+
+        series: int
+        for series in dpg.get_item_children(self._y_axis_1, slot=1):
+            if i < len(self._series) and j == 0:
+                self._series[i]["frequencies"] = array([])
+                self._series[i]["real"] = array([])
+                self._series[i]["imaginary"] = array([])
+
+            dpg.set_value(series, [[], []])
+
+            j += 1
+            if j > 3:
+                i += 1
+                j = 0
 
     def update(self, index: int, *args, **kwargs):
         assert type(index) is int and index >= 0, index
@@ -142,25 +136,28 @@ class Residuals(Plot):
         assert type(real) is ndarray, real
         assert type(imag) is ndarray, imag
 
-        i: int
-        series_1: int
-        series_2: int
-        for i, (series_1, series_2) in enumerate(
-            zip(
-                dpg.get_item_children(self._y_axis_1, slot=1),
-                dpg.get_item_children(self._y_axis_2, slot=1),
-            )
-        ):
-            if not (i == index or i == index + 1):
+        i: int = 0
+        j: int = 0
+
+        series: int
+        for series in dpg.get_item_children(self._y_axis_1, slot=1):
+            if i != index:
                 continue
 
-            if i == index:
+            if i == index and j == 0:
                 self._series[index].update(kwargs)
 
-            dpg.set_value(series_1, [list(freq), list(real)])
-            dpg.set_value(series_2, [list(freq), list(imag)])
-            dpg.show_item(series_1)
-            dpg.show_item(series_2)
+            if j in (0, 1):
+                dpg.set_value(series, [list(freq), list(real)])
+                dpg.show_item(series)
+            elif j in (2, 3):
+                dpg.set_value(series, [list(freq), list(imag)])
+                dpg.show_item(series)
+
+            j += 1
+            if j > 3:  # Real scatter + line and imaginary scatter + line
+                i += 1
+                j = 0
 
     def plot(self, *args, **kwargs):
         assert len(args) == 0, args
@@ -209,7 +206,7 @@ class Residuals(Plot):
                 x=x,
                 y=y,
                 label="Im(Z)",
-                parent=self._y_axis_2,
+                parent=self._y_axis_1,
             ),
             themes.residuals.imaginary,
         )
@@ -217,7 +214,7 @@ class Residuals(Plot):
             dpg.add_line_series(
                 x=x,
                 y=y,
-                parent=self._y_axis_2,
+                parent=self._y_axis_1,
             ),
             themes.residuals.imaginary,
         )
@@ -277,6 +274,7 @@ class Residuals(Plot):
         max_x: float = max(freq) if freq.size > 0 else 1.0
         if min_x == 0.0:
             min_x = 1e-1
+
         dx: float = 0.1
         dpg.set_axis_limits(
             self._x_axis,
@@ -288,11 +286,9 @@ class Residuals(Plot):
             else 1,
         )
         dpg.set_axis_limits(self._y_axis_1, ymin=-error_lim, ymax=error_lim)
-        dpg.set_axis_limits(self._y_axis_2, ymin=-error_lim, ymax=error_lim)
 
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._y_axis_1)
-        dpg.set_axis_limits_auto(self._y_axis_2)
 
     def copy_limits(self, other: Plot):
         src: int
@@ -301,12 +297,10 @@ class Residuals(Plot):
             [
                 other._x_axis,
                 other._y_axis_1,
-                other._y_axis_2,
             ],
             [
                 self._x_axis,
                 self._y_axis_1,
-                self._y_axis_2,
             ],
         ):
             limits: List[float] = dpg.get_axis_limits(src)
@@ -315,4 +309,3 @@ class Residuals(Plot):
         dpg.split_frame()
         dpg.set_axis_limits_auto(self._x_axis)
         dpg.set_axis_limits_auto(self._y_axis_1)
-        dpg.set_axis_limits_auto(self._y_axis_2)
