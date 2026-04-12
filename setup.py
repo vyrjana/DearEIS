@@ -33,7 +33,7 @@ optional_dependencies = {
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "5.1.1"
+version = "5.1.2"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:
