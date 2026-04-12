@@ -2,6 +2,7 @@
 
 - Updated supported Python versions (dropped 3.10 and added 3.14)
 - Updated minimum versions for dependencies.
+- Switched from using `xdg` to `xdg-base-dirs`.
 
 
 # 5.1.1 (2025/03/02)

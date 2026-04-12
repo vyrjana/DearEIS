@@ -41,10 +41,8 @@ from typing import (
     Set,
     Type,
 )
-from xdg import (
-    xdg_cache_home,  #  User-specific cache files
+from xdg_base_dirs import (
     xdg_config_home,  # User-specific configuration files
-    xdg_data_home,  #   User-specific data files
 )
 from pyimpspec import (
     Element,

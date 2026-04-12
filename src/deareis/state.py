@@ -36,7 +36,7 @@ from typing import (
     Optional,
     Tuple,
 )
-from xdg import (
+from xdg_base_dirs import (
     xdg_state_home,  # User-specific state data files
 )
 import dearpygui.dearpygui as dpg

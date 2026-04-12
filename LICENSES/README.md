@@ -123,7 +123,7 @@
 - License: BSD 3-clause
 - Copied values for some colors.
 
-# xdg
-- https://github.com/srstevenson/xdg
+# xdg-base-dirs
+- https://github.com/srstevenson/xdg-base-dirs
 - License: ISC
 - Dependency.
