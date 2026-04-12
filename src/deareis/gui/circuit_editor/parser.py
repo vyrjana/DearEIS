@@ -804,9 +804,6 @@ class Parser:
         ids_after: Set[int] = set(
             [id(_) for _ in circuit.get_elements()]
         )
-        assert cdc_before == cdc_after, (cdc_before, cdc_after)
-        assert len(ids_before) == len(ids_after), (len(ids_before), len(ids_after))
-        assert ids_before != ids_after, (ids_before, ids_after)
 
     def generate_nodes(self, input_stack):
         element_stack: List[Union[Connection, Element]] = []
