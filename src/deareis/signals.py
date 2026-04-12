@@ -136,9 +136,6 @@ _QUEUE: Optional[Dict[Signal, List[Tuple[tuple, dict]]]] = {}
 
 
 def emit(signal: Signal, *args, **kwargs):
-    global _REGISTERED_CALLBACKS
-    global _QUEUE
-    
     assert type(signal) is Signal, signal
     
     if _QUEUE is not None and signal not in _REGISTERED_CALLBACKS:
