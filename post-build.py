@@ -64,7 +64,7 @@ def copy_html(src: Path, dst: Path):
         )
     ]
 
-    dirs: List[Path] = list(map(Path, ("_images", "_static", "_sources")))
+    dirs: List[Path] = list(map(Path, ("_downloads", "_images", "_static", "_sources")))
 
     if not dst.is_dir():
         dst.mkdir(parents=True)
