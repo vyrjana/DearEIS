@@ -1,3 +1,8 @@
+# 5.1.3 (2026/04/28)
+
+- Pinned the version of DearPyGui to 2.2 as a temporary fix due to issues only observed with version 2.3.
+
+
 # 5.1.2 (2026/04/12)
 
 - Updated supported Python versions (dropped 3.10 and added 3.14)

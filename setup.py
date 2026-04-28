@@ -11,7 +11,7 @@ entry_points = {
 }
 
 dependencies = [
-    'dearpygui~=2.2;python_version>="3.13"',  # Used to implement the GUI.
+    'dearpygui==2.2;python_version>="3.13"',  # Used to implement the GUI.
     'dearpygui~=1.11;python_version<="3.12"',  # Used to implement the GUI.
     "requests~=2.33",  # Used to check package status on PyPI.
     "pyimpspec~=5.1",  # Used for parsing, fitting, and analyzing impedance spectra.
@@ -33,7 +33,7 @@ optional_dependencies = {
 
 # The version number defined below is propagated to /src/deareis/version.py
 # when running this script.
-version = "5.1.2"
+version = "5.1.3"
 
 if __name__ == "__main__":
     with open("requirements.txt", "w") as fp:
