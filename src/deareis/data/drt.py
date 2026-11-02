@@ -22,8 +22,9 @@ from typing import (
     Callable,
     Dict,
     List,
-    Tuple,
     Optional,
+    Tuple,
+    Union,
 )
 from numpy import (
     angle,
@@ -76,6 +77,7 @@ from deareis.utility import (
     rename_dict_entry,
 )
 from deareis.data import DataSet
+from .utility import deserialize_mask
 
 
 VERSION: int = 4
@@ -317,9 +319,6 @@ class DRTSettings:
         dictionary["tr_nnls_lambda_method"] = TRNNLSLambdaMethod(
                 dictionary["tr_nnls_lambda_method"]
         )
-        
-        if dictionary["fit"] is not None:
-            dictionary["fit"] = FitResult.from_dict(dictionary["fit"])
 
         return Class(**dictionary)
 
@@ -514,14 +513,22 @@ class DRTResult:
         dictionary["mean_gammas"] = array(dictionary["mean_gammas"])
         dictionary["lower_bounds"] = array(dictionary["lower_bounds"])
         dictionary["upper_bounds"] = array(dictionary["upper_bounds"])
+
+        if (
+            isinstance(dictionary["settings"], dict)
+            and isinstance(dictionary["settings"].get("fit", None), dict)
+        ):
+            dictionary["settings"]["fit"] = FitResult.from_dict(dictionary["settings"]["fit"], data=data)
+
         dictionary["settings"] = DRTSettings.from_dict(dictionary["settings"])
 
-        mask: Dict[str, bool] = dictionary["mask"]
+        mask: Dict[Union[int, str], bool] = dictionary["mask"]
         if data is not None:
-            mask = {
-                i: mask.get(str(i), False)
-                for i in range(0, len(data.get_frequencies(masked=None)))
-            }
+            mask = deserialize_mask(
+                mask=mask,
+                frequencies=dictionary["frequencies"],
+                data=data,
+            )
         else:
             mask = {
                 i: mask.get(str(i), False)
@@ -529,30 +536,16 @@ class DRTResult:
             }
         dictionary["mask"] = mask
 
-        dictionary["impedances"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_impedances"],
-                        dictionary["imaginary_impedances"],
-                    ),
-                )
-            )
+        dictionary["impedances"] = (
+            array(dictionary["real_impedances"])
+            + 1j * array(dictionary["imaginary_impedances"])
         )
         del dictionary["real_impedances"]
         del dictionary["imaginary_impedances"]
 
-        dictionary["residuals"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_residuals"],
-                        dictionary["imaginary_residuals"],
-                    ),
-                )
-            )
+        dictionary["residuals"] = (
+            array(dictionary["real_residuals"])
+            + 1j * array(dictionary["imaginary_residuals"])
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
@@ -567,10 +560,16 @@ class DRTResult:
         del dictionary["real_scores"]
         del dictionary["imaginary_scores"]
 
-        if isnan(dictionary["pseudo_chisqr"]):
+        if data is not None and isnan(dictionary["pseudo_chisqr"]):
+            current_mask = data.get_mask()
+            data.set_mask(dictionary["mask"])
+            Z_exp = data.get_impedances()
+            data.set_mask(current_mask)
+
+            Z_fit = dictionary["impedances"]
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
-                Z_exp=data.get_impedances(),
-                Z_fit=dictionary["impedances"],
+                Z_exp=Z_exp,
+                Z_fit=Z_fit,
             )
 
         return Class(**dictionary)

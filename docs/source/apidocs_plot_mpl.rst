@@ -21,7 +21,7 @@ These functions are used by the wrapper functions to make a more complex figure 
 These are all the same as those included in pyimpspec_.
 
 .. automodule:: deareis.mpl
-   :members: plot_bht_scores, plot_bode, plot_real_imaginary, plot_gamma, plot_imaginary, plot_magnitude, plot_mu_xps, plot_nyquist, plot_phase, plot_real, plot_residuals
+   :members: plot_bht_scores, plot_bode, plot_real_imaginary, plot_gamma, plot_imaginary, plot_magnitude, plot_nyquist, plot_phase, plot_real, plot_residuals
 
 
 Examples

@@ -18,23 +18,26 @@
 # the LICENSES folder.
 
 from time import sleep
-from typing import Tuple
-from requests import get
-from requests.models import Response
+from typing import (
+    Any,
+    Tuple,
+)
+from http.client import HTTPResponse
+from urllib.error import HTTPError
+from urllib.request import urlopen
+from json import (
+    JSONDecodeError,
+    loads,
+)
 from deareis.signals import Signal
 import deareis.signals as signals
 from deareis.version import PACKAGE_VERSION
 
 
-def download_json() -> dict:
-    url: str = "https://pypi.org/pypi/DearEIS/json"
-    res: Response = get(url)
-    res.raise_for_status()  # Check if there were any issues
-    return res.json()
-
-
 def parse_version(string: str) -> Tuple[int, int, int]:
-    assert string.count(".") == 2, string
+    if string.count(".") != 2:
+        raise ValueError(f"Expected {string=} to contain two periods (i.e., 'major.minor.patch')!")
+
     return tuple(map(int, string.split(".")))  # type: ignore
 
 
@@ -43,23 +46,74 @@ def is_up_to_date(installed: str, pypi: str) -> bool:
     installed_minor: int
     installed_patch: int
     installed_major, installed_minor, installed_patch = parse_version(installed)
+
     pypi_major: int
     pypi_minor: int
     pypi_patch: int
     pypi_major, pypi_minor, pypi_patch = parse_version(pypi)
+
     if installed_major > pypi_major:
         return True
     elif installed_major < pypi_major:
         return False
+
     if installed_minor > pypi_minor:
         return True
     elif installed_minor < pypi_minor:
         return False
+    
     if installed_patch > pypi_patch:
         return True
     elif installed_patch < pypi_patch:
         return False
+
     return True
+
+
+def download_json() -> Tuple[dict, str]:
+    url: str = "https://pypi.org/pypi/DearEIS/json"
+
+    try:
+        res: HTTPResponse = urlopen(url)
+    except HTTPError as err:
+        return (
+            {},
+            f"""
+{str(err)}
+when checking {url}
+            """.strip(),
+        )
+
+    try:
+        json: dict = loads(res.read())
+    except JSONDecodeError:
+        return (
+            {},
+            f"""
+Failed to parse JSON from {url}
+            """.strip(),
+        )
+
+    return (
+        json,
+        "",
+    )
+
+
+def extract_pypi_version(json: dict) -> Tuple[str, str]:
+    info: Any = json.get("info", {})
+    if isinstance(info, dict):
+        version: Any = info.get("version", "")
+        if isinstance(version, str):
+            return (
+                version,
+                "",
+            )
+
+    return (
+        "",
+        "Failed to extract version number from the response from PyPI!"
+    )
 
 
 def perform_update_check():
@@ -67,24 +121,29 @@ def perform_update_check():
         Signal.SHOW_BUSY_MESSAGE,
         message="Checking PyPI",
     )
-    json: dict = download_json()
-    assert (
-        "info" in json and "version" in json["info"]
-    ), "Failed to extract version number from the response from PyPI!"
-    pypi_version: str = json["info"]["version"]
-    message: str = f"""
+
+    json: dict
+    message: str
+    json, message = download_json()
+    if json:
+        pypi_version: str
+        pypi_version, message = extract_pypi_version(json=json)
+        if pypi_version:
+            if not is_up_to_date(PACKAGE_VERSION, pypi_version):
+                message = f"""
+Update available!
+
+ PyPI: {pypi_version}
+Installed: {PACKAGE_VERSION}
+                """.strip()
+            else:
+                message = f"""
 Already up-to-date!
 
 Available: {pypi_version}
 Installed: {PACKAGE_VERSION}
-    """.strip()
-    if not is_up_to_date(PACKAGE_VERSION, pypi_version):
-        message = f"""
-Update available!
+                """.strip()
 
-     PyPI: {pypi_version}
-Installed: {PACKAGE_VERSION}
-        """.strip()
     signals.emit(
         Signal.SHOW_BUSY_MESSAGE,
         message=message,

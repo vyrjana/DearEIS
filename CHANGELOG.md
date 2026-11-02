@@ -1,3 +1,18 @@
+# 5.2.0 (2026/11/02)
+
+- Updated the `FitResult` object to match changes made in the `pyimpspec` package.
+- Updated the statistics shown in the fitting tab.
+  - The chi-squared and reduced chi-squared statistics reported by the `lmfit` package have been removed as these vary depending on the weight used during fitting.
+  - The residual sum of squares (RSS) based on the absolute residuals has been added.
+  - The Akaike and Bayesian information criteria have been updated to be based on the RSS value.
+- Updated analysis result deserialization to update/correct masks that had previously not been serialized correctly.
+- Refactored how the complex impedances and complex residuals of analysis results are deserialized.
+- Refactored code to remove dependency on the `requests` package and instead use the Python standard library's `urllib.request` package.
+- Migrated to using `pyproject.toml`.
+- Updated supported range of Python versions: 3.12, 3.13, and 3.14.
+  - Support for version 3.11 was dropped due to packages such as NumPy dropping support for that version.
+
+
 # 5.1.3 (2026/04/28)
 
 - Pinned the version of DearPyGui to 2.2 as a temporary fix due to issues only observed with version 2.3.

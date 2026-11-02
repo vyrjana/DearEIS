@@ -115,10 +115,11 @@ def fit_circuit(
         residuals=result.residuals,
         mask=mask,
         pseudo_chisqr=result.pseudo_chisqr,
-        chisqr=result.minimizer_result.chisqr,
-        red_chisqr=result.minimizer_result.redchi,
-        aic=result.minimizer_result.aic,
-        bic=result.minimizer_result.bic,
+        chisqr=result.minimizer_result.chisqr,  # Deprecated
+        red_chisqr=result.minimizer_result.redchi,  # Deprecated
+        rss=result.rss,
+        aic=result.aic,
+        bic=result.bic,
         ndata=result.minimizer_result.ndata,
         nfree=result.minimizer_result.nfree,
         nfev=result.minimizer_result.nfev,

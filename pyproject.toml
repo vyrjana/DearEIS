@@ -1,0 +1,80 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+# Update [project.optional-dependencies.dev] as well when making changes here
+requires = [
+    "setuptools==84.2.1",
+    "build==1.6.1",
+    "flake8==7.4.1",
+    "sphinx==9.1.0",
+    "sphinx-rtd-theme==3.1.0",
+]
+
+
+[project]
+name = "deareis"
+version = "5.2.0"
+license = "GPL-3.0-or-later"
+license-files = [
+	"LICENSE",
+	"COPYRIGHT",
+	"CONTRIBUTORS",
+	"LICENSES/*.txt",
+	"LICENSES/*.md",
+]
+description = "A GUI program for analyzing, simulating, and visualizing impedance spectra."
+authors = [
+	{name = "DearEIS developers"},
+]
+maintainers = [
+    {name = "Ville Yrjänä"},
+]
+requires-python = ">=3.12"
+dependencies = [
+    'dearpygui==2.2;python_version>="3.13"',  # Used to implement the GUI.
+    'dearpygui==1.11.1;python_version=="3.12"',  # Used to implement the GUI.
+    "pyimpspec >= 5.3, <6",  # Used for parsing, fitting, and analyzing impedance spectra.
+]
+readme = "README.md"
+classifiers = [
+		"Intended Audience :: Science/Research",
+		"Operating System :: MacOS",
+		"Operating System :: Microsoft :: Windows",
+		"Operating System :: POSIX :: Linux",
+		"Programming Language :: Python :: 3.12",
+		"Programming Language :: Python :: 3.13",
+		"Programming Language :: Python :: 3.14",
+		"Programming Language :: Python :: 3 :: Only",
+		"Topic :: Scientific/Engineering :: Chemistry",
+		"Topic :: Scientific/Engineering :: Physics",
+		"Topic :: Scientific/Engineering",
+]
+
+
+[project.urls]
+homepage = "https://vyrjana.github.io/DearEIS"
+documentation = "https://vyrjana.github.io/DearEIS"
+source = "https://github.com/vyrjana/DearEIS"
+tracker = "https://github.com/vyrjana/DearEIS/issues"
+install = "https://vyrjana.github.io/DearEIS/guide_installing.html"
+releasenotes = "https://github.com/vyrjana/DearEIS/blob/main/CHANGELOG.md"
+
+
+[project.scripts]
+deareis = "deareis.program:main"
+deareis-debug = "deareis.program:debug"
+
+
+[project.optional-dependencies]
+cvxopt = ["cvxopt >=1.3, <2"]
+kvxopt = ["kvxopt >=1.3, <2"]
+dev = [
+    "setuptools==84.2.1",
+    "build==1.6.1",
+    "flake8==7.4.1",
+    "sphinx==9.1.0",
+    "sphinx-rtd-theme==3.1.0",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]

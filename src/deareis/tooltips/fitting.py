@@ -61,6 +61,9 @@ The chi-squared value of the fit.
         "red_chisqr": """
 The reduced chi-squared value of the fit.
     """.strip(),
+        "rss": """
+The residual sum of squares.
+    """.strip(),
         "aic": """
 The Akaike information criterion.
     """.strip(),

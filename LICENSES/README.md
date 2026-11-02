@@ -88,11 +88,6 @@
 - License: MIT
 - _pyimpspec_ copied/ported code to implement calculation of the distribution of relaxation times (DRT).
 
-# requests
-- https://github.com/psf/requests
-- License: Apache License v2.0
-- Dependency.
-
 # SchemDraw
 - https://bitbucket.org/cdelker/schemdraw/
 - License: MIT

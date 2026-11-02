@@ -55,6 +55,8 @@ from deareis.enums import (
 )
 from deareis.utility import format_timestamp
 from deareis.data import DataSet
+from .utility import deserialize_mask
+
 
 VERSION: int = 2
 
@@ -309,26 +311,20 @@ class ZHITResult:
         assert "window" in dictionary
         assert "settings" in dictionary
         dictionary["frequencies"] = array(dictionary["frequencies"])
-        dictionary["impedances"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_impedances"],
-                        dictionary["imaginary_impedances"],
-                    ),
-                )
-            )
+        dictionary["impedances"] = (
+            array(dictionary["real_impedances"])
+            + 1j * array(dictionary["imaginary_impedances"])
         )
         del dictionary["real_impedances"]
         del dictionary["imaginary_impedances"]
 
-        mask: Dict[str, bool] = dictionary["mask"]
+        mask: Dict[Union[int, str], bool] = dictionary["mask"]
         if data is not None:
-            mask = {
-                i: mask.get(str(i), False)
-                for i in range(0, len(data.get_frequencies(masked=None)))
-            }
+            mask = deserialize_mask(
+                mask=mask,
+                frequencies=dictionary["frequencies"],
+                data=data,
+            )
         else:
             mask = {
                 i: mask.get(str(i), False)
@@ -336,24 +332,23 @@ class ZHITResult:
             }
         dictionary["mask"] = mask
 
-        dictionary["residuals"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_residuals"],
-                        dictionary["imaginary_residuals"],
-                    ),
-                )
-            )
+        dictionary["residuals"] = (
+            array(dictionary["real_residuals"])
+            + 1j * array(dictionary["imaginary_residuals"])
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
 
         if data is not None and isnan(dictionary["pseudo_chisqr"]):
+            current_mask = data.get_mask()
+            data.set_mask(dictionary["mask"])
+            Z_exp = data.get_impedances()
+            data.set_mask(current_mask)
+
+            Z_fit = dictionary["impedances"]
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
-                Z_exp=data.get_impedances(),
-                Z_fit=dictionary["impedances"],
+                Z_exp=Z_exp,
+                Z_fit=Z_fit,
             )
 
         dictionary["settings"] = ZHITSettings.from_dict(dictionary["settings"])

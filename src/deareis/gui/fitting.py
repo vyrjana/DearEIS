@@ -650,7 +650,7 @@ class StatisticsTable:
                 borders_innerH=True,
                 scrollY=True,
                 freeze_rows=1,
-                height=18 + 23 * 9,
+                height=18 + 23 * 8,
                 tag=self._table,
             ):
                 dpg.add_table_column(
@@ -671,12 +671,8 @@ class StatisticsTable:
                         tooltips.fitting.pseudo_chisqr,
                     ),
                     (
-                        "log X²",
-                        tooltips.fitting.chisqr,
-                    ),
-                    (
-                        "log X² (reduced)",
-                        tooltips.fitting.red_chisqr,
+                        "log RSS",
+                        tooltips.fitting.rss,
                     ),
                     (
                         "Akaike inf. crit.",
@@ -733,7 +729,7 @@ class StatisticsTable:
         for row in dpg.get_item_children(self._table, slot=1):
             cells.append(dpg.get_item_children(row, slot=1)[2])
 
-        assert len(cells) == 10, cells
+        assert len(cells) == 9, cells
 
         tag: int
         value: str
@@ -746,36 +742,31 @@ class StatisticsTable:
             ),
             (
                 cells[1],
-                f"{log(fit.chisqr):.3f}",
+                f"{log(fit.rss):.3f}",
                 -1,
             ),
             (
                 cells[2],
-                f"{log(fit.red_chisqr):.3f}",
-                -1,
-            ),
-            (
-                cells[3],
                 format_number(fit.aic, decimals=3),
                 -1,
             ),
             (
-                cells[4],
+                cells[3],
                 format_number(fit.bic, decimals=3),
                 -1,
             ),
             (
-                cells[5],
+                cells[4],
                 f"{fit.nfree}",
                 -1,
             ),
             (
-                cells[6],
+                cells[5],
                 f"{fit.ndata}",
                 -1,
             ),
             (
-                cells[7],
+                cells[6],
                 f"{fit.nfev}",
                 (
                     themes.fitting.highlighted_statistc
@@ -784,12 +775,12 @@ class StatisticsTable:
                 ),
             ),
             (
-                cells[8],
+                cells[7],
                 cnls_method_to_label.get(fit.method, ""),
                 -1,
             ),
             (
-                cells[9],
+                cells[8],
                 weight_to_label.get(fit.weight, ""),
                 -1,
             ),

@@ -1,6 +1,15 @@
 .. classes
-.. |PlotSettings| replace:: :class:`~deareis.PlotSettings`
+.. |CircuitBuilder| replace:: :class:`~deareis.CircuitBuilder`
+.. |Circuit| replace:: :class:`~deareis.Circuit`
+.. |Connection| replace:: :class:`~deareis.Connection`
+.. |ContainerDefinition| replace:: :class:`~deareis.ContainerDefinition`
+.. |Container| replace:: :class:`~deareis.Container`
+.. |DataSet| replace:: :class:`~deareis.DataSet`
+.. |ElementDefinition| replace:: :class:`~deareis.ElementDefinition`
+.. |Element| replace:: :class:`~deareis.Element`
+.. |ParameterDefinition| replace:: :class:`~pyimpspec.ParameterDefinition`
 .. |PlotSeries| replace:: :class:`~deareis.PlotSeries`
+.. |PlotSettings| replace:: :class:`~deareis.PlotSettings`
 
 .. type hints
 .. |ComplexImpedance| replace:: :class:`~pyimpspec.ComplexImpedance`
@@ -48,6 +57,7 @@
 .. _circuitikz: https://github.com/circuitikz/circuitikz
 .. _gplv3: https://www.gnu.org/licenses/gpl-3.0.en.html
 .. _matplotlib: https://matplotlib.org/
+.. _pandas.dataframe: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame
 .. _pyimpspec: https://vyrjana.github.io/pyimpspec/
 .. _sympify: https://docs.sympy.org/latest/modules/core.html#sympy.core.sympify.sympify
 .. _sympy: https://www.sympy.org/en/index.html

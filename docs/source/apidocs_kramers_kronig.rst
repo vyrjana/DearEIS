@@ -4,7 +4,7 @@ Kramers-Kronig testing
 ======================
 
 .. automodule:: deareis
-   :members: perform_test, perform_exploratory_tests
+   :members: perform_kramers_kronig_test, perform_exploratory_kramers_kronig_tests
 
 
 Classes

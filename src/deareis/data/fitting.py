@@ -29,12 +29,15 @@ from typing import (
 from numpy import (
     angle,
     array,
+    complex128,
     integer,
     isnan,
     issubdtype,
+    log as ln,
     log10 as log,
     nan,
 )
+from numpy.typing import NDArray
 from pandas import DataFrame
 import pyimpspec
 from pyimpspec.analysis.utility import _calculate_pseudo_chisqr
@@ -60,9 +63,14 @@ from deareis.utility import (
     rename_dict_entry,
 )
 from deareis.data import DataSet
+from .utility import deserialize_mask
 
 
-VERSION: int = 3
+VERSION: int = 4
+
+
+def _parse_fitted_parameter_v4(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_fitted_parameter_v3(dictionary: dict) -> dict:
@@ -106,6 +114,7 @@ class FittedParameter(pyimpspec.FittedParameter):
             1: _parse_fitted_parameter_v1,
             2: _parse_fitted_parameter_v2,
             3: _parse_fitted_parameter_v3,
+            4: _parse_fitted_parameter_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
 
@@ -138,6 +147,10 @@ class FittedParameter(pyimpspec.FittedParameter):
             "fixed": self.fixed,
             "unit": self.unit,
         }
+
+
+def _parse_settings_v4(dictionary: dict) -> dict:
+    return dictionary
 
 
 def _parse_settings_v3(dictionary: dict) -> dict:
@@ -212,6 +225,7 @@ class FitSettings:
             1: _parse_settings_v1,
             2: _parse_settings_v2,
             3: _parse_settings_v3,
+            4: _parse_settings_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
 
@@ -251,7 +265,16 @@ class FitSettings:
         }
 
 
+def _parse_result_v4(dictionary: dict) -> dict:
+    return dictionary
+
+
 def _parse_result_v3(dictionary: dict) -> dict:
+    if "rss" not in dictionary:
+        dictionary["rss"] = nan
+        dictionary["aic"] = nan
+        dictionary["bic"] = nan
+
     return dictionary
 
 
@@ -325,9 +348,14 @@ class FitResult:
 
     chisqr: float
         The |chi-squared| calculated for the result.
+        Deprecated.
 
     red_chisqr: float
         The reduced |chi-squared| calculated for the result.
+        Deprecated.
+
+    rss: float
+        The residual sum of squares for the result.
 
     aic: float
         The calculated Akaike information criterion.
@@ -363,8 +391,9 @@ class FitResult:
     residuals: ComplexResiduals
     mask: Dict[int, bool]
     pseudo_chisqr: float
-    chisqr: float
-    red_chisqr: float
+    chisqr: float  # Deprecated
+    red_chisqr: float  # Deprecated
+    rss: float
     aic: float
     bic: float
     ndata: int
@@ -416,6 +445,7 @@ class FitResult:
             1: _parse_result_v1,
             2: _parse_result_v2,
             3: _parse_result_v3,
+            4: _parse_result_v4,
         }
         assert version in parsers, f"{version=} not in {parsers.keys()=}"
 
@@ -435,8 +465,9 @@ class FitResult:
         assert "imaginary_residuals" in dictionary
         assert "mask" in dictionary
         assert "pseudo_chisqr" in dictionary
-        assert "chisqr" in dictionary
-        assert "red_chisqr" in dictionary
+        assert "chisqr" in dictionary  # Deprecated
+        assert "red_chisqr" in dictionary  # Deprecated
+        assert "rss" in dictionary
         assert "aic" in dictionary
         assert "bic" in dictionary
         assert "ndata" in dictionary
@@ -466,26 +497,20 @@ class FitResult:
                 dictionary["frequencies"]
             )
         else:
-            dictionary["impedances"] = array(
-                list(
-                    map(
-                        lambda _: complex(*_),
-                        zip(
-                            dictionary["real_impedances"],
-                            dictionary["imaginary_impedances"],
-                        ),
-                    )
-                )
+            dictionary["impedances"] = (
+                array(dictionary["real_impedances"])
+                + 1j * array(dictionary["imaginary_impedances"])
             )
             del dictionary["real_impedances"]
             del dictionary["imaginary_impedances"]
 
-        mask: Dict[str, bool] = dictionary["mask"]
+        mask: Dict[Union[int, str], bool] = dictionary["mask"]
         if data is not None:
-            mask = {
-                i: mask.get(str(i), False)
-                for i in range(0, len(data.get_frequencies(masked=None)))
-            }
+            mask = deserialize_mask(
+                mask=mask,
+                frequencies=dictionary["frequencies"],
+                data=data,
+            )
         else:
             mask = {
                 i: mask.get(str(i), False)
@@ -493,27 +518,43 @@ class FitResult:
             }
         dictionary["mask"] = mask
 
-        dictionary["residuals"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_residuals"],
-                        dictionary["imaginary_residuals"],
-                    ),
-                )
-            )
+        dictionary["residuals"] = (
+            array(dictionary["real_residuals"])
+            + 1j * array(dictionary["imaginary_residuals"])
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
 
         dictionary["settings"] = FitSettings.from_dict(dictionary["settings"])
 
-        if isnan(dictionary["pseudo_chisqr"]):
+        if data is not None and isnan(dictionary["pseudo_chisqr"]):
+            current_mask = data.get_mask()
+            data.set_mask(dictionary["mask"])
+            Z_exp = data.get_impedances()
+            data.set_mask(current_mask)
+
+            Z_fit = dictionary["impedances"]
             dictionary["pseudo_chisqr"] = _calculate_pseudo_chisqr(
-                Z_exp=data.get_impedances(),
-                Z_fit=dictionary["impedances"],
+                Z_exp=Z_exp,
+                Z_fit=Z_fit,
             )
+
+        if data is not None and isnan(dictionary["rss"]):
+            current_mask = data.get_mask()
+            data.set_mask(dictionary["mask"])
+            Z_exp = data.get_impedances()
+            data.set_mask(current_mask)
+
+            Z_fit = dictionary["impedances"]
+            complex_residuals: NDArray[complex128] = Z_exp - Z_fit
+            rss: float = sum(complex_residuals.real**2 + complex_residuals.imag**2)
+            dictionary["rss"] = rss
+
+            N: int = dictionary["ndata"]
+            N_free: int = dictionary["nfree"]
+            N_varys: int = N - N_free
+            dictionary["aic"] = N * ln(rss / N) + 2 * N_varys
+            dictionary["bic"] = N * ln(rss / N) + ln(N) * N_varys
 
         return Class(**dictionary)
 
@@ -549,8 +590,9 @@ class FitResult:
             "real_residuals": list(self.residuals.real),
             "imaginary_residuals": list(self.residuals.imag),
             "pseudo_chisqr": self.pseudo_chisqr,
-            "chisqr": self.chisqr,
-            "red_chisqr": self.red_chisqr,
+            "chisqr": self.chisqr,  # Deprecated
+            "red_chisqr": self.red_chisqr,  # Deprecated
+            "rss": self.rss,
             "aic": self.aic,
             "bic": self.bic,
             "ndata": self.ndata,
@@ -590,8 +632,7 @@ class FitResult:
         """
         statistics: Dict[str, Union[int, float, str]] = {
             "Log pseudo chi-squared": log(self.pseudo_chisqr),
-            "Log chi-squared": log(self.chisqr),
-            "Log chi-squared (reduced)": log(self.red_chisqr),
+            "Log residual sum of squares": log(self.rss),
             "Akaike info. criterion": self.aic,
             "Bayesian info. criterion": self.bic,
             "Degrees of freedom": self.nfree,

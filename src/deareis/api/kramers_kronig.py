@@ -299,7 +299,7 @@ def perform_exploratory_kramers_kronig_tests(
         Note that only `Test.EXPLORATORY` is supported by this function.
 
     num_procs: int, optional
-        See perform_test for details.
+        See |perform_kramers_kronig_test| for details.
 
     Returns
     -------

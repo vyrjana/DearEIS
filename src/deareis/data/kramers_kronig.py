@@ -25,6 +25,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 from numpy import (
     angle,
@@ -68,6 +69,7 @@ from deareis.utility import (
 )
 from deareis.data import DataSet
 from pyimpspec.typing.helpers import _is_integer
+from .utility import deserialize_mask
 
 
 VERSION: int = 3
@@ -667,12 +669,13 @@ class KramersKronigResult:
         dictionary["frequencies"] = array(dictionary["frequencies"])
         dictionary["settings"] = KramersKronigSettings.from_dict(dictionary["settings"])
 
-        mask: Dict[str, bool] = dictionary["mask"]
+        mask: Dict[Union[int, str], bool] = dictionary["mask"]
         if data is not None:
-            mask = {
-                i: mask.get(str(i), False)
-                for i in range(0, len(data.get_frequencies(masked=None)))
-            }
+            mask = deserialize_mask(
+                mask=mask,
+                frequencies=dictionary["frequencies"],
+                data=data,
+            )
         else:
             mask = {
                 i: mask.get(str(i), False)
@@ -688,30 +691,16 @@ class KramersKronigResult:
                 dictionary["frequencies"]
             )
         else:
-            dictionary["impedances"] = array(
-                list(
-                    map(
-                        lambda _: complex(*_),
-                        zip(
-                            dictionary["real_impedances"],
-                            dictionary["imaginary_impedances"],
-                        ),
-                    )
-                )
+            dictionary["impedances"] = (
+                array(dictionary["real_impedances"])
+                + 1j * array(dictionary["imaginary_impedances"])
             )
             del dictionary["real_impedances"]
             del dictionary["imaginary_impedances"]
 
-        dictionary["residuals"] = array(
-            list(
-                map(
-                    lambda _: complex(*_),
-                    zip(
-                        dictionary["real_residuals"],
-                        dictionary["imaginary_residuals"],
-                    ),
-                )
-            )
+        dictionary["residuals"] = (
+            array(dictionary["real_residuals"])
+            + 1j * array(dictionary["imaginary_residuals"])
         )
         del dictionary["real_residuals"]
         del dictionary["imaginary_residuals"]
